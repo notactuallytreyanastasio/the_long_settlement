@@ -893,7 +893,11 @@ export function createRenderer(canvas) {
     if (kind === 'shot') {
       const m = mid(e.a, e.b);
       const d = unit(e.dir);
-      return [m[0] - d[0] * 58, m[1] - d[1] * 58];
+      // a long name is drawn toward its own side wall, clear of the lettering down the middle
+      // of the table (Little Brand's BREAKWATER ran into LITTLE BRAND)
+      const half = String(table.labels[e.id] || '').length * 3.9 + 3;
+      const x = m[0] - d[0] * 58;
+      return [x + (x < TW / 2 ? -1 : 1) * Math.max(0, half - 27), m[1] - d[1] * 58];
     }
     if (kind === 'rollover') return [e.pos[0], e.pos[1] + laneRad(table, e) + 11];
     if (kind === 'saucer') return [e.pos[0], e.pos[1] + e.r + 13];

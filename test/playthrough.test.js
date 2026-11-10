@@ -254,10 +254,11 @@ test('no scene is too hard: median under 2:30 and mean under 4:00 for each of th
 // ───────────────────────── the economy, as played ─────────────────────────
 
 const ledgerTable = (t, label, rs) => {
-  t.diagnostic(`${label}: seed   total  pulls  loans by chapter   aid by chapter   lines in play by chapter   leaning`);
+  t.diagnostic(`${label}: seed   total  time by chapter                 pulls by chapter  loans by chapter   aid by chapter   lines in play by chapter   leaning`);
   rs.forEach((r, i) => {
     const lines = CHAPTERS.map((c) => r.sum('lanes', c) + r.sum('shots', c));
-    t.diagnostic(`${' '.repeat(label.length)}  ${String(SEEDS[i]).padStart(4)}  ${fmt(r.tableSeconds).padStart(6)}  ${String(r.sum('pulls')).padStart(5)}  `
+    t.diagnostic(`${' '.repeat(label.length)}  ${String(SEEDS[i]).padStart(4)}  ${fmt(r.tableSeconds).padStart(6)}  `
+      + `${perChapter(r, 'seconds').map(fmt).join(' ').padEnd(30)}  ${`${perChapter(r, 'pulls').join(' ')} = ${r.sum('pulls')}`.padEnd(16)}  `
       + `${perChapter(r, 'loans').join(' ')} = ${String(r.sum('loans')).padEnd(6)}  ${perChapter(r, 'aid').join(' ')} = ${String(r.sum('aid')).padEnd(4)}  `
       + `${lines.join(' ').padEnd(24)}  ${r.leaning}`);
   });

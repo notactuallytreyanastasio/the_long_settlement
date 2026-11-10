@@ -7301,8 +7301,8 @@
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 137548,
-  "lines": 3590
+  "bytes": 137853,
+  "lines": 3594
  },
  {
   "path": "src/shell/voice.js",
@@ -7336,8 +7336,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 17415,
-  "lines": 310
+  "bytes": 17562,
+  "lines": 311
  },
  {
   "path": "test/rng.test.js",
