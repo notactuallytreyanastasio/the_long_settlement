@@ -1486,7 +1486,7 @@ export function createRenderer(canvas) {
     } else if (game.mode === 'play') {
       const cx = hintRow(g, [['key', '←'], ['key', '→'], ['txt', 'or'], ['key', 'Z'], ['key', '/'], ['txt', 'flip']], X, 732);
       hintRow(g, [['key', 'Space'], ['txt', 'plunge']], Math.max(cx + 4, 268), 732);
-      hintRow(g, [['key', 'P'], ['txt', 'back to the Reels'], ['key', 'M'], ['txt', 'mute']], X, 762);
+      hintRow(g, [['key', 'R'], ['txt', 'back to the Reels'], ['key', 'M'], ['txt', 'mute']], X, 762);
     } else {
       throw new Error(`render: no control hints for mode '${game.mode}'`);
     }
@@ -2167,7 +2167,7 @@ export function createRenderer(canvas) {
     g.fillStyle = A(PAPER, 0.55 + 0.25 * Math.sin(now / 600));
     g.fillText(`End of the chapters written so far: ${content.chapters.length}. The road goes on.`, W / 2, 650);
     g.textAlign = 'left';
-    hintRow(g, [['key', 'M'], ['txt', 'mute']], W / 2 - 40, 730);
+    hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 730);
   }
 
   // ─────────── entry point ───────────

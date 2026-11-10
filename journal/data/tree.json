@@ -2136,7 +2136,7 @@
  },
  {
   "path": "assets/voice/ch2.s4.b01.m4a",
-  "bytes": 18063,
+  "bytes": 16772,
   "lines": null
  },
  {
@@ -2736,8 +2736,13 @@
  },
  {
   "path": "assets/voice/manifest.json",
-  "bytes": 63204,
+  "bytes": 63205,
   "lines": 2735
+ },
+ {
+  "path": "index.html",
+  "bytes": 3535,
+  "lines": 74
  },
  {
   "path": "package.json",
@@ -2820,8 +2825,18 @@
   "lines": 2729
  },
  {
+  "path": "src/shell/input.js",
+  "bytes": 4633,
+  "lines": 108
+ },
+ {
+  "path": "src/shell/main.js",
+  "bytes": 9452,
+  "lines": 256
+ },
+ {
   "path": "src/shell/render.js",
-  "bytes": 78955,
+  "bytes": 79006,
   "lines": 2209
  },
  {
@@ -2883,5 +2898,10 @@
   "path": "tools/render-voices.mjs",
   "bytes": 11744,
   "lines": 266
+ },
+ {
+  "path": "tools/serve.mjs",
+  "bytes": 3232,
+  "lines": 76
  }
 ]
