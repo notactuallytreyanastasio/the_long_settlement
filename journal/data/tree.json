@@ -80,6 +80,11 @@
   "lines": 829
  },
  {
+  "path": "src/shell/render.js",
+  "bytes": 77789,
+  "lines": 2185
+ },
+ {
   "path": "src/shell/voice.js",
   "bytes": 11777,
   "lines": 312
@@ -96,8 +101,8 @@
  },
  {
   "path": "test/game.test.js",
-  "bytes": 31213,
-  "lines": 651
+  "bytes": 31165,
+  "lines": 650
  },
  {
   "path": "test/rng.test.js",
@@ -113,5 +118,10 @@
   "path": "test/story.test.js",
   "bytes": 4899,
   "lines": 96
+ },
+ {
+  "path": "tools/render-voices.mjs",
+  "bytes": 11256,
+  "lines": 257
  }
 ]

@@ -117,6 +117,20 @@
     "package.json"
    ],
    "commit": null
+  },
+  {
+   "id": "92e55386-9e37-40ca-8015-4684e962ce4f",
+   "type": "revisit",
+   "status": "pending",
+   "title": "Story premise too close to FFX: replace pilgrimage-and-sacrifice with a treaty vote carried by a citizen drawn by lot",
+   "description": "Dropped: shrine pilgrimage, chosen sacrifice, memory-eating tide, the cycle-is-a-lie reveal. New spine: islands linked by stillsalt-burning lights; the Mint decides who goes dark; a Tribune drawn by lot tours seven cities and casts the vote that renews or lapses the peace treaty; Halcyon rigged the draw and has bonded the outcome. Element ids, cast ids and backdrop keys unchanged so code built in parallel stays valid.",
+   "created": "2026-11-10T04:01:36.461995Z",
+   "updated": "2026-11-10T04:01:36.461995Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "the story is too close to FFX",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -168,6 +182,13 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T03:51:21.660537Z"
+  },
+  {
+   "from": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "to": "92e55386-9e37-40ca-8015-4684e962ce4f",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T04:01:36.464692Z"
   }
  ]
 }

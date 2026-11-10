@@ -142,7 +142,7 @@ async function tick() {
   let graph = null;
   try { graph = await exportGraph(); } catch (e) { log('graph export failed:', e.message); }
   const files = tree();
-  const gameChanges = changedPaths().filter((c) => !c.path.startsWith('journal/') && c.path !== 'README.md');
+  const gameChanges = changedPaths().filter((c) => !/^(journal\/|\.github\/|\.gitignore$|README\.md$)/.test(c.path));
   const prevGraph = readJSON(join(DATA, 'graph.json'), { nodes: [], edges: [] });
   const graphChanged = graph && (graph.nodes.length !== prevGraph.nodes.length || graph.edges.length !== prevGraph.edges.length
     || JSON.stringify(graph.nodes.map((n) => n.updated + n.status)) !== JSON.stringify(prevGraph.nodes.map((n) => n.updated + n.status)));

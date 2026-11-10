@@ -436,7 +436,7 @@ test('slot: marks short but writs in hand is a hint, not a loan', () => {
 
 test('aid: out of balls and writs, a trusting town covers one; without trust it is the reels', () => {
   // trust 30 buys exactly one aid ball this chapter
-  let r = send(playAt(0, 1, { trust: 30 }), tickMsg());
+  let r = send(playAt(0, 0, { trust: 30 }, grind), tickMsg(), grind);
   assert.equal(r.game.mode, 'play');
   assert.equal(r.game.econ.aidUsed, 1);
   assert.equal(r.game.econ.writs, 1);
@@ -450,7 +450,7 @@ test('aid: out of balls and writs, a trusting town covers one; without trust it 
   assert.notDeepEqual(r.game.rng, seed(3), 'the bark was chosen by the rng');
 
   // that ball is launched on the aid writ, drains, and there is no second helping
-  r = playUntil(r.game, (x) => x.mode === 'slot');
+  r = playUntil(r.game, (x) => x.mode === 'slot', grind);
   assert.equal(count(r.effects, 'launch'), 1);
   assert.equal(count(r.effects, 'drain'), 1);
   assert.equal(count(r.effects, 'aid'), 0);
@@ -460,7 +460,7 @@ test('aid: out of balls and writs, a trusting town covers one; without trust it 
   assert.ok(toastKinds(r.game).includes('bust'));
 
   // no trust at all: straight to the slot
-  r = send(playAt(0, 1, { trust: 0 }), tickMsg());
+  r = send(playAt(0, 0, { trust: 0 }, grind), tickMsg(), grind);
   assert.equal(r.game.mode, 'slot');
   assert.equal(r.game.econ.aidUsed, 0);
   assert.deepEqual(says(r.effects), []);
@@ -514,11 +514,8 @@ test('load: refuses a save it cannot honour', () => {
 // ───────────────────────── balls, saves and boons ─────────────────────────
 
 test('ball save: a drained ball comes back free; without it the next ball costs a writ', () => {
-  const start = { ...playAt(0, 1, { writs: 2 }), boons: { ballSave: 600, mult: 1, multT: 0 } };
-  // scene index 1 would complete on the way down, so play a scene nothing here can finish
-  const g = { ...start, hits: {}, seq: 0 };
-  let r = playUntil(g, (x, fx) => count(fx, 'drain') >= 1 || x.mode !== 'play');
-  if (r.game.mode === 'cine') r = playUntil(send(r.game, SKIP).game, (x, fx) => count(fx, 'drain') >= 1);
+  const g = { ...playAt(0, 0, { writs: 2 }, grind), boons: { ballSave: 600, mult: 1, multT: 0 } };
+  let r = playUntil(g, (x, fx) => count(fx, 'drain') >= 1, grind);
   assert.equal(r.game.mode, 'play');
   assert.equal(r.game.econ.writs, 1, 'one writ spent on the first launch');
   assert.equal(r.game.freeBalls, 1);
@@ -528,15 +525,16 @@ test('ball save: a drained ball comes back free; without it the next ball costs 
   assert.ok(says(r.effects).includes('ch1.bark.save.1'));
 
   // relaunching the saved ball is free
-  r = playUntil(r.game, (x, fx) => count(fx, 'launch') >= 1);
+  r = playUntil(r.game, (x, fx) => count(fx, 'launch') >= 1, grind);
   assert.equal(r.game.econ.writs, 1);
   assert.equal(r.game.freeBalls, 0);
 
   // save expired: the drain is final, and the next ball is on the remaining writ
-  r = playUntil({ ...r.game, boons: { ballSave: 0, mult: 1, multT: 0 } }, (x, fx) => count(fx, 'launch') >= 1);
+  r = playUntil({ ...r.game, boons: { ballSave: 0, mult: 1, multT: 0 } }, (x, fx) => count(fx, 'launch') >= 1, grind);
   assert.equal(count(r.effects, 'drain'), 1);
+  assert.deepEqual(says(r.effects).filter((id) => id.includes('save')), []);
   assert.equal(r.game.econ.writs, 0);
-  r = playUntil(r.game, (x) => x.mode === 'slot');
+  r = playUntil(r.game, (x) => x.mode === 'slot', grind);
   assert.equal(count(r.effects, 'drain'), 1);
 });
 
@@ -584,17 +582,18 @@ test('double marks: points earn twice the marks, score is unchanged', () => {
 });
 
 test('multiball: two extra live balls join after the launch, for one writ', () => {
-  const g = { ...playAt(1, 0, { writs: 1 }), multiQueue: 2 };
+  const g = { ...playAt(0, 0, { writs: 1 }, grind), multiQueue: 2 };
+  assert.equal(ticks(g, 300, false, grind).game.multiQueue, 2, 'nothing is fed while the ball waits on the plunger');
   let most = 0;
-  const r = playUntil(g, (x) => {
+  let r = playUntil(g, (x) => {
     most = Math.max(most, x.phys.balls.filter((b) => b.state === 'live').length);
-    return x.multiQueue === 0 || x.mode !== 'play';
-  });
+    return x.mode === 'slot';
+  }, grind);
   assert.equal(r.game.multiQueue, 0);
   assert.equal(count(r.effects, 'launch'), 3, 'one plunger launch and two fed balls');
+  assert.equal(count(r.effects, 'drain'), 3);
   assert.equal(r.game.econ.writs, 0);
-  assert.ok(most >= 1);
-  assert.equal(r.game.phys.nextBallId >= 3 || r.game.phys.balls.length >= 1, true);
+  assert.equal(most, 3);
 });
 
 // ───────────────────────── leaving the table ─────────────────────────
