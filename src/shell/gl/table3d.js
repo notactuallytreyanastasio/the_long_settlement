@@ -141,17 +141,9 @@ function targetMesh(len, colour, P) {
 }
 
 function plungerMesh(P) {
-  const coil = [];
-  for (let i = 0; i < 5; i++) coil.push(tint(remap(place(torus(0.045, 0.011, 10, 5), 0, 0, 0), (x, y, z) => [x, z, -y + 0.2 + i * 0.05]), P.gold));
-  return merge(
-    tint(alongZ(cylinder(0.052, 0.058, 0.05, 12)), P.cream),
-    tint(place(alongZ(cylinder(0.02, 0.02, 0.5, 8)), 0, 0, 0.04), P.steel),
-    coil,
-  ).positions ? place(merge(
-    tint(alongZ(cylinder(0.052, 0.058, 0.05, 12)), P.cream),
-    tint(place(alongZ(cylinder(0.02, 0.02, 0.5, 8)), 0, 0, 0.04), P.steel),
-    coil,
-  ), 0, 0.08, 0.085) : null;
+  const parts = [tint(alongZ(cylinder(0.052, 0.058, 0.05, 12)), P.cream), tint(place(alongZ(cylinder(0.02, 0.02, 0.5, 8)), 0, 0, 0.04), P.steel)];
+  for (let i = 0; i < 5; i++) parts.push(tint(place(remap(torus(0.045, 0.011, 10, 5), (x, y, z) => [x, z, -y]), 0, 0, 0.12 + i * 0.05), P.gold));
+  return place(merge(parts), 0, 0.08, 0.085);
 }
 
 /** An eight-sided reel drum lying along X. Face k looks along (0, sin(k*45), cos(k*45)) and carries SYM_FACES[k]. */
@@ -184,10 +176,10 @@ function railMesh(path, P) {
   for (let i = 0; i < path.length; i++) {
     const a = path[Math.max(0, i - 1)], b = path[Math.min(path.length - 1, i + 1)];
     const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, p = path[i];
-    L.push([p[0] + nx * 0.095, p[1] + 0.05, p[2] + nz * 0.095]); R.push([p[0] - nx * 0.095, p[1] + 0.05, p[2] - nz * 0.095]);
-    if (i % 3 === 1) parts.push(tint(tube([L[i], [p[0] + nx * 0.07, p[1] - 0.035, p[2] + nz * 0.07], [p[0] - nx * 0.07, p[1] - 0.035, p[2] - nz * 0.07], R[i]], 0.011, 5, { crease: 180 }), P.steel));
+    L.push([p[0] + nx * 0.088, p[1] + 0.05, p[2] + nz * 0.088]); R.push([p[0] - nx * 0.088, p[1] + 0.05, p[2] - nz * 0.088]);
+    if (i % 3 === 1) parts.push(tint(tube([L[i], [p[0] + nx * 0.07, p[1] - 0.035, p[2] + nz * 0.07], [p[0] - nx * 0.07, p[1] - 0.035, p[2] - nz * 0.07], R[i]], 0.008, 5, { crease: 180 }), P.steel));
   }
-  parts.push(tint(tube(L, 0.016, 6, { crease: 180 }), P.gold), tint(tube(R, 0.016, 6, { crease: 180 }), P.gold));
+  parts.push(tint(tube(L, 0.0115, 6, { crease: 180 }), P.gold), tint(tube(R, 0.0115, 6, { crease: 180 }), P.gold));
   return merge(parts);
 }
 
@@ -195,8 +187,8 @@ function railMesh(path, P) {
 
 function symbolArt(P) {
   const ink = P.ink, card = (g, w, h, bg, edge) => {
-    g.fillStyle = edge; g.beginPath(); g.roundRect(0, 0, w, h, w * 0.14); g.fill();
-    g.fillStyle = bg; g.beginPath(); g.roundRect(w * 0.06, h * 0.07, w * 0.88, h * 0.86, w * 0.1); g.fill();
+    g.fillStyle = edge; g.beginPath(); rrect(g, 0, 0, w, h, w * 0.14); g.fill();
+    g.fillStyle = bg; g.beginPath(); rrect(g, w * 0.06, h * 0.07, w * 0.88, h * 0.86, w * 0.1); g.fill();
     g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = ink; g.lineWidth = w * 0.045;
   };
   return {
@@ -219,8 +211,8 @@ function symbolArt(P) {
     gavel: (g, w, h) => {
       card(g, w, h, '#ffe9df', '#ff6b57');
       g.save(); g.translate(w * 0.5, h * 0.5); g.rotate(-0.7);
-      g.fillStyle = '#c98448'; g.beginPath(); g.roundRect(-w * 0.05, -h * 0.02, w * 0.1, h * 0.44, w * 0.04); g.fill(); g.stroke();
-      g.fillStyle = '#96592f'; g.beginPath(); g.roundRect(-w * 0.27, -h * 0.26, w * 0.54, h * 0.26, w * 0.07); g.fill(); g.stroke();
+      g.fillStyle = '#c98448'; g.beginPath(); rrect(g, -w * 0.05, -h * 0.02, w * 0.1, h * 0.44, w * 0.04); g.fill(); g.stroke();
+      g.fillStyle = '#96592f'; g.beginPath(); rrect(g, -w * 0.27, -h * 0.26, w * 0.54, h * 0.26, w * 0.07); g.fill(); g.stroke();
       g.fillStyle = '#ffd24a'; g.fillRect(-w * 0.17, -h * 0.25, w * 0.07, h * 0.24); g.fillRect(w * 0.1, -h * 0.25, w * 0.07, h * 0.24);
       g.restore();
     },
@@ -268,6 +260,12 @@ function buildAtlas(P, art) {
 }
 
 // ------------------------------------------------------------------------------------ the playfield painting
+
+/** ctx.roundRect is missing on iOS 15. Adds a rounded rectangle to the current path. */
+function rrect(g, x, y, w, h, r) {
+  const q = Math.min(r, w / 2, h / 2);
+  g.moveTo(x + q, y); g.arcTo(x + w, y, x + w, y + h, q); g.arcTo(x + w, y + h, x, y + h, q); g.arcTo(x, y + h, x, y, q); g.arcTo(x, y, x + w, y, q); g.closePath();
+}
 
 const FONT = '"Arial Rounded MT Bold", ui-rounded, "Avenir Next", "Helvetica Neue", system-ui, sans-serif';
 
@@ -342,7 +340,7 @@ function paintKit(g, table, P) {
       g.lineJoin = 'round'; g.fillStyle = fill; g.strokeStyle = P.ink; g.lineWidth = 1.6;
       path([[x - w / 2 - h * 0.7, y - h * 0.3], [x - w / 2, y - h * 0.3], [x - w / 2, y + h * 0.7], [x - w / 2 - h * 0.7, y + h * 0.7], [x - w / 2 - h * 0.3, y + h * 0.2]]); g.fill(); g.stroke();
       path([[x + w / 2 + h * 0.7, y - h * 0.3], [x + w / 2, y - h * 0.3], [x + w / 2, y + h * 0.7], [x + w / 2 + h * 0.7, y + h * 0.7], [x + w / 2 + h * 0.3, y + h * 0.2]]); g.fill(); g.stroke();
-      g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, h * 0.25); g.fill(); g.stroke();
+      g.beginPath(); rrect(g, x - w / 2, y - h / 2, w, h, h * 0.25); g.fill(); g.stroke();
     },
     star(x, y, r0, r1, n, fill) {
       g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + (i * Math.PI) / n, r = i % 2 ? r1 : r0; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
@@ -431,7 +429,7 @@ function rampPath(shot, n = 24) {
   const out = [];
   for (let i = 0; i <= n; i++) {
     const t = i / n, a = (1 - t) ** 3, b = 3 * t * (1 - t) ** 2, c = 3 * t * t * (1 - t), d = t ** 3;
-    const up = Math.min(1, t / 0.2), dn = Math.max(0, (t - 0.72) / 0.28);
+    const up = Math.min(1, t / 0.3), dn = Math.max(0, (t - 0.72) / 0.28);
     out.push([a * p0[0] + b * via[0][0] + c * via[1][0] + d * p3[0], a * p0[1] + b * via[0][1] + c * via[1][1] + d * p3[1], 0.03 + 0.36 * up * up * (3 - 2 * up) - 0.27 * dn * dn * (3 - 2 * dn)]);
   }
   return out;
@@ -469,17 +467,18 @@ export function createTableView(content, tableId, opts = {}) {
   const H = 0.15, R = table.ballRadius * S;
 
   // ---- environment: a low warm sun from the far left, long blue-violet shadows, lamps doing the rest
-  const points = []; for (let i = 0; i < POINTS; i++) points.push({ pos: [0, 0, 0], color: '#ffb347', radius: 1, intensity: 0 });
+  const seedPoints = []; for (let i = 0; i < POINTS; i++) seedPoints.push({ pos: [0, 0, 0], color: '#ffb347', radius: 1, intensity: 0 });
   const env = makeEnv('sunset', {
     key: { dir: [-0.62, 0.5, -0.4], color: '#fff2cf' },
     shadow: { tint: '#8a84e4', lift: 0.07, saturate: 1.4, radius: 5.5, center: [0, 0, -0.45], size: opts.shadowSize || 1024 },
     ambient: { sky: '#ffc9a0', ground: '#8f7ae0', amount: 0.09 },
     rim: { color: '#ffe9b0', amount: 0.7, edge: 0.72 },
     fog: { density: 0, max: 0 },
-    water: { level: -0.34, deep: '#1f86d8', mid: '#2fb2e4', shallow: '#7fe8dc', foam: '#ffffff', glint: '#fff4c8', glintDensity: 0.22, drift: [0.25, 0.1], shores: [] },
-    points,
+    water: { level: -0.13, deep: '#1f86d8', mid: '#2fb2e4', shallow: '#7fe8dc', foam: '#ffffff', glint: '#fff4c8', glintDensity: 0.22, drift: [0.25, 0.1], shores: [] },
+    points: seedPoints,
     ...(art.env || {}),
   });
+  const points = env.points;
   for (let z = -5; z <= 4.01; z += 1.5) env.water.shores.push([0, z, 2.75, 0.5]);
   const scene = createScene(env);
   const sprites = scene.sprites = createSprites(448);
@@ -521,23 +520,26 @@ export function createTableView(content, tableId, opts = {}) {
   const rail = (x0, z0, x1, z1, h, col, cap) => capped(prism(rectPts(x0, z0, x1, z1), -0.05, h, 0.03), col, cap);
   set.add(node('railL', rail(-2.2, -4.06, -2.0, 4.16, 0.24, P.rail, P.wood), setMat), node('railR', rail(2.0, -4.06, 2.2, 4.16, 0.24, P.rail, P.wood), setMat));
   set.add(node('railF', rail(-2.2, 4.0, 2.2, 4.18, 0.2, P.rail, P.wood), setMat));
-  set.add(node('hull', tint(place(box(4.36, 0.7, 9.5), 0, -0.4, -0.55), P.hull), setMat));
+  set.add(node('hull', tint(place(box(4.36, 0.5, 9.5), 0, -0.3, -0.55), P.hull), setMat));
   for (const z of [-3.2, -1.6, 0, 1.6, 3.2]) for (const x of [-2.1, 2.1]) set.add(node('stud', tint(place(ellipsoid(0.05, 0.03, 0.05, 8, 5), x, 0.245, z), P.gold), setMat));
 
-  const DR = 0.52, DW = 0.6, DX = [-0.72, 0, 0.72], DY = 0.3, DZ = -4.62;
+  const DR = 0.46, DW = 0.6, DX = [-0.7, 0, 0.7], DY = 0.3, DZ = -4.6, HEAD_TOP = 1.42;
   {
     const head = [];
     head.push(capped(prism(rectPts(-2.2, -5.3, 2.2, -4.02), -0.05, 0.22, 0.03), P.rail, P.wood));
-    head.push(capped(prism(rectPts(-1.26, -5.22, 1.26, -4.1), 0.2, 0.34, 0.03), P.ink2, P.ink2));
-    for (const x of [-1.08, -0.36, 0.36, 1.08]) head.push(capped(prism(stadium(x, -5.05, x, -4.2, 0.07), 0.3, 0.74, 0.04), P.coral, P.cream));
+    head.push(capped(prism(rectPts(-1.24, -5.22, 1.24, -4.1), 0.2, 0.34, 0.03), P.ink2, P.ink2));
+    for (const x of [-1.05, -0.35, 0.35, 1.05]) head.push(capped(prism(stadium(x, -5.05, x, -4.3, 0.055), 0.3, 0.8, 0.04), P.coral, P.cream));
+    // a fascia in front and an awning above, so each drum shows one face and a sliver of its neighbours
+    head.push(capped(prism(rectPts(-1.24, -4.2, 1.24, -4.07), 0.2, 0.55, 0.03), P.cream, P.coral));
+    for (let i = 0; i < 7; i++) head.push(tint(prism(rectPts(-1.26 + i * 0.36, -5.3, -1.26 + (i + 1) * 0.36, -4.62), 0.9, 0.97, 0.012), i % 2 ? P.cream : P.coral));
+    for (let i = 0; i < 7; i++) head.push(tint(place(sphere(0.07, 10, 6), -1.08 + i * 0.36, 0.9, -4.62), i % 2 ? P.coral : P.cream));
     // the back board: an arch with a lamp over each reel
-    const arch = [[-1.5, 0]]; for (let i = 0; i <= 12; i++) { const a = Math.PI - (i / 12) * Math.PI; arch.push([Math.cos(a) * 1.5, 0.95 + Math.sin(a) * 0.5]); } arch.push([1.5, 0]);
-    head.push(tint(place(extrude(arch, 0.16, { bevel: 0.04 }), 0, 0.2, -5.26), P.cream));
-    const inner = [[-1.3, 0]]; for (let i = 0; i <= 12; i++) { const a = Math.PI - (i / 12) * Math.PI; inner.push([Math.cos(a) * 1.3, 0.95 + Math.sin(a) * 0.32]); } inner.push([1.3, 0]);
-    head.push(tint(place(extrude(inner, 0.06, { bevel: 0.02 }), 0, 0.2, -5.15), P.ink2));
-    for (const x of DX) head.push(tint(place(lathe([[0.1, 0], [0.12, 0.03], [0.07, 0.06]], 12), x, 1.36 + (x === 0 ? 0.1 : 0), -5.26), P.gold));
+    const arch = (rx, h, e) => { const o = [[-rx, 0]]; for (let i = 0; i <= 12; i++) { const a = Math.PI - (i / 12) * Math.PI; o.push([Math.cos(a) * rx, h + Math.sin(a) * e]); } o.push([rx, 0]); return o; };
+    head.push(tint(place(extrude(arch(1.42, 0.8, 0.4), 0.16, { bevel: 0.04 }), 0, 0.2, -5.26), P.cream));
+    head.push(tint(place(extrude(arch(1.24, 0.8, 0.26), 0.06, { bevel: 0.02 }), 0, 0.2, -5.15), P.ink2));
+    for (const x of DX) head.push(tint(place(sphere(0.085, 12, 8), x, 1.16, -5.1), '#8d86b8'));
     for (const x of [-1.86, 1.86]) head.push(merge(tint(place(cylinder(0.11, 0.09, 0.5, 12), x, 0.2, -4.66), P.cream), tint(place(lathe([[0.13, 0], [0.15, 0.04], [0.1, 0.08], [0, 0.1]], 12), x, 0.7, -4.66), P.coral)));
-    for (let i = 0; i < 9; i++) head.push(tint(place(lathe([[0.05, 0], [0.056, 0.02], [0.04, 0.035]], 10), (i - 4) * 0.2, 0.2, -4.13), P.ink2));
+    for (let i = 0; i < 9; i++) head.push(tint(place(lathe([[0.05, 0], [0.056, 0.02], [0.04, 0.035]], 10), (i - 4) * 0.2, 0.55, -4.135), P.ink2));
     set.add(node('head', merge(head), setMat));
   }
 
@@ -550,9 +552,9 @@ export function createTableView(content, tableId, opts = {}) {
     const world = pts.map((p) => [WX(p[0]), p[2], WZ(p[1])]);
     set.add(node('ramp', railMesh(world, P), setMat));
     // a plank flap up onto the wire, and a post at each end
-    const a = world[0], b = world[4], yaw = yawOf(b[0] - a[0], b[2] - a[2]), len = Math.hypot(b[0] - a[0], b[2] - a[2]);
-    const flap = capped(prism(rectPts(-len / 2, -0.085, len / 2, 0.085), -0.012, 0.012, 0.006), P.plankDark, P.plank);
-    set.add(node('flap', flap, setMat, { pos: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.01, (a[2] + b[2]) / 2], rot: [0, yaw, Math.atan2(b[1] - a[1], len) / DEG] }));
+    const a = world[0], b = world[6], len = Math.hypot(b[0] - a[0], b[2] - a[2]);
+    const flap = capped(extrude([[0, a[1] + 0.012], [len, b[1] + 0.02], [len, b[1] - 0.005], [0, a[1] - 0.012]], 0.17, { bevel: 0.004, crease: 30 }), P.plankDark, P.plank, 0.5);
+    set.add(node('flap', flap, setMat, { pos: [a[0], 0, a[2]], rot: [0, yawOf(b[0] - a[0], b[2] - a[2]), 0] }));
     for (const k of [5, pts.length - 3]) { const p = world[k]; set.add(node('prop', tint(place(cylinder(0.02, 0.02, Math.max(0.02, p[1] + 0.02), 6), p[0], 0, p[2]), P.steel), setMat)); }
   }
 
@@ -573,6 +575,15 @@ export function createTableView(content, tableId, opts = {}) {
       for (const b of it.beams || []) beams.push(b);
     }
   }
+  const mech = group('mech');
+  const groupColour = new Map();
+  const targets = lay.targets.map((t, i) => {
+    if (!groupColour.has(t.group)) groupColour.set(t.group, (art.groups && art.groups[t.group]) || P.groups[groupColour.size % P.groups.length]);
+    const live = table.flippers.length + 3 + table.bumpers.length + table.slings.length + 1 + i < 32; // the skinned batch holds 32 bones; later targets stand still
+    const yaw = yawOf(t.dir[0], t.dir[1]);
+    const n = node(t.id, plainUv(targetMesh(t.len * S, groupColour.get(t.group), P), blank), live ? mechMat : setMat, { pos: [WX(t.mid[0]), 0, WZ(t.mid[1])], rot: [0, yaw, 0], parent: live ? mech : set });
+    return { t, node: n, yaw, wob: 0, vel: 0, live, colour: rgb(groupColour.get(t.group)) };
+  });
   scene.root.add(mergeStatic(set, 'set'));
 
   const beamNodes = beams.map((b) => {
@@ -584,7 +595,6 @@ export function createTableView(content, tableId, opts = {}) {
   });
 
   // ---- moving parts: every one a bone of a single skinned mesh
-  const mech = group('mech');
   const flippers = table.flippers.map((f) => ({ f, node: node(f.id, plainUv(flipperMesh(f.length * S, f.radius * S, P), blank), mechMat, { pos: [WX(f.pivot[0]), 0, WZ(f.pivot[1])], parent: mech }) }));
   const drums = DX.map((x, i) => ({ node: node('reel' + i, drumMesh(DR, DW, P, atlas), mechMat, { pos: [x, DY, DZ], parent: mech }), angle: 0, pop: 0, was: 0 }));
   const bumpers = table.bumpers.map((b) => ({ b, s: 0, v: 0, flash: 0, node: node(b.id, plainUvExcept(bumperMesh(b.r * S, P, atlas.rect('bumper')), blank), mechMat, { pos: [WX(b.pos[0]), 0, WZ(b.pos[1])], parent: mech }) }));
@@ -594,14 +604,6 @@ export function createTableView(content, tableId, opts = {}) {
     return { s, kick: 0, base: [WX(mx), WZ(my)], n: [nx, ny], mid: [mx, my], node: node(s.id, plainUv(slingMesh(l * S, P), blank), mechMat, { pos: [WX(mx), 0, WZ(my)], rot: [0, yawOf(dx, dy), 0], parent: mech }) };
   });
   const plunger = { node: node('plunger', plainUv(plungerMesh(P), blank), mechMat, { pos: [WX(table.plunger.pos[0]), 0, WZ(table.plunger.pos[1])], parent: mech }), z: WZ(table.plunger.pos[1]) };
-  const groupColour = new Map();
-  const targets = lay.targets.map((t, i) => {
-    if (!groupColour.has(t.group)) groupColour.set(t.group, (art.groups && art.groups[t.group]) || P.groups[groupColour.size % P.groups.length]);
-    const live = 2 + 3 + table.bumpers.length + table.slings.length + 1 + i < 31; // the skinned batch holds 32 bones; later targets stand still
-    const yaw = yawOf(t.dir[0], t.dir[1]);
-    const n = node(t.id, plainUv(targetMesh(t.len * S, groupColour.get(t.group), P), blank), live ? mechMat : setMat, { pos: [WX(t.mid[0]), 0, WZ(t.mid[1])], rot: [0, yaw, 0], parent: live ? mech : scene.root });
-    return { t, node: n, yaw, wob: 0, vel: 0, live, colour: rgb(groupColour.get(t.group)) };
-  });
   scene.root.add(mech);
   batchFigure(mech);
 
@@ -626,9 +628,9 @@ export function createTableView(content, tableId, opts = {}) {
   for (const r of table.rollovers) addLamp(r.id, 'rollover', WX(r.pos[0]), 0.004, WZ(r.pos[1]), Math.min(r.r, 11) * 0.8 * S, 0.012, Math.min(r.r, 11) * 0.8 * S, P.want, 0.36, 0.8);
   for (const s of lay.shots) addLamp(s.id, 'shot', WX(s.lamp[0]), 0.004, WZ(s.lamp[1]), 0.09, 0.012, 0.09, P.want, 0.5, 1.1);
   for (const sc of table.saucers) addLamp(sc.id, 'saucer', WX(sc.pos[0]), 0.03, WZ(sc.pos[1]), sc.r * S + 0.036, 0.012, sc.r * S + 0.036, P.want, 0.55, 1.1);
-  const reelLamps = DX.map((x, i) => addLamp('', 'reel', x, 1.42 + (x === 0 ? 0.1 : 0), -5.26, 0.075, 0.075, 0.075, P.lot, 0.6, 0));
+  const reelLamps = DX.map((x, i) => addLamp('', 'reel', x, 1.16, -5.1, 0.095, 0.095, 0.095, P.lot, 0.6, 0));
   const armLamps = [-1.86, 1.86].map((x) => addLamp('', 'arm', x, 0.76, -4.66, 0.1, 0.07, 0.1, P.spin, 0.7, 1.4));
-  const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.232, -4.13, 0.04, 0.02, 0.04, P.spin, 0, 0));
+  const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.582, -4.135, 0.04, 0.02, 0.04, P.spin, 0, 0));
   if (lamps.length > LAMPS) throw new Error(`table3d: table ${tableId} has ${lamps.length} lamps; the instanced call holds ${LAMPS}`);
   const fillLamp = table.reels.fill.map((id) => lampById.get(id) || null);
   const where = new Map();
@@ -640,7 +642,7 @@ export function createTableView(content, tableId, opts = {}) {
   for (const s of slings) where.set(s.s.id, s.mid);
 
   // ---- camera
-  const camera = createCamera({ fov: opts.fov || 22, near: 2, far: 90 });
+  const camera = createCamera({ fov: opts.fov || 16, near: 2, far: 90 });
   const rect = { x: 0, y: 0, w: 430, h: 748, shadowCenter: env.shadow.center, shadowRadius: env.shadow.radius };
   let pitch = opts.pitch || 62;
   const prj = [0, 0];
@@ -669,7 +671,7 @@ export function createTableView(content, tableId, opts = {}) {
         for (let k = 0; k < 26; k++) { tz = (a + b) / 2; place3(d, tz, pt); if (projectWorld(-2, 0, 4, prj)[1] > foot) a = tz; else b = tz; }
         if (projectWorld(-2, 0, 4, prj)[0] < left) d0 = d; else d1 = d; // too wide: step back
       }
-      return projectWorld(0, 1.72, -5.26, prj)[1];
+      return projectWorld(0, HEAD_TOP + 0.24, -5.26, prj)[1];
     };
     if (opts.pitch) solve(pitch);
     else { let a = 40, b = 86; for (let i = 0; i < 22; i++) { pitch = (a + b) / 2; if (solve(pitch) > top) a = pitch; else b = pitch; } solve(pitch); }
@@ -794,6 +796,7 @@ export function createTableView(content, tableId, opts = {}) {
       const L = lamps[i], lv = L.level;
       if (L.halo) { L.halo.visible = lv > 0.05; }
       if (lv <= 0.05) continue;
+      if (L.kind === 'bumper' && L.tone !== 4) { L.halo.color = C.want; L.halo.alpha = 0.55 * lv; L.halo.size[0] = L.halo.size[1] = L.haloSize; continue; }
       const c = L.tone === 0 ? C.want : L.tone === 1 ? C.spin : L.tone === 2 ? C.done : L.tone === 3 ? C.lot : C.flash;
       const o = n++ * 20, k = 0.55 + 0.6 * lv;
       D.set(L.base, o); D[o + 16] = c[0] * k; D[o + 17] = c[1] * k; D[o + 18] = c[2] * k; D[o + 19] = 1;
@@ -1010,9 +1013,9 @@ function vBuoy(P) {
 function vGarland(P, a, b, n, sag, kit) {
   const A = [kit.WX(a[0]), a[2], kit.WZ(a[1])], B = [kit.WX(b[0]), b[2], kit.WZ(b[1])], pts = [], parts = [];
   for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t - sag * 4 * t * (1 - t), A[2] + (B[2] - A[2]) * t]); }
-  parts.push(tint(tube(pts, 0.007, 4, { crease: 180 }), P.ink2));
+  parts.push(tint(tube(pts, 0.005, 4, { crease: 180 }), P.woodDark));
   const cols = [P.coral, P.gold, '#33c9a4', P.cream, '#ff7ad1'];
-  for (let i = 1; i < n; i++) { const t = i / n, x = A[0] + (B[0] - A[0]) * t, y = A[1] + (B[1] - A[1]) * t - sag * 4 * t * (1 - t), z = A[2] + (B[2] - A[2]) * t; parts.push(setGlow(tint(place(ellipsoid(0.038, 0.046, 0.038, 8, 6), x, y - 0.05, z), cols[i % cols.length]), 0.75)); }
+  for (let i = 1; i < n; i++) { const t = i / n, x = A[0] + (B[0] - A[0]) * t, y = A[1] + (B[1] - A[1]) * t - sag * 4 * t * (1 - t), z = A[2] + (B[2] - A[2]) * t; parts.push(setGlow(tint(place(ellipsoid(0.05, 0.06, 0.05, 10, 6), x, y - 0.06, z), cols[i % cols.length]), 0.75)); }
   for (const p of [A, B]) parts.push(tint(place(cylinder(0.02, 0.016, p[1] + 0.02, 6), p[0], 0, p[2]), P.woodDark), tint(place(sphere(0.03, 8, 6), p[0], p[1] + 0.02, p[2]), P.gold));
   return merge(parts);
 }
@@ -1027,7 +1030,7 @@ registerTableArt('vessery', {
     // the sun's road down the harbour, and wave marks
     { const gr = g.createLinearGradient(110, 0, 264, 0); gr.addColorStop(0, 'rgba(255,214,120,0)'); gr.addColorStop(0.5, 'rgba(255,224,140,0.5)'); gr.addColorStop(1, 'rgba(255,214,120,0)'); g.fillStyle = gr; g.fillRect(110, 300, 154, 500); }
     const r = rng(21); g.fillStyle = 'rgba(255,244,190,0.85)';
-    for (let i = 0; i < 46; i++) { const y = 350 + r() * 420, w = 6 + r() * 22, x = 187 + (r() - 0.5) * (40 + (y - 350) * 0.16); g.beginPath(); g.roundRect(x - w / 2, y, w, 2.6, 1.3); g.fill(); }
+    for (let i = 0; i < 46; i++) { const y = 350 + r() * 420, w = 6 + r() * 22, x = 187 + (r() - 0.5) * (40 + (y - 350) * 0.16); g.beginPath(); rrect(g, x - w / 2, y, w, 2.6, 1.3); g.fill(); }
     k.waves(7, 70, 'rgba(255,255,255,0.75)', [20, 340, 360, 790]);
     k.waves(9, 40, 'rgba(24,110,190,0.4)', [20, 340, 360, 790], 12);
     // the drain: a whirl between the flippers
@@ -1091,7 +1094,7 @@ registerTableArt('vessery', {
       { name: 'boatL', mesh: vBoat(P), at: [70, 752], rot: 28, scale: 1.15 },
       { name: 'boatR', mesh: vBoat(P, '#ffd24a'), at: [306, 756], rot: 150, scale: 1.05 },
       { name: 'garland', mesh: vGarland(P, [-10, 168, 0.72], [410, 150, 0.72], 13, 0.2, kit), at: [200, 400] },
-      { name: 'stall2', mesh: vStall(P, '#33c9a4', P.cream), at: [348, 22], rot: 200, scale: 0.8 },
+      { name: 'stall2', mesh: vStall(P, '#33c9a4', P.cream), at: [374, 26], rot: 215, scale: 0.62 },
     ];
   },
 });

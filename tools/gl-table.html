@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Toon table</title>
+<style>
+  html, body { margin: 0; height: 100%; background: linear-gradient(#3a55c8, #f0a878 22%, #ffd9a0 24%); overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: fixed; left: 8px; top: 8px; font: 11px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); padding: 5px 7px; border-radius: 6px; white-space: pre; pointer-events: none; }
+  [hidden] { display: none !important; }
+  #fatal { position: fixed; inset: 0; margin: 0; padding: 16px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: #ffd9d0; background: #2a1020; white-space: pre-wrap; overflow: auto; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<pre id="fatal" hidden></pre>
+<script type="module">
+// The real core loop, a bot at the flippers, and the toon table drawn from the Game it produces.
+//
+//   ?chapter=0..7 &scene=0..6   which table and scene (loaded as a save, so play starts at once)
+//   ?seed=3                     the game's seed and the bot's
+//   ?t=20                       simulate this many seconds of play, then freeze (for screenshots)
+//   ?until=bumper|shot|payout|drain|target|sling|saucer|reelStop|armed   after t, play on until that event, then freeze
+//   ?after=0.08                 seconds to play on past the `until` event
+//   ?balls=4                    keep this many balls live (added by hand: a multiball without waiting for one)
+//   ?skill=steady|mediocre      the bot's thumbs    ?hands=1  no bot: Z / M or left / right half of the screen flip, space or a touch at the bottom right launches
+//   ?hud=0  ?dpr=1  ?pitch=58   ?shadow=2048
+const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glTable = { error: f.textContent }; };
+window.addEventListener('error', (e) => fatal(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
+try {
+  const { content } = await import('../src/content/index.js');
+  const { init, update, toSave, leverStatus } = await import('../src/core/game.js');
+  const { STEP, addLiveBall } = await import('../src/core/physics.js');
+  const { aidAvailable } = await import('../src/core/economy.js');
+  const { computeLayout } = await import('../src/shell/layout.js');
+  const { createRenderer } = await import('../src/shell/gl/index.js');
+  const { createTableView, tableEvents } = await import('../src/shell/gl/table3d.js');
+
+  const q = new URLSearchParams(location.search);
+  const num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+  const seedN = num('seed', 3), chapterN = num('chapter', 0), sceneN = num('scene', 0);
+  const freezeAt = q.has('t') || q.has('until') ? num('t', 0) : null, until = q.get('until'), after = num('after', 0.08), wantBalls = num('balls', 0);
+  const canvas = document.getElementById('c'), hud = document.getElementById('hud');
+  if (q.get('hud') === '0') hud.hidden = true;
+  const renderer = createRenderer(canvas, { dprCap: num('dpr', 2) });
+
+  // ---- the game, started in play on the chosen table
+  let game = init(seedN);
+  { const save = toSave(game); save.chapter = chapterN; save.scene = sceneN; save.econ = { ...save.econ, writs: 3 }; game = update(content, game, { type: 'load', save }).game; }
+  const table = () => content.tables[content.chapters[game.chapter].tableId];
+  const tableId = content.chapters[game.chapter].tableId;
+  const view = createTableView(content, tableId, { pitch: q.has('pitch') ? num('pitch', 0) : undefined, shadowSize: num('shadow', 1024) });
+
+  // ---- layout: the game's logical 430 x 932 scaled to this window, as the shell does
+  function fit() {
+    const cw = canvas.clientWidth, ch = canvas.clientHeight, L = computeLayout(cw, ch), k = Math.min(cw / L.W, ch / L.H), ox = (cw - L.W * k) / 2, oy = (ch - L.H * k) / 2;
+    view.fit({ W: cw, H: oy + L.H * k, table: { x: ox + L.table.x * k, y: oy + L.table.y * k, scale: L.table.scale * k } });
+  }
+  fit(); window.addEventListener('resize', fit);
+
+  // ---- the flipper bot of test/playthrough.test.js
+  function mulberry(a) { return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const SKILL = {
+    steady: { lead: 0.03, wait: [0, 5], hold: [8, 16], cool: [8, 10], aim: [14, 34], miss: 0, both: 0, plunge: [40, 80], lever: 0 },
+    mediocre: { lead: 0, wait: [6, 14], hold: [14, 26], cool: [14, 22], aim: [4, 48], miss: 0.125, both: 0.06, plunge: [30, 110], lever: 70 },
+  };
+  function makeBot(seed, skill) {
+    const K = SKILL[skill]; if (!K) throw new Error(`gl-table: unknown skill ${JSON.stringify(skill)}`);
+    const rnd = mulberry(seed), span = ([lo, n]) => lo + Math.floor(rnd() * n);
+    const st = { fl: { wait: -1, hold: 0, cool: 0, aim: 20 }, fr: { wait: -1, hold: 0, cool: 0, aim: 20 }, plunge: 0, lever: 0, slap: 0 };
+    return (tb, g) => {
+      const { phys } = g, out = { left: false, right: false, plunge: false, nudge: null };
+      if (phys.balls.some((b) => b.state === 'plunger')) { if (st.plunge === 0) st.plunge = span(K.plunge); st.plunge--; out.plunge = st.plunge > 0; st.lever = 0; }
+      else {
+        const status = leverStatus(content, g), live = status === 'free' || status === 'pull' || status === 'loan' || status === 'credit';
+        if (live && !aidAvailable(g.econ)) { st.lever++; const since = st.lever - 40 - K.lever; out.plunge = since > 0 && since % 12 < 4; } else st.lever = 0;
+      }
+      for (const f of tb.flippers) {
+        const s = st[f.id]; if (!s) continue;
+        const dirX = f.side === 'left' ? 1 : -1;
+        const near = phys.balls.some((b) => {
+          if (b.state !== 'live') return false;
+          const along = (b.pos[0] - f.pivot[0]) * dirX, lead = b.pos[1] + b.vel[1] * K.lead, slow = Math.hypot(b.vel[0], b.vel[1]) < 160;
+          return along > (slow ? s.aim : -4) && along < f.length + 6 && lead > f.pivot[1] - 26 && b.pos[1] < f.pivot[1] + 30 && b.vel[1] > -200;
+        });
+        if (s.hold > 0) { s.hold--; if (s.hold === 0) { s.cool = K.cool[0] + Math.floor(rnd() * K.cool[1]); s.aim = K.aim[0] + rnd() * K.aim[1]; } }
+        else if (s.cool > 0) s.cool--;
+        else if (s.wait >= 0) { if (s.wait === 0) { s.hold = K.hold[0] + Math.floor(rnd() * K.hold[1]); if (K.both > 0 && rnd() < K.both) st.slap = s.hold; } s.wait--; }
+        else if (near) { if (K.miss > 0 && rnd() < K.miss) s.cool = 40; else s.wait = K.wait[0] + Math.floor(rnd() * K.wait[1]); }
+        out[f.side] = s.hold > 0;
+      }
+      if (st.slap > 0) { st.slap--; out.left = true; out.right = true; }
+      return out;
+    };
+  }
+  const bot = makeBot(seedN * 7919 + 1, q.get('skill') || 'steady');
+  const hands = q.get('hands') === '1', held = { left: false, right: false, plunge: false, nudge: null };
+  if (hands) {
+    const key = (e, on) => { if (e.code === 'KeyZ' || e.code === 'ArrowLeft') held.left = on; if (e.code === 'KeyM' || e.code === 'ArrowRight') held.right = on; if (e.code === 'Space') held.plunge = on; };
+    addEventListener('keydown', (e) => key(e, true)); addEventListener('keyup', (e) => key(e, false));
+    const touch = (e) => { held.left = held.right = held.plunge = false; for (const t of e.touches) { if (t.clientY > innerHeight * 0.85 && t.clientX > innerWidth * 0.75) held.plunge = true; else if (t.clientX < innerWidth / 2) held.left = true; else held.right = true; } e.preventDefault(); };
+    for (const n of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) canvas.addEventListener(n, touch, { passive: false });
+  }
+
+  // ---- one tick of the core; the events it caused are appended to `events`
+  const tickEvents = [], seen = {};
+  function tick(events) {
+    if (game.mode === 'play') {
+      if (wantBalls > 0 && game.phys.balls.some((b) => b.state === 'live') && game.phys.balls.length < wantBalls) {
+        game = { ...game, phys: addLiveBall(game.phys, [150 + game.phys.balls.length * 30, 380], [(game.phys.balls.length % 2 ? 1 : -1) * 260, -420]) };
+      }
+      const before = game, msg = { type: 'tick', dt: STEP, input: hands ? held : bot(table(), game) };
+      game = update(content, game, msg).game;
+      tableEvents(content, before, msg, game, tickEvents);
+      for (const e of tickEvents) { seen[e.type] = (seen[e.type] || 0) + 1; if (events) events.push(e); }
+    } else if (game.mode === 'cine') game = update(content, game, { type: 'skip' }).game;
+    else if (game.mode === 'end') { /* the last chapter is over */ }
+    else game = update(content, update(content, game, { type: 'tick', dt: STEP, input: held }).game, { type: 'confirm' }).game;
+  }
+
+  // ---- fixed-time screenshots: run the game forward, feeding the view at 60 Hz for the last stretch
+  const frameEvents = [];
+  let frozen = false, t = 0;
+  function stepFrame(feedView) { frameEvents.length = 0; tick(frameEvents); tick(frameEvents); t += 1 / 60; if (feedView) view.update(game, frameEvents, 1 / 60); return frameEvents; }
+  if (freezeAt !== null) {
+    while (t < freezeAt - 2) stepFrame(false);
+    while (t < freezeAt) stepFrame(true);
+    if (until) {
+      let guard = 60 * 600, hit = false;
+      while (!hit && guard-- > 0) hit = stepFrame(true).some((e) => e.type === until);
+      if (!hit) throw new Error(`gl-table: no "${until}" event in ten minutes of play`);
+      for (let i = 0; i < Math.round(after * 60); i++) stepFrame(true);
+    }
+    frozen = true;
+  }
+
+  let last = performance.now(), acc = 0, frames = 0, simMs = 0, updMs = 0, renMs = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!frozen) {
+      const a = performance.now();
+      acc += dt; frameEvents.length = 0;
+      while (acc >= STEP) { tick(frameEvents); acc -= STEP; }
+      const b = performance.now();
+      t += dt; view.update(game, frameEvents, dt);
+      simMs += (b - a - simMs) * 0.05; updMs += (performance.now() - b - updMs) * 0.05;
+    } else view.update(game, null, 0);
+    { const gl = renderer.gl; gl.disable(gl.SCISSOR_TEST); gl.clearColor(1.0, 0.82, 0.6, 1); gl.clear(gl.COLOR_BUFFER_BIT); } // the HUD band: the engine clears only its own rectangle
+    const s = view.render(renderer, t);
+    renMs += (s.cpuMs - renMs) * 0.05; frames++;
+    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${tableId}  ${game.phys ? game.phys.balls.length : 0} balls\n${s.drawCalls} draws  ${(s.triangles / 1000).toFixed(1)}k tris  ${s.lights} lamps\nsim ${simMs.toFixed(2)}  pose ${updMs.toFixed(2)}  render ${renMs.toFixed(2)} ms\n${s.width}x${s.height}  pitch ${view.pitch.toFixed(1)}`;
+    window.glTable.frames = frames;
+    requestAnimationFrame(frame);
+  }
+  window.glTable = {
+    renderer, view, frames: 0, seen, get game() { return game; },
+    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), stats: { ...renderer.stats }, balls: game.phys ? game.phys.balls.length : 0, pitch: view.pitch, rect: { ...view.rect }, seen: { ...seen }, mode: game.mode, scene: game.scene }; },
+    /** Time n frames of (two core ticks + events + pose + render) back to back. `finish` waits for the GPU each frame. */
+    bench(n = 300, finish = false) {
+      const gl = renderer.gl; let ts = 0, tu = 0, tr = 0, balls = 0;
+      for (let i = 0; i < n; i++) {
+        const a = performance.now(); frameEvents.length = 0; tick(frameEvents); tick(frameEvents);
+        const b = performance.now(); t += 1 / 60; view.update(game, frameEvents, 1 / 60);
+        const c = performance.now(); view.render(renderer, t); if (finish) gl.finish();
+        ts += b - a; tu += c - b; tr += performance.now() - c; balls += game.phys ? game.phys.balls.length : 0;
+      }
+      return { frames: n, simMs: +(ts / n).toFixed(3), poseMs: +(tu / n).toFixed(3), renderMs: +(tr / n).toFixed(3), finish, avgBalls: +(balls / n).toFixed(2), drawCalls: renderer.stats.drawCalls, triangles: renderer.stats.triangles };
+    },
+  };
+  requestAnimationFrame(frame);
+} catch (e) { fatal(e); }
+</script>
+</body>
+</html>

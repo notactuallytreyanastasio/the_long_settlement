@@ -110,7 +110,7 @@ export function kitMaterials() {
     /** flat decoration lying on the ground (cobbles): no outline, casts nothing */
     flat: material({ name: 'kit-flat', rim: 0, outline: false, castShadow: false }),
     /** far backdrop: headlands, distant town; thin outline, less fog so it keeps its colour */
-    far: material({ name: 'kit-far', rim: 0, fog: 0.55, outline: { width: 1.4, self: 0.8 }, castShadow: false, receiveShadow: false }),
+    far: material({ name: 'kit-far', rim: 0, lightUp: 0.45, fog: 0.55, outline: { width: 1.4, self: 0.8 }, castShadow: false, receiveShadow: false }),
     /** paper lanterns and other small bright hanging things: no shadow either way */
     lantern: material({ name: 'kit-lantern', rim: 0, outline: { width: 2.0, self: 0.75 }, castShadow: false, receiveShadow: false }),
     /** tiny far things (gulls, floating lights): no outline at all */
@@ -315,7 +315,9 @@ export function boat({ len = 2.6, hull = PAL.cream, keel = PAL.red, trim = PAL.w
   if (mast) {
     const mh = len * 0.62;
     parts.push(tint(place(cylinder(0.05, 0.035, mh, 7), 0, top - ry * 0.3, -rz * 0.05, 3, 0, -2), PAL.woodDark));
-    parts.push(tint(place(tube(curve([[0, 0, 0], [0.03, 0.02, -len * 0.14], [0, 0.05, -len * 0.3]], 6), (t) => 0.075 - 0.03 * Math.abs(t - 0.4), 7, { crease: 180 }), 0, top + mh * 0.5, 0.0), PAL.paper));
+    // a boom with the sail rolled along it, low on the mast
+    parts.push(tint(place(cylinder(0.03, 0.025, len * 0.46, 6), 0, top + mh * 0.3, -rz * 0.05, -84, 0, 0), PAL.woodDark));
+    parts.push(tint(place(tube(curve([[0, 0, -0.04], [0.02, -0.03, -len * 0.14], [-0.02, -0.02, -len * 0.3], [0, 0.03, -len * 0.42]], 8), (t) => len * (0.02 + 0.03 * Math.sin(t * Math.PI)), 8, { crease: 180 }), 0, top + mh * 0.3 + len * 0.045, -rz * 0.05), PAL.paper));
     parts.push(tint(place(extrude([[0, 0], [len * 0.13, 0.05], [0, 0.11]], 0.015), 0.03, top + mh * 0.86, -rz * 0.02, 0, -70, 0), pennant));
   }
   return keepAnchors(merge(parts), anchors);
@@ -485,9 +487,10 @@ export const rock = ({ seed = 1, s = 1, low = PAL.rock2, high = PAL.rock } = {})
  * w along X, d along Z, h tall. Colours blend softly (it is far away).
  */
 export function headland({ w = 60, d = 26, h = 14, seed = 1, grass = PAL.leaf, cliff = PAL.cliff, foot = '#e8b98a' } = {}) {
-  const m = blob({ rx: w / 2, ry: h, rz: d / 2, lumps: 0.8, seed, flatBottom: 0.92, seg: 22, rings: 12 });
-  deform(m, (p) => { const t = (p[0] / (w / 2) + 1) / 2; p[1] *= 0.55 + 0.6 * t; if (p[1] > 0) p[1] = Math.pow(p[1] / h, 0.75) * h; });
-  return paint(m, (x, y, z, nx, ny) => (ny > 0.62 && y > h * 0.25 ? grass : y < h * 0.12 ? foot : cliff));
+  const m = blob({ rx: w / 2, ry: h, rz: d / 2, lumps: 0.55, seed, flatBottom: 0.92, seg: 40, rings: 16 });
+  // higher toward +X (the seaward tip), with a second lower hump behind it
+  deform(m, (p) => { const t = (p[0] / (w / 2) + 1) / 2; p[1] *= 0.5 + 0.5 * t + 0.22 * Math.sin(t * 9 + seed); });
+  return paint(m, (x, y, z, nx, ny) => (ny > 0.5 && y > h * 0.2 ? grass : y < h * 0.1 ? foot : cliff));
 }
 
 // ------------------------------------------------------------------------------------ sky
