@@ -10,10 +10,14 @@ permissions:
   pages: write
   id-token: write
 
-# The sync daemon pushes every few minutes; only the newest push matters.
+# The sync daemon pushes every few minutes; only the newest push matters. Not
+# cancel-in-progress: a deploy takes about as long as the sync interval (42 MB of
+# voice audio to upload), so cancelling meant every run was cancelled by the next one
+# and the site stopped updating while the agent was busy. Without it, the running
+# deploy finishes and GitHub keeps only the newest pending run behind it.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 # The journal at / is rebuilt from every push. The game at /play/ is not: it is the
 # newest snapshot that passed the game's tests AND whose browser modules all resolve.
