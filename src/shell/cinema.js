@@ -343,8 +343,8 @@ const AGES = {
 const HAIR_STYLES = [
   ['bald', /bald|shaved|shaven/],
   ['receding', /reced|thin|tonsure|balding/],
-  ['scarf', /scarf|kerchief|wrap|shawl|veil/],
-  ['cap', /\bcap\b|hood|\bhat\b|beanie/],
+  ['scarf', /scarf|kerchief|wrap|shawl|veil|hood/],
+  ['cap', /\bcap\b|\bhat\b|beanie/],
   ['bun', /bun|knot|chignon|pinned|coil|updo|\bup\b/],
   ['braid', /braid|plait/],
   ['tail', /tail|queue|tied|pony/],
@@ -398,6 +398,10 @@ function lookOf(member) {
     browW: 0.8 + rnd(hashStr(String(member.id)) * 29) * 0.5,
     mouthW: 0.92 + rnd(hashStr(String(member.id)) * 71) * 0.2,
     has: (re) => re.test(mark),
+    lid: /heavy-lidded|hooded eyes|half-closed/.test(mark) ? 0.8 : 1,
+    smileBias: /half smil|always smil|faint smile/.test(mark) ? 0.32 : 0,
+    averted: /never (quite )?meets the eye|averted|looks away/.test(mark),
+    sweptBack: /swept back|slicked back|combed back/.test(mark),
   };
   _looks.set(member, k);
   return k;
@@ -444,9 +448,15 @@ function hairBack(ctx, k, cy, f, col, colSh, scarfSh) {
       ctx.beginPath();
       ctx.moveTo(-hw - 9, cy - 20);
       ctx.bezierCurveTo(-hw - 16, cy - 104, hw + 16, cy - 104, hw + 9, cy - 20);
-      ctx.bezierCurveTo(hw + 24, cy + 50, hw + 34, cy + 120, hw + 22, cy + 190);
-      ctx.lineTo(-hw - 22, cy + 190);
-      ctx.bezierCurveTo(-hw - 34, cy + 120, -hw - 24, cy + 50, -hw - 9, cy - 20);
+      if (k.sweptBack) {
+        ctx.bezierCurveTo(hw + 16, cy + 30, hw + 14, cy + 80, hw - 6, cy + 104);
+        ctx.lineTo(-hw + 6, cy + 104);
+        ctx.bezierCurveTo(-hw - 14, cy + 80, -hw - 16, cy + 30, -hw - 9, cy - 20);
+      } else {
+        ctx.bezierCurveTo(hw + 24, cy + 50, hw + 34, cy + 120, hw + 22, cy + 190);
+        ctx.lineTo(-hw - 22, cy + 190);
+        ctx.bezierCurveTo(-hw - 34, cy + 120, -hw - 24, cy + 50, -hw - 9, cy - 20);
+      }
       ctx.fill();
       break;
     case 'bob':
@@ -516,6 +526,13 @@ function hairFront(ctx, k, cy, f, col, colHi, tone) {
       break;
     case 'long':
     case 'bob': {
+      if (k.sweptBack) { // off the face, falling behind to the collar
+        capPath(ctx, hw, cy, 15, -40, -f * 20); ctx.fill();
+        ctx.strokeStyle = colHi; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-f * 20 + f * i * 6, cy - 50 - i * 5); ctx.quadraticCurveTo(f * 14, cy - 80 - i * 4, f * (hw - 4), cy - 36 - i * 8); ctx.stroke(); }
+        ctx.lineCap = 'butt';
+        break;
+      }
       capPath(ctx, hw, cy, 11, k.style === 'bob' ? -27 : -34, -f * 10); ctx.fill();
       const end = k.style === 'bob' ? cy + 52 : cy + 92;
       for (const sx of [-1, 1]) {
@@ -542,6 +559,7 @@ function hairFront(ctx, k, cy, f, col, colHi, tone) {
         }
         ctx.fillStyle = tone(k.trim);
         ctx.fillRect(sx * (hw + 16) - 7, cy + 30 + 9 * 19 - 8, 14, 7);
+        if (k.has(/\bpen\b|quill/)) { seg(ctx, sx * (hw - 8), cy + 60, sx * (hw + 22), cy + 48, tone('#2a1c14'), 3.5); seg(ctx, sx * (hw + 22), cy + 48, sx * (hw + 28), cy + 45.5, tone('#c9a85a'), 2.5); }
       }
       break;
     case 'curls':
@@ -640,7 +658,8 @@ function drawEye(ctx, ex, ey, sgn, E, blink, gaze, k, tone, f) {
  */
 function drawFigure(ctx, member, o) {
   const k = lookOf(member);
-  const E = emoteOf(o.emote);
+  const E0 = emoteOf(o.emote);
+  const E = { ...E0, open: E0.open * k.lid, curve: E0.curve >= 0 ? Math.min(1, E0.curve + k.smileBias) : E0.curve };
   const tone = toner(o.light, o.focus);
   const t = o.t, f = o.facing >= 0 ? 1 : -1, talk = clamp(o.talk || 0);
   const key = o.light.key;
@@ -682,26 +701,50 @@ function drawFigure(ctx, member, o) {
   const n = k.neck;
   const shirt = tone(mix(k.coat, '#f1e8d6', 0.84));
   if (k.has(/robe|gown|stole|magistrat|judge/)) {
-    // a magistrate's gown: broad stole bands, white bands at the throat
+    // a gown: broad stole bands; white bands at the throat for the Benches
     for (const sx of [-1, 1]) {
       poly(ctx, [[sx * (n + 4), -16], [sx * (n + 44), 2], [sx * (n + 50), 560], [sx * (n + 6), 560]], trimC);
       seg(ctx, sx * (n + 44), 2, sx * (n + 50), 560, trimHi, 1.5);
     }
     poly(ctx, [[-n - 4, -18], [0, 34], [n + 4, -18]], shirt);
-    poly(ctx, [[-9, 10], [-13, 62], [-2, 62], [0, 20]], tone('#f4efe2'));
-    poly(ctx, [[9, 10], [13, 62], [2, 62], [0, 20]], tone('#e9e2d2'));
-  } else if (k.has(/uniform|cadet|epaulet|tunic|officer|commission/)) {
-    // a buttoned tunic with a standing collar
+    if (k.has(/bands|magistrat|judge/)) {
+      poly(ctx, [[-9, 10], [-13, 62], [-2, 62], [0, 20]], tone('#f4efe2'));
+      poly(ctx, [[9, 10], [13, 62], [2, 62], [0, 20]], tone('#e9e2d2'));
+    }
+  } else if (k.has(/uniform|cadet|epaulet|tunic|officer|high[a-z ]{0,14}collar|buttoned to the throat/)) {
+    // buttoned to the throat, with a standing collar
     seg(ctx, 0, -8, 0, 560, coatSh, 3);
     for (let i = 0; i < 6; i++) for (const sx of [-1, 1]) circ(ctx, sx * 24, 36 + i * 56, 5.5, trimHi);
     poly(ctx, [[-n - 7, -30], [-n - 9, -6], [-3, 4], [-3, -22]], trimC);
     poly(ctx, [[n + 7, -30], [n + 9, -6], [3, 4], [3, -22]], trimC);
-    for (const sx of [-1, 1]) {
-      ctx.save(); ctx.translate(sx * k.sw * 0.7, 20); ctx.rotate(sx * 0.42);
-      rr(ctx, -30, -9, 60, 18, 6); ctx.fillStyle = trimC; ctx.fill();
-      seg(ctx, -24, 0, 24, 0, trimHi, 2);
+    if (k.has(/uniform|cadet|epaulet|officer/)) {
+      for (const sx of [-1, 1]) {
+        ctx.save(); ctx.translate(sx * k.sw * 0.7, 20); ctx.rotate(sx * 0.42);
+        rr(ctx, -30, -9, 60, 18, 6); ctx.fillStyle = trimC; ctx.fill();
+        seg(ctx, -24, 0, 24, 0, trimHi, 2);
+        ctx.restore();
+      }
+    }
+  } else if (k.has(/waistcoat|\bvest\b/)) {
+    // shirtsleeves and a waistcoat
+    ctx.fillStyle = shirt; ctx.fillRect(-300, -40, 600, 640);
+    ctx.fillStyle = hgrad(ctx, -key * k.sw, key * k.sw, [[0, 'rgba(0,0,0,.3)'], [0.6, 'rgba(0,0,0,0)']]);
+    ctx.fillRect(-300, -40, 600, 640);
+    ctx.beginPath();
+    ctx.moveTo(-n - 12, -18); ctx.lineTo(0, 96); ctx.lineTo(n + 12, -18);
+    ctx.quadraticCurveTo(k.sw * 0.6, 4, k.sw * 0.7, 80); ctx.lineTo(k.sw * 0.78, 560); ctx.lineTo(-k.sw * 0.78, 560); ctx.lineTo(-k.sw * 0.7, 80);
+    ctx.quadraticCurveTo(-k.sw * 0.6, 4, -n - 12, -18);
+    ctx.closePath();
+    ctx.fillStyle = coatC; ctx.fill();
+    if (k.has(/check|plaid|tartan/)) {
+      ctx.save(); ctx.clip();
+      for (let i = -8; i <= 8; i++) { seg(ctx, i * 22, -40, i * 22 + 10, 560, rgba(mix(k.coat, '#000', 0.5), 0.5), 2); seg(ctx, -300, 20 + (i + 8) * 26, 300, 14 + (i + 8) * 26, rgba(mix(k.coat, '#fff', 0.5), 0.22), 2); }
       ctx.restore();
     }
+    seg(ctx, -n - 12, -18, 0, 96, trimC, 3.5); seg(ctx, n + 12, -18, 0, 96, trimC, 3.5);
+    seg(ctx, 0, 96, 0, 560, coatSh, 3);
+    for (let i = 0; i < 5; i++) circ(ctx, 9, 124 + i * 50, 5, trimC);
+    for (const sx of [-1, 1]) { ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx * k.sw * 0.86, 90); ctx.quadraticCurveTo(sx * k.sw * 0.98, 180, sx * k.sw * 0.9, 300); ctx.stroke(); }
   } else {
     // an open coat over a shirt
     poly(ctx, [[-n - 4, -18], [0, 64], [n + 4, -18]], shirt);
@@ -712,6 +755,19 @@ function drawFigure(ctx, member, o) {
     }
     seg(ctx, 0, 132, 0, 560, coatSh, 3);
     for (let i = 0; i < 5; i++) circ(ctx, 9, 156 + i * 58, 5, trimC);
+  }
+  if (k.has(/shawl/)) {
+    // a knitted shawl across the shoulders
+    const base = k.has(/red/) ? '#a8322a' : k.trim;
+    const sh = tone(base), shD = tone(mix(base, '#000', 0.3));
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.moveTo(-n - 10, -22); ctx.quadraticCurveTo(-k.sw * 0.6, -10, -k.sw - 20, 40); ctx.lineTo(-k.sw - 24, 190); ctx.quadraticCurveTo(-k.sw * 0.4, 150, 0, 100);
+    ctx.quadraticCurveTo(k.sw * 0.4, 150, k.sw + 24, 190); ctx.lineTo(k.sw + 20, 40); ctx.quadraticCurveTo(k.sw * 0.6, -10, n + 10, -22); ctx.lineTo(0, 46); ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = shD; ctx.lineWidth = 1.6;
+    for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.moveTo(-k.sw - 24, 30 + i * 18); ctx.quadraticCurveTo(0, -30 + i * 20, k.sw + 24, 30 + i * 18); ctx.stroke(); }
+    for (let i = 0; i < 14; i++) { const u = i / 13, x = lerp(-k.sw - 20, k.sw + 20, u), y = 190 - Math.sin(u * Math.PI) * 88; seg(ctx, x, y, x + (u - 0.5) * 8, y + 16, shD, 2.4); }
   }
   if (k.has(/apron/)) {
     const ap = tone(mix(k.trim, '#d9d0bd', 0.6));
@@ -729,7 +785,7 @@ function drawFigure(ctx, member, o) {
     ctx.setLineDash([]);
     circ(ctx, 0, 106, 13, tone('#d8b25a')); circ(ctx, 0, 106, 7, tone('#8a6a24'));
   }
-  if (k.has(/pin|badge|brooch|medal|sigil/)) {
+  if (k.has(/\bpin\b|badge|brooch|\bmedal\b|sigil|\btag\b/)) {
     circ(ctx, -key * k.sw * 0.4, 78, 8, trimHi);
     circ(ctx, -key * k.sw * 0.4, 78, 4, tone(mix(k.trim, '#000', 0.4)));
   }
@@ -826,7 +882,7 @@ function drawFigure(ctx, member, o) {
   // eyes
   const bp = mod(t + k.seed * 7, 3.6 + k.seed * 2);
   const blink = bp < 0.13 ? 0.08 + Math.abs(bp - 0.065) / 0.065 * 0.5 : 1;
-  const gaze = f * 2.4 * (o.gaze === undefined ? 1 : o.gaze);
+  const gaze = f * 2.4 * (o.gaze === undefined ? 1 : o.gaze) * (k.averted ? -1.3 : 1);
   const ey = cy + 2;
   for (const sgn of [-1, 1]) drawEye(ctx, fx0 + sgn * k.eyeGap, ey, sgn, E, blink, gaze, k, tone, f);
 
@@ -920,18 +976,23 @@ function drawFigure(ctx, member, o) {
     }
   }
 
-  if (k.has(/scar/)) {
+  if (k.has(/\bscars?\b/)) {
     ctx.strokeStyle = tone(mix(k.skin, '#fff', 0.3)); ctx.lineWidth = 2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(fx0 - f * 34, cy - 34); ctx.lineTo(fx0 - f * 29, cy - 8); ctx.stroke();
     ctx.strokeStyle = rgba(skinSh, 0.8); ctx.lineWidth = 1;
     for (let i = 0; i < 3; i++) { const u = 0.2 + i * 0.3; ctx.beginPath(); ctx.moveTo(fx0 - f * lerp(34, 29, u) - 3, cy + lerp(-34, -8, u)); ctx.lineTo(fx0 - f * lerp(34, 29, u) + 3, cy + lerp(-34, -8, u) + 1); ctx.stroke(); }
     ctx.lineCap = 'butt';
   }
-  if (k.has(/mole|beauty/)) circ(ctx, fx0 + f * 28, cy + 36, 2.2, tone(mix(k.skin, '#1a0808', 0.7)));
+  if (k.has(/\bmole\b|beauty mark/)) circ(ctx, fx0 + f * 28, cy + 36, 2.2, tone(mix(k.skin, '#1a0808', 0.7)));
 
   hairFront(ctx, k, cy, f, hairC, hairHi, tone);
+  if (k.has(/dust/)) { // salt in the hair and brows
+    for (let i = 0; i < 26; i++) { const a = Math.PI * (1.08 + rnd(k.seed * 70 + i) * 0.84), r = hw * (0.72 + rnd(k.seed * 80 + i) * 0.36); circ(ctx, Math.cos(a) * r, cy - 6 + Math.sin(a) * (r + 14), 1.6 + rnd(i) * 1.6, 'rgba(240,244,248,.6)'); }
+    for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) circ(ctx, fx0 + sgn * (k.eyeGap - 10 + i * 7), cy - 22 - (E.open - 1) * 6 + (i - 1.5) * (i - 1.5) - 2, 1.5, 'rgba(240,244,248,.6)');
+  }
+  if (k.has(/chalk/)) { ctx.save(); ctx.translate(f * (hw + 2), cy - 14); ctx.rotate(f * 0.5); rect(ctx, -3, -13, 6, 17, tone('#f1eee4')); ctx.restore(); }
 
-  if (k.has(/spectacle|glasses|lens|pince/)) {
+  if (k.has(/spectacle|glasses|pince/)) {
     ctx.strokeStyle = tone('#c9a85a'); ctx.lineWidth = 2.4;
     for (const sgn of [-1, 1]) {
       ctx.fillStyle = 'rgba(200,225,240,.13)';
@@ -948,7 +1009,7 @@ function drawFigure(ctx, member, o) {
     ctx.beginPath(); ctx.ellipse(fx0 + f * 24, ey + 1, 19, 17, 0, 0, TAU); ctx.stroke();
     ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(fx0 + f * 30, ey + 18); ctx.quadraticCurveTo(fx0 + f * 44, cy + 80, fx0 + f * 20, cy + 130); ctx.stroke();
   }
-  if (k.has(/eyepatch|eye-patch|patch/)) {
+  if (k.has(/eye-?patch/)) {
     ctx.fillStyle = '#0d0b0c';
     ctx.beginPath(); ctx.ellipse(fx0 - f * 24, ey + 1, 20, 16, 0, 0, TAU); ctx.fill();
     seg(ctx, -hw, cy - 30, hw, cy + 14 * -f * f, '#0d0b0c', 3);
@@ -2396,7 +2457,7 @@ function drawSubtitle(ctx, who, line, lineT) {
     const nw = ctx.measureText(who.name).width;
     ctx.font = `italic 17px ${FONT_SERIF}`;
     ctx.fillStyle = 'rgba(236,228,214,.66)';
-    ctx.fillText(line.fx === 'radio' ? `${who.role}  ·  on the Line` : who.role, x0 + nw + 16, nameY - 1);
+    ctx.fillText(who.role, x0 + nw + 16, nameY - 1);
   }
   // the words
   ctx.font = `${style}${size}px ${FONT_SERIF}`;
@@ -2482,7 +2543,7 @@ function drawRadioInset(ctx, who, line, level, tms, t) {
  * Draw the whole frame for the running cinematic.
  * fx: { timeMs, voiceLevel 0..1, flash, shake }
  *   flash: falsy, a number 0..1 (white), or { color, a }
- *   shake: falsy or a number of pixels
+ *   shake: falsy or a number 0..1 (as render.js clamps it)
  */
 export function drawCinema(ctx, content, game, fx) {
   const cine = game && game.cine;
@@ -2527,8 +2588,8 @@ export function drawCinema(ctx, content, game, fx) {
 
   // shake
   if (fx.shake) {
-    if (typeof fx.shake !== 'number') throw new Error(`cinema: fx.shake must be a number of pixels, got ${String(fx.shake)}`);
-    const p = Math.min(24, fx.shake);
+    if (typeof fx.shake !== 'number') throw new Error(`cinema: fx.shake must be a number 0..1, got ${String(fx.shake)}`);
+    const p = clamp(fx.shake) * 14;
     ctx.translate(Math.sin(fx.timeMs * 0.09) * p, Math.cos(fx.timeMs * 0.113) * p * 0.7);
   }
 
