@@ -4,7 +4,7 @@ import { seed, next } from '../src/core/rng.js';
 import { spin, payoutFor } from '../src/core/slot.js';
 import {
   SPIN_COST, LOAN, MARKS_PER_POINT, initEcon, awardPoints, canSpin, paySpin, applyPayout,
-  needsLoan, takeLoan, spendWrit, addTrust, aidAvailable, takeAid, TRUST_PER_LOAN, TRUST_PER_GIFT, TRUST_PER_AID, leaning,
+  needsLoan, takeLoan, spendWrit, addTrust, aidAvailable, takeAid, TRUST_PER_LOAN, TRUST_PER_FORCED_LOAN, TRUST_PER_GIFT, TRUST_PER_AID, leaning, ledger,
 } from '../src/core/economy.js';
 import { chapter1 } from '../src/content/chapter1.js';
 import { chapter2 } from '../src/content/chapter2.js';
@@ -20,7 +20,8 @@ test('constants are sane', () => {
   assert.ok(LOAN.marks >= SPIN_COST, 'a loan buys at least one spin');
   assert.ok(LOAN.garnish > 0 && LOAN.garnish < 1);
   near(60000 * MARKS_PER_POINT, 60, 'a 60k ball is 60 marks');
-  assert.ok(TRUST_PER_GIFT > TRUST_PER_LOAN, 'a gift accepted outweighs a loan');
+  assert.ok(TRUST_PER_GIFT > TRUST_PER_LOAN, 'a gift accepted outweighs a hat refused');
+  assert.ok(TRUST_PER_FORCED_LOAN > 0 && TRUST_PER_FORCED_LOAN * 5 <= TRUST_PER_LOAN, 'a loan with no choice in it weighs something, and far less than a refusal');
   assert.equal(TRUST_PER_AID, 25);
 });
 
@@ -28,7 +29,7 @@ test('initEcon affords exactly three spins and nothing else', () => {
   let e = initEcon();
   assert.deepEqual(e, {
     score: 0, marks: SPIN_COST * 3, writs: 0, debt: 0, trust: 0, aidUsed: 0, spins: 0,
-    trustEarned: 0, loansTaken: 0,
+    trustEarned: 0, loansTaken: 0, hatsRefused: 0,
   });
   for (let i = 0; i < 3; i++) { assert.ok(canSpin(e)); e = paySpin(e); }
   assert.equal(canSpin(e), false);
@@ -112,36 +113,59 @@ test('trustEarned takes every positive gain whole, past the clamp, and never goe
   assert.equal(takeAid(e).trust, 60, 'and leaves the town\'s meter where it was');
 });
 
-test('leaning: commons while trustEarned >= loansTaken * TRUST_PER_LOAN, mint past it', () => {
-  const book = (trustEarned, loansTaken) => leaning({ ...initEcon(), trustEarned, loansTaken });
+test('leaning: a refused hat weighs TRUST_PER_LOAN, a loan with no gift on offer TRUST_PER_FORCED_LOAN, level is commons', () => {
+  const book = (trustEarned, loansTaken, hatsRefused = 0) => leaning({ ...initEcon(), trustEarned, loansTaken, hatsRefused });
   assert.equal(leaning(initEcon()), 'commons', 'an empty book owes nobody');
+  // loans taken for want of a choice
   assert.equal(book(0, 1), 'mint');
-  assert.equal(book(TRUST_PER_LOAN, 1), 'commons', 'level is commons');
-  assert.equal(book(TRUST_PER_LOAN - 1, 1), 'mint');
-  assert.equal(book(TRUST_PER_LOAN * 3 + 1, 3), 'commons');
-  assert.equal(leaning(takeLoan(addTrust(initEcon(), TRUST_PER_LOAN))), 'commons');
-  assert.equal(leaning(takeLoan(takeLoan(addTrust(initEcon(), TRUST_PER_LOAN)))), 'mint');
+  assert.equal(book(TRUST_PER_FORCED_LOAN, 1), 'commons', 'level is commons');
+  assert.equal(book(TRUST_PER_FORCED_LOAN - 1, 1), 'mint');
+  assert.equal(book(TRUST_PER_FORCED_LOAN * 3 + 1, 3), 'commons');
+  // loans taken with the hat going round
+  assert.equal(book(TRUST_PER_LOAN, 1, 1), 'commons');
+  assert.equal(book(TRUST_PER_LOAN - 1, 1, 1), 'mint');
+  assert.equal(book(TRUST_PER_LOAN + TRUST_PER_FORCED_LOAN * 2, 3, 1), 'commons', 'one refusal and two forced loans');
+  assert.equal(book(TRUST_PER_LOAN + TRUST_PER_FORCED_LOAN * 2 - 1, 3, 1), 'mint');
+  assert.deepEqual(ledger({ ...initEcon(), trustEarned: 400, loansTaken: 9, hatsRefused: 4 }),
+    { trust: 400, loans: 4 * TRUST_PER_LOAN + 5 * TRUST_PER_FORCED_LOAN });
+
+  // through the reducers: the same loan, the two ways it can be taken
+  const trusted = addTrust(initEcon(), TRUST_PER_LOAN);                // 75 trust: the town has three balls to give
+  assert.equal(aidAvailable(trusted), true);
+  const forced = takeLoan(takeLoan(trusted));
+  assert.deepEqual([forced.loansTaken, forced.hatsRefused, leaning(forced)], [2, 0, 'commons']);
+  const refused = takeLoan(takeLoan(trusted, true), true);
+  assert.deepEqual([refused.loansTaken, refused.hatsRefused, leaning(refused)], [2, 2, 'mint']);
+  assert.equal(leaning(takeLoan(trusted, true)), 'commons', 'one refusal is level with 75 trust');
+  assert.deepEqual({ ...refused, hatsRefused: 0 }, forced, 'the two kinds differ in the count and nothing else');
+  assert.equal(trusted.hatsRefused, 0, 'argument not mutated');
+
+  assert.throws(() => takeLoan(initEcon(), true), /no hat was going round to refuse \(trust 0, 0 aid drawn this chapter\)/);
+  assert.throws(() => takeLoan(trusted, 1), /refusedHat must be true or false, got 1/);
   assert.throws(() => leaning({ ...initEcon(), loansTaken: undefined }), /econ\.loansTaken/);
   assert.throws(() => leaning({ ...initEcon(), trustEarned: 'much' }), /econ\.trustEarned must be a finite number, got much/);
+  assert.throws(() => leaning({ ...initEcon(), hatsRefused: undefined }), /econ\.hatsRefused must be a finite number, got undefined/);
+  assert.throws(() => leaning({ ...initEcon(), loansTaken: 1, hatsRefused: 2 }), /2 hats refused but only 1 loans taken/);
 });
 
-test('the ledger against the five chapters: scene trust covers four loans, and every gift accepted covers one and more', () => {
+test('the ledger against the first five chapters: what turns a book, and that waiting or not waiting is what decides it', () => {
   const chapters = [chapter1, chapter2, chapter3, chapter4, chapter5];
   const perChapter = chapters.map((ch) => ch.scenes.reduce((n, s) => n + (s.reward.trust || 0), 0));
   const total = perChapter.reduce((a, b) => a + b, 0);
-  console.log(`trust on offer per chapter ${perChapter.join(', ')}; total ${total}; TRUST_PER_LOAN ${TRUST_PER_LOAN}; TRUST_PER_GIFT ${TRUST_PER_GIFT}`);
+  console.log(`trust on offer per chapter ${perChapter.join(', ')}; total ${total}; TRUST_PER_LOAN ${TRUST_PER_LOAN}; TRUST_PER_FORCED_LOAN ${TRUST_PER_FORCED_LOAN}; TRUST_PER_GIFT ${TRUST_PER_GIFT}`);
   assert.ok(perChapter.every((n) => n > 0), 'every chapter pays some trust');
   assert.equal(total, 370, 'TRUST_PER_LOAN was set against this figure');
 
   // Play every scene through the real reducers. In each chapter the player is out of balls
-  // `empties` times after its first trust has been paid; `waits` says whether they wait for
-  // the Commons (a gift while the town has one to give, otherwise a loan) or go to the Mint.
+  // `empties` times after its trust has been paid; `waits` says whether they wait for the
+  // Commons (a gift while the town has one to give, otherwise a loan there was no choice in)
+  // or go to the Mint at once (a hat refused, for as long as the town is offering).
   const run = (empties, waits) => {
     let e = initEcon();
     for (const ch of chapters) {
       e = { ...e, trust: 0, aidUsed: 0 }; // what game.js does at a chapter card
       for (const s of ch.scenes) e = addTrust(e, s.reward.trust || 0);
-      for (let i = 0; i < empties; i++) e = waits && aidAvailable(e) ? takeAid(e) : takeLoan(e);
+      for (let i = 0; i < empties; i++) e = waits && aidAvailable(e) ? takeAid(e) : takeLoan(e, aidAvailable(e));
     }
     return e;
   };
@@ -149,26 +173,41 @@ test('the ledger against the five chapters: scene trust covers four loans, and e
   assert.equal(none.trustEarned, total, 'nothing is lost to the 0..100 clamp');
   assert.equal(leaning(none), 'commons');
 
-  // a book with no gifts in it turns on one loan
+  // a book with no gifts in it turns between the fourth refusal and the fifth, or at the thirty-eighth forced loan
   const turn = Math.floor(total / TRUST_PER_LOAN);
   assert.equal(turn, 4);
-  assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn }), 'commons');
-  assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn + 1 }), 'mint');
+  const book = (loansTaken, hatsRefused) => leaning({ ...initEcon(), trustEarned: total, loansTaken, hatsRefused });
+  assert.equal(book(turn, turn), 'commons');
+  assert.equal(book(turn + 1, turn + 1), 'mint');
+  const forcedTurn = Math.floor(total / TRUST_PER_FORCED_LOAN);
+  assert.equal(forcedTurn, 37);
+  assert.equal(book(forcedTurn, 0), 'commons');
+  assert.equal(book(forcedTurn + 1, 0), 'mint');
 
-  // the same number of empty tables, answered the two ways
-  for (const empties of [1, 2, 3, 4, 6]) {
+  // the same number of empty tables, answered the two ways: a few (a good player) or a great many (a weak one)
+  for (const empties of [1, 2, 3, 4, 6, 12, 20, 40]) {
     const waited = run(empties, true), refused = run(empties, false);
-    console.log(`${empties} empty tables a chapter: waiting ${waited.trustEarned} trust against ${waited.loansTaken} loans -> ${leaning(waited)}; `
-      + `not waiting ${refused.trustEarned} against ${refused.loansTaken} -> ${leaning(refused)}`);
+    console.log(`${empties} empty tables a chapter: waiting ${waited.trustEarned} trust against ${waited.loansTaken} loans (${ledger(waited).loans}) -> ${leaning(waited)}; `
+      + `not waiting ${refused.trustEarned} against ${refused.loansTaken} (${ledger(refused).loans}) -> ${leaning(refused)}`);
     assert.equal(refused.trustEarned, total);
     assert.equal(refused.loansTaken, empties * chapters.length);
+    assert.equal(refused.hatsRefused, refused.loansTaken, 'the town was offering every time');
+    assert.equal(waited.hatsRefused, 0);
     assert.equal(leaning(refused), 'mint', `refusing the Commons ${empties} times a chapter`);
-    assert.ok(waited.trustEarned - waited.loansTaken * TRUST_PER_LOAN > refused.trustEarned - refused.loansTaken * TRUST_PER_LOAN);
+    assert.equal(leaning(waited), 'commons', `waiting for the Commons ${empties} times a chapter`);
   }
-  for (const empties of [1, 2, 3, 4]) assert.equal(leaning(run(empties, true)), 'commons', `waiting for the Commons ${empties} times a chapter`);
-  // the Commons has only so much to give: a player who is out of balls far more often than
-  // the town can cover ends in the Mint's book however patiently they waited
-  assert.equal(leaning(run(12, true)), 'mint');
+  // the town gives 2, 3, 2, 4 and 2 balls; a waiting player's other loans are forced, and forced loans are not free:
+  // out of balls sixty times a chapter, however patiently, is the Mint's book
+  const gifts = (run(60, true).trustEarned - total) / TRUST_PER_GIFT;
+  assert.equal(gifts, 13);
+  assert.equal(leaning(run(60, true)), 'mint');
+
+  // waiting some of the time: with the towns' thirteen gifts in the book and seven forced loans,
+  // (370 + 13 * 130 - 7 * 10) / 75 = 26.5, so the twenty-seventh refusal turns it
+  const mixed = (refusals) => leaning({ ...run(4, true), loansTaken: run(4, true).loansTaken + refusals, hatsRefused: refusals });
+  assert.equal(run(4, true).loansTaken, 7);
+  assert.equal(mixed(26), 'commons');
+  assert.equal(mixed(27), 'mint');
 });
 
 test('applyPayout grants writs and marks and rejects malformed payouts', () => {

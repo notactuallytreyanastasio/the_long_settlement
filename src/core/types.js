@@ -341,6 +341,7 @@
  * export function init(seedN: number): Game
  * export function update(content: Content, game: Game, msg: Msg): { game: Game, effects: Effect[] }
  * export const SAVE_VERSION: 4
+ * export const LOADABLE_SAVES: number[]             every save version load accepts (1, 2, 3, 4)
  * export function toSave(game: Game): Save
  * export function leverStatus(content, game): null|'wait'|'free'|'credit'|'pull'|'loan'
  *        what a press of the plunge button would do as the lever; null when it is not the lever
@@ -348,6 +349,7 @@
  * story.js  (pure helpers used by game.js and by the renderer)
  * export const LEANINGS: ['commons','mint']
  * export function spokenLines(lines: Line[], lean): Line[]   the lines heard when the ledger leans `lean`
+ * export function heardLines(lines: Line[], game): Line[]     spokenLines by leaningNow(game)
  * export function leaningNow(game): 'commons'|'mint'         game.ending once read, the live economy.leaning until then
  * export function readsLeaning(content, chapterIndex, sceneIndex): boolean
  *        whether completing that scene's objective freezes the leaning: only in the final chapter, at its

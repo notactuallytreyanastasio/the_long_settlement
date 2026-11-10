@@ -307,7 +307,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.equal(r.game.mode, 'play');
   assert.equal(r.game.cine, null);
   assert.deepEqual(moods(r.effects), ['tense']);
-  assert.deepEqual(saves(r.effects), [{ v: 3, chapter: 0, scene: 0, econ: initEcon(), seed: seed(7).s, reels: FRESH_SAVED }]);
+  assert.deepEqual(saves(r.effects), [{ v: 4, chapter: 0, scene: 0, econ: initEcon(), seed: seed(7).s, reels: FRESH_SAVED, ending: null }]);
 
   // no writ, so no ball: the table is empty and the plunger button is the lever
   assert.equal(leverStatus(content, r.game), 'wait', 'not in the instant play begins');
@@ -405,7 +405,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.deepEqual([r.game.hits, r.game.seq], [{}, 0]);
   assert.equal(r.effects[0].type, 'hush');
   assert.deepEqual(saves(r.effects), [toSave(r.game)]);
-  assert.deepEqual([saves(r.effects)[0].v, saves(r.effects)[0].chapter, saves(r.effects)[0].scene], [3, 0, 1]);
+  assert.deepEqual([saves(r.effects)[0].v, saves(r.effects)[0].chapter, saves(r.effects)[0].scene], [4, 0, 1]);
   assert.deepEqual(moods(r.effects), ['tense']);
   assert.equal(r.game.boons.ballSave, 5);
   assert.deepEqual(litIds(content, r.game), ['r3']);
@@ -600,7 +600,8 @@ test('credit: pulling the lever while the hat is going round is a loan and a pul
   let r = press(g, grind);
   assert.deepEqual(sfxNames(r.effects), ['loan', 'reelStart']);
   assert.deepEqual(says(r.effects), ['ch1.bark.loan.1']);
-  assert.deepEqual(r.game.econ, paySpin(takeLoan(g.econ)));
+  assert.deepEqual(r.game.econ, paySpin(takeLoan(g.econ, true)));
+  assert.equal(r.game.econ.hatsRefused, 1, 'the book knows the hat was going round');
   assert.deepEqual([r.game.econ.loansTaken, r.game.econ.debt, r.game.econ.marks], [1, LOAN.owed, g.econ.marks + LOAN.marks - SPIN_COST]);
   assert.deepEqual(syms(r.game), expected.result.reels);
   assert.equal(r.game.econ.aidUsed, 0, 'the gift was not taken');
@@ -619,7 +620,7 @@ test('credit: pulling the lever while the hat is going round is a loan and a pul
 test('load: restores the start of the saved scene, at the table, from any mode', () => {
   const econ = {
     ...initEcon(), score: 4321, marks: 77.5, writs: 2, debt: 120, trust: 55, aidUsed: 1, spins: 9,
-    trustEarned: 140, loansTaken: 3,
+    trustEarned: 140, loansTaken: 3, hatsRefused: 1,
   };
   const save = { v: 2, chapter: 0, scene: 1, econ, seed: 99 };
   const midCine = sendAll(init(1), [CONFIRM, CONFIRM]).game;
@@ -634,7 +635,7 @@ test('load: restores the start of the saved scene, at the table, from any mode',
   assert.deepEqual(r.game.reels, init(1).reels, 'fresh reels');
   assert.equal(r.game.spunThisChapter, true, 'past scene 0 the rigged pull is history');
   assert.deepEqual(r.effects, [{ type: 'hush' }, { type: 'music', mood: 'tense' }]);
-  assert.deepEqual(toSave(r.game), { ...save, v: 3, reels: FRESH_SAVED }, 'a loaded v:2 game saves back as v:3, with its reels');
+  assert.deepEqual(toSave(r.game), { ...save, v: 4, reels: FRESH_SAVED, ending: null }, 'a loaded v:2 game saves back as v:4, with its reels and no reading of the ledger');
 
   // the writs bring a ball, and the scene's briefing is spoken again when it is launched
   r = playUntil(r.game, (x, fx) => count(fx, 'launch') >= 1);
@@ -649,20 +650,21 @@ test('load: restores the start of the saved scene, at the table, from any mode',
 });
 
 test('load: a v:1 save, written at the slot screen that no longer exists, loads into play', () => {
-  const econ = { ...initEcon(), score: 900, marks: 12, writs: 1, debt: 300, trust: 25, aidUsed: 0, spins: 4, trustEarned: 25, loansTaken: 1 };
+  const econ = { ...initEcon(), score: 900, marks: 12, writs: 1, debt: 300, trust: 25, aidUsed: 0, spins: 4, trustEarned: 25, loansTaken: 1, hatsRefused: 0 };
   const old = deepFreeze({ v: 1, chapter: 1, scene: 0, econ, seed: 4 });
   const r = send(init(1), { type: 'load', save: old });
   assert.equal(r.game.mode, 'play');
   assert.deepEqual([r.game.chapter, r.game.scene], [1, 0]);
   assert.deepEqual(r.game.econ, econ);
-  assert.deepEqual(toSave(r.game), { ...old, v: 3, reels: FRESH_SAVED }, 'and is written back as v:3');
+  assert.deepEqual(toSave(r.game), { ...old, v: 4, reels: FRESH_SAVED, ending: null }, 'and is written back as v:4');
   assert.equal(send(r.game, tickMsg()).game.phys.balls.length, 1, 'its writ brings a ball');
 });
 
 test('load: a save written by the game round-trips', () => {
   const toTable = sendAll(init(5), [CONFIRM, CONFIRM, SKIP]);
   const [save] = saves(toTable.effects);
-  assert.equal(save.v, 3);
+  assert.equal(save.v, 4);
+  assert.equal(save.ending, null);
   const r = send(init(123), { type: 'load', save: JSON.parse(JSON.stringify(save)) });
   assert.deepEqual(toSave(r.game), save);
   assert.equal(r.game.mode, 'play');
@@ -671,11 +673,11 @@ test('load: a save written by the game round-trips', () => {
 test('load: a save from before the lifetime totals starts them at zero', () => {
   const old = { v: 1, chapter: 0, scene: 1, seed: 4, econ: { score: 900, marks: 12, writs: 0, debt: 300, trust: 0, aidUsed: 0, spins: 4 } };
   let r = send(init(1), { type: 'load', save: deepFreeze(JSON.parse(JSON.stringify(old))) });
-  assert.deepEqual(r.game.econ, { ...old.econ, trustEarned: 0, loansTaken: 0 });
-  assert.deepEqual(toSave(r.game).econ, { ...old.econ, trustEarned: 0, loansTaken: 0 }, 'and saves them from then on');
+  assert.deepEqual(r.game.econ, { ...old.econ, trustEarned: 0, loansTaken: 0, hatsRefused: 0 });
+  assert.deepEqual(toSave(r.game).econ, { ...old.econ, trustEarned: 0, loansTaken: 0, hatsRefused: 0 }, 'and saves them from then on');
   // the loaded book works: this player is broke, borrows, and the loan is counted
   r = press(ticks(r.game, seconds(LEVER_DELAY) + 2).game);
-  assert.equal(r.game.econ.loansTaken, 1);
+  assert.deepEqual([r.game.econ.loansTaken, r.game.econ.hatsRefused], [1, 0], 'no trust, no hat: nothing was refused');
   assert.equal(r.game.econ.debt, 300 + LOAN.owed);
 
   // a total that is there but is not a number is a broken save, not an old one
@@ -708,8 +710,9 @@ test('totals: trust and aid reset with the chapter, trustEarned and loansTaken n
 test('load: refuses a save it cannot honour', () => {
   const save = { v: 2, chapter: 0, scene: 0, econ: initEcon(), seed: 1 };
   const load = (s) => () => update(content, init(1), { type: 'load', save: s });
-  assert.throws(load({ ...save, v: 4 }), /save version 4/);
+  assert.throws(load({ ...save, v: 5 }), /save version 5/);
   assert.throws(load({ ...save, v: 3 }), /bad reels \(not an object\)/, 'a v:3 save must carry its reels');
+  assert.throws(load({ ...save, v: 4 }), /bad reels \(not an object\)/, 'and a v:4');
   assert.throws(load({ ...save, v: undefined }), /save version undefined/);
   assert.throws(load({ ...save, chapter: 9 }), /chapter index 9/);
   assert.throws(load({ ...save, scene: 2 }), /scene index 2/);
@@ -725,8 +728,11 @@ test('save: the reels are kept: what they show, whether the shots are lit, and t
   let r = send(init(1), { type: 'load', save });
   assert.equal(r.game.mode, 'play');
   assert.deepEqual(r.game.reels, { ...init(1).reels, ...reels, need: REELS_NEED }, 'the reels as saved, in an open phase');
-  assert.deepEqual(toSave(r.game), save, 'and they save back unchanged');
-  assert.deepEqual(JSON.parse(JSON.stringify(toSave(r.game))), save, 'through JSON too');
+  // (a v:3 save, as players have them stored today: it comes back as v:4 with nothing else changed)
+  const again = { ...save, v: 4, ending: null };
+  assert.deepEqual(toSave(r.game), again, 'and they save back unchanged');
+  assert.deepEqual(JSON.parse(JSON.stringify(toSave(r.game))), again, 'through JSON too');
+  assert.deepEqual(toSave(send(init(1), { type: 'load', save: again }).game), again, 'and a v:4 save round-trips');
   // the turning reel runs down and locks on what it was already going to show; nothing pays on two reels
   r = ticks(r.game, seconds(0.25) + 2);
   assert.deepEqual(r.game.reels.cells, [{ sym: 'coin', spin: 0 }, { sym: null, spin: 0 }, { sym: 'orb', spin: 0 }]);

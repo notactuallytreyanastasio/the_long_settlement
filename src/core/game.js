@@ -22,7 +22,7 @@ import {
 import { seed, next, pick } from './rng.js';
 import {
   currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
-  spokenLines, leaningNow, readsLeaning, LEANINGS,
+  heardLines, readsLeaning, LEANINGS,
 } from './story.js';
 
 // ───────────────────────── tuning ─────────────────────────
@@ -168,6 +168,8 @@ const REELS_SINCE = 3;
  * kept, 3 before the ledger could be read (no `ending`, and no econ.hatsRefused).
  */
 const LOADABLE = [1, 2, 3, SAVE_VERSION];
+/** The same list, for the shell: which stored saves are worth handing to load. */
+export const LOADABLE_SAVES = Object.freeze([...LOADABLE]);
 
 /**
  * The part of the reels that outlives a session: what each reel shows (or is turning toward),
@@ -302,13 +304,13 @@ function startChapter(content, game, index) {
 // ───────────────────────── cinematics ─────────────────────────
 
 /**
- * Begin a cinematic. Of `all` its lines, only those this ledger hears are kept (story.spokenLines):
+ * Begin a cinematic. Of `all` its lines, only those this ledger hears are kept (story.heardLines):
  * game.cine.lines is what will actually be played, so the stage, the index and the shell's
  * progress bar are all over the one ending and never see the other.
  */
 function startCine(content, game, kind, all) {
   const chapter = currentChapter(content, game);
-  const lines = spokenLines(all, leaningNow(game));
+  const lines = heardLines(all, game);
   if (lines.length === 0) {
     // Nothing to show: fall straight through to whatever follows this kind.
     return endCine(content, { ...game, cine: { kind, lines, index: 0, lineT: 0, bg: 'black', on: [], t: 0 } });
@@ -597,7 +599,7 @@ function brief(content, game) {
   if (game.briefed || !game.phys.balls.some((b) => b.state !== 'plunger')) return ok(game);
   const scene = currentScene(content, game);
   if (!scene) return ok(game);
-  const briefing = spokenLines(scene.briefing, leaningNow(game));
+  const briefing = heardLines(scene.briefing, game);
   const spoken = briefing.reduce((s, line) => s + lineSeconds(line), 0);
   return ok(
     { ...game, briefed: true, barkCool: Math.max(game.barkCool, spoken + 2) },

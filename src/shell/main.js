@@ -17,7 +17,7 @@
 // frame loop, the audio clock, and the timers that would otherwise end a spoken line.
 
 import { content } from '../content/index.js';
-import { init, update, SAVE_VERSION } from '../core/game.js';
+import { init, update, SAVE_VERSION, LOADABLE_SAVES } from '../core/game.js';
 import { preloadIds } from '../core/story.js';
 import { STEP } from '../core/physics.js';
 import { createRenderer } from './render.js';
@@ -28,10 +28,9 @@ import { createInput } from './input.js';
 import { computeLayout, wantsRotate } from './layout.js';
 
 // The key was named before saves had versions. It is kept, so a v:1 save is still found;
-// the version that matters is the `v` inside (the core's SAVE_VERSION; its load takes v:1 and v:2 as well).
+// the version that matters is the `v` inside (the core's SAVE_VERSION; its load takes the older ones in LOADABLE_SAVES as well).
 const SAVE_KEY = 'the-long-settlement.save.v1';
 const SAVE_V = SAVE_VERSION;
-const SAVE_OLD = [1, 2];
 const MANIFEST_URL = 'assets/voice/manifest.json';
 const MAX_DPR = 2;              // an iPhone reports 3; nine backing pixels per point is fill-rate for nothing
 const MAX_FRAME = 0.1;          // seconds of real time one frame may bank
@@ -69,7 +68,7 @@ function readSave() {
   try {
     const save = JSON.parse(raw);
     const chapter = content.chapters[save.chapter];
-    if ((!SAVE_OLD.includes(save.v) && save.v !== SAVE_V) || !chapter || !chapter.scenes[save.scene]) throw new Error('not a save this build can load');
+    if (!LOADABLE_SAVES.includes(save.v) || !chapter || !chapter.scenes[save.scene]) throw new Error('not a save this build can load');
     return save;
   } catch (e) {
     console.warn(`main: discarding the stored save (${e.message}): ${raw.slice(0, 200)}`);

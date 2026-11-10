@@ -7246,8 +7246,8 @@
  },
  {
   "path": "src/core/game.js",
-  "bytes": 39204,
-  "lines": 825
+  "bytes": 39307,
+  "lines": 827
  },
  {
   "path": "src/core/physics.js",
@@ -7266,13 +7266,13 @@
  },
  {
   "path": "src/core/story.js",
-  "bytes": 15643,
-  "lines": 337
+  "bytes": 16060,
+  "lines": 346
  },
  {
   "path": "src/core/types.js",
-  "bytes": 24405,
-  "lines": 371
+  "bytes": 24598,
+  "lines": 373
  },
  {
   "path": "src/shell/audio.js",
@@ -7301,8 +7301,8 @@
  },
  {
   "path": "src/shell/cinema/backdrops-d.js",
-  "bytes": 868,
-  "lines": 13
+  "bytes": 30846,
+  "lines": 388
  },
  {
   "path": "src/shell/cinema/figures.js",
@@ -7326,8 +7326,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 16836,
-  "lines": 376
+  "bytes": 16831,
+  "lines": 375
  },
  {
   "path": "src/shell/render.js",
@@ -7356,13 +7356,13 @@
  },
  {
   "path": "test/economy.test.js",
-  "bytes": 15711,
-  "lines": 312
+  "bytes": 18749,
+  "lines": 351
  },
  {
   "path": "test/game.test.js",
-  "bytes": 65960,
-  "lines": 1213
+  "bytes": 66653,
+  "lines": 1219
  },
  {
   "path": "test/physics.test.js",

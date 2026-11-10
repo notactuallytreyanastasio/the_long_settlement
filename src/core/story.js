@@ -156,6 +156,15 @@ export function leaningNow(game) {
 const hasLean = (lines) => lines.some((line) => checkLean(line) !== undefined);
 
 /**
+ * The lines of `lines` this game will hear: spokenLines by leaningNow. The ledger is only
+ * consulted when some line actually carries a lean, so content without any never asks for it.
+ */
+export function heardLines(lines, game) {
+  if (!Array.isArray(lines)) throw new Error(`story: heardLines needs a list of lines, got ${JSON.stringify(lines)}`);
+  return hasLean(lines) ? spokenLines(lines, leaningNow(game)) : lines;
+}
+
+/**
  * Is the ledger read (frozen into game.ending) when the objective of this scene completes?
  * Only in the final chapter, and there at the first scene of which either is true:
  *   it is the last scene;
@@ -292,7 +301,7 @@ export function eligibleBarks(content, game, key) {
 export function preloadIds(content, game, ahead = 3) {
   if (!Number.isInteger(ahead) || ahead < 0) throw new Error(`story: preloadIds ahead must be an integer >= 0, got ${ahead}`);
   // only the lines this ledger will hear: the other ending's are never asked for
-  const ids = (lines) => spokenLines(lines, leaningNow(game)).map((line) => line.id);
+  const ids = (lines) => heardLines(lines, game).map((line) => line.id);
   let out;
   if (game.mode === 'end') {
     out = [];
