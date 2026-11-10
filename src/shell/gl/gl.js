@@ -162,3 +162,52 @@ export function createShadowTarget(gl, size) {
   if (status !== gl.FRAMEBUFFER_COMPLETE && !gl.isContextLost()) throw new Error(`gl: shadow framebuffer incomplete (0x${status.toString(16)})`);
   return { fbo, tex, size };
 }
+
+/**
+ * An off-screen colour target the size of the canvas, for antialiasing that can be changed while
+ * running: the scene is drawn here and then presented to the canvas.
+ *   samples > 1   multisampled renderbuffers, resolved into `tex` by resolve()
+ *   samples <= 1  drawn straight into `tex`
+ * Returns { fbo (draw here), tex (RGBA8, linear), w, h, samples, resolve(x, y, w, h), dispose() }.
+ * The resolve goes into a texture of the same format on purpose: resolving a multisampled buffer
+ * straight to the canvas is only legal when the two formats are identical, and what format a canvas
+ * has is the browser's business.
+ */
+export function createColorTarget(gl, w, h, samples = 0) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const check = (what) => { const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER); if (st !== gl.FRAMEBUFFER_COMPLETE && !gl.isContextLost()) throw new Error(`gl: ${what} framebuffer incomplete (0x${st.toString(16)}) at ${w}x${h}, ${samples} samples`); };
+  const texFbo = gl.createFramebuffer(), rbs = [];
+  gl.bindFramebuffer(gl.FRAMEBUFFER, texFbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  let fbo = texFbo, msFbo = null;
+  const n = samples > 1 ? Math.min(samples, gl.getParameter(gl.MAX_SAMPLES) || 1) : 0;
+  const rb = (format, attach) => { const r = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, r); if (n > 1) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, n, format, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, format, w, h); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, attach, gl.RENDERBUFFER, r); rbs.push(r); };
+  if (n > 1) {
+    check('resolve');
+    msFbo = fbo = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, msFbo);
+    rb(gl.RGBA8, gl.COLOR_ATTACHMENT0); rb(gl.DEPTH_COMPONENT24, gl.DEPTH_ATTACHMENT);
+    check('multisample');
+  } else { rb(gl.DEPTH_COMPONENT24, gl.DEPTH_ATTACHMENT); check('colour'); }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+  return {
+    fbo, tex, w, h, samples: n,
+    resolve(x, y, rw, rh) {
+      if (!msFbo) return;
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, msFbo); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, texFbo);
+      gl.blitFramebuffer(x, y, x + rw, y + rh, x, y, x + rw, y + rh, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    },
+    dispose() { gl.deleteFramebuffer(texFbo); if (msFbo) gl.deleteFramebuffer(msFbo); for (const r of rbs) gl.deleteRenderbuffer(r); gl.deleteTexture(tex); },
+  };
+}
+
+/** Copy one shadow target's depth into another of the same size (the kept static shadows, before the moving ones are added). */
+export function copyShadow(gl, from, to) {
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER, from.fbo); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, to.fbo);
+  gl.blitFramebuffer(0, 0, from.size, from.size, 0, 0, to.size, to.size, gl.DEPTH_BUFFER_BIT, gl.NEAREST);
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+}

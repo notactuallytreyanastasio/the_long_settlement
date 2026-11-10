@@ -41,7 +41,7 @@ export function vertexCount(mesh) { return mesh.positions.length / 3; }
 
 export function clone(mesh) {
   const o = {};
-  for (const k of Object.keys(mesh)) o[k] = mesh[k] && mesh[k].slice ? mesh[k].slice() : mesh[k];
+  for (const k of Object.keys(mesh)) { if (k[0] === '_') continue; o[k] = mesh[k] && mesh[k].slice ? mesh[k].slice() : mesh[k]; } // _gpu, _bs: caches, not content
   return o;
 }
 
@@ -577,4 +577,82 @@ export function unionBounds(list) {
     for (let k = 0; k < 3; k++) { if (b.min[k] < min[k]) min[k] = b.min[k]; if (b.max[k] > max[k]) max[k] = b.max[k]; }
   }
   return { min, max };
+}
+
+// ------------------------------------------------------------------------------------ measures and splitting
+
+/**
+ * A sphere around a mesh as Float32Array [cx, cy, cz, r] (the box centre, the farthest vertex).
+ * Cached on the mesh; pass fresh = true after editing positions in place.
+ */
+export function boundingSphere(mesh, fresh = false) {
+  if (mesh._bs && !fresh) return mesh._bs;
+  const b = bounds(mesh), P = mesh.positions, o = new Float32Array(4);
+  if (P.length === 0) { mesh._bs = o; return o; }
+  const cx = (b.min[0] + b.max[0]) / 2, cy = (b.min[1] + b.max[1]) / 2, cz = (b.min[2] + b.max[2]) / 2; let r2 = 0;
+  for (let i = 0; i < P.length; i += 3) { const dx = P[i] - cx, dy = P[i + 1] - cy, dz = P[i + 2] - cz, d = dx * dx + dy * dy + dz * dz; if (d > r2) r2 = d; }
+  o[0] = cx; o[1] = cy; o[2] = cz; o[3] = Math.sqrt(r2);
+  mesh._bs = o; return o;
+}
+
+/** Number of triangles. */
+export function triangleCount(mesh) { return mesh.indices.length / 3; }
+
+/**
+ * Six times the signed volume enclosed by the triangles: positive when a closed mesh's triangles
+ * wind counter-clockwise seen from outside (the engine's convention), negative when it is inside out.
+ */
+export function signedVolume(mesh) {
+  const P = mesh.positions, I = mesh.indices; let v = 0;
+  for (let i = 0; i < I.length; i += 3) {
+    const a = I[i] * 3, b = I[i + 1] * 3, c = I[i + 2] * 3;
+    v += P[a] * (P[b + 1] * P[c + 2] - P[b + 2] * P[c + 1]) - P[a + 1] * (P[b] * P[c + 2] - P[b + 2] * P[c]) + P[a + 2] * (P[b] * P[c + 1] - P[b + 1] * P[c]);
+  }
+  return v;
+}
+
+/**
+ * How many triangles have a shading normal that disagrees with their winding (face normal . mean
+ * vertex normal < 0). Zero for every builder in this file; a mirrored or hand-indexed mesh that is
+ * not zero will be culled or lit from the wrong side.
+ */
+export function windingErrors(mesh) {
+  const P = mesh.positions, N = mesh.normals, I = mesh.indices; let bad = 0;
+  for (let i = 0; i < I.length; i += 3) {
+    const a = I[i] * 3, b = I[i + 1] * 3, c = I[i + 2] * 3;
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+    const fx = uy * vz - uz * vy, fy = uz * vx - ux * vz, fz = ux * vy - uy * vx;
+    if (fx * fx + fy * fy + fz * fz < 1e-18) continue; // degenerate (a lathe pole)
+    if (fx * (N[a] + N[b] + N[c]) + fy * (N[a + 1] + N[b + 1] + N[c + 1]) + fz * (N[a + 2] + N[b + 2] + N[c + 2]) < 0) bad++;
+  }
+  return bad;
+}
+
+/**
+ * Split a mesh into pieces by which cell of an XZ grid each triangle's centre falls in, so a big
+ * merged set can be culled a piece at a time. Returns [{ key: 'ix,iz', mesh }], triangles and
+ * attributes untouched (vertices shared across a cell edge are duplicated).
+ */
+export function splitByCell(mesh, cell) {
+  if (!(cell > 0)) throw new Error(`splitByCell: cell size must be positive, got ${cell}`);
+  const P = mesh.positions, I = mesh.indices, groups = new Map();
+  for (let i = 0; i < I.length; i += 3) {
+    const a = I[i] * 3, b = I[i + 1] * 3, c = I[i + 2] * 3;
+    const k = Math.floor((P[a] + P[b] + P[c]) / 3 / cell) + ',' + Math.floor((P[a + 2] + P[b + 2] + P[c + 2]) / 3 / cell);
+    let g = groups.get(k); if (!g) { g = []; groups.set(k, g); }
+    g.push(i);
+  }
+  const out = [];
+  for (const [key, tris] of groups) {
+    const remap = new Map(), order = [];
+    for (const t of tris) for (let k = 0; k < 3; k++) { const v = I[t + k]; if (!remap.has(v)) { remap.set(v, order.length); order.push(v); } }
+    const m = alloc(order.length, tris.length * 3);
+    order.forEach((v, j) => {
+      for (let k = 0; k < 3; k++) { m.positions[j * 3 + k] = P[v * 3 + k]; m.normals[j * 3 + k] = mesh.normals[v * 3 + k]; m.onormals[j * 3 + k] = mesh.onormals[v * 3 + k]; m.colors[j * 3 + k] = mesh.colors[v * 3 + k]; }
+      m.uvs[j * 2] = mesh.uvs[v * 2]; m.uvs[j * 2 + 1] = mesh.uvs[v * 2 + 1]; m.owidth[j] = mesh.owidth[v]; m.glow[j] = mesh.glow[v];
+    });
+    tris.forEach((t, j) => { for (let k = 0; k < 3; k++) m.indices[j * 3 + k] = remap.get(I[t + k]); });
+    out.push({ key, mesh: m });
+  }
+  return out;
 }

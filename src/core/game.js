@@ -17,8 +17,9 @@ import { initPhys, addBall, addLiveBall, releaseHeld, stepPhysics } from './phys
 import { spin, drawSym, payoutFor, SYMBOLS, SOURCES } from './slot.js';
 import {
   initEcon, awardPoints, canSpin, paySpin, applyPayout, needsLoan, takeLoan,
-  spendWrit, addTrust, aidAvailable, takeAid, leaning,
+  spendWrit, addTrust, aidAvailable, takeAid, leaning, awardBonus,
 } from './economy.js';
+import { pushRecent, comboBonus } from './stage.js';
 import { seed, next, pick } from './rng.js';
 import {
   currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
@@ -53,6 +54,8 @@ const POINTS = {
 const HIT_TYPES = new Set(['bumper', 'sling', 'target', 'rollover', 'shot', 'saucer']);
 /** Event types that charge the reels toward the next lit shot. */
 const CHARGE_TYPES = new Set(['bumper', 'sling', 'target']);
+/** What game.recent calls each of them. */
+const LOG_AS = { bumper: 'bumper', sling: 'sling', target: 'target', rollover: 'lane', shot: 'shot', saucer: 'saucer' };
 /** Outlane rollover -> the inlane a kickback returns the ball to, by the ids every table's lower third gives them. */
 const KICK_TO = { outL: 'inL', outR: 'inR' };
 
@@ -106,6 +109,16 @@ function tableOf(content, game) {
   return table;
 }
 
+/**
+ * Enter something that happened in game.recent, the bounded log the stage is drawn from (stage.js lists
+ * the types). The log is for watching: the only rule that reads it is the combo's bonus score.
+ */
+const note = (game, type, detail) => ({
+  ...game,
+  recent: pushRecent(game.recent, { n: game.logged, t: game.t, type, ...detail }),
+  logged: game.logged + 1,
+});
+
 const NO_BOONS = { ballSave: 0, mult: 1, multT: 0, kickback: 0 };
 const EMPTY_CELL = { sym: null, spin: 0 };
 /** The reels as a fresh table has them: empty, and lit, so the first good shot of a chapter spins. */
@@ -127,6 +140,8 @@ const freshReels = () => ({
  *   idleT       seconds of play since anything scored
  *   emptyT      seconds the table has stood empty with no writ to refill it
  *   plungeWas   input.plunge on the previous play tick (the lever acts on the press, not the hold)
+ *   logged      how many entries game.recent has ever been given (the next entry's n)
+ * `recent` is in the typedef: the event log the stage is drawn from. Neither is saved; a load starts both empty.
  * And one that is in it: `ending`, null until the ledger is read in the final chapter
  * (story.readsLeaning), then 'commons' or 'mint' for good.
  */
@@ -157,6 +172,8 @@ export function init(seedN) {
     idleT: 0,
     emptyT: 0,
     plungeWas: false,
+    recent: [],
+    logged: 0,
   };
 }
 
@@ -454,7 +471,7 @@ function chargeReels(game) {
   if (reels.armed) return ok(game);
   const charge = reels.charge + 1;
   if (charge < reels.need) return ok({ ...game, reels: { ...reels, charge } });
-  const lit = toast({ ...game, reels: { ...reels, charge: reels.need, armed: true } },
+  const lit = toast(note({ ...game, reels: { ...reels, charge: reels.need, armed: true } }, 'lit'),
     'hint', 'The Reels are lit. Shoot the ramp, the orbit or the saucer.');
   return ok(lit, [sfx('confirm')]);
 }
@@ -493,12 +510,13 @@ function settleReels(content, game) {
     { ...game, econ: applyPayout(game.econ, result.payout, game.boons.mult) },
     result.payout.boon === undefined ? null : result.payout.boon,
   );
-  const settled = toast({
+  const settled = toast(note({
     ...paid,
     reels: { ...reels, phase: 'paying', t: 0, result },
     spunThisChapter: game.spunThisChapter || reels.source === 'lever',
     idleT: 0,
-  }, kind, result.payout.name);
+  }, 'payout', { kind, boon: result.payout.boon === undefined ? null : result.payout.boon, source: reels.source, writs: result.payout.writs }),
+  kind, result.payout.name);
   const effects = [sfx(kind), ...(kind === 'jackpot' ? [{ type: 'flash', color: '#ffd76a' }] : [])];
   if (kind === 'payout') return ok(settled, effects);
   return then(ok(settled, effects), (g) => bark(content, g, kind));
@@ -549,7 +567,7 @@ export function leverStatus(content, game) {
 }
 
 const borrow = (content, game, text, refusedHat = false) => then(
-  ok(toast({ ...game, econ: takeLoan(game.econ, refusedHat) }, 'loan', text), [sfx('loan')]),
+  ok(toast(note({ ...game, econ: takeLoan(game.econ, refusedHat) }, 'loan', { refused: refusedHat }), 'loan', text), [sfx('loan')]),
   (g) => bark(content, g, 'loan', true),
 );
 
@@ -634,14 +652,15 @@ function onLaunch(content, game, ev) {
   const charged = game.freeBalls > 0
     ? { ...game, freeBalls: game.freeBalls - 1 }
     : { ...game, econ: spendWrit(game.econ) };
-  return bark(content, { ...charged, paid: [...paid, ev.ballId], multiT: 0 }, 'launch');
+  return bark(content, note({ ...charged, paid: [...paid, ev.ballId], multiT: 0 }, 'launch'), 'launch');
 }
 
 function onDrain(content, table, game) {
   const shaken = [{ type: 'shake', power: 0.5 }];
-  if (game.boons.ballSave <= 0) return then(ok(game, shaken), (g) => bark(content, g, 'drain'));
+  const balls = game.phys.balls.length;   // the drained ball is already gone
+  if (game.boons.ballSave <= 0) return then(ok(note(game, 'drain', { saved: false, balls }), shaken), (g) => bark(content, g, 'drain'));
   const saved = toast(
-    { ...game, phys: addBall(table, game.phys), freeBalls: game.freeBalls + 1 },
+    note(note({ ...game, phys: addBall(table, game.phys), freeBalls: game.freeBalls + 1 }, 'drain', { saved: true, balls }), 'save', { kind: 'ballSave' }),
     'save', 'Ball saved.',
   );
   return then(ok(saved, shaken), (g) => bark(content, g, 'save', true));
@@ -667,7 +686,7 @@ function kickBack(content, table, game, ev) {
   const balls = game.phys.balls.map((b) => (b.id === ev.ballId && b.state === 'live'
     ? { ...b, pos: [inlane.pos[0], inlane.pos[1] - KICKBACK_LIFT], vel: [0, KICKBACK_SPEED], inside: [] } : b));
   const kicked = toast(
-    { ...game, phys: { ...game.phys, balls }, boons: { ...game.boons, kickback: game.boons.kickback - 1 } },
+    note({ ...game, phys: { ...game.phys, balls }, boons: { ...game.boons, kickback: game.boons.kickback - 1 } }, 'save', { kind: 'kickback' }),
     'save', 'Kicked back.',
   );
   return then(ok(kicked, [sfx('eject'), { type: 'shake', power: 0.3 }]), (g) => bark(content, g, 'save'));
@@ -691,6 +710,15 @@ function reelsEvent(content, table, game, ev) {
   return CHARGE_TYPES.has(ev.type) ? chargeReels(game) : ok(game);
 }
 
+/** A hit, as the log names it: a rollover is a lane, and a shot says whether the table carried the ball. */
+function noteHit(table, game, ev) {
+  const type = LOG_AS[ev.type];
+  if (type !== 'shot') return note(game, type, { id: ev.id });
+  const shot = table.shots.find((s) => s.id === ev.id);
+  if (!shot) throw new Error(`game: table ${JSON.stringify(table.id)} has no shot ${JSON.stringify(ev.id)}`);
+  return note(game, 'shot', { id: ev.id, via: shot.exit ? 'ramp' : 'orbit' });
+}
+
 /** One physics event: sound, points, objective progress, the reels, and whatever else its type means. */
 function onEvent(content, table, game, ev) {
   if (!(ev.type in POINTS)) throw new Error(`game: unknown physics event type ${JSON.stringify(ev.type)}`);
@@ -699,12 +727,20 @@ function onEvent(content, table, game, ev) {
     ? { ...game, econ: awardPoints(game.econ, points, game.boons.mult), idleT: 0 }
     : game;
   const effects = [eventSfx(ev)];
+  if (HIT_TYPES.has(ev.type) && ev.id !== undefined) {
+    g = noteHit(table, g, ev);
+    // The chain this hit belongs to pays extra score, and only score (stage.comboBonus says why).
+    const bonus = comboBonus(g.recent, g.t, points);
+    if (bonus > 0) g = { ...g, econ: awardBonus(g.econ, bonus) };
+  }
   const scene = currentScene(content, g);
   if (scene && HIT_TYPES.has(ev.type) && ev.id !== undefined) {
     // a lit target of a bank passes its hit along the bank (story.spotFor)
-    const hit = registerHit(scene, g.hits, g.seq, spotFor(table, scene, g.hits, ev.id));
+    const spot = spotFor(table, scene, g.hits, ev.id);
+    const hit = registerHit(scene, g.hits, g.seq, spot);
     if (hit.progressed) {
-      g = { ...g, hits: hit.hits, seq: hit.seq };
+      const { done, total } = objectiveProgress(scene, hit.hits, hit.seq);
+      g = note({ ...g, hits: hit.hits, seq: hit.seq }, 'objective', { id: spot, done, total });
       effects.push(sfx('objective'));
     }
   }
@@ -724,7 +760,9 @@ function completeScene(content, game, scene) {
     scene.reward.trust || 0,
   );
   const ending = game.ending === null && readsLeaning(content, game.chapter, game.scene) ? leaning(rewarded) : game.ending;
-  const cleared = toast({ ...game, econ: rewarded, ending }, 'scene', scene.title);
+  const trust = rewarded.trust - game.econ.trust;
+  const trusted = trust > 0 ? note(game, 'trust', { n: trust, trust: rewarded.trust }) : game;
+  const cleared = toast(note({ ...trusted, econ: rewarded, ending }, 'sceneClear', { scene: scene.id }), 'scene', scene.title);
   const effects = [sfx('sceneClear'), { type: 'flash', color: '#ffffff' }];
   return then(ok(cleared, effects), (g) => startCine(content, g, 'scene', scene.cutscene));
 }
@@ -743,10 +781,10 @@ function supplyBall(content, table, game, dt) {
   const emptyT = game.emptyT + dt;
   const waiting = { ...game, emptyT };
   if (!aidAvailable(game.econ)) return ok(waiting);
-  if (game.emptyT === 0) return ok(toast(waiting, 'aid', 'The Commons is passing the hat for you.'));
+  if (game.emptyT === 0) return ok(toast(note(waiting, 'hat'), 'aid', 'The Commons is passing the hat for you.'));
   if (emptyT < AID_WAIT) return ok(waiting);
   const aided = toast(
-    { ...waiting, emptyT: 0, econ: takeAid(game.econ), phys: addBall(table, game.phys) },
+    note({ ...waiting, emptyT: 0, econ: takeAid(game.econ), phys: addBall(table, game.phys) }, 'aid'),
     'aid', 'The Commons covers your ball. Nothing is owed.',
   );
   return then(ok(aided, [sfx('aid')]), (g) => bark(content, g, 'aid', true));

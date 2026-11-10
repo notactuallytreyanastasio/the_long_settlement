@@ -121,6 +121,17 @@ export function awardPoints(econ, points, mult = 1) {
   return earn({ ...econ, score: econ.score + points }, points * MARKS_PER_POINT * mult);
 }
 
+/**
+ * Adds `points` to the score and to nothing else: no marks, no garnish. For bonuses that must not
+ * reach the purse (the stage's combo: marks decide who borrows, and borrowing decides the ending).
+ * @param {Econ} econ @param {number} points
+ */
+export function awardBonus(econ, points) {
+  check(econ, 'awardBonus');
+  amount(points, 'awardBonus', 'points');
+  return { ...econ, score: econ.score + points };
+}
+
 /** @param {Econ} econ */
 export function canSpin(econ) {
   check(econ, 'canSpin');

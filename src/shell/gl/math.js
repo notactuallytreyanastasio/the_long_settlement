@@ -236,3 +236,29 @@ export function mixRgb(a, b, t) {
   const x = rgb(a), y = rgb(b);
   return [x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t];
 }
+
+// ------------------------------------------------------------------------------------ frustum
+
+/**
+ * The six planes of a view-projection matrix as 24 floats (nx, ny, nz, d per plane, normals pointing
+ * inward and normalised): left, right, bottom, top, near, far. `out` is a Float32Array(24).
+ */
+export function frustumPlanes(out, m) {
+  const row = (k, sign, r) => {
+    let x = m[3] + sign * m[r], y = m[7] + sign * m[4 + r], z = m[11] + sign * m[8 + r], d = m[15] + sign * m[12 + r];
+    const l = Math.hypot(x, y, z) || 1;
+    out[k * 4] = x / l; out[k * 4 + 1] = y / l; out[k * 4 + 2] = z / l; out[k * 4 + 3] = d / l;
+  };
+  row(0, 1, 0); row(1, -1, 0); row(2, 1, 1); row(3, -1, 1); row(4, 1, 2); row(5, -1, 2);
+  return out;
+}
+/** False only when the sphere is wholly outside one of the planes from frustumPlanes(). */
+export function sphereInFrustum(planes, x, y, z, r) {
+  for (let k = 0; k < 24; k += 4) if (planes[k] * x + planes[k + 1] * y + planes[k + 2] * z + planes[k + 3] < -r) return false;
+  return true;
+}
+/** The largest of the three axis scales of a mat4 (how much it can grow a radius). */
+export function maxScale(m) {
+  const a = m[0] * m[0] + m[1] * m[1] + m[2] * m[2], b = m[4] * m[4] + m[5] * m[5] + m[6] * m[6], c = m[8] * m[8] + m[9] * m[9] + m[10] * m[10];
+  return Math.sqrt(a > b ? (a > c ? a : c) : (b > c ? b : c));
+}

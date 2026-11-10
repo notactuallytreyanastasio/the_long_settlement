@@ -11,9 +11,9 @@
 // A character is ONE batched draw (+ outline + shadow) and four face decals (five while an emote
 // shows an overlay). Everything a def can ask for is listed above CAST at the bottom of this file.
 
-import { v3, m4, quat, DEG, rgb } from './math.js';
+import { v3, m4, quat, DEG, rgb, rng } from './math.js';
 import {
-  sphere, ellipsoid, blob, cylinder, cone, lathe, limb, torus, roundedBox, curve, fromArrays,
+  sphere, ellipsoid, superellipsoid, blob, cylinder, cone, lathe, limb, torus, roundedBox, curve, fromArrays,
   merge, tint, place, setGlow, setOutline, mirrorX, scale as scaleMesh, vertexCount,
 } from './mesh.js';
 import { Node, node, group, material, makeLight, batchFigure, nodeBounds } from './scene.js';
@@ -38,7 +38,7 @@ export function figureMaterial(opts = {}) {
  * A lock, spike, brow or ribbon: a tube along `path` whose cross-section is `w(t)` wide across and
  * `th(t)` thick along `ref` (by default away from the origin, so hair lies flat on a head centred there).
  */
-function strand(path, w, th, seg = 8, ref = null) {
+function strand(path, w, th, seg = 8, ref = null, ink = null) {
   const n = path.length, pos = [], idx = [];
   for (let i = 0; i < n; i++) {
     const a = path[Math.max(0, i - 1)], b = path[Math.min(n - 1, i + 1)], p = path[i];
@@ -54,8 +54,13 @@ function strand(path, w, th, seg = 8, ref = null) {
   const c0 = pos.length / 3; pos.push(...path[0], ...path[n - 1]);
   for (let i = 0; i < n - 1; i++) for (let j = 0; j < seg; j++) { const a = i * seg + j, b = i * seg + (j + 1) % seg, c = a + seg, e = b + seg; idx.push(a, c, b, b, c, e); }
   for (let j = 0; j < seg; j++) { idx.push(c0, j, (j + 1) % seg); idx.push(c0 + 1, (n - 1) * seg + (j + 1) % seg, (n - 1) * seg + j); }
-  return fromArrays(pos, idx, null, 180);
+  const m = fromArrays(pos, idx, null, 180);
+  // ink(t): outline width along the strand. Locks that lie on a head keep ink only toward their free tips,
+  // or every lock is ringed by a dark crease and the hair reads as a ridged helmet.
+  if (ink) { for (let i = 0; i < n; i++) { const k = ink(i / (n - 1)); for (let j = 0; j < seg; j++) m.owidth[i * seg + j] = k; } m.owidth[c0] = ink(0); m.owidth[c0 + 1] = ink(1); }
+  return m;
 }
+const tipInk = (t) => 0.12 + 0.88 * smooth((t - 0.45) / 0.45);
 
 // the fat-then-pointed profile of a hair lock
 const lockW = (r) => (t) => r * Math.sin(Math.min(1, t * 1.7 + 0.3) * Math.PI * 0.5) * (1 - t * t * 0.93) + 0.003;
@@ -69,10 +74,18 @@ function makeHead(R) {
   };
   // the surface normal at yaw/pitch, from the shape itself: the skull and every decal on it use this,
   // so a decal's terminator falls exactly where the skin's does
+  // On the face the shading normal is NOT the surface's: it is pulled toward a rounder, flatter, forward-facing one,
+  // so the light's terminator crosses a cheek as one clean curve and never cuts through an eye or eats a mouth corner
+  // (the squashed chin of a chibi head otherwise turns straight down into shadow under the lower lip).
   const normalAt = (yaw, pitch) => {
     const p = at(yaw, pitch), a = at(yaw + 0.6, pitch), b = at(yaw, pitch + 0.6);
     const u = [a[0] - p[0], a[1] - p[1], a[2] - p[2]], v = [b[0] - p[0], b[1] - p[1], b[2] - p[2]];
-    return norm([u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]);
+    const g = norm([u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]);
+    let ya = ((yaw + 180) % 360 + 360) % 360 - 180;
+    const wgt = (1 - smooth((Math.abs(ya) - 46) / 40)) * (1 - smooth((pitch - 22) / 30)) * (1 - smooth((-pitch - 58) / 22)) * 0.8;
+    if (wgt <= 0.001) return g;
+    const fy = ya * 0.62 * DEG, fp = (pitch * 0.42 + 7) * DEG, f = [Math.sin(fy) * Math.cos(fp), Math.sin(fp), Math.cos(fy) * Math.cos(fp)];
+    return norm([g[0] + (f[0] - g[0]) * wgt, g[1] + (f[1] - g[1]) * wgt, g[2] + (f[2] - g[2]) * wgt]);
   };
   const at = (yaw, pitch, r = 1) => { const a = yaw * DEG, b = pitch * DEG, p = shape([Math.sin(a) * Math.cos(b), Math.sin(b), Math.cos(a) * Math.cos(b)]); p[0] *= r; p[1] *= r; p[2] *= r; return p; };
   /** A decal patch lying on the head: centre yaw/pitch, angular width/height. flipU mirrors the texture. */
@@ -95,7 +108,7 @@ function makeHead(R) {
  * front / side / back are the hairline's height (unit-sphere y: 1 crown, 0 ear level, -1 chin) dead
  * ahead, at the ears and at the nape; grow is the shell's size over the skull, shift moves it.
  */
-function hairCap(hd, { front = 0.42, side = -0.05, back = -0.7, sideAt = 0.34, backAt = 0.72, zig = 0, zigN = 3, grow = [1.07, 1.09, 1.08], shift = [0, 0.01, -0.012], seg = 28, rings = 18 } = {}) {
+function hairCap(hd, { front = 0.42, side = -0.05, back = -0.7, sideAt = 0.34, backAt = 0.72, zig = 0, zigN = 3, grow = [1.07, 1.09, 1.08], shift = [0, 0.01, -0.012], seg = 28, rings = 18, under = [0.955, 0.9], underY = [0.012, 0.06] } = {}) {
   // a grid from the crown (row 0) down each meridian to the hairline, then two rows folded back
   // under the edge to give it thickness. The edge is the hairline itself, so it is as smooth as the function.
   const pos = [], idx = [], rows = Math.max(6, Math.round(rings * 0.62)), p = [0, 0, 0];
@@ -109,7 +122,7 @@ function hairCap(hd, { front = 0.42, side = -0.05, back = -0.7, sideAt = 0.34, b
   for (let i = 0; i < seg; i++) {
     const ang = (i / seg) * Math.PI * 2 - Math.PI, line = lineAt(ang);
     for (let j = 1; j <= rows; j++) { const v = j / rows, e = Math.sin(v * Math.PI / 2); put(ang, 1 - e * (1 - line) * 1.0 + (1 - e) * 0, 1); }
-    put(ang, line + 0.012, 0.955); put(ang, line + 0.06, 0.9);
+    put(ang, line + underY[0], under[0]); put(ang, line + underY[1], under[1]);
   }
   const R = rows + 2, top = pos.length / 3; p[0] = 0; p[1] = 1; p[2] = 0; hd.shape(p); pos.push(p[0] * grow[0] + shift[0], p[1] * grow[1] + shift[1], p[2] * grow[2] + shift[2]);
   for (let i = 0; i < seg; i++) {
@@ -117,13 +130,15 @@ function hairCap(hd, { front = 0.42, side = -0.05, back = -0.7, sideAt = 0.34, b
     idx.push(top, a, b);
     for (let j = 0; j < R - 1; j++) idx.push(a + j, a + j + 1, b + j, b + j, a + j + 1, b + j + 1);
   }
-  return fromArrays(pos, idx, null, 180);
+  const m = fromArrays(pos, idx, null, 180);
+  m.foldRows = [rows, R, seg]; // the two rows under the edge, for hoods that line them dark
+  return m;
 }
 
-/** A lock lying on the head through [yaw, pitch, radiusFactor] points. */
-function lockOn(hd, pts, width, { thick = 0.42, n = 10, seg = 8 } = {}) {
+/** A lock lying on the head through [yaw, pitch, radiusFactor] points. Inked only toward its tip unless `ink` says otherwise. */
+function lockOn(hd, pts, width, { thick = 0.42, n = 10, seg = 8, ink = tipInk } = {}) {
   const w = lockW(width);
-  return strand(curve(pts.map((q) => hd.at(q[0], q[1], q[2] ?? 1.04)), n), w, (t) => w(t) * thick + 0.002, seg);
+  return strand(curve(pts.map((q) => hd.at(q[0], q[1], q[2] ?? 1.04)), n), w, (t) => w(t) * thick + 0.002, seg, null, ink);
 }
 /** A spike growing out of the head at yaw/pitch, bent along `sweep`. */
 function spikeOn(hd, yaw, pitch, len, width, sweep = [0, 0, 0], { thick = 0.7, seg = 7, root = 0.86 } = {}) {
@@ -155,8 +170,141 @@ function bands(rows, seg, zScale = 1) {
 export const HAIR = {
   cap(hd, s, ctx) { return { fixed: [hairCap(hd, { ...s, seg: ctx.S(28), rings: ctx.S(18) })] }; },
 
+  /**
+   * A row of pointed tufts across the brow, growing from a parting: { n, from, to (yaw of the first and last tip),
+   * top (pitch of the roots), tip (pitch of the tips), tips: [pitch per tuft], jag (every other tip this much higher),
+   * sweep (yaw the tips are combed across by), part (yaw of the parting), gather (0 roots all at the parting .. 1 straight down), w | ws, r, tipR }.
+   */
+  fringe(hd, s, ctx) {
+    const n = s.n || 5, from = s.from ?? -52, to = s.to ?? 52, top = s.top ?? 62, tip = s.tip ?? 17, jag = s.jag ?? 6, sweep = s.sweep ?? 0, part = s.part ?? 0, r = s.r ?? 1.115;
+    const space = Math.abs(to - from) / Math.max(1, n - 1) * DEG * hd.R[0] * 1.05, fixed = [];
+    for (let i = 0; i < n; i++) {
+      const u = n === 1 ? 0.5 : i / (n - 1), yaw = from + (to - from) * u, tp = s.tips ? s.tips[i] : tip + (i % 2 ? jag : 0);
+      const y0 = part + (yaw - part) * (s.gather ?? 0.4), w = (s.ws ? s.ws[i] : s.w) ?? space * 0.66;
+      fixed.push(lockOn(hd, [[y0, top, 1.03], [y0 + (yaw - y0) * 0.55, top - (top - tp) * 0.42, r], [yaw + sweep * 0.55, tp + (top - tp) * 0.2, r], [yaw + sweep, tp, s.tipR ?? 1.075]], w, { thick: s.thick ?? 0.5, n: ctx.N(9), seg: ctx.S(8) }));
+    }
+    return { fixed };
+  },
+
+  /** Locks that hang free in front of the ears and sway: { side 'L' | 'R' | both, yaw, top (pitch), length, w, out, curl, swing: false to weld them }. */
+  sidelocks(hd, s, ctx) {
+    const swing = [], fixed = [], sides = s.side === 'L' ? [1] : s.side === 'R' ? [-1] : [1, -1], L = s.length ?? 0.2, w = lockW(s.w ?? 0.045);
+    for (const sx of sides) {
+      const p0 = hd.at(sx * (s.yaw ?? 64), s.top ?? 18, s.r ?? 1.06), out = s.out ?? 0.012, curl = s.curl ?? 0.02;
+      const path = curve([[0, 0.025, -0.004], [sx * out, -L * 0.4, 0.008], [sx * out * 0.6, -L * 0.78, 0.012], [-sx * curl, -L, 0.016]], ctx.N(8));
+      const m = strand(path, w, (t) => w(t) * (s.thick ?? 0.62) + 0.002, ctx.S(7), [sx, 0, 0.35], (t) => 0.3 + 0.7 * smooth(t / 0.4));
+      if (s.swing === false) fixed.push(place(m, p0[0], p0[1], p0[2]));
+      else swing.push({ name: ctx.uid('side'), mesh: m, pos: p0, spring: { axis: [0, -1, 0], length: L, stiffness: s.stiffness ?? 70, damping: 6.5, gravity: 1.5, limit: 26 } });
+    }
+    return { fixed, swing };
+  },
+
+  /**
+   * Hair that falls down the back to the collar in a row of pointed locks, as one swaying piece:
+   * { n, from, to (yaw, through 180), top (pitch it starts at), length, w, jag, round (shorter toward the ends), tuck, flare, swing: false }.
+   */
+  drape(hd, s, ctx) {
+    const n = s.n || 5, from = s.from ?? 110, to = s.to ?? 250, top = s.top ?? -8, L = s.length ?? 0.16, flare = s.flare ?? 0.03, tuck = s.tuck ?? 0.3, base = hd.at(180, top, 0.9);
+    const space = Math.abs(to - from) / Math.max(1, n - 1) * DEG * hd.R[0], w = lockW(s.w ?? space * 0.74), parts = [];
+    for (let i = 0; i < n; i++) {
+      const u = n === 1 ? 0.5 : i / (n - 1), yaw = from + (to - from) * u, p0 = hd.at(yaw, top + 16, 1.02), p1 = hd.at(yaw, top - 12, 1.07), d = norm([p1[0], 0, p1[2]]);
+      const len = L * (1 - (s.jag ?? 0.2) * (i % 2)) * (1 - (s.round ?? 0.25) * Math.abs(u * 2 - 1));
+      const p2 = [p1[0] * (1 - tuck * 0.5), p1[1] - len * 0.55, p1[2] * (1 - tuck * 0.5)], p3 = [p2[0] + d[0] * flare, p1[1] - len, p2[2] + d[2] * flare];
+      parts.push(strand(curve([p0, p1, p2, p3], ctx.N(9)), w, (t) => w(t) * (s.thick ?? 0.55) + 0.003, ctx.S(7), null, tipInk));
+    }
+    const m = merge(parts);
+    if (s.swing === false) return { fixed: [m] };
+    return { swing: [{ name: ctx.uid('drape'), mesh: place(m, -base[0], -base[1], -base[2]), pos: base, spring: { axis: [0, -1, 0], length: L, stiffness: 90, damping: 8, gravity: 1, limit: s.limit ?? 11 } }] };
+  },
+
+  /** A smooth tail of hair (a ponytail, a pigtail): { at: [yaw, pitch], dir, length, width, links, tie, wave }. A chain of spring bones. */
+  tail(hd, s, ctx) {
+    const root = hd.at(s.at[0], s.at[1], s.r ?? 1.0), links = s.links || 2, L = s.length ?? 0.22, dir = norm(s.dir || [0, -1, -0.3]), W = s.width ?? 0.05, len = L / links;
+    const q = quat.fromTo(quat.create(), [0, -1, 0], dir), swing = [], fixed = [];
+    if (s.tie) fixed.push(xform(tint(place(torus(W * 0.72, W * 0.32, ctx.S(10), 5), 0, -W * 0.3, 0), s.tie), root, q));
+    const prof = (t) => W * Math.sin(Math.min(1, t * 2.4 + 0.3) * Math.PI / 2) * (1 - t ** 2.2 * 0.95) + 0.003;
+    let prev = null;
+    for (let i = 0; i < links; i++) {
+      const t0 = i / links, t1 = (i + 1) / links, pts = [], N = ctx.N(6);
+      for (let k = 0; k <= N; k++) pts.push([Math.sin((t0 + (t1 - t0) * k / N) * 4) * (s.wave ?? 0.01), -len * (k / N) * (i === links - 1 ? 1 : 1.08), 0]);
+      const m = strand(pts, (t) => prof(t0 + (t1 - t0) * t), (t) => prof(t0 + (t1 - t0) * t) * (s.thick ?? 0.82), ctx.S(8), [0, 0, 1]);
+      const name = ctx.uid('tail');
+      swing.push({ name, mesh: xform(m, [0, 0, 0], q), pos: i === 0 ? root : [dir[0] * len, dir[1] * len, dir[2] * len], parent: prev, spring: { axis: dir, length: len, stiffness: (s.stiffness ?? 52) - i * 8, damping: 5.5, gravity: 2, limit: i === 0 ? 34 : 44 } });
+      prev = name;
+    }
+    return { fixed, swing };
+  },
+
+  /** A cloud of curls: { n, size, out, low (lowest pitch), seed, clear (yaw half-width kept free over the face) }. */
+  curls(hd, s, ctx) {
+    const n = s.n || 16, r = rng(s.seed ?? 5), low = Math.sin((s.low ?? -8) * DEG), fixed = [], clear = s.clear ?? 48;
+    for (let i = 0; i < n; i++) {
+      const y = low + (1 - low) * ((i + 0.5) / n) ** 0.8, pitch = Math.asin(Math.min(1, y)) / DEG, yaw = (i * 137.5 + (s.turn ?? 20)) % 360 - 180, size = (s.size ?? 0.07) * (0.8 + r() * 0.5);
+      if (Math.abs(yaw) < clear && pitch < (s.brow ?? 40)) continue;
+      const c = hd.at(yaw, pitch, 1 + (s.out ?? 0.3) * size / hd.R[0]);
+      fixed.push(place(blob({ rx: size, ry: size * 0.9, rz: size, lumps: 0.25, seed: i + 1, seg: ctx.S(10), rings: ctx.S(7) }), c[0], c[1], c[2]));
+    }
+    return { fixed };
+  },
+
+  /** A deep hood with a hanging point: { color, lining, front, side, back, grow, tip: false }. The brow is under its edge. */
+  hood(hd, s, ctx) {
+    const col = s.color || '#3a3226', lining = rgb(s.lining || mixc(col, '#0c0a1c', 0.6));
+    const m = dye(hairCap(hd, { front: s.front ?? 0.36, side: s.side ?? -0.5, back: s.back ?? -0.95, sideAt: 0.3, backAt: 0.62, grow: s.grow || [1.2, 1.17, 1.2], shift: s.shift || [0, 0.014, 0.006], seg: ctx.S(26), rings: ctx.S(16), under: [0.9, 0.79], underY: [0.02, 0.11] }), col);
+    const [rows, R, seg] = m.foldRows;
+    for (let i = 0; i < seg; i++) for (const j of [rows, rows + 1]) m.colors.set(lining, (i * R + j) * 3);
+    const out = { fixed: [m], swing: [] };
+    if (s.tip !== false) {
+      const base = hd.at(180, 46, 1.1), L = s.tipLength ?? 0.2, w = lockW(0.085);
+      const tipM = dye(strand(curve([[0, 0.03, 0.05], [0, -L * 0.25, -L * 0.25], [0, -L * 0.7, -L * 0.42], [0, -L, -L * 0.36]], ctx.N(8)), w, (t) => w(t) * 0.8 + 0.003, ctx.S(8), [0, 0.4, -1]), col);
+      out.swing.push({ name: ctx.uid('hoodtip'), mesh: tipM, pos: base, spring: { axis: norm([0, -1, -0.4]), length: L, stiffness: 60, damping: 6, gravity: 2, limit: 24 } });
+    }
+    return out;
+  },
+
+  /** A flat cap, pulled down in front: { color, band, button }. */
+  flatcap(hd, s, ctx) {
+    const R = hd.R, col = s.color || '#6a5a4a', tilt = s.tilt ?? 10;
+    return { fixed: [merge(
+      dye(place(blob({ rx: R[0] * 1.13, ry: R[1] * 0.42, rz: R[2] * 1.22, flatBottom: 0.55, seg: ctx.S(16), rings: ctx.S(9) }), 0, R[1] * 0.78, R[2] * 0.1, tilt, 0, 0), col),
+      dye(place(scaleMesh(cylinder(R[0] * 0.66, R[0] * 0.7, 0.022, ctx.S(12), { crease: 50 }), 1, 1, 0.8), 0, R[1] * 0.54, R[2] * 0.93, tilt + 8, 0, 0), s.peak || mixc(col, '#1a1030', 0.3)),
+      dye(place(sphere(R[0] * 0.09, 7, 5), 0, R[1] * 1.2, R[2] * 0.02), s.button || mixc(col, '#1a1030', 0.3)))] };
+  },
+
+  /** A headscarf tied at the nape, its two ends swinging: { color, front, side, back, tails: false }. */
+  kerchief(hd, s, ctx) {
+    const col = s.color || '#e8483f', R = hd.R;
+    const m = dye(hairCap(hd, { front: s.front ?? 0.6, side: s.side ?? -0.18, back: s.back ?? -0.66, grow: [1.1, 1.12, 1.11], seg: ctx.S(24), rings: ctx.S(14) }), col);
+    const k = hd.at(180, -34, 1.1), out = { fixed: [m, dye(place(blob({ rx: 0.04, ry: 0.034, rz: 0.034, seg: ctx.S(9), rings: ctx.S(6) }), k[0], k[1], k[2]), col)], swing: [] };
+    if (s.tails !== false) {
+      const w = lockW(0.036), parts = [-1, 1].map((sx) => strand(curve([[0, 0, 0], [sx * 0.03, -0.05, -0.02], [sx * 0.05, -0.11, -0.016]], ctx.N(6)), w, (t) => w(t) * 0.45 + 0.002, ctx.S(6), [0, 0, -1]));
+      out.swing.push({ name: ctx.uid('kerchief'), mesh: dye(merge(parts), col), pos: k, spring: { axis: [0, -1, 0], length: 0.11, stiffness: 60, damping: 6, gravity: 2, limit: 30 } });
+    }
+    return out;
+  },
+
+  /** A clerk's eyeshade: a band round the head and a green peak over the eyes. */
+  visor(hd, s, ctx) {
+    const R = hd.R, y = R[1] * 0.42, col = s.color || '#3f9a6a';
+    return { fixed: [merge(
+      dye(place(scaleMesh(torus(R[0] * 0.985, 0.014, ctx.S(18), 5), 1, 1, R[2] / R[0]), 0, y, -0.006), s.band || '#2a2540'),
+      dye(place(scaleMesh(cylinder(R[0] * 0.84, R[0] * 0.92, 0.014, ctx.S(14), { crease: 50 }), 1, 1, 0.72), 0, y - 0.012, R[2] * 0.74, 20, 0, 0), col))] };
+  },
+
+  /** A mortarboard: a skull cap, a square board and a tassel that swings: { color, tassel }. */
+  mortarboard(hd, s, ctx) {
+    const R = hd.R, col = s.color || '#22303a', tc = s.tassel || '#ffd24a', y = R[1] * 1.1, side = R[0] * 2.25;
+    const cap = dye(hairCap(hd, { front: 0.72, side: 0.5, back: 0.4, grow: [1.1, 1.1, 1.1], seg: ctx.S(18), rings: ctx.S(10) }), col);
+    const board = dye(place(roundedBox(side, 0.026, side, 0.008, 1), 0, y, -0.01, -5, 45, 0), col);
+    const knob = dye(place(sphere(0.022, 7, 5), 0, y + 0.02, -0.01), tc);
+    const hx = side * 0.36, base = [hx, y + 0.004, 0.005 + hx * 0.2];
+    const cord = strand([[-hx, 0.012, -hx * 0.2], [0, 0.006, 0], [0.008, -0.06, 0.004], [0.008, -0.1, 0.004]], () => 0.006, () => 0.006, 5, [0, 0, 1]);
+    const tassel = merge(dye(cord, tc), dye(place(cone(0.024, 0.07, ctx.S(8)), 0.008, -0.1, 0.004, 180, 0, 0), tc));
+    return { fixed: [cap, board, knob], swing: [{ name: ctx.uid('tassel'), mesh: tassel, pos: base, spring: { axis: [0, -1, 0], length: 0.13, stiffness: 40, damping: 4, gravity: 3, limit: 50 } }] };
+  },
+
   /** locks: [{ pts: [[yaw, pitch, r?]...], w, thick? }] lying on the head (fringes, curtains, wisps). */
-  locks(hd, s, ctx) { return { fixed: s.locks.map((l) => lockOn(hd, l.pts, l.w, { thick: l.thick ?? 0.42, seg: ctx.S(8) })) }; },
+  locks(hd, s, ctx) { return { fixed: s.locks.map((l) => lockOn(hd, l.pts, l.w, { thick: l.thick ?? 0.42, seg: ctx.S(8), n: ctx.N(10), ink: l.ink === 1 ? null : tipInk })) }; },
 
   /** spikes: [[yaw, pitch, length, width, swing?]...], all bent along `sweep`. Ones flagged swing are spring bones. */
   spikes(hd, s, ctx) {
@@ -231,6 +379,10 @@ export const HAIR = {
     return { fixed: [m] };
   },
 };
+
+// colour a hat or a scarf. Hair pieces come back white and are tinted with the hair colour afterwards, so a piece
+// that carries its own colour must never be exactly white
+function dye(mesh, color) { const c = rgb(color); return tint(mesh, c[0] === 1 && c[1] === 1 && c[2] === 1 ? [0.996, 0.996, 0.996] : c); }
 
 // transform a mesh by a quaternion then a translation (build time)
 function xform(mesh, pos, q) {

@@ -12351,8 +12351,8 @@
  },
  {
   "path": "src/content/chapter1.js",
-  "bytes": 47006,
-  "lines": 664
+  "bytes": 57062,
+  "lines": 787
  },
  {
   "path": "src/content/chapter2.js",
@@ -12401,13 +12401,13 @@
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 11687,
-  "lines": 253
+  "bytes": 12106,
+  "lines": 264
  },
  {
   "path": "src/core/game.js",
-  "bytes": 39307,
-  "lines": 827
+  "bytes": 41742,
+  "lines": 865
  },
  {
   "path": "src/core/physics.js",
@@ -12423,6 +12423,11 @@
   "path": "src/core/slot.js",
   "bytes": 11236,
   "lines": 280
+ },
+ {
+  "path": "src/core/stage.js",
+  "bytes": 19106,
+  "lines": 325
  },
  {
   "path": "src/core/story.js",
@@ -12481,8 +12486,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 76795,
-  "lines": 1066
+  "bytes": 89139,
+  "lines": 1218
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12501,8 +12506,8 @@
  },
  {
   "path": "src/shell/gl/gl.js",
-  "bytes": 10221,
-  "lines": 165
+  "bytes": 13674,
+  "lines": 214
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12511,13 +12516,13 @@
  },
  {
   "path": "src/shell/gl/math.js",
-  "bytes": 12689,
-  "lines": 239
+  "bytes": 14045,
+  "lines": 265
  },
  {
   "path": "src/shell/gl/mesh.js",
-  "bytes": 31056,
-  "lines": 581
+  "bytes": 35249,
+  "lines": 659
  },
  {
   "path": "src/shell/gl/renderer.js",
@@ -12531,13 +12536,13 @@
  },
  {
   "path": "src/shell/gl/scene.js",
-  "bytes": 25556,
-  "lines": 442
+  "bytes": 27480,
+  "lines": 472
  },
  {
   "path": "src/shell/gl/sets/kit.js",
-  "bytes": 43114,
-  "lines": 606
+  "bytes": 72131,
+  "lines": 984
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12571,8 +12576,8 @@
  },
  {
   "path": "src/shell/layout.js",
-  "bytes": 5339,
-  "lines": 119
+  "bytes": 11099,
+  "lines": 221
  },
  {
   "path": "src/shell/main.js",

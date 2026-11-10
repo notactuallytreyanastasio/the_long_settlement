@@ -11,6 +11,28 @@ export const chapter1 = {
 
   music: { play: 'festival', cine: 'tense' },
 
+  // ───────────────────────── the stage ─────────────────────────
+  // For the 3D stage (src/core/stage.js). sets: every backdrop key this chapter's lines name -> the set built
+  // for it and how it is lit when a cinematic goes there. A scene's own cutscene keeps its encounter's light.
+  // clerk / townsfolk: who steps in for a loan, and who brings the hat and gathers as trust rises.
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      orrery: { set: 'orrery', light: 'night' },
+      'harbor-night': { set: 'harbor-night', light: 'night' },
+      'drum-hall': { set: 'drum-hall', light: 'night' },
+      'lantern-stalls': { set: 'lantern-stalls', light: 'night' },
+      bench: { set: 'bench', light: 'interior' },
+      'pier-riot': { set: 'pier-riot', light: 'night' },
+      'mint-office': { set: 'mint-office', light: 'interior' },
+      'ferry-dawn': { set: 'ferry-dawn', light: 'dawn' },
+      line: { set: 'line', light: 'night' },
+      black: { set: 'black', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'docker',
+  },
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch1.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'title',
@@ -77,6 +99,20 @@ export const chapter1 = {
       hint: "Relight Nan's lanterns: hit all three lantern targets",
       objective: { kind: 'all', ids: ['lanternA', 'lanternB', 'lanternC'] },
       reward: { points: 4000, trust: 25 },
+      // Not a fight. The stewards have been through the stall; the work is putting three names back on the wire.
+      encounter: {
+        set: 'lantern-stalls', light: 'dusk', mode: 'work',
+        party: ['ren', 'nan'],
+        opposition: { kind: 'force', who: ['lantern-dark', 'lantern-dark', 'lantern-dark'], name: 'DARK LANTERNS' },
+        extras: ['steward', 'steward'],
+        setback: { cue: 'steward-barges', show: 'A steward shoulders through the stall on his way up the route; Ren and Nan are knocked back and a frame swings.' },
+        beats: [
+          { at: 0, cue: 'stall-down', name: 'The stall is down', show: 'Three paper lanterns hang dark and crumpled on the wire; Nan gathers frames, Ren holds one by the wire.' },
+          { at: 1, cue: 'lantern-orm', name: 'Orm is lit', show: 'Nan puts the taper to the first lantern. It glows; ORM shows on the paper.' },
+          { at: 2, cue: 'lantern-brand', name: 'Little Brand is lit', show: 'The second lantern glows. The stewards have moved on up the route.' },
+          { at: 3, cue: 'lantern-tessaly', name: 'Tessaly, last', show: 'Nan lights the third herself and holds it in both hands. The stall is warm again.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s1.b01', who: 'nan', text: "Mind the paper, you great oxen! Those are names!" },
         { id: 'ch1.s1.b02', who: 'thorne', fx: 'radio', text: "Stewards clearing the route. Stay out of it, Vasker." },
@@ -140,6 +176,18 @@ export const chapter1 = {
       hint: "Reach the magistrate's chamber: sink the bench saucer twice",
       objective: { kind: 'count', ids: ['bench'], n: 2 },
       reward: { points: 5000 },
+      // Not a fight. One cadet, a door he has no business at, and four seconds under a desk.
+      encounter: {
+        set: 'bench', light: 'interior', mode: 'stealth',
+        party: ['ren'],
+        opposition: { kind: 'force', who: ['chamber-door', 'magistrate-desk'], name: 'THE CHAMBER' },
+        setback: { cue: 'lamp-passes', show: "A clerk's lamp crosses the door glass; Ren flattens against the files until it has gone." },
+        beats: [
+          { at: 0, cue: 'at-the-door', name: 'Bench Row, after hours', show: 'Ren at the chamber door, stage left, listening. The desk and its green lamp are across the room behind stacked files.' },
+          { at: 1, cue: 'inside', name: 'The door gives', show: 'The door stands open a hand; Ren is in, low, between the stacks, halfway to the desk.' },
+          { at: 2, cue: 'shell-planted', name: 'Four seconds', show: 'Ren kneels at the desk and presses the shell under its lip. Somewhere behind the files, whistling.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s2.b01', who: 'thorne', fx: 'radio', text: "Maravel's chamber. The shell goes under his desk." },
         { id: 'ch1.s2.b02', who: 'ren', text: "What am I verifying, Proctor?" },
@@ -213,6 +261,21 @@ export const chapter1 = {
       hint: 'Work the crowd: 20 hits on the drum bumpers',
       objective: { kind: 'count', ids: ['drum1', 'drum2', 'drum3'], n: 20 },
       reward: { points: 6000 },
+      // Not a fight. Tobb's chalked table is uncovered a column at a time, and the docks gather to read it.
+      encounter: {
+        set: 'lantern-stalls', light: 'night', mode: 'work',
+        party: ['ren', 'tobb'],
+        opposition: { kind: 'force', who: ['odds-board'], name: 'THE WEIGHTED DRUM' },
+        extras: ['docker', 'docker', 'docker'],
+        setback: { cue: 'steward-looks', show: 'A steward on the route turns his head; Tobb throws his coat over the board and both of them study the sky.' },
+        beats: [
+          { at: 0, cue: 'odds-called', name: 'Evens the Hill', show: 'Tobb calls odds beside a chalkboard on an easel, most of it under sacking. Ren stands reading over his shoulder. No crowd yet.' },
+          { at: 5, cue: 'column-one', name: 'Names on the roll', show: 'The sacking is back off the first columns. One docker has stopped to look.' },
+          { at: 10, cue: 'column-three', name: 'Names in the drum', show: 'Ren runs a finger down the third column, checking the sum. Two dockers now.' },
+          { at: 15, cue: 'column-four', name: 'The fourth column', show: 'Tobb chalks a ring round the last figure. Three dockers, close, lanterns lowered.' },
+          { at: 20, cue: 'one-in-four', name: 'One in four', show: 'The whole board is bare: ONE IN FOUR, ringed. The dockers turn from it toward the hall.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s3.b01', who: 'tobb', text: "Evens the Hill! Sevens the docks! Ask me why!" },
         { id: 'ch1.s3.b02', who: 'thorne', fx: 'radio', text: "Find out what the bookmaker knows. Quietly." },
@@ -278,6 +341,21 @@ export const chapter1 = {
       hint: 'Turn the great Reels: light all three lot lanes',
       objective: { kind: 'all', ids: ['lotL', 'lotC', 'lotR'] },
       reward: { points: 8000 },
+      // Not a fight, by order: nobody on the steps may strike and nobody below holds a writ. Ren holds a
+      // line while the three great reels come down behind him.
+      encounter: {
+        set: 'drum-hall', light: 'night', mode: 'hold',
+        party: ['ren'],
+        opposition: { kind: 'force', who: ['great-reel', 'great-reel', 'great-reel'], name: 'THE GREAT REELS' },
+        extras: ['docker', 'docker', 'steward'],
+        setback: { cue: 'line-gives', show: 'The dockers surge and Ren is pushed back up a step, arms still out; nobody strikes.' },
+        beats: [
+          { at: 0, cue: 'reels-turning', name: 'Silence for the lot', show: 'Ren on the fourth step, arms out, a steward behind him, dockers pressing below. Above the doors the three great reels spin.' },
+          { at: 1, cue: 'first-orb', name: 'First reel, the orb', show: 'The first great reel locks on the orb and lights. The dockers look up.' },
+          { at: 2, cue: 'second-orb', name: 'Second reel, the orb', show: 'The second locks on the orb. The shoving stops; everyone is watching the third.' },
+          { at: 3, cue: 'third-orb', name: 'The lot is fallen', show: 'Three orbs, lit. The steps are still. Ren has turned his head to look.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s4.b01', who: 'crowd', text: "Silence for the Reels of Assay! Silence for the lot!" },
         { id: 'ch1.s4.b02', who: 'ilse', text: "Your cuffs, Father. You're certifying, not gardening." },
@@ -347,6 +425,20 @@ export const chapter1 = {
       hint: 'Get her out along the pier: 3 pier ramp shots',
       objective: { kind: 'count', ids: ['pierRamp'], n: 3 },
       reward: { points: 8000 },
+      // The one scene of the chapter where force is used: Ren, under writ, breaks a way through a riot with
+      // the Tribune behind him. He shoves and parries; he does not draw.
+      encounter: {
+        set: 'pier-riot', light: 'night', mode: 'fight',
+        party: ['ren', 'ilse'],
+        opposition: { kind: 'people', who: ['docker', 'steward', 'docker'], name: 'THE RIOT' },
+        setback: { cue: 'crowd-closes', show: 'The brawl closes over the gap; Ren is driven back onto Ilse and covers her head with his arm.' },
+        beats: [
+          { at: 0, cue: 'shot-fired', name: 'Shot fired', show: 'A lantern burns on its pole where the shot took it. Ren has Ilse behind him at the foot of the steps; dockers and a steward are fighting each other across the way.' },
+          { at: 1, cue: 'off-the-steps', name: 'Off the steps', show: 'Ren has shouldered the first man aside. The pair are onto the planking; Ilse runs on her own feet.' },
+          { at: 2, cue: 'along-the-pier', name: 'Along the pier', show: 'The knot of the riot is half behind them. Ren fends a second man off with a forearm. A crane shows ahead.' },
+          { at: 3, cue: 'under-the-crane', name: 'Under the crane', show: 'They are through. The riot is behind them, stage right is open pier, a crane and a bollard.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s5.b01', who: 'thorne', fx: 'radio', text: "Shot fired. Get the Tribune off those steps." },
         { id: 'ch1.s5.b02', who: 'ren', text: "Down. Stay behind me. Along the pier." },
@@ -420,6 +512,22 @@ export const chapter1 = {
       hint: 'Seal the bond: hit all four seal targets, M-I-N-T',
       objective: { kind: 'all', ids: ['sealM', 'sealI', 'sealN', 'sealT'] },
       reward: { points: 9000 },
+      // Not a fight. The bar is the bond: four seals in wax, pressed while Ilse reads every page aloud.
+      // The Chancellor never rises and never raises his voice.
+      encounter: {
+        set: 'mint-office', light: 'interior', mode: 'talk',
+        party: ['ilse', 'ren'],
+        opposition: { kind: 'force', who: ['surety-bond'], name: 'THE BOND' },
+        extras: ['corvane'],
+        setback: { cue: 'tea-poured', show: 'Corvane pours tea across the reading and smiles; Ilse loses her place and Ren shifts his feet.' },
+        beats: [
+          { at: 0, cue: 'bond-laid-out', name: 'Mind the carpet', show: 'Corvane seated behind a wide desk, stage right; the bond lies on it with four blank wax discs. Ilse reads standing; Ren a pace behind her.' },
+          { at: 1, cue: 'seal-m', name: 'First seal', show: 'One disc is pressed and red. Ilse turns a page and points at a clause.' },
+          { at: 2, cue: 'seal-i', name: 'Second seal', show: 'Two seals. Ilse has both hands on the desk.' },
+          { at: 3, cue: 'seal-n', name: 'Third seal', show: 'Three seals. Ilse holds up the last page: there is a schedule she has not been shown.' },
+          { at: 4, cue: 'seal-t', name: 'Sealed', show: 'Four seals. Corvane turns the bond to face Ren and sets a pen beside it.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s6.b01', who: 'corvane', text: "Come in, both of you. Mind the carpet." },
         { id: 'ch1.s6.b02', who: 'thorne', fx: 'radio', text: "Say little. Sign what you are given." },
@@ -495,6 +603,21 @@ export const chapter1 = {
       hint: 'Round the dock orbit, up the pier ramp, then the bench',
       objective: { kind: 'sequence', ids: ['dockOrbit', 'pierRamp', 'bench'] },
       reward: { points: 10000, trust: 25 },
+      // Not a fight. The same dockers, the same pier; this time they have brought lights. The work is the
+      // walk to the gangway and reading which way the crowd leans.
+      encounter: {
+        set: 'harbor-night', light: 'night', mode: 'walk',
+        party: ['ren', 'ilse'],
+        opposition: { kind: 'force', who: ['lantern-line'], name: 'THE WALK TO THE FERRY' },
+        extras: ['nan', 'docker', 'docker'],
+        setback: { cue: 'ilse-stops', show: 'Ilse stops dead, not sure of the crowd; Ren steps half in front of her and the dockers hold where they are.' },
+        beats: [
+          { at: 0, cue: 'both-sides', name: 'Both sides of the pier', show: 'Before dawn. Dockers stand along the pier, dark shapes, lanterns unlit at their sides. Ren and Ilse at the landward end.' },
+          { at: 1, cue: 'lanterns-up', name: 'Lanterns up', show: 'Nan lifts hers and the dockers follow: a row of lit lanterns down the pier. Nobody has a hand closed.' },
+          { at: 2, cue: 'a-way-made', name: 'They make a way', show: 'The dockers have stepped back to both rails. A lane of light runs to the ferry gangway; Ren and Ilse are halfway down it.' },
+          { at: 3, cue: 'last-paper', name: 'One more paper', show: 'At the gangway. The crowd has parted further, as for a court; the pier end is clear for whoever is coming down it.' },
+        ],
+      },
       briefing: [
         { id: 'ch1.s7.b01', who: 'nan', text: "Lanterns up, the lot of you! She sails at the turn!" },
         { id: 'ch1.s7.b02', who: 'thorne', fx: 'radio', text: "The ferry leaves at first light. Don't linger." },

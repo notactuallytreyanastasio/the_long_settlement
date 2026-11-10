@@ -2,7 +2,7 @@
 // build a scene anywhere (tests included) and hand it to renderer.js to draw.
 
 import { v3, m4, quat, rgb, DEG } from './math.js';
-import { clone, transform, merge, bounds } from './mesh.js';
+import { clone, transform, merge, bounds, splitByCell } from './mesh.js';
 
 // ------------------------------------------------------------------------------------ materials
 
@@ -68,6 +68,7 @@ export function texture(source, { filter = 'linear', mips = true } = {}) {
 // ------------------------------------------------------------------------------------ nodes
 
 const IDENT_RECT = [0, 0, 1, 1];
+let nodeId = 1;
 
 /**
  * A scene graph node: a transform, optionally a mesh + material, optionally a point light.
@@ -81,6 +82,9 @@ const IDENT_RECT = [0, 0, 1, 1];
  *   light                { color, radius, intensity } makes the node a lantern at its world position
  *   instances            from makeInstances(): draw the mesh many times in one call
  *   bones                set by batchFigure(): the nodes whose world matrices move this mesh's vertices
+ *   static               true = this node's mesh never moves, so its shadow can be kept between frames
+ *                        (mergeStatic sets it; toggling `visible` is fine, moving the node is not)
+ *   cull                 false keeps the node out of frustum culling (it is always drawn)
  */
 export class Node {
   constructor(name = '', opts = {}) {
@@ -90,6 +94,7 @@ export class Node {
     this.children = []; this.parent = null; this.visible = true; this.castShadow = true;
     this.tint = new Float32Array([1, 1, 1, 1]); this.flash = new Float32Array(4); this.uvRect = new Float32Array(IDENT_RECT);
     this.light = null; this.instances = null; this.bones = null;
+    this.id = nodeId++; this.static = false; this.cull = true;
     this.local = m4.create(); this.world = m4.create();
     if (opts.pos) this.setPos(opts.pos[0], opts.pos[1], opts.pos[2]);
     if (opts.rot) this.setRot(opts.rot[0], opts.rot[1], opts.rot[2]);
@@ -157,8 +162,14 @@ export function setInstance(inst, i, mat, color = null) {
  * Bake a subtree that will never move into one mesh per material, so it costs one draw (plus one
  * outline draw) instead of one per part. Returns a new Node; the original is untouched.
  * Lights in the subtree are kept as child nodes. Instanced nodes are not merged (they are re-added).
+ *
+ * opts.cell (world units, default 0 = off) cuts each merged mesh into pieces on an XZ grid of that
+ * size, so the renderer can cull the pieces the camera does not see: use it for a set much larger
+ * than any one shot of it (a cell about a third of the widest shot). It costs draws, so not for
+ * something always wholly in view. The pieces are marked `static`: their shadow is drawn once and kept.
  */
-export function mergeStatic(root, name = root.name + '-static') {
+export function mergeStatic(root, name = root.name + '-static', opts = {}) {
+  const cell = opts.cell || 0;
   root.updateWorld(null);
   const inv = m4.invert(m4.create(), root.world), rel = m4.create();
   const byMat = new Map(); const out = new Node(name);
@@ -168,7 +179,7 @@ export function mergeStatic(root, name = root.name + '-static') {
     m4.multiply(rel, inv, n.world);
     if (n.instances) {
       // keep it instanced; fold its place in the subtree into each instance matrix
-      const c = new Node(n.name, { mesh: n.mesh, material: n.material }); c.castShadow = n.castShadow;
+      const c = new Node(n.name, { mesh: n.mesh, material: n.material }); c.castShadow = n.castShadow; c.static = true;
       const src = n.instances, inst = makeInstances(src.capacity); inst.data.set(src.data); inst.count = src.count;
       for (let i = 0; i < src.count; i++) { const mtx = inst.data.subarray(i * 20, i * 20 + 16); m4.multiply(mtx, rel, mtx); }
       c.instances = inst; out.add(c);
@@ -183,7 +194,11 @@ export function mergeStatic(root, name = root.name + '-static') {
     for (const c of n.children) walk(c);
   };
   walk(root);
-  for (const { material: mat, cast, parts } of byMat.values()) { const c = new Node(name + ':' + (mat.name || mat.id), { mesh: merge(parts), material: mat }); c.castShadow = cast; out.add(c); }
+  for (const { material: mat, cast, parts } of byMat.values()) {
+    const whole = merge(parts), label = name + ':' + (mat.name || mat.id);
+    const pieces = cell > 0 ? splitByCell(whole, cell) : [{ key: '', mesh: whole }];
+    for (const p of pieces) { const c = new Node(p.key ? label + '@' + p.key : label, { mesh: p.mesh, material: mat }); c.castShadow = cast; c.static = true; out.add(c); }
+  }
   return out;
 }
 
@@ -232,27 +247,39 @@ export function batchFigure(root, { skip = [] } = {}) {
   return out;
 }
 
-/** World-space bounding box { min, max } of everything drawn under a node. */
-export function nodeBounds(root) {
+const NB_P = [0, 0, 0], NB_Q = [0, 0, 0];
+/**
+ * World-space bounding box { min, max } of everything drawn under a node. Pass `out` (a { min, max }
+ * of two arrays) to reuse it: then the call allocates nothing, apart from the first time each mesh
+ * is measured (its box is kept on the mesh as `_bb`; clear that if you edit positions in place).
+ */
+export function nodeBounds(root, out = { min: [0, 0, 0], max: [0, 0, 0] }) {
   root.updateWorld(root.parent ? root.parent.world : null);
-  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity], p = [0, 0, 0];
-  root.traverse((n) => {
-    if (!n.mesh) return;
-    if (n.bones) { // a batched figure: each vertex is placed by its own bone
-      const P = n.mesh.positions, B = n.mesh.bones;
-      for (let i = 0; i < B.length; i++) {
-        v3.transformPoint(p, [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]], n.bones[B[i]].world);
-        for (let k = 0; k < 3; k++) { if (p[k] < min[k]) min[k] = p[k]; if (p[k] > max[k]) max[k] = p[k]; }
+  const min = out.min, max = out.max, p = NB_P, q = NB_Q;
+  min[0] = min[1] = min[2] = Infinity; max[0] = max[1] = max[2] = -Infinity;
+  const visit = (n) => {
+    if (n.mesh) {
+      if (n.bones) { // a batched figure: each vertex is placed by its own bone
+        const P = n.mesh.positions, B = n.mesh.bones;
+        for (let i = 0; i < B.length; i++) {
+          q[0] = P[i * 3]; q[1] = P[i * 3 + 1]; q[2] = P[i * 3 + 2];
+          v3.transformPoint(p, q, n.bones[B[i]].world);
+          for (let k = 0; k < 3; k++) { if (p[k] < min[k]) min[k] = p[k]; if (p[k] > max[k]) max[k] = p[k]; }
+        }
+      } else {
+        const b = n.mesh._bb || (n.mesh._bb = bounds(n.mesh));
+        for (let i = 0; i < 8; i++) {
+          q[0] = i & 1 ? b.max[0] : b.min[0]; q[1] = i & 2 ? b.max[1] : b.min[1]; q[2] = i & 4 ? b.max[2] : b.min[2];
+          v3.transformPoint(p, q, n.world);
+          for (let k = 0; k < 3; k++) { if (p[k] < min[k]) min[k] = p[k]; if (p[k] > max[k]) max[k] = p[k]; }
+        }
       }
-      return;
     }
-    const b = bounds(n.mesh);
-    for (let i = 0; i < 8; i++) {
-      v3.transformPoint(p, [i & 1 ? b.max[0] : b.min[0], i & 2 ? b.max[1] : b.min[1], i & 4 ? b.max[2] : b.min[2]], n.world);
-      for (let k = 0; k < 3; k++) { if (p[k] < min[k]) min[k] = p[k]; if (p[k] > max[k]) max[k] = p[k]; }
-    }
-  });
-  return { min, max };
+    const c = n.children;
+    for (let i = 0; i < c.length; i++) visit(c[i]);
+  };
+  visit(root);
+  return out;
 }
 
 // ------------------------------------------------------------------------------------ camera
@@ -292,25 +319,28 @@ export function createCamera({ fov = 32, near = 0.3, far = 1200, position = [0, 
  * `aspect` is width / height (a portrait phone is about 0.46); `margin` > 1 leaves air around it;
  * `shiftY` moves the box up (+) or down (-) in frame, as a fraction of the box height (leave room for UI).
  */
-export function frameBox(cam, box, { yaw = 0, pitch = 12, aspect = cam.aspect, margin = 1.08, shiftY = 0 } = {}) {
-  const c = [(box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2 - shiftY * (box.max[1] - box.min[1]), (box.min[2] + box.max[2]) / 2];
+export function frameBox(cam, box, opts = FB_DEFAULTS) {
+  const yaw = opts.yaw ?? 0, pitch = opts.pitch ?? 12, aspect = opts.aspect ?? cam.aspect, margin = opts.margin ?? 1.08, shiftY = opts.shiftY ?? 0;
+  const cx = (box.min[0] + box.max[0]) / 2, cy = (box.min[1] + box.max[1]) / 2 - shiftY * (box.max[1] - box.min[1]), cz = (box.min[2] + box.max[2]) / 2;
   const y = yaw * DEG, p = pitch * DEG;
-  const back = [Math.sin(y) * Math.cos(p), Math.sin(p), Math.cos(y) * Math.cos(p)];
-  const right = [Math.cos(y), 0, -Math.sin(y)];
-  const up = v3.cross([0, 0, 0], back, right);
+  const bx = Math.sin(y) * Math.cos(p), by = Math.sin(p), bz = Math.cos(y) * Math.cos(p); // from the box toward the camera
+  const rx = Math.cos(y), rz = -Math.sin(y);                                             // camera right
+  const ux = by * rz, uy = bz * rx - bx * rz, uz = -by * rx;                             // up = back x right
   const tv = Math.tan(cam.fov * DEG / 2), th = tv * aspect;
   let dist = 0;
   for (let i = 0; i < 8; i++) {
-    const o = [(i & 1 ? box.max[0] : box.min[0]) - c[0], (i & 2 ? box.max[1] : box.min[1]) - c[1], (i & 4 ? box.max[2] : box.min[2]) - c[2]];
-    const x = Math.abs(v3.dot(o, right)), yy = Math.abs(v3.dot(o, up)), z = v3.dot(o, back);
-    dist = Math.max(dist, z + x / th, z + yy / tv);
+    const ox = (i & 1 ? box.max[0] : box.min[0]) - cx, oy = (i & 2 ? box.max[1] : box.min[1]) - cy, oz = (i & 4 ? box.max[2] : box.min[2]) - cz;
+    const x = Math.abs(ox * rx + oz * rz), yy = Math.abs(ox * ux + oy * uy + oz * uz), z = ox * bx + oy * by + oz * bz;
+    const d = Math.max(z + x / th, z + yy / tv);
+    if (d > dist) dist = d;
   }
   dist *= margin;
-  v3.set(cam.target, c[0], c[1], c[2]);
-  v3.set(cam.position, c[0] + back[0] * dist, c[1] + back[1] * dist, c[2] + back[2] * dist);
+  v3.set(cam.target, cx, cy, cz);
+  v3.set(cam.position, cx + bx * dist, cy + by * dist, cz + bz * dist);
   cam.aspect = aspect;
   return cam;
 }
+const FB_DEFAULTS = {};
 
 // ------------------------------------------------------------------------------------ environment
 

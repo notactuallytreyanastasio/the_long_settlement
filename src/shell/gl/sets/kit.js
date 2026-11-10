@@ -603,3 +603,381 @@ export function mannequin({ h = 1.1, coat = PAL.yellow, skin = '#ffd8b0', hair =
   return scaleMesh(m, k);
 }
 
+
+// ------------------------------------------------------------------------------------ set scaffolding
+
+/** A set's light state by name. An unknown name is a content slip, not a reason to lose the chapter: warn and use the first. */
+export function pickLight(id, LIGHTS, name) {
+  const first = Object.keys(LIGHTS)[0], use = name == null ? first : name;
+  if (LIGHTS[use]) return { name: use, L: LIGHTS[use] };
+  if (typeof console !== 'undefined') console.warn(`${id}: unknown light "${name}" (have ${Object.keys(LIGHTS).join(', ')}); using "${first}"`);
+  return { name: first, L: LIGHTS[first] };
+}
+
+/**
+ * The camera-mark half of a set: frame(camera, name, time) puts a camera on a mark (time adds a slow drift), fits the
+ * shadow map and the outline weight; view(name) is { shadowCenter, shadowRadius } for a renderer view rectangle.
+ * A mark is { target, dist, yaw, pitch, fov, aspect, shadowCenter, shadowRadius, outline? }.
+ */
+export function setRig(id, CAMERAS, env) {
+  const views = {};
+  for (const k of Object.keys(CAMERAS)) views[k] = { shadowCenter: CAMERAS[k].shadowCenter, shadowRadius: CAMERAS[k].shadowRadius };
+  return {
+    frame(camera, name, time = 0) {
+      const c = CAMERAS[name];
+      if (!c) throw new Error(`${id}: no camera "${name}" (have ${Object.keys(CAMERAS).join(', ')})`);
+      camera.fov = c.fov;
+      camera.orbit(c.target, c.dist * (1 + Math.sin(time * 0.17) * 0.012), c.yaw + Math.sin(time * 0.21) * 1.6, c.pitch + Math.sin(time * 0.13 + 1) * 0.5);
+      env.shadow.center = c.shadowCenter; env.shadow.radius = c.shadowRadius; env.outline.width = c.outline || 1;
+      return camera;
+    },
+    view: (name) => views[name],
+  };
+}
+
+// ------------------------------------------------------------------------------------ waterfront timber
+
+/**
+ * A planked deck, top at y = 0, centred on the origin: `w` across X, `d` along Z. Boards run across the
+ * narrow way by default (`along: 'x'`: each board spans X, they are laid side by side along Z).
+ */
+export function planks({ w = 3, d = 8, plank = 0.44, thick = 0.12, seed = 1, colors = [PAL.wood, PAL.wood2, '#c57f44'], along = 'x', gap = 0.025 } = {}) {
+  const r = R(seed), parts = [], span = along === 'x' ? d : w, n = Math.max(1, Math.round(span / plank)), pw = span / n;
+  for (let i = 0; i < n; i++) {
+    const c = -span / 2 + pw * (i + 0.5), over = (r() - 0.5) * 0.14, dy = (r() - 0.5) * 0.016, col = colors[Math.floor(r() * colors.length) % colors.length];
+    parts.push(tint(along === 'x' ? place(box(w + over, thick, pw - gap), (r() - 0.5) * 0.06, -thick / 2 + dy, c) : place(box(pw - gap, thick, d + over), c, -thick / 2 + dy, (r() - 0.5) * 0.06), col));
+  }
+  return merge(parts);
+}
+
+/**
+ * A wooden pier. Its landward end is centred on the origin and it runs toward -Z for `len`; the deck top is y = 0 and
+ * the pilings go down `drop` to the water and beyond. Every other piling stands proud of the deck as a mooring post.
+ * anchors: end (centre of the far end), posts (tops of the mooring posts)
+ */
+export function pier({ len = 14, w = 3, drop = 1.6, seed = 1, bay = 2.4, color = PAL.woodDark } = {}) {
+  const r = R(seed), parts = [place(planks({ w, d: len, seed }), 0, 0, -len / 2)], posts = [];
+  for (const sx of [-1, 1]) parts.push(tint(place(box(0.16, 0.2, len), sx * (w / 2 - 0.1), -0.2, -len / 2), color));
+  const n = Math.max(2, Math.round(len / bay));
+  for (let i = 0; i <= n; i++) for (const sx of [-1, 1]) {
+    const z = -len * (i / n) + (i === 0 ? -0.2 : i === n ? 0.15 : 0), proud = (i + (sx > 0 ? 1 : 0)) % 2 === 0, top = proud ? 0.5 + r() * 0.16 : -0.06;
+    const x = sx * (w / 2 + 0.06);
+    parts.push(tint(place(cylinder(0.15, 0.13, drop + 0.9 + top, 7), x, -drop - 0.9, z, (r() - 0.5) * 4, 0, (r() - 0.5) * 5), color));
+    if (proud) { parts.push(tint(place(cylinder(0.17, 0.15, 0.09, 7), x, top - 0.02, z), PAL.stone2)); posts.push([x, top + 0.07, z]); }
+  }
+  for (let i = 0; i < n; i++) parts.push(tint(place(box(w + 0.2, 0.14, 0.16), 0, -0.36, -len * ((i + 0.5) / n)), color));
+  return keepAnchors(merge(parts), { end: [0, 0, -len], posts });
+}
+
+/** Stone steps, `n` of them, `w` wide: the top tread is at y = 0, z = 0 and they go down toward -Z. */
+export function steps({ w = 3, n = 5, rise = 0.24, run = 0.42, color = PAL.stone, color2 = PAL.stone2 } = {}) {
+  const parts = [];
+  for (let i = 0; i < n; i++) parts.push(tint(place(roundedBox(w, rise * (n - i) + 0.4, run + 0.04, 0.04, 1), 0, -rise * (i + 1) - (rise * (n - i) + 0.4) / 2 + rise, -run * (i + 0.5)), i % 2 ? color : color2));
+  return merge(parts);
+}
+
+/**
+ * A crooked timber dock crane on a stone drum. The boom reaches toward +X; a line with an iron hook (and a crate,
+ * `load: true`) hangs from its tip and a cage lamp from its middle.
+ * anchors: tip, hook (bottom of the line), lamp (centre of the lamp glass), top (masthead)
+ */
+export function crane({ h = 4.6, reach = 3.0, seed = 1, color = PAL.woodDark, iron = PAL.iron, lit = true, load = true, line = 0.4 } = {}) {
+  const r = R(seed), parts = [], lean = (r() - 0.5) * 0.12, tip = [reach, h * 1.02, 0], mid = [reach * 0.52, h * 0.64, 0.02];
+  parts.push(tint(lathe([[0, 0], [0.62, 0], [0.6, 0.26], [0.5, 0.32], [0, 0.32]], 12, { crease: 50 }), PAL.stone2));
+  parts.push(tint(place(cylinder(0.36, 0.3, 0.2, 10), 0, 0.3, 0), iron));
+  parts.push(tint(tube(curve([[0, 0.4, 0], [lean, h * 0.5, 0], [-0.04, h, 0]], 8), (t) => 0.17 - 0.06 * t, 8, { crease: 180 }), color));
+  parts.push(tint(tube(curve([[0.12, 0.55, 0], mid, tip], 10), (t) => 0.13 - 0.05 * t, 8, { crease: 180 }), PAL.wood));
+  for (const y of [0.9, 1.25]) parts.push(tint(place(torus(0.19, 0.035, 10, 5), 0, y, 0, 0, 0, 0), iron));
+  parts.push(tint(tube([[-0.04, h, 0], [reach * 0.5, h * 1.0, 0], tip], 0.028, 5, { crease: 180 }), PAL.rope));
+  parts.push(tint(tube([[-0.04, h, 0], [-0.7, h * 0.45, 0], [-1.25, 0.12, 0]], 0.028, 5, { crease: 180 }), PAL.rope));
+  parts.push(tint(place(cylinder(0.12, 0.1, 0.16, 8), -1.25, 0, 0), iron));
+  parts.push(tint(place(sphere(0.13, 8, 6), -0.04, h + 0.05, 0), PAL.gold));
+  parts.push(tint(place(cylinder(0.17, 0.17, 0.09, 10), tip[0], tip[1], tip[2] - 0.045, 90, 0, 0), iron));
+  const L = h * line, hy = tip[1] - L;
+  parts.push(tint(place(cylinder(0.022, 0.022, L, 5, { caps: false }), tip[0], hy, 0), PAL.rope));
+  parts.push(tint(place(torus(0.1, 0.03, 10, 5), tip[0], hy - 0.08, 0, 90, 0, 0), iron));
+  if (load) parts.push(place(crate({ s: 0.62, seed: seed + 3 }), tip[0], hy - 0.8, 0, 0, 24, 0), tint(tube([[tip[0] - 0.3, hy - 0.2, -0.3], [tip[0], hy - 0.02, 0], [tip[0] + 0.3, hy - 0.2, 0.3]], 0.018, 4, { crease: 180 }), PAL.rope));
+  parts.push(place(cageLamp(1.5, lit), mid[0], mid[1] - 0.1, mid[2]));
+  return keepAnchors(merge(parts), { tip, hook: [tip[0], hy - 0.1, 0], lamp: [mid[0], mid[1] - 0.1 - 0.3 * 1.5, mid[2]], top: [-0.04, h + 0.1, 0] });
+}
+
+/** A plank ramp with rope rails from the origin up to [0, rise, -len] (so it climbs toward -Z). */
+export function gangway({ len = 3, w = 0.9, rise = 0.6, seed = 1 } = {}) {
+  const a = Math.atan2(rise, len) / DEG, L = Math.hypot(len, rise), parts = [];
+  parts.push(place(planks({ w, d: L, plank: 0.3, thick: 0.07, seed }), 0, rise / 2, -len / 2, a, 0, 0));
+  for (const sx of [-1, 1]) {
+    const x = sx * (w / 2 - 0.04);
+    for (const t of [0.04, 0.5, 0.96]) parts.push(tint(place(cylinder(0.035, 0.03, 0.62, 5), x, rise * t, -len * t), PAL.woodDark));
+    parts.push(tint(tube(curve([[x, 0.6, -len * 0.04], [x, rise * 0.27 + 0.5, -len * 0.27], [x, rise * 0.5 + 0.6, -len * 0.5], [x, rise * 0.73 + 0.5, -len * 0.73], [x, rise * 0.96 + 0.6, -len * 0.96]], 10), 0.02, 4, { crease: 180 }), PAL.rope));
+  }
+  return merge(parts);
+}
+
+/** A ship's rail along X, centred, standing on y = 0: turned posts, a fat top rail, one mid rail. anchors: posts */
+export function railing({ len = 6, h = 0.62, bay = 0.9, color = PAL.wood2, post = PAL.woodDark, cap = PAL.cream } = {}) {
+  const parts = [], n = Math.max(1, Math.round(len / bay)), posts = [];
+  for (let i = 0; i <= n; i++) {
+    const x = -len / 2 + len * (i / n);
+    parts.push(tint(place(lathe([[0, 0], [0.07, 0], [0.045, 0.1], [0.06, h * 0.5], [0.04, h - 0.06], [0, h - 0.06]], 6, { crease: 180 }), x, 0, 0), post));
+    posts.push([x, h, 0]);
+  }
+  parts.push(tint(place(roundedBox(len + 0.2, 0.08, 0.15, 0.03, 1), 0, h, 0), cap));
+  parts.push(tint(place(box(len, 0.045, 0.045), 0, h * 0.5, 0), color));
+  return keepAnchors(merge(parts), { posts });
+}
+
+/** A life ring to hang on a rail, facing +Z, centred on the origin. */
+export function lifeRing({ r = 0.2, color = PAL.cream, band = PAL.red } = {}) {
+  const parts = [tint(place(torus(r, r * 0.3, 14, 6), 0, 0, 0, 90, 0, 0), color)];
+  for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2 + 0.78; parts.push(tint(place(torus(r * 0.3, r * 0.1, 8, 4), Math.cos(a) * r, Math.sin(a) * r, 0, 0, 90 - a / DEG, 0), band)); }
+  return merge(parts);
+}
+
+/**
+ * The lane ferry: a tubby hull in two colours, a deckhouse with lit portholes, a paddle box each side, and a mast that
+ * carries the brass lane lamp. Bow toward +Z, waterline at y = 0, centred on the origin.
+ * anchors: lamp (the lane lamp), mast (masthead), bow, stern (tops of the bow and stern posts, for dressing lines),
+ *          gate (deck edge on the +X side, where a gangway lands), deck (centre of the foredeck), windows (lit portholes)
+ */
+export function ferry({ len = 11, hull = PAL.cream, keel = PAL.teal, trim = PAL.wood, wall = '#fff6dc', roof = PAL.coral, lit = true, seed = 1 } = {}) {
+  const rz = len / 2, rx = len * 0.17, ry = len * 0.125, e2 = 0.7, sp = (v, e) => Math.sign(v) * Math.pow(Math.abs(v), e), parts = [];
+  const sheer = (z) => { const t = Math.abs(z) / rz; return t * t * len * 0.045 + (z > 0 ? t * t * len * 0.03 : 0); };
+  const top = ry * 0.55;
+  const shell = (col, yLo, yHi) => tint(deform(superellipsoid(rx, ry, rz, 0.9, e2, 20, 12), (p) => { if (p[1] > 0) p[1] *= 0.05; p[1] = Math.max(yLo, Math.min(yHi, p[1])); p[1] += top + sheer(p[2]); }, 50), col);
+  parts.push(shell(hull, -ry * 0.36, ry), shell(keel, -ry, -ry * 0.34));
+  const rim = []; for (let i = 0; i <= 28; i++) { const a = (i / 28) * Math.PI * 2, z = rz * sp(Math.sin(a), e2); rim.push([rx * sp(Math.cos(a), e2), top + sheer(z) + 0.02, z]); }
+  parts.push(tint(tube(rim, len * 0.016, 6, { crease: 180 }), trim));
+  parts.push(tint(place(scaleMesh(lathe([[1, 0], [0, 0]], 16, { crease: 180 }), rx * 0.9, 1, rz * 0.9), 0, top - 0.04, 0), PAL.wood2));
+  // deckhouse, a little aft of the middle
+  const hw = rx * 1.15, hh = len * 0.15, hd = len * 0.34, hz = -rz * 0.2, wins = [];
+  parts.push(tint(place(roundedBox(hw, hh, hd, 0.12, 2), 0, top + hh / 2 - 0.04, hz), wall));
+  parts.push(tint(place(roundedBox(hw + 0.36, 0.16, hd + 0.5, 0.07, 1), 0, top + hh + 0.02, hz, 0, 0, 1.5), roof));
+  parts.push(tint(place(roundedBox(hw * 0.5, 0.2, hd * 0.4, 0.08, 1), 0, top + hh + 0.18, hz), wall), tint(place(roundedBox(hw * 0.5 + 0.2, 0.1, hd * 0.4 + 0.2, 0.04, 1), 0, top + hh + 0.32, hz), roof));
+  for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
+    const z = hz + (i - 1) * hd * 0.3, y = top + hh * 0.58, x = sx * hw / 2;
+    parts.push(tint(place(cylinder(0.2, 0.2, 0.06, 10), x - sx * 0.02, y, z, 0, 0, sx * -90), PAL.navy));
+    const g = tint(place(cylinder(0.14, 0.14, 0.07, 10), x - sx * 0.02, y, z, 0, 0, sx * -90), lit ? PAL.glass : PAL.glassOff);
+    parts.push(lit ? setGlow(g, 0.95) : g); if (lit) wins.push([x + sx * 0.06, y, z]);
+  }
+  { const arch = []; for (let i = 0; i <= 6; i++) { const a = (i / 6) * Math.PI; arch.push([Math.cos(a) * 0.24, 0.5 + Math.sin(a) * 0.24]); }
+    parts.push(tint(place(extrude([[0.24, 0], ...arch, [-0.24, 0]], 0.1, { bevel: 0.02 }), 0, top - 0.04, hz + hd / 2 + 0.02), PAL.teal)); }
+  // paddle boxes: a half drum each side with a rayed face
+  const pr = len * 0.12, pz = rz * 0.14;
+  for (const sx of [-1, 1]) {
+    const half = []; for (let i = 0; i <= 10; i++) { const a = (i / 10) * Math.PI; half.push([Math.cos(a) * pr, Math.sin(a) * pr]); }
+    parts.push(tint(place(extrude(half, 0.5, { bevel: 0.04 }), sx * (rx * 0.92), top - 0.25, pz, 0, 90, 0), roof));
+    for (let i = 1; i < 6; i++) { const a = (i / 6) * Math.PI; parts.push(tint(place(box(0.05, pr * 0.62, 0.05), sx * (rx * 0.92 + 0.27), top - 0.25 + Math.sin(a) * pr * 0.55, pz + Math.cos(a) * pr * 0.55, a / DEG - 90, 0, 0), PAL.cream)); }
+    parts.push(tint(place(sphere(0.12, 8, 6), sx * (rx * 0.92 + 0.27), top - 0.2, pz), PAL.gold));
+  }
+  // mast forward of the house, a yard, and the lane lamp at its head
+  const mh = len * 0.56, mz = rz * 0.3, my = top + mh;
+  parts.push(tint(place(cylinder(0.11, 0.07, mh, 8), 0, top - 0.1, mz, 2, 0, 0), PAL.woodDark));
+  parts.push(tint(place(cylinder(0.045, 0.045, len * 0.3, 6), -len * 0.15, top + mh * 0.72, mz + mh * 0.72 * 0.035, 0, 0, -90), PAL.woodDark));
+  const lampY = my + 0.12, lz = mz + mh * 0.035;
+  parts.push(tint(place(lathe([[0, 0], [0.2, 0], [0.24, 0.06], [0.1, 0.12], [0, 0.12]], 10, { crease: 50 }), 0, lampY - 0.14, lz), PAL.gold));
+  { const g = tint(place(sphere(0.2, 10, 8), 0, lampY + 0.16, lz), lit ? '#fff0b0' : PAL.glassOff); parts.push(lit ? setGlow(g, 1) : g); }
+  parts.push(tint(place(lathe([[0.27, 0], [0.2, 0.1], [0.05, 0.2], [0, 0.3]], 10, { crease: 50 }), 0, lampY + 0.34, lz), PAL.gold));
+  const bowY = top + sheer(rz) + 0.02, sternY = top + sheer(-rz) + 0.02;
+  parts.push(tint(place(cylinder(0.06, 0.05, len * 0.09, 6), 0, bowY - 0.1, rz * 0.93), PAL.woodDark));
+  parts.push(tint(place(cylinder(0.045, 0.035, len * 0.16, 6), 0, sternY - 0.1, -rz * 0.93, -8, 0, 0), PAL.woodDark));
+  parts.push(tint(place(extrude([[0, 0], [len * 0.07, 0.07], [0, 0.16]], 0.02), 0.03, sternY + len * 0.11, -rz * 0.95, 0, -80, 0), PAL.red));
+  return keepAnchors(merge(parts), {
+    lamp: [0, lampY + 0.16, lz], mast: [0, my + 0.6, lz], bow: [0, bowY + len * 0.09 - 0.1, rz * 0.93], stern: [0, sternY + len * 0.15, -rz * 0.95],
+    yardL: [-len * 0.15, top + mh * 0.72, mz], yardR: [len * 0.15, top + mh * 0.72, mz],
+    gate: [rx * 0.86, top, rz * 0.5], deck: [0, top, rz * 0.6], windows: wins,
+  });
+}
+
+// ------------------------------------------------------------------------------------ people at a distance
+
+/**
+ * A bystander for crowds: a coat to the ground, a round head, a cap of hair, one arm up holding a light. About `h`
+ * tall, facing +Z. The coat is white so an instance colour dresses it (keep instance colours pale: they tint the face too).
+ *   hold    'lantern' | 'torch' | 'none'
+ *   detail  1 for the near rows (about 260 triangles), 0 for a far mass (about 90: head and coat only)
+ * anchors: light (centre of what is held), head
+ */
+export function townsfolk({ seed = 1, hold = 'lantern', coat = '#ffffff', skin = '#ffdcb8', hair = null, h = 1.0, detail = 1 } = {}) {
+  const r = R(seed), parts = [], k = h / 1.0, up = r() > 0.5 ? 1 : -1;
+  const hairCol = hair || pick(r, ['#7a4630', '#3b3560', '#c8643a', '#f0e6d6', '#59402e']);
+  parts.push(tint(lathe([[0, 0], [0.2, 0], [0.225, 0.07], [0.17, 0.34], [0.12, 0.5], [0, 0.55]], detail ? 7 : 5, { crease: 180 }), coat));
+  parts.push(tint(place(sphere(0.2, detail ? 8 : 6, detail ? 6 : 4), 0, 0.72, 0), skin));
+  if (detail) {
+    parts.push(tint(place(deform(sphere(1, 8, 5), (p) => { if (p[1] < 0.12 && p[2] > -0.25) p[1] = 0.12 + (p[1] - 0.12) * 0.05; }), 0, 0.735, -0.02, 0, 0, 0, 0.218, 0.2, 0.212), hairCol));
+    if (r() > 0.55) parts.push(tint(place(sphere(0.085, 6, 4), 0, 0.93, -0.06), hairCol)); // a bun
+    else if (r() > 0.5) parts.push(tint(place(cylinder(0.2, 0.13, 0.1, 7), 0, 0.86, 0, -8, 0, 0), pick(r, [PAL.navy, PAL.woodDark, PAL.red]))); // a cap
+    parts.push(tint(place(ellipsoid(0.05, 0.13, 0.05, 5, 3), -up * 0.2, 0.36, 0.02, 0, 0, -up * 14), coat));
+  }
+  const hx = up * 0.25, hy = hold === 'torch' ? 0.98 : 0.86, hz = 0.12;
+  if (hold !== 'none') {
+    if (detail) parts.push(tint(place(ellipsoid(0.048, 0.15, 0.048, 5, 3), up * 0.215, 0.56, 0.07, 30, 0, up * -18), coat));
+    if (hold === 'torch') {
+      parts.push(tint(place(cylinder(0.022, 0.028, 0.34, 5), hx, hy - 0.34, hz), PAL.woodDark));
+      parts.push(setGlow(setOutline(gradientY(place(lathe([[0, 0], [0.07, 0.04], [0.075, 0.1], [0.04, 0.2], [0, 0.28]], 6, { crease: 180 }), hx, hy - 0.02, hz), '#ffe9a0', '#ff8a30'), 0.3), 1));
+    } else {
+      parts.push(tint(place(cylinder(0.008, 0.008, 0.07, 3, { caps: false }), hx, hy + 0.08, hz), [0.2, 0.2, 0.3]));
+      parts.push(setGlow(tint(place(lathe([[0, -0.09], [0.055, -0.07], [0.085, 0], [0.055, 0.07], [0, 0.09]], 6, { crease: 180 }), hx, hy, hz), '#ffd070'), 0.95));
+    }
+  }
+  return keepAnchors(scaleMesh(merge(parts), k), { light: [hx * k, hy * k, hz * k], head: [0, 0.72 * k, 0] });
+}
+
+/** Pale coat colours for townsfolk instances: they multiply the whole figure, so none is strong enough to stain a face. */
+export const COATS = ['#ffe9d6', '#d9ecff', '#ffe0ea', '#e2f6dc', '#fff2c4', '#e6dcff', '#ffd8c4', '#d4f2ee'];
+
+// ------------------------------------------------------------------------------------ fire
+
+/**
+ * A flame to scale and sway per frame: three tongues, pale at the root and orange at the tips, glowing, about
+ * `r` wide and `h` tall, standing on the origin. No outline. Put it on its own node (kitMaterials().lantern).
+ */
+export function flame({ r = 0.2, h = 0.6, seg = 7, root = '#fff2b0', tip = '#ff7a24' } = {}) {
+  const one = (s) => lathe([[0, 0], [0.5 * s, 0.1 * s], [0.62 * s, 0.3 * s], [0.42 * s, 0.6 * s], [0.16 * s, 0.86 * s], [0, s]], seg, { crease: 180 });
+  const m = merge(scaleMesh(one(1), r, h, r), place(scaleMesh(one(1), r * 0.62, h * 0.66, r * 0.62), r * 0.5, 0, r * 0.1, 0, 0, -9), place(scaleMesh(one(1), r * 0.55, h * 0.56, r * 0.55), -r * 0.48, 0, -r * 0.12, 0, 0, 11));
+  return setGlow(setOutline(gradientY(m, root, tip, 0, h * 0.8), 0), 1);
+}
+
+/** An iron fire basket on three legs, full of coals. anchors: fire (where a flame node stands) */
+export function brazier({ h = 0.9, r = 0.28, color = PAL.iron } = {}) {
+  const parts = [];
+  for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2 + 0.4; parts.push(tint(tube([[Math.cos(a) * r * 1.1, 0, Math.sin(a) * r * 1.1], [Math.cos(a) * r * 0.5, h * 0.6, Math.sin(a) * r * 0.5], [Math.cos(a) * r * 0.9, h, Math.sin(a) * r * 0.9]], 0.03, 5, { crease: 180 }), color)); }
+  parts.push(tint(lathe([[0, h - r * 0.75], [r * 0.6, h - r * 0.7], [r * 1.0, h - r * 0.1], [r * 1.05, h + 0.02], [r * 0.9, h + 0.02], [r * 0.85, h - r * 0.1], [0, h - r * 0.5]], 10, { crease: 60 }), color));
+  parts.push(setGlow(tint(place(blob({ rx: r * 0.8, ry: r * 0.28, rz: r * 0.8, lumps: 0.6, seed: 3, seg: 8, rings: 5 }), 0, h - 0.04, 0), '#ff9a3c'), 0.9));
+  return keepAnchors(merge(parts), { fire: [0, h, 0] });
+}
+
+/** A heap of broken, scorched crates and planks, about `s` across. anchors: fire (two points to stand flames on) */
+export function wreck({ s = 1.4, seed = 1 } = {}) {
+  const r = R(seed), parts = [], char = '#5a3a46', char2 = '#7a4a40';
+  parts.push(place(crate({ s: s * 0.42, seed: seed + 1, color: char2, trim: char }), -s * 0.2, 0, 0.05, 0, 20, 14));
+  parts.push(place(crate({ s: s * 0.36, seed: seed + 2, color: PAL.wood, trim: char }), s * 0.22, 0, -0.1, -12, -30, 0));
+  parts.push(place(crate({ s: s * 0.3, seed: seed + 4, color: char2, trim: char }), 0.02, s * 0.3, -0.05, 18, 50, 20));
+  for (let i = 0; i < 6; i++) parts.push(tint(place(box(s * (0.5 + r() * 0.4), 0.05, 0.13), (r() - 0.5) * s * 0.8, 0.12 + r() * s * 0.3, (r() - 0.5) * s * 0.5, (r() - 0.5) * 60, r() * 180, (r() - 0.5) * 70), i % 2 ? char : PAL.woodDark));
+  parts.push(setGlow(tint(place(blob({ rx: s * 0.3, ry: 0.07, rz: s * 0.24, lumps: 0.6, seed, seg: 8, rings: 4 }), 0, 0.05, 0.1), '#ff8a30'), 0.9));
+  return keepAnchors(merge(parts), { fire: [[-s * 0.05, s * 0.34, 0], [s * 0.26, s * 0.2, -0.05]] });
+}
+
+// ------------------------------------------------------------------------------------ far town
+
+/**
+ * A harbour town climbing a hill, for the far side of a bay: `rows` stone terraces stepping up and back, each
+ * crowded with small houses with lit windows. One mesh for kitMaterials().far. It faces +Z, is `w` wide and `h`
+ * high at the back, and stands on y = 0 with its front edge on z = 0.
+ * anchors: windows (centres of lit windows, front rows first), top
+ */
+export function townBank({ w = 44, d = 16, h = 11, rows = 4, seed = 1, lit = 0.75, walls = [PAL.cream, '#ffe6c4', '#ffd9c8', '#fff6dc'], stone = PAL.stone2, glass = PAL.glass, dark = PAL.glassOff, tower = true } = {}) {
+  const r = R(seed), parts = [], wins = [];
+  for (let k = 0; k < rows; k++) {
+    const y = h * (k / rows), z = -d * (k / rows), rw = w * (1 - 0.16 * k), th = h / rows + 0.6;
+    parts.push(tint(place(box(rw, th, d / rows + 1.2), (r() - 0.5) * w * 0.04, y - th / 2 + 0.05, z - d / rows / 2), k % 2 ? stone : PAL.stoneDark));
+    let x = -rw / 2 + 0.6;
+    while (x < rw / 2 - 1.6) {
+      const s = 1.7 + r() * 1.5, hh = s * (0.9 + r() * 0.9), cx = x + s / 2, cz = z - 0.9 - r() * (d / rows - 1.8);
+      parts.push(tint(place(box(s, hh, s * 0.9), cx, y + hh / 2, cz), pick(r, walls)));
+      parts.push(tint(place(cylinder(s * 0.82, 0, s * (0.5 + r() * 0.3), 4), cx, y + hh, cz, 0, 45, 0), pick(r, PAL.roofs)));
+      const nw = hh > s * 1.3 ? 2 : 1;
+      for (let j = 0; j < nw; j++) for (const sx of s > 2.2 ? [-1, 1] : [0]) {
+        const on = r() < lit, wx = cx + sx * s * 0.24, wy = y + hh * (nw === 1 ? 0.55 : 0.3 + j * 0.42), g = tint(place(box(s * 0.2, s * 0.26, 0.08), wx, wy, cz + s * 0.45), on ? glass : dark);
+        parts.push(on ? setGlow(g, 1) : g); if (on) wins.push([wx, wy, cz + s * 0.5]);
+      }
+      x += s + 0.25 + r() * 0.9;
+    }
+  }
+  if (tower) { // a bell tower on the top terrace, so the skyline has one thing taller than the rest
+    const tx = w * 0.12, ty = h * ((rows - 1) / rows), tz = -d * ((rows - 1) / rows) - d / rows * 0.6;
+    parts.push(tint(place(box(1.9, 6.4, 1.9), tx, ty + 3.2, tz), PAL.cream), tint(place(box(2.3, 0.3, 2.3), tx, ty + 6.4, tz), stone), tint(place(cylinder(1.6, 0, 2.6, 4), tx, ty + 6.5, tz, 0, 45, 0), PAL.roofs[3]));
+    const g = setGlow(tint(place(box(0.7, 1.1, 0.1), tx, ty + 5.2, tz + 0.95), glass), 1); parts.push(g); wins.unshift([tx, ty + 5.2, tz + 1]);
+  }
+  return keepAnchors(setOutline(merge(parts), 0.6), { windows: wins, top: [0, h, -d] });
+}
+
+/** A paper light on a little wooden float, waterline at y = 0. White paper: colour it per instance. */
+export function floatLight({ s = 1 } = {}) {
+  return scaleMesh(merge(tint(place(cylinder(0.2, 0.17, 0.05, 7), 0, 0, 0), PAL.wood), setGlow(tint(place(roundedBox(0.2, 0.22, 0.2, 0.04, 1), 0, 0.16, 0), '#ffffff'), 0.95)), s);
+}
+
+// ------------------------------------------------------------------------------------ rooms and desks
+
+/** A heavy writing desk, top at y = h, `w` across X and `d` deep, centred. Fat turned legs and a modesty board at the back. */
+export function desk({ w = 2.4, d = 1.2, h = 0.8, color = '#9a5a3c', dark = '#6e3b30', trim = PAL.gold } = {}) {
+  const parts = [tint(place(roundedBox(w, 0.1, d, 0.035, 2), 0, h - 0.05, 0), color), tint(place(roundedBox(w - 0.16, 0.16, d - 0.14, 0.03, 1), 0, h - 0.17, 0), dark)];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) parts.push(tint(place(lathe([[0, 0], [0.09, 0], [0.06, 0.08], [0.075, h * 0.45], [0.055, h * 0.7], [0.08, h - 0.25], [0, h - 0.25]], 8, { crease: 60 }), sx * (w / 2 - 0.14), 0, sz * (d / 2 - 0.12)), dark));
+  parts.push(tint(place(box(w - 0.3, h * 0.5, 0.05), 0, h * 0.55, -d / 2 + 0.12), color));
+  parts.push(tint(place(sphere(0.035, 6, 4), 0, h - 0.17, d / 2 - 0.06), trim));
+  return merge(parts);
+}
+
+/**
+ * A big account book lying open on y = 0, spine along Z, `w` across both pages and `d` deep. The pages rise
+ * toward the gutter. anchors: pageL, pageR (page centres), tilt (degrees each page leans toward the gutter),
+ * pw, pd (the written area of one page)
+ */
+export function ledgerBook({ w = 1.2, d = 0.82, thick = 0.09, cover = '#7a3048', paper = '#fff3d6', edge = '#ead7a8', ribbon = PAL.red } = {}) {
+  const parts = [], hw = w / 2, tilt = 5;
+  parts.push(tint(place(roundedBox(w + 0.07, 0.03, d + 0.07, 0.012, 1), 0, 0.015, 0), cover));
+  for (const sx of [-1, 1]) {
+    parts.push(tint(place(roundedBox(hw - 0.01, thick, d, 0.012, 1), sx * hw / 2, 0.03 + thick / 2, 0, 0, 0, sx * tilt * 0.5), edge));
+    parts.push(tint(place(box(hw - 0.03, 0.012, d - 0.03), sx * hw / 2, 0.03 + thick + 0.004, 0, 0, 0, sx * tilt), paper));
+    for (const sz of [-1, 1]) parts.push(tint(place(box(0.06, 0.034, 0.06), sx * (hw + 0.012), 0.016, sz * (d / 2 + 0.012)), PAL.gold));
+  }
+  parts.push(tint(place(box(0.022, 0.006, d * 0.6), 0.03, 0.03 + thick + 0.012, d * 0.26, 0, 4, 0), ribbon));
+  const py = 0.03 + thick + 0.012;
+  return keepAnchors(merge(parts), { pageL: [-hw / 2, py, 0], pageR: [hw / 2, py, 0], tilt, pw: hw - 0.12, pd: d - 0.14 });
+}
+
+/** A candle in a brass dish, standing on y = 0. anchors: flame (where the wick is: stand a flame node there) */
+export function candle({ h = 0.26, r = 0.035, lit = true } = {}) {
+  const parts = [tint(lathe([[0, 0], [0.11, 0], [0.13, 0.025], [0.1, 0.03], [0.04, 0.03], [0.045, 0.06], [0, 0.06]], 10, { crease: 60 }), PAL.gold)];
+  parts.push(tint(place(torus(0.03, 0.01, 8, 4), 0.14, 0.03, 0, 0, 0, 0), PAL.gold));
+  const wax = tint(place(cylinder(r, r * 0.92, h, 8), 0, 0.05, 0), '#fff4dc'); parts.push(lit ? setGlow(wax, (x, y) => Math.max(0, (y - 0.05 - h * 0.5) / (h * 0.5)) * 0.7) : wax);
+  parts.push(tint(place(sphere(r * 0.9, 6, 4), r * 0.7, 0.05 + h * 0.7, r * 0.3, 0, 0, 0, 1, 1.6, 1), '#fff4dc'));
+  parts.push(tint(place(cylinder(0.004, 0.004, 0.02, 3), 0, 0.05 + h, 0), [0.15, 0.12, 0.2]));
+  return keepAnchors(merge(parts), { flame: [0, 0.05 + h + 0.012, 0] });
+}
+
+/** A squat glass inkwell with a brass collar. */
+export function inkwell({ s = 1 } = {}) {
+  return scaleMesh(merge(tint(lathe([[0, 0], [0.06, 0], [0.07, 0.015], [0.07, 0.07], [0.035, 0.09], [0, 0.09]], 8, { crease: 50 }), '#2a3a8a'), tint(place(cylinder(0.038, 0.034, 0.025, 8), 0, 0.085, 0), PAL.gold)), s);
+}
+
+/** A quill pen: nib at the origin, the feather leaning back along +X and up. About `len` long. */
+export function quill({ len = 0.42, color = '#fff6ea', tip = PAL.teal } = {}) {
+  const shaft = tint(tube([[0, 0, 0], [len * 0.5, len * 0.38, 0], [len * 0.82, len * 0.6, 0]], (t) => 0.006 + 0.002 * t, 4, { crease: 180 }), [0.95, 0.9, 0.8]);
+  const vane = extrude([[len * 0.3, len * 0.2], [len * 0.52, len * 0.52], [len * 0.84, len * 0.7], [len * 0.9, len * 0.58], [len * 0.7, len * 0.4], [len * 0.42, len * 0.22]], 0.012, { crease: 30 });
+  return merge(shaft, gradientY(vane, color, tip, len * 0.3, len * 0.7), tint(place(cylinder(0.004, 0.009, 0.03, 4), 0, 0, 0, 0, 0, -52), PAL.gold));
+}
+
+/**
+ * A wall of account books: `rows` shelves of fat spines in a frame, facing +Z, standing on y = 0, centred on X.
+ * About 9 triangles a book: fine as static dressing behind a desk.
+ */
+export function bookshelf({ w = 2.2, h = 2.6, d = 0.32, rows = 4, seed = 1, wood = '#7a4634', spines = ['#b8483c', '#3f6fb8', '#3a9a86', '#c89a3a', '#7a55a8', '#e0cfa8'] } = {}) {
+  const r = R(seed), parts = [tint(place(box(w, h, 0.06), 0, h / 2, -d / 2 + 0.03), '#4a2a34')], rh = h / rows;
+  for (const sx of [-1, 1]) parts.push(tint(place(box(0.09, h, d), sx * (w / 2 - 0.045), h / 2, 0), wood));
+  for (let k = 0; k <= rows; k++) parts.push(tint(place(box(w, 0.07, d + 0.04), 0, Math.min(h - 0.035, k * rh + 0.035), 0.01), wood));
+  for (let k = 0; k < rows; k++) {
+    let x = -w / 2 + 0.12;
+    while (x < w / 2 - 0.2) {
+      const bw = 0.07 + r() * 0.09, bh = rh * (0.52 + r() * 0.3), leanB = r() > 0.88 ? 14 : 0;
+      if (r() > 0.1) parts.push(tint(place(box(bw, bh, d * 0.72), x + bw / 2 + (leanB ? 0.04 : 0), k * rh + 0.07 + bh / 2, 0.02, 0, 0, -leanB), pick(r, spines)));
+      x += bw + 0.012 + (leanB ? 0.06 : 0);
+    }
+  }
+  return merge(parts);
+}
+
+/**
+ * A tall round-headed window in a stone surround, facing +Z, sill at y = 0. The glass glows with `glass`
+ * (night sky blue by default, so it reads as moonlight; pass a warm colour for a lit room seen from outside).
+ */
+export function archWindow({ w = 1.1, h = 2.2, glass = '#3f6fe0', frame = PAL.stone2, bars = PAL.navy, glow = 0.85 } = {}) {
+  const arc = (rad, y0) => { const o = [[rad, 0]]; for (let i = 0; i <= 8; i++) { const a = (i / 8) * Math.PI; o.push([Math.cos(a) * rad, y0 + Math.sin(a) * rad]); } o.push([-rad, 0]); return o; };
+  const y0 = h - w / 2, parts = [tint(extrude(arc(w / 2 + 0.12, y0), 0.16, { bevel: 0.03 }), frame)];
+  parts.push(setGlow(tint(place(extrude(arc(w / 2, y0), 0.1), 0, 0.06, 0.05), glass), glow));
+  parts.push(tint(place(box(0.04, h - 0.1, 0.04), 0, h / 2, 0.11), bars));
+  for (const y of [h * 0.3, h * 0.6]) parts.push(tint(place(box(w, 0.04, 0.04), 0, y, 0.11), bars));
+  parts.push(tint(place(roundedBox(w + 0.44, 0.1, 0.3, 0.03, 1), 0, -0.03, 0.08), frame));
+  return merge(parts);
+}
+
+export { plane, clone };
