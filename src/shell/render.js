@@ -1196,8 +1196,14 @@ export function createRenderer(canvas) {
     const dl = Math.hypot(s.dir[0], s.dir[1]) || 1;
     const d = [s.dir[0] / dl, s.dir[1] / dl];
     const ex = s.exit.pos;
-    const c1 = [m[0] + d[0] * 80, m[1] + d[1] * 80];
-    const c2 = [ex[0], ex[1] - 170];
+    // exit.via routes the wire round the furniture (Kedge's gangway would otherwise be drawn
+    // straight across the tally bank and the first crane). It is drawing only: the ball is carried.
+    const via = s.exit.via;
+    if (via !== undefined && !(Array.isArray(via) && via.length === 2 && via.every((p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)))) {
+      throw new Error(`render: shot '${s.id}' exit.via must be two points [[x, y], [x, y]], got ${JSON.stringify(via)}`);
+    }
+    const c1 = via ? via[0] : [m[0] + d[0] * 80, m[1] + d[1] * 80];
+    const c2 = via ? via[1] : [ex[0], ex[1] - 170];
     const N = 30;
     r = { left: [], right: [] };
     for (let k = 0; k <= N; k++) {

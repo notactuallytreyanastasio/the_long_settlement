@@ -7251,8 +7251,8 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 40195,
-  "lines": 903
+  "bytes": 41501,
+  "lines": 917
  },
  {
   "path": "src/core/economy.js",
@@ -7346,8 +7346,8 @@
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 181215,
-  "lines": 4328
+  "bytes": 181754,
+  "lines": 4334
  },
  {
   "path": "src/shell/style.js",

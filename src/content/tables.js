@@ -637,18 +637,18 @@ function kedge() {
   const lo = lower({
     divX: 31, divTop: 596, elbow: 662, pivot: [120, 700],
     sling: [[71, 572], [71, 650], [108, 666]], slingKick: 330,
-    flipLen: 56, rest: 0.5, active: 0.62, guard: [15, 15], guardY: 554,
+    flipLen: 56, rest: 0.5, active: 0.62, guard: [14, 14], guardY: 554,
   });
-  const gangway = sideLane(256, 340, 436, 34, 68);                  // left: the gangway ramp
-  const roads = mirrorLane(sideLane(232, 330, 432, 34, 68));        // right: the roadstead orbit
-  const hatches = topLanes(['hatchL', 'hatchC', 'hatchR'], [100, 140, 180, 220], 70, 116, 'hatches');
+  const gangway = sideLane(256, 340, 436, 34, 74);                  // left: the gangway ramp
+  const roads = mirrorLane(sideLane(232, 330, 432, 34, 76));        // right: the roadstead orbit
+  const hatches = topLanes(['hatchL', 'hatchC', 'hatchR'], [80, 120, 160, 200], 70, 116, 'hatches');
 
   const walls = [
     ...sh.walls, ...lo.walls,
     // ceiling, then the bollard that stops a launch over the hatches
-    { a: sh.arcEnd, b: [92, 8] },
-    { a: [92, 8], b: [100, 70], bounce: 0.3 },
-    ...poly([[100, 116], [50, 146], [L, 196]]),
+    { a: sh.arcEnd, b: [72, 8] },
+    { a: [72, 8], b: [80, 70], bounce: 0.3 },
+    ...poly([[80, 116], [42, 146], [L, 196]]),
     { a: [L, 196], b: gangway.outer[0] }, ...poly(gangway.outer), { a: gangway.outer[2], b: [L, 800] },
     ...poly(gangway.inner),
     // the gangway is roofed at its head: a ball goes up it, never down it
@@ -676,17 +676,25 @@ function kedge() {
     ],
     slings: lo.slings,
     targets: [
-      // the tally bank stands free under the first crane, leaning in
-      ...bank(['tallyA', 'tallyB', 'tallyC'], [98, 356], [72, 298], 'tally'),
+      // The tally bank stands in the line a ball takes out of the right-hand hatch. Twenty units
+      // nearer the wall, that ball fell clear of everything, struck the tip of the gangway's
+      // mouth and went straight to the right outlane: 50 of 130 balls lasted under six seconds,
+      // and every made gangway shot was one of them.
+      ...bank(['tallyA', 'tallyB', 'tallyC'], [122, 362], [96, 302], 'tally'),
       // ROPE is made fast along the roadstead's wall, beside the third crane
       ...bank(['ropeR', 'ropeO', 'ropeP', 'ropeE'], [302, 296], [276, 362], 'rope', 0.06),
     ],
     rollovers: [...hatches.rollovers, ...lo.rollovers],
     shots: [
-      { id: 'gangwayRamp', a: gangway.gate(416)[0], b: gangway.gate(416)[1], dir: [0, -1], exit: { pos: [196, 44], vel: [20, 0] } },
+      // The gangway sets the ball down over the right-hand hatch, the one a launch reaches least.
+      { id: 'gangwayRamp', a: gangway.gate(416)[0], b: gangway.gate(416)[1], dir: [0, -1], exit: { pos: [176, 44], vel: [20, 0], via: [[18, 210], [70, 14]] } },
       { id: 'roadsOrbit', a: roads.gate(412)[0], b: roads.gate(412)[1], dir: [0, -1] },
     ],
     saucers: [
+      // It lets the ball go down and to the right, past crane 3's shoulder. Straight down it fell
+      // on the same spot of the right flipper every time and came back up through hatch L and
+      // down the middle (26 centre drains in an hour); toward crane 2 the crane threw it straight
+      // back in, and one ball made 190 hopper hits in five minutes without anyone touching a flipper.
       { id: 'hopper', pos: [226, 188], r: 14, eject: [70, 190], holdMs: 1100 },
     ],
     reels: { fill: ['hatchL', 'hatchC', 'hatchR'], spin: ['hopper', 'gangwayRamp', 'roadsOrbit'] },
@@ -703,6 +711,7 @@ function kedge() {
       { text: 'THE SALT QUAYS', pos: [187, 512], size: 11 },
       { text: 'GANGWAY', pos: [25, 300], size: 9, angle: -1.5708 },
       { text: 'ROADSTEAD', pos: [mx(24), 290], size: 9, angle: 1.5708 },
+      { text: 'TALLY', pos: [93, 340], size: 8, angle: -1.98 },
       { text: 'GENERAL AVERAGE', pos: [187, 566], size: 8 },
     ],
     labels: {
@@ -728,9 +737,9 @@ function fishdock() {
   const lo = lower({
     divX: 30, divTop: 598, elbow: 664, pivot: [121, 701],
     sling: [[72, 576], [72, 652], [108, 668]], slingKick: 340,
-    flipLen: 56, rest: 0.5, active: 0.62, guard: [11, 13], guardY: 556,
+    flipLen: 56, rest: 0.5, active: 0.62, guard: [7, 8], guardY: 556,
   });
-  const hall = sideLane(290, 366, 456, 34, 70);                     // left: the hall steps
+  const hall = sideLane(290, 366, 456, 34, 78);                     // left: the hall steps
   const quay = mirrorLane(sideLane(250, 344, 440, 33, 70));         // right: the quay orbit
   const roll = topLanes(['rollL', 'rollC', 'rollR'], [196, 240, 284, 328], 78, 120, 'roll');
 
@@ -770,7 +779,10 @@ function fishdock() {
     ],
     rollovers: [...roll.rollovers, ...lo.rollovers],
     shots: [
-      { id: 'hallRamp', a: hall.gate(436)[0], b: hall.gate(436)[1], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 130] } },
+      // The hall steps carry the ball up over the roll and let it go above the left-hand name.
+      // Landing it in the right inlane, "call the whole roll" took the bot a median 2:10 and the
+      // ramp was made 8 times in five minutes; here 1:29, and 16.
+      { id: 'hallRamp', a: hall.gate(436)[0], b: hall.gate(436)[1], dir: [0, -1], exit: { pos: [214, 50], vel: [10, 0], via: [[20, 250], [110, 16]] } },
       { id: 'quayOrbit', a: quay.gate(420)[0], b: quay.gate(420)[1], dir: [0, -1] },
     ],
     saucers: [
@@ -790,6 +802,7 @@ function fishdock() {
       { text: 'THE DOCK QUARTER, BY DAY', pos: [187, 518], size: 9 },
       { text: 'HALL STEPS', pos: [25, 328], size: 9, angle: -1.5708 },
       { text: 'QUAY', pos: [mx(24), 300], size: 10, angle: 1.5708 },
+      { text: 'STALL', pos: [86, 320], size: 8, angle: -1.88 },
       { text: 'COUNTED IN THE OPEN', pos: [187, 568], size: 8 },
     ],
     labels: {
@@ -818,7 +831,7 @@ function cresset() {
     sling: [[70, 570], [70, 652], [107, 668]], slingKick: 390,
     flipLen: 57, rest: 0.52, active: 0.63, guard: [15, 15], guardY: 556,
   });
-  const mole = sideLane(250, 344, 442, 34, 70);                     // left: the mole
+  const mole = sideLane(250, 344, 442, 34, 77);                     // left: the mole
   const assembly = mirrorLane(sideLane(214, 330, 430, 34, 70));     // right: the Assembly orbit
   const seats = topLanes(['seatL', 'seatC', 'seatR'], [136, 178, 220, 262], 66, 108, 'seats');
 
@@ -862,7 +875,7 @@ function cresset() {
     rollovers: [...seats.rollovers, ...lo.rollovers],
     shots: [
       // the mole ends at the lamp
-      { id: 'moleRamp', a: mole.gate(422)[0], b: mole.gate(422)[1], dir: [0, -1], exit: { pos: [199, 152], vel: [0, 60] } },
+      { id: 'moleRamp', a: mole.gate(422)[0], b: mole.gate(422)[1], dir: [0, -1], exit: { pos: [199, 152], vel: [0, 60], via: [[20, 250], [120, 150]] } },
       { id: 'assemblyOrbit', a: assembly.gate(410)[0], b: assembly.gate(410)[1], dir: [0, -1] },
     ],
     saucers: [
@@ -882,6 +895,7 @@ function cresset() {
       { text: 'THREE DAYS TO RENEWAL', pos: [187, 516], size: 10 },
       { text: 'THE MOLE', pos: [25, 296], size: 9, angle: -1.5708 },
       { text: 'ASSEMBLY', pos: [mx(24), 272], size: 9, angle: 1.5708 },
+      { text: 'BENCH', pos: [67, 284], size: 8, angle: -1.42 },
       { text: 'PAYABLE IN CALM', pos: [187, 568], size: 9 },
     ],
     labels: {
