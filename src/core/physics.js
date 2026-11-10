@@ -131,7 +131,7 @@ function bounce(b, nx, ny, e, mu, svx, svy) {
   return impact;
 }
 
-// Closest-point test of ball (x,y,R) against segment a-b inflated by `pad`.
+// Closest-point test of the ball centre against segment a-b; contact within `reach`.
 // On contact writes the contact normal and point into `c` and pushes the ball out.
 const c = { nx: 0, ny: 0, cx: 0, cy: 0 };
 function touchSeg(b, ax, ay, bx, by, reach) {

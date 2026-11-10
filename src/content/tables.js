@@ -220,10 +220,11 @@ function saltmere() {
   const courtBase = sideLane(240, 350, 440, 30, 40);   // right: the court orbit, narrower
   const court = { inner: courtBase.inner.map(mirror), outer: courtBase.outer.map(mirror) };
 
-  // The gallery to the Orrery leans seven degrees, flared at the mouth. It sits between
-  // the two angles a flipper gives easily (the near-side shot off the base and the cross
-  // shot off the tip), so it has to be aimed for. Directly above a flipper's base it was
-  // fed by every reflex flip: the bot made it 23 times in six minutes.
+  // The gallery to the Orrery leans seven degrees and has no flare at its mouth. It sits
+  // between the two angles a flipper gives easily (the near-side shot off the base, the
+  // cross shot off the tip), so it has to be aimed for. Measured with the test bot over
+  // six minutes: directly above a flipper base it was made 23 times, here with a flared
+  // mouth 26 times, here without the flare 12 times.
   const galL = [[174.5, 138], [154, 300], [147, 356]];
   const galR = [[208.5, 138], [188, 300], [181, 356]];
 
