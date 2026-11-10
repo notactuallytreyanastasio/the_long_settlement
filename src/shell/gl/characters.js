@@ -132,6 +132,7 @@ function hairCap(hd, { front = 0.42, side = -0.05, back = -0.7, sideAt = 0.34, b
   }
   const m = fromArrays(pos, idx, null, 180);
   m.foldRows = [rows, R, seg]; // the two rows under the edge, for hoods that line them dark
+  for (let i = 0; i < seg; i++) { m.owidth[i * R + rows] = 0; m.owidth[i * R + rows + 1] = 0; m.owidth[i * R + rows - 1] = 0.5; } // the hairline is not an ink line
   return m;
 }
 
@@ -454,7 +455,8 @@ export const EXTRAS = {
   /** A ring in one ear: { side: 'L' | 'R', color }. */
   earring(b, s) {
     const sx = s.side === 'R' ? -1 : 1, R = b.hd.R;
-    b.parts.head.push(setOutline(tint(place(torus(0.024, 0.0085, 12, 6), sx * (R[0] * 1.13), b.dim.headC - R[1] * 0.46, 0.0, 90, sx * 50, 0), s.color || '#ffd24a'), 0.7));
+    const k = s.size ?? 1;
+    b.parts.head.push(setOutline(tint(place(torus(0.024 * k, 0.0085 * k, b.lo ? 7 : 12, b.lo ? 4 : 6), sx * (R[0] * 1.13), b.dim.headC - R[1] * (0.34 + 0.12 * k), 0.0, 90, sx * 50, 0), s.color || '#ffd24a'), 0.7));
   },
   /** The wire of an earpiece, from behind one ear down into the collar. */
   earpiece(b, s) {
@@ -464,10 +466,10 @@ export const EXTRAS = {
   },
   /** Round spectacles: { color, size, half: true for half-moons worn low }. */
   glasses(b, s) {
-    const hd = b.hd, y = b.dim.headC, col = s.color || '#3a3050', ep = (b.face.eyePitch ?? FACE.eyePitch) + (s.half ? -8 : 1), ey = b.face.eyeYaw ?? FACE.eyeYaw, rr = hd.R[0] * 0.25 * (s.size ?? 1);
+    const hd = b.hd, y = b.dim.headC, col = s.color || '#3a3050', ep = (b.face.eyePitch ?? FACE.eyePitch) + (s.half ? -15.5 : 1), ey = b.face.eyeYaw ?? FACE.eyeYaw, rr = hd.R[0] * 0.25 * (s.size ?? 1);
     for (const sx of [-1, 1]) {
       const c = hd.at(sx * ey, ep, 1.07), q = quat.fromTo(quat.create(), [0, 1, 0], norm(c));
-      const ring = xform(scaleMesh(torus(rr, 0.007, b.lo ? 9 : 16, b.lo ? 3 : 5), 1, 1, s.half ? 0.56 : 1), c, q); place(ring, 0, y, 0); b.parts.head.push(tint(ring, col));
+      const ring = xform(scaleMesh(torus(rr, s.half ? 0.0055 : 0.007, b.lo ? 9 : 16, b.lo ? 3 : 5), 1, 1, s.half ? 0.5 : 1), c, q); place(ring, 0, y, 0); b.parts.head.push(tint(ring, col));
     }
     const a = hd.at(-8, ep + 3, 1.09), c = hd.at(8, ep + 3, 1.09);
     b.parts.head.push(tint(place(strand([a, hd.at(0, ep + 5, 1.1), c], () => 0.006, () => 0.006, 5), 0, y, 0), col));
@@ -475,9 +477,9 @@ export const EXTRAS = {
   /** A beard under the mouth: { shape 'square' | 'full' | 'point', color, size, whiskers: false }. */
   beard(b, s) {
     const hd = b.hd, R = hd.R, y = b.dim.headC, k = s.size ?? 1, col = s.color || '#9a9aa0', sq = s.shape === 'square';
-    let m = sq ? superellipsoid(R[0] * 0.5 * k, R[1] * 0.3 * k, R[2] * 0.3 * k, 0.5, 0.5, b.S(14), b.S(9))
+    let m = sq ? superellipsoid(R[0] * 0.54 * k, R[1] * 0.36 * k, R[2] * 0.3 * k, 0.5, 0.5, b.S(14), b.S(9))
       : blob({ rx: R[0] * 0.56 * k, ry: R[1] * 0.36 * k, rz: R[2] * 0.32 * k, chin: s.shape === 'point' ? 1 : 0.3, pear: -0.3, seg: b.S(14), rings: b.S(9) });
-    b.parts.head.push(tint(place(m, 0, y - R[1] * (sq ? 0.99 : 1.04), R[2] * 0.56), col));
+    b.parts.head.push(tint(place(m, 0, y - R[1] * (sq ? 1.045 : 1.04), R[2] * 0.56), col));
     if (s.whiskers !== false) for (const sx of [-1, 1]) b.parts.head.push(tint(place(lockOn(hd, [[sx * 82, -4, 1.03], [sx * 72, -34, 1.05], [sx * 46, -58, 1.05]], 0.05 * k, { n: b.N(8), seg: b.S(7), thick: 0.5 }), 0, y, 0), col));
   },
   /** The two white bands a magistrate wears at the throat. */
@@ -556,18 +558,18 @@ export const PROPS = {
   ledger(s, S) {
     const c = s.color || '#6a4a2a', m = merge(tint(roundedBox(0.2, 0.27, 0.056, 0.012, 2), c), tint(place(roundedBox(0.19, 0.25, 0.044, 0.004, 1), 0.012, 0, 0), s.pages || '#fff3d0'),
       tint(place(roundedBox(0.03, 0.272, 0.058, 0.01, 1), -0.088, 0, 0), s.trim || '#c9b78a'), setOutline(tint(place(roundedBox(0.07, 0.05, 0.008, 0.004, 1), 0.01, 0.03, 0.03), s.trim || '#c9b78a'), 0.5));
-    return { mesh: place(m, 0.02, -0.04, 0.075, -12, -20, 8) };
+    return { mesh: place(m, 0.03, -0.1, 0.07, -8, -24, 6) };
   },
   /** The hat that goes round: upturned, with what people put in it. */
   hat(s, S) {
     const c = s.color || '#6a5a4a', bowl = tint(lathe([[0, 0], [0.07, 0.006], [0.1, 0.05], [0.105, 0.09], [0.15, 0.1], [0.15, 0.108], [0.092, 0.1], [0.086, 0.052], [0, 0.03]], S(14), { crease: 60 }), c);
     const r = rng(s.seed ?? 3), coins = []; for (let i = 0; i < (s.coins ?? 5); i++) coins.push(setOutline(setGlow(tint(place(cylinder(0.02, 0.02, 0.008, 7, { crease: 40 }), (r() - 0.5) * 0.1, 0.04 + r() * 0.03, (r() - 0.5) * 0.1, r() * 50 - 25, 0, r() * 50 - 25), '#ffd24a'), 0.35), 0.5));
-    return { mesh: place(merge(bowl, coins), 0, -0.07, 0.07) };
+    return { mesh: place(merge(bowl, coins), 0, -0.13, 0), hang: true, still: true };
   },
   /** A bowl of something hot, held out. */
   bowl(s, S) {
     const m = merge(tint(lathe([[0, 0], [0.04, 0], [0.085, 0.05], [0.09, 0.062], [0.078, 0.058], [0.04, 0.02], [0, 0.016]], S(12), { crease: 60 }), s.color || '#e9dcc0'), tint(place(cylinder(0.074, 0.074, 0.006, S(10), { crease: 40 }), 0, 0.044, 0), s.soup || '#d98a3a'));
-    return { mesh: place(m, 0, -0.045, 0.06) };
+    return { mesh: place(m, 0, -0.09, 0), hang: true, still: true };
   },
   writ(s, S) {
     const m = merge(tint(roundedBox(0.12, 0.16, 0.012, 0.004, 1), s.color || '#fff6dc'), tint(place(cylinder(0.022, 0.022, 0.01, 10), 0.025, -0.045, 0.006, 90, 0, 0), '#e6323a'));
@@ -793,7 +795,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     else if (k.kind === 'scarf') parts.chest.push(tint(place(scaleMesh(torus(0.09 * w, 0.042, S(16), lo ? 5 : 7), 1, 0.85, 0.95), 0, y, 0), k.color));
     // 'high': a stiff collar up to the jaw.  'turned': a coat collar turned up against the weather, open at the throat
     else if (k.kind === 'high') parts.chest.push(tint(scaleMesh(lathe([[0.07 * w, y - 0.03], [0.09 * w, y - 0.024], [0.1 * w, y + 0.052], [0.084 * w, y + 0.056], [0.07 * w, y - 0.03]], S(16), { crease: 50 }), 1, 1, 0.92), k.color));
-    else if (k.kind === 'turned') parts.chest.push(tint(scaleMesh(lathe([[0.075 * w, y - 0.04], [0.11 * w, y - 0.034], [0.15 * w, y + 0.036], [0.135 * w, y + 0.044], [0.075 * w, y - 0.04]], S(16), { crease: 50 }), 1, 1, 0.86), k.color));
+    else if (k.kind === 'turned') parts.chest.push(tint(scaleMesh(lathe([[0.075 * w, y - 0.05], [0.115 * w, y - 0.046], [0.15 * w, y - 0.002], [0.135 * w, y + 0.004], [0.075 * w, y - 0.05]], S(16), { crease: 50 }), 1, 1, 0.86), k.color));
     else throw new Error(`createCharacter(${def.id}): unknown collar kind "${k.kind}" (have stand, flat, scarf, high, turned)`);
   }
   // ---- fail on an unknown extra before building anything else
@@ -888,13 +890,14 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
 
   // props, held in a hand
   let lampNode = null, lampLight = null, lampSpec = null;
-  const propNodes = {};
+  const propNodes = {}, hangers = []; // props that keep their own up whatever the hand does: a lantern swings, a bowl stays level
   for (const p of def.props || []) {
     const f = PROPS[p.kind]; if (!f) throw new Error(`createCharacter(${def.id}): unknown prop "${p.kind}" (have ${Object.keys(PROPS).join(', ')})`);
     const r = f(p, S), hand = p.hand === 'L' ? handL : handR;
     const n = node(p.kind, r.mesh, mat, { pos: [0, -dim.hand * 0.9, 0], parent: hand });
     propNodes[p.kind] = n;
-    if (r.light) { lampNode = n; lampSpec = r; lampLight = new Node(p.kind + 'Light', { pos: r.glowAt, parent: n, light: makeLight(r.light) }); n.hang = !!r.hang; }
+    if (r.hang) hangers.push({ node: n, sway: r.still ? 0 : 1 });
+    if (r.light) { lampNode = n; lampSpec = r; lampLight = new Node(p.kind + 'Light', { pos: r.glowAt, parent: n, light: makeLight(r.light) }); }
   }
 
   // face decals (the order they are added is the order they are drawn)
@@ -1087,8 +1090,8 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
 
       // the hanging prop and its light
       root.updateWorld(pw);
+      for (let i = 0; i < hangers.length; i++) { const h = hangers[i]; down[0] = Math.sin(time * 1.7 + seed) * 0.1 * h.sway; down[1] = -1; down[2] = Math.cos(time * 1.3) * 0.07 * h.sway; aimAxis(h.node, DOWN, down); h.node.updateWorld(h.node.parent.world); }
       if (lampNode) {
-        if (lampNode.hang) { down[0] = Math.sin(time * 1.7 + seed) * 0.1; down[1] = -1; down[2] = Math.cos(time * 1.3) * 0.07; aimAxis(lampNode, DOWN, down); lampNode.updateWorld(lampNode.parent.world); }
         const lw = lampLight.world; lampPos[0] = lw[12]; lampPos[1] = lw[13]; lampPos[2] = lw[14];
         lampLight.light.intensity = lit * (0.92 + 0.08 * Math.sin(time * 13 + seed) * Math.sin(time * 7.3));
       }
@@ -1332,36 +1335,34 @@ export const CAST = {
 
   // Chancellor Benedikt Corvane, 60s: the Mint. Courtly, amused, never raises his voice. A great soft bell of a man.
   corvane: {
-    id: 'corvane', seed: 6, skin: '#f2cfb4',
+    id: 'corvane', seed: 6, skin: '#f4c8ac',
     build: { height: 1.12, legs: 0.92, torso: 1.2, head: 1.0, width: 1.32, belly: 0.32, hands: 1.1, arms: 1.05 },
     hair: {
-      color: '#fbf6ea', brow: '#f4eee0',
+      color: '#eef0fa', brow: '#aab0c8',
       pieces: [
         { kind: 'cap', front: 0.66, side: 0.12, back: -0.5, grow: [1.06, 1.085, 1.09], shift: [0, 0.008, -0.02] },
-        // swept straight back off a high forehead, and down to the collar
+        // swept straight back off a high forehead, smooth as a seal, and down to the collar behind
         { kind: 'locks', locks: [
-          { pts: [[0, 50, 1.04], [0, 72, 1.12], [0, 96, 1.12], [0, 128, 1.06]], w: 0.085, thick: 0.55 },
-          { pts: [[32, 44, 1.04], [44, 62, 1.11], [70, 78, 1.1], [120, 66, 1.05]], w: 0.07, thick: 0.5 },
-          { pts: [[-32, 44, 1.04], [-44, 62, 1.11], [-70, 78, 1.1], [-120, 66, 1.05]], w: 0.07, thick: 0.5 },
-          { pts: [[62, 24, 1.04], [84, 22, 1.09], [112, 8, 1.09], [130, -10, 1.05]], w: 0.06 },
-          { pts: [[-62, 24, 1.04], [-84, 22, 1.09], [-112, 8, 1.09], [-130, -10, 1.05]], w: 0.06 },
+          { pts: [[58, 30, 1.04], [80, 30, 1.085], [108, 18, 1.085], [128, 0, 1.05]], w: 0.062 },
+          { pts: [[-58, 30, 1.04], [-80, 30, 1.085], [-108, 18, 1.085], [-128, 0, 1.05]], w: 0.062 },
         ] },
-        { kind: 'drape', n: 5, from: 104, to: 256, top: -10, length: 0.17, flare: 0.05, tuck: 0.22, jag: 0.16 },
+        { kind: 'drape', n: 5, from: 122, to: 238, top: -12, length: 0.15, flare: 0.045, tuck: 0.22, jag: 0.16 },
       ],
     },
-    face: { set: 'heavy', iris: '#7d93b8', eyeScale: 0.92, eyePitch: -7, brow: { w: 0.024, len: 25, at: [25, 13] }, marks: { blush: 0.42, laugh: true }, mouths: { neutral: 'smirk', soft: 'smirk', grim: 'flat' }, nose: 1.25 },
+    face: { set: 'heavy', iris: '#7d93b8', eyeScale: 0.92, eyePitch: -7, brow: { w: 0.027, len: 26, at: [25, 13.5], tilt: -4 }, marks: { blush: 0.42, laugh: true }, mouths: { neutral: 'smirk', soft: 'smirk', grim: 'flat' }, nose: 1.35 },
     costume: {
       top: { color: '#9a2238', hem: -0.2, flare: 1.2, trim: '#ffcf3f', lining: '#5a1020', placket: '#74172a' },
       sleeves: { color: '#9a2238', cuff: '#ffcf3f', flare: 1.5 },
       legs: { color: '#3a1420' }, shoes: { color: '#2a1420', sole: '#ffcf3f' },
-      extras: [{ kind: 'cape', color: '#fff3dc', trim: '#ffcf3f', length: 0.105, lining: '#d9c49a' }, { kind: 'chain', color: '#ffcf3f', seal: '#ffb020', drop: 0.17 }],
+      collar: { kind: 'scarf', color: '#fff6e6' }, belt: { color: '#ffcf3f', buckle: '#ffb020' },
+      extras: [{ kind: 'chain', color: '#ffcf3f', seal: '#ffb020', drop: 0.15 }, { kind: 'epaulettes', color: '#ffcf3f' }],
     },
     poses: {
       // hands folded on his stomach, chin up, entirely at home
       stand: {
         hips: { r: [-3, 6, 0] }, chest: [-5, -4, 0], head: [2, -6, 5],
         legL: [0, 8, 5], legR: [0, -8, -5],
-        armL: [-12, 0, 10], foreL: [-74, 0, -64], armR: [-12, 0, -10], foreR: [-70, 0, 64],
+        armL: [-26, 0, 16], foreL: [-70, 0, -70], armR: [-26, 0, -16], foreR: [-66, 0, 70],
       },
       // "allow me": one open hand offered, the other still on his stomach
       signature: { chest: [2, 8, 0], head: [6, 4, 8], armR: [-44, 0, -26], foreR: [-62, 24, 0], handR: [0, -70, 0] },
@@ -1377,7 +1378,7 @@ export const CAST = {
       color: '#b4b4c0', brow: '#8a8a98',
       pieces: [
         { kind: 'cap', front: 0.7, side: 0.04, back: -0.5, grow: [1.045, 1.06, 1.07] },
-        { kind: 'spikes', sweep: [0, 0.1, -0.4], thick: 0.8, spikes: [[92, 12, 0.11, 0.07, 0, [0.7, 0.0, -0.3]], [-92, 12, 0.11, 0.07, 0, [-0.7, 0.0, -0.3]], [112, -8, 0.09, 0.06, 0, [0.6, -0.2, -0.4]], [-112, -8, 0.09, 0.06, 0, [-0.6, -0.2, -0.4]]] },
+        { kind: 'spikes', sweep: [0, 0.1, -0.4], thick: 0.8, spikes: [[108, 2, 0.09, 0.07, 0, [0.35, -0.3, -0.6]], [-108, 2, 0.09, 0.07, 0, [-0.35, -0.3, -0.6]], [128, -18, 0.08, 0.06, 0, [0.3, -0.4, -0.5]], [-128, -18, 0.08, 0.06, 0, [-0.3, -0.4, -0.5]]] },
       ],
     },
     face: { set: 'old', iris: '#3fae6a', eyeScale: 0.84, eyePitch: -6.5, brow: { w: 0.03, len: 27, at: [25, 12], tilt: -5 }, marks: { blush: 0.25, laugh: true }, mouths: { neutral: 'flat', soft: 'softsmile' } },
@@ -1407,14 +1408,13 @@ export const CAST = {
     id: 'thorne', seed: 8, skin: '#ecc8aa',
     build: { height: 1.12, legs: 1.24, torso: 1.1, head: 0.92, width: 0.84, arms: 1.08 },
     hair: {
-      color: '#bcc0cf', brow: '#8e93a6',
+      color: '#a9b4d6', brow: '#5a6488',
       pieces: [
-        { kind: 'cap', front: 0.6, side: 0.0, back: -0.58, grow: [1.04, 1.055, 1.06] },
-        { kind: 'locks', locks: [
-          { pts: [[-18, 52, 1.03], [-40, 46, 1.075], [-60, 30, 1.075], [-70, 12, 1.05]], w: 0.06, thick: 0.4 },
-          { pts: [[-12, 54, 1.03], [22, 50, 1.075], [50, 34, 1.075], [66, 14, 1.05]], w: 0.07, thick: 0.4 },
-        ] },
-        { kind: 'bun', at: [180, 8], size: 0.082, out: 0.5, pin: '#26383a', pinKnob: '#9fb4a8', pinDir: [0.9, 0.42, 0.1] },
+        // pinned flat from a centre parting, and a hard little knot high at the back with one long pin through it
+        { kind: 'cap', front: 0.6, side: 0.02, back: -0.56, grow: [1.045, 1.06, 1.065] },
+        { kind: 'fringe', n: 2, from: 14, to: 58, part: 0, top: 66, tips: [36, 14], gather: 0.15, r: 1.085, tipR: 1.06, w: 0.07, thick: 0.4 },
+        { kind: 'fringe', n: 2, from: -14, to: -58, part: 0, top: 66, tips: [36, 14], gather: 0.15, r: 1.085, tipR: 1.06, w: 0.07, thick: 0.4 },
+        { kind: 'bun', at: [180, 58], size: 0.078, out: 0.62, pin: '#26383a', pinKnob: '#c9d2de', pinDir: [0.96, 0.26, 0.1] },
       ],
     },
     face: { set: 'sharp', iris: '#5f9a84', eyeScale: 0.9, eyePitch: -5, brow: { w: 0.013, len: 24, at: [25, 17], tilt: 3 }, marks: { blush: 0.18, beauty: 'L' }, mouths: { neutral: 'flat', smile: 'softsmile', soft: 'wry' } },
@@ -1424,7 +1424,7 @@ export const CAST = {
       legs: { color: '#1a2628' }, shoes: { color: '#1a2628', sole: '#9fb4a8', tall: true },
       collar: { kind: 'high', color: '#1c3033' }, belt: { color: '#1a2628', buckle: '#c9d2de' }, buttons: { color: '#c9d2de', count: 3 },
       gloves: { L: '#8d949e' },
-      extras: [{ kind: 'glasses', half: true, color: '#c9d2de' }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }],
+      extras: [{ kind: 'glasses', half: true, color: '#e6ebf5', size: 0.9 }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }, { kind: 'earring', side: 'L', color: '#e6ebf5', size: 0.55 }, { kind: 'earring', side: 'R', color: '#e6ebf5', size: 0.55 }],
     },
     poses: {
       // hands behind her back, weight even, chin a degree too high
@@ -1446,17 +1446,17 @@ export const CAST = {
     hair: {
       color: '#c4c4cc', brow: '#a0a0aa',
       pieces: [
-        { kind: 'hood', color: '#5a4c36', lining: '#2a2030', front: 0.4 },
+        { kind: 'hood', color: '#6a5638', lining: '#2a2030', front: 0.42, grow: [1.17, 1.2, 1.2], tipLength: 0.24 },
         { kind: 'locks', locks: [{ pts: [[44, 30, 1.03], [50, 14, 1.09], [50, -6, 1.1], [44, -24, 1.1]], w: 0.034, thick: 0.8, ink: 1 }] },
       ],
     },
     face: { set: 'old', iris: '#d9a94a', eyeScale: 0.88, eyePitch: -7, shade: 0.3, ears: 0, brow: { w: 0.015, len: 21, at: [25, 10] }, marks: { blush: 0.3 }, mouths: { neutral: 'softsmile' } },
     costume: {
-      top: { color: '#5a4c36', hem: -0.2, flare: 1.3, trim: '#c9b78a', lining: '#2a2030' },
-      sleeves: { color: '#5a4c36', cuff: '#c9b78a', flare: 1.5 },
+      top: { color: '#6a5638', hem: -0.2, flare: 1.3, trim: '#c9b78a', lining: '#2a2030' },
+      sleeves: { color: '#6a5638', cuff: '#c9b78a', flare: 1.5 },
       legs: { color: '#2a2030' }, shoes: { color: '#3a2c20' },
       gloves: { L: '#5a5a9a', R: '#5a5a9a' },
-      extras: [{ kind: 'cape', color: '#5a4c36', trim: '#c9b78a', length: 0.12, clasp: '#c9b78a' }],
+      extras: [{ kind: 'cape', color: '#6a5638', trim: '#c9b78a', length: 0.12, clasp: '#e6cf8a' }],
     },
     props: [{ kind: 'ledger', hand: 'L', color: '#8a3a2a', trim: '#e6cf8a' }],
     poses: {
@@ -1464,7 +1464,7 @@ export const CAST = {
       stand: {
         hips: { r: [4, 6, 0] }, chest: [8, -4, 0], head: [4, -4, 4],
         legL: [-3, 6, 3], legR: [-3, -6, -3],
-        armL: [-16, 0, 8], foreL: [-100, 0, -34], armR: [2, 0, -10], foreR: [-28, 0, 0],
+        armL: [-4, 0, 8], foreL: [-84, 0, -30], armR: [2, 0, -10], foreR: [-28, 0, 0],
       },
       // a finger on the line being read
       signature: { chest: [12, 6, 0], head: [14, 8, 0], armR: [-30, 0, -4], foreR: [-108, 0, 40] },
@@ -1499,7 +1499,7 @@ export const CAST = {
   steward: {
     id: 'steward', seed: 11, skin: '#f0c6a0',
     build: { height: 0.98, legs: 1.0, torso: 1.04, head: 1.0, width: 1.06, belly: 0.08 },
-    hair: { color: '#8a5a34', brow: '#6a4226', pieces: [{ kind: 'cap', front: 0.5, side: 0.0, back: -0.5 }, { kind: 'fringe', n: 3, from: -34, to: 34, top: 56, tip: 26, jag: 3, w: 0.05 }, { kind: 'kepi', color: '#a3283f', band: '#ffd24a', peak: false, tall: 0.62 }] },
+    hair: { color: '#8a5a34', brow: '#6a4226', pieces: [{ kind: 'cap', front: 0.5, side: 0.0, back: -0.5 }, { kind: 'fringe', n: 3, from: -34, to: 34, top: 40, tip: 22, jag: 3, w: 0.05, r: 1.09 }, { kind: 'kepi', color: '#a3283f', band: '#ffd24a', peak: false, tall: 0.8 }] },
     face: { set: 'round', iris: '#5a6a3a', eyeScale: 0.86, eyePitch: -6.5, brow: { w: 0.02, len: 22, at: [24, 12], tilt: 4 }, marks: { blush: 0.45, freckles: true }, mouths: { neutral: 'pursed' } },
     costume: {
       top: { color: '#fbe9c4', hem: -0.06, flare: 1.2, trim: '#a3283f', placket: '#d9c08a', lining: '#a3283f' },
@@ -1573,7 +1573,7 @@ export const CAST = {
   townsman: {
     id: 'townsman', seed: 14, skin: '#e2b490',
     build: { height: 1.0, legs: 1.0, torso: 1.06, head: 1.0, width: 1.12, belly: 0.24 },
-    hair: { color: '#7a4a2a', brow: '#5a361e', pieces: [{ kind: 'cap', front: 0.52, side: 0.0, back: -0.52 }, { kind: 'flatcap', color: '#b8743a', peak: '#8a5226' }] },
+    hair: { color: '#7a4a2a', brow: '#5a361e', pieces: [{ kind: 'cap', front: 0.52, side: 0.0, back: -0.52 }, { kind: 'flatcap', color: '#5f8a54', peak: '#42683c' }] },
     face: { set: 'round', iris: '#5a4a2a', eyeScale: 0.86, eyePitch: -7, brow: { w: 0.022, len: 23, at: [24, 11] }, marks: { blush: 0.5 } },
     costume: {
       top: { color: '#c9803f', hem: -0.05, flare: 1.18, trim: '#8a5226', placket: '#a8642c' },
@@ -1634,7 +1634,7 @@ export const CAST = {
     id: 'child2', seed: 18, skin: '#b9856e',
     build: { height: 0.6, legs: 0.86, torso: 0.9, head: 1.18, width: 0.84 },
     hair: { color: '#2e2226', brow: '#221a1c', pieces: [{ kind: 'cap', front: 0.5, side: -0.1, back: -0.6, grow: [1.07, 1.09, 1.08] }, { kind: 'fringe', n: 5, from: -46, to: 46, top: 60, tip: 22, jag: 3, part: 0, gather: 0.6 },
-      { kind: 'tail', at: [100, 24], dir: [0.75, -0.6, -0.1], length: 0.17, width: 0.05, links: 2, tie: '#ffd24a' }, { kind: 'tail', at: [-100, 24], dir: [-0.75, -0.6, -0.1], length: 0.17, width: 0.05, links: 2, tie: '#ffd24a' }] },
+      { kind: 'tail', at: [84, 34], dir: [1, -0.22, 0.1], length: 0.2, width: 0.062, links: 2, tie: '#ffd24a', stiffness: 80 }, { kind: 'tail', at: [-84, 34], dir: [-1, -0.22, 0.1], length: 0.2, width: 0.062, links: 2, tie: '#ffd24a', stiffness: 80 }] },
     face: { set: 'lash', iris: '#7a4a26', eyeScale: 1.1, brow: { w: 0.014, len: 20 }, marks: { blush: 0.6, blushColor: '#e0625a' } },
     costume: {
       top: { color: '#f2c14e', hem: -0.1, flare: 1.5, trim: '#e8603f' }, sleeves: { color: '#f2c14e', flare: 1.2, cuff: '#e8603f' },
@@ -1683,14 +1683,14 @@ export const CAST = {
 
   // Hesper Dunmore, 40s: shift-captain at Saltmere. Blunt, exhausted, kind in practical ways. Built to carry things.
   hesper: {
-    id: 'hesper', seed: 20, skin: '#8f5e44',
+    id: 'hesper', seed: 20, skin: '#96644a',
     build: { height: 1.06, legs: 1.0, torso: 1.14, head: 0.97, width: 1.3, belly: 0.06, hands: 1.2, feet: 1.12, arms: 1.06 },
     hair: {
-      color: '#33282a', brow: '#e4e0d4',
+      color: '#33282a', brow: '#d4d0c6',
       pieces: [
         { kind: 'cap', front: 0.56, side: 0.06, back: -0.5, zig: 0.08, zigN: 3, grow: [1.06, 1.085, 1.07] },
         { kind: 'fringe', n: 4, from: -40, to: 40, top: 62, tips: [34, 30, 36, 32], sweep: 8, part: -20, gather: 0.5 },
-        { kind: 'curls', n: 26, size: 0.019, out: 5.4, low: 20, seed: 9, clear: 0, color: '#f4f0e6' },
+        { kind: 'curls', n: 44, size: 0.0115, out: 1.3, low: 22, seed: 9, clear: 0, color: '#f4f0e6' },
       ],
     },
     face: { set: 'round', iris: '#5a3a22', eyeScale: 0.86, eyePitch: -7, brow: { w: 0.025, len: 24, at: [24, 11] }, marks: { blush: 0.3, blushColor: '#c0503a', dust: true }, mouths: { neutral: 'flat', soft: 'softsmile' } },
@@ -1764,7 +1764,6 @@ export const CAST = {
       legs: { color: '#3a3a44' }, shoes: { color: '#33333c', sole: '#1c1c22', tall: true },
       collar: { kind: 'scarf', color: '#f2ead4' }, buttons: { color: '#d9c27a', count: 3, size: 0.02 },
       gloves: { L: '#8a8a90', R: '#8a8a90' },
-      extras: [{ kind: 'brooch', shape: 'bar', color: '#e8a04a', x: -0.07, y: 0.06, size: 0.028 }],
     },
     props: [{ kind: 'lantern', hand: 'L', color: '#eaf6c8', rib: '#7fae5a', light: '#d9f0a0' }],
     poses: {

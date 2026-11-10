@@ -16,6 +16,7 @@
 //   pullLever()                  the lever on the cabinet's right flank goes down and comes back (1.1 s)
 //   setDrum({ turn, open })      the lot drum: turn = revolutions per second (0 stops it, hatch to the front), open 0..1 swings the hatch up
 //   slip(on)                     a paper slip in the cabinet's tray
+//   task('great-reel', i)        -> { pos, set(v) } for the live encounter: v < 1 reel i spins, v >= 1 it locks on the orb and its lamp lights
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   lever { pos, face }   where a figure stands to pull it       drum { pos, face }   beside the lot drum's crank
 //   dais [3] { pos, face } on the dais in front of the Reels (y = 0.6)    reels [3] world centres    drumMouth, slip, focus (world points)
@@ -27,7 +28,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { PAL, anchorAt, bunting } from './kit.js';
 import {
-  KB, kitBMaterials, setShell, norm3, wall, windowFrame, shaftCards, lightPatch, skyline, ceiling, checker, rug, banner, dais, column, doorway,
+  KB, kitBMaterials, setShell, lightOf, norm3, wall, windowFrame, shaftCards, lightPatch, skyline, ceiling, checker, rug, banner, dais, column, doorway,
   pew, clerkCounter, chandelier, sconce, reelDrum, reelHouse, reelAngle, lever, lotDrum, horn, fileStack, scroll,
 } from './kit-b.js';
 
@@ -79,9 +80,8 @@ const MARKS = {
   dais: [{ pos: [-0.9, DAIS_Y, -2.75], face: 10 }, { pos: [0.1, DAIS_Y, -2.6], face: 0 }, { pos: [1.0, DAIS_Y, -2.75], face: -12 }],
 };
 
-function build(engine = null, { light = 'night', low = false } = {}) {
-  const L = LIGHTS[light];
-  if (!L) throw new Error(`drum-hall: unknown light "${light}" (have ${Object.keys(LIGHTS).join(', ')})`);
+function build(engine = null, { light: lightName = 'night', low = false } = {}) {
+  const [light, L] = lightOf('drum-hall', LIGHTS, lightName);
   const M = kitBMaterials(), r = rng(1907);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   if (low) env.shadow.size = 512;
@@ -198,7 +198,9 @@ function build(engine = null, { light = 'night', low = false } = {}) {
   ];
   const sprites = scene.sprites = createSprites(low ? 128 : 320), glows = [];
   chans.forEach((c, i) => { const p = chanLamp(i); glows.push({ sprite: sprites.add({ kind: 'glow', pos: [p[0], p[1] - 0.1, p[2]], size: i === 0 ? 3.2 : 2.3, color: '#ffb450', alpha: 0 }), base: 0.42 }); });
-  for (const p of houseLamps) glows.push({ sprite: sprites.add({ kind: 'glow', pos: p, size: 0.9, color: '#ffe08a', alpha: 0 }), base: 0.6, fixed: true });
+  // a lamp over each reel's window: lit when that reel has locked (task('great-reel', i)), all three lit until a task takes them over
+  const reelLamps = reelPos.map((p) => sprites.add({ kind: 'glow', pos: [p[0], p[1] + 0.68, p[2] + 0.6], size: 1.0, color: '#ffe08a', alpha: 0.6 }));
+  const locked = [1, 1, 1];
   for (const x of [-1.95, 1.95]) glows.push({ sprite: sprites.add({ kind: 'glow', pos: [x, 2.35 + 0.3, BACK + 0.45], size: 1.3, color: '#ffb450', alpha: 0 }), base: 0.5 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [W / 2 + 0.2, 1.5, doorLight[2]], size: 3.0, color: '#ff9a40', alpha: 0 }), base: 0.5, fixed: true });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 5.3, BACK - 0.2], size: 4.4, color: '#ffc27a', alpha: 0 }), base: 0.3, fixed: true });
@@ -215,6 +217,9 @@ function build(engine = null, { light = 'night', low = false } = {}) {
   function pullLever() { leverT = 0; }
   function setDrum({ turn, open } = {}) { if (turn != null) drum.turn = turn; if (open != null) drum.open = Math.max(0, Math.min(1, open)); }
   function slip(on) { slipNode.visible = !!on; }
+  // the encounter's three units: 'great-reel' index 0..2; v < 1 the reel spins, v >= 1 it runs on to the orb, locks and its lamp lights
+  const tasks = reelPos.map((p, i) => ({ pos: [p[0], p[1], p[2] + 0.6], set(v) { const done = v >= 1; if (done !== !reels[i].spin || locked[i] !== (done ? 1 : 0)) { setReel(i, { spin: !done, face: 0 }); locked[i] = done ? 1 : 0; } } }));
+  const task = (type, index = 0) => (type === 'great-reel' ? tasks[index] || null : null);
 
   function tick(time, dt, pw, live) {
     for (let i = 0; i < 3; i++) {
@@ -230,6 +235,7 @@ function build(engine = null, { light = 'night', low = false } = {}) {
       m4.fromTRS(Mx, rl.pos, Q, S3); reelNode.instances.data.set(Mx, i * 20);
     }
     reelNode.instances.dirty = true;
+    for (let i = 0; i < 3; i++) { const on = locked[i] && !reels[i].spin && reels[i].speed === 0 ? 1 : 0.12; reelLamps[i].alpha += (on * 0.7 - reelLamps[i].alpha) * Math.min(1, dt * 8 + (dt === 0 ? 1 : 0)); reelLamps[i].size[0] = reelLamps[i].size[1] = 1.0 + reels[i].pop * 0.8; }
     // lever: down fast, back slow
     let la = 16;
     if (leverT >= 0) { leverT += dt; const u = leverT / 1.1; la = u < 0.25 ? 16 + 84 * (u / 0.25) : u < 1 ? 100 - 84 * Math.pow((u - 0.25) / 0.75, 0.6) : 16; if (u >= 1) leverT = -1; }
@@ -255,7 +261,7 @@ function build(engine = null, { light = 'night', low = false } = {}) {
       lever: { pos: [LEVER[0] + 0.5, DAIS_Y, LEVER[2] + 0.55], face: -60 }, drum: { pos: [DRUM[0] + 1.3, DAIS_Y, DRUM[2] + 0.55], face: -70 },
       reels: reelPos, drumMouth: [drumWorld[0] + Math.sin(DRUM_YAW * DEG) * 0.66, drumWorld[1], drumWorld[2] + Math.cos(DRUM_YAW * DEG) * 0.66], slip: SLIP, focus: [HOUSE[0], HOUSE[1] + 1.5, HOUSE[2] + 0.6],
     },
-    extra: { setReel, setReels, pullLever, setDrum, slip, reels },
+    extra: { setReel, setReels, pullLever, setDrum, slip, task, reels },
   });
 }
 

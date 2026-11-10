@@ -179,7 +179,7 @@ function burst(sprites, x, y, z, n, size, color, speed = 1.4) {
 function makeStage(set, troupe) {
   const actors = [], sprites = set.scene.sprites || null;
   const S = {
-    set, troupe, actors, sprites, units: [], unitRoot: null, mats: null, rig: makeRig(), camera: null,
+    set, troupe, actors, sprites, units: [], unitRoot: null, floorRoot: null, mats: null, rig: makeRig(), camera: null,
     view: { shadowCenter: [0, 0, 0.5], shadowRadius: 3.4 }, fill: null, lines: null, fight: null,
   };
   // a low warm lamp in front of the cast at night: the set's lamps hang overhead, so without it every chin and mouth is in the blue
@@ -198,7 +198,7 @@ function makeStage(set, troupe) {
         id, n, ch, lod, x: 0, z: 0, gx: 0, gz: 0, face: 0, moving: false, leaving: false, gait: Math.random(), speed: WALK,
         ox: 0, oy: 0, oz: 0, kx: 0, kT: 9, kA: 0, kHold: 0, role: '', side: 0, slot: 0, held: false, busyT: 0,
         emote: 'neutral', temp: 'neutral', tempT: 0, pose: 'stand', flashPose: 'stand', poseT: 0, talk: -1, quietT: 99,
-        dash: { on: false, t: 0, ant: 0, out: 0, hold: 0, back: 0, dx: 0, dz: 0, hop: 0, trail: false },
+        dash: { on: false, t: 0, ant: 0, out: 0, hold: 0, back: 0, dx: 0, dz: 0, hop: 0, trail: false, rock: 0.07 },
         st: { emote: 'neutral', talk: null, speaking: false, pose: 'stand', look: null, face: 0, camera: null, wind: [0.5, 0, 0], snap: false, energy: 1 },
         lookAt: [0, 0, 0], hp: [0, 1, 0], glow: null, aura: null, home: 0,
       };
@@ -223,7 +223,7 @@ function makeStage(set, troupe) {
   };
   S.clearUnits = () => {
     for (const u of S.units) { if (u.glows) for (const g of u.glows) sprites.remove(g); }
-    if (S.unitRoot) { set.scene.root.remove(S.unitRoot); S.unitRoot = null; }
+    if (S.unitRoot) { set.scene.root.remove(S.unitRoot); S.unitRoot = null; S.floorRoot = null; }
     S.units.length = 0;
   };
   /** Everybody off, props gone: the set is being left. */
@@ -243,8 +243,8 @@ function makeStage(set, troupe) {
       // a dash: rock back, go, hold at contact, hop home
       if (d.on) {
         d.t += dt; const t = d.t; let k = 0, up = 0;
-        if (t < d.ant) k = -0.07 * Math.sin(t / d.ant * Math.PI / 2);
-        else if (t < d.ant + d.out) { const u = 1 - (t - d.ant) / d.out; k = -0.07 + 1.07 * (1 - u * u * u); if (d.trail && sprites) particle(sprites, K_GLOW, a.x + a.ox, a.ch.height * 0.55, a.z + a.oz, 0, 0.1, 0, 0.34, 0.05, 0.3, '#ffe27a'); }
+        if (t < d.ant) k = -d.rock * Math.sin(t / d.ant * Math.PI / 2);
+        else if (t < d.ant + d.out) { const u = 1 - (t - d.ant) / d.out; k = -d.rock + (1 + d.rock) * (1 - u * u * u); if (d.trail && sprites) particle(sprites, K_GLOW, a.x + a.ox, a.ch.height * 0.55, a.z + a.oz, 0, 0.1, 0, 0.34, 0.05, 0.3, '#ffe27a'); }
         else if (t < d.ant + d.out + d.hold) k = 1;
         else if (t < d.ant + d.out + d.hold + d.back) { const u = (t - d.ant - d.out - d.hold) / d.back; k = 1 - smooth(u); up = Math.sin(u * Math.PI) * d.hop; }
         else d.on = false;
@@ -277,8 +277,8 @@ function stageOn(set, troupe) { let S = STAGES.get(set); if (!S) { S = makeStage
 
 const feel = (a, emote, secs) => { a.temp = emote; a.tempT = secs; };
 const flash = (a, pose, secs) => { a.flashPose = pose; a.poseT = secs; };
-function startDash(a, tx, tz, ant, out, hold, back, hop, trail) {
-  const d = a.dash; d.on = true; d.t = 0; d.ant = ant; d.out = out; d.hold = hold; d.back = back; d.hop = hop; d.trail = !!trail;
+function startDash(a, tx, tz, ant, out, hold, back, hop, trail, rock = 0.07) {
+  const d = a.dash; d.rock = rock; d.on = true; d.t = 0; d.ant = ant; d.out = out; d.hold = hold; d.back = back; d.hop = hop; d.trail = !!trail;
   d.dx = tx - a.x; d.dz = tz - a.z; a.busyT = ant + out + hold + back;
 }
 function knock(a, amount, hold = 0) { a.kT = 0; a.kA = amount; a.kHold = hold; }
@@ -369,6 +369,7 @@ function linesOn(S) {
         // the body turns part of the way toward whoever it is talking with; the head does the rest
         const toward = me ? addressee : (speaker || ear);
         a.face = a.home + (toward && toward !== a ? clamp((toward.gx - a.gx) * 14, -18, 18) : 0);
+        if (ear === a && lens) a.face = Math.atan2(lens.position[0] - a.x, lens.position[2] - a.z) / DEG + 14;   // listening to the Line: square to the lens, the pose turns the head away
         st.energy = 1;
       }
     },
@@ -465,7 +466,7 @@ export const UNITS = {
     return { pos: [1.6, 1.3, 0.02], stand: null, glows: gs, set(v) { for (let k = 0; k < 5; k++) { const u = clamp(v * 5 - k, 0, 1); setTint(ls[k], lerp(0.36, 1.08, u), lerp(0.38, 0.72, u), lerp(0.56, 0.32, u)); if (gs[k]) gs[k].alpha = u * 0.8; } } };
   },
   'great-reel'(S, root, i) {
-    const x = -1.0 + i * 1.0, y = 2.62, z = -0.25, g = glowAt(S, x, y, z + 0.3, 1.5, '#ffd24a');
+    const x = -0.2 + i * 1.0, y = 2.02, z = -0.3, g = glowAt(S, x, y, z + 0.3, 1.5, '#ffd24a');
     const axle = new Node('axle', { pos: [x, y, z], rot: [0, 0, 90] }); root.add(axle);
     const spin = new Node('spin'); axle.add(spin);
     const drum = piece(spin, S.mats.prop, merge(tint(cylinder(0.42, 0.42, 0.7, 16), CREAM), tint(place(cylinder(0.45, 0.45, 0.06, 16), 0, -0.03, 0), '#d94a3a'), tint(place(cylinder(0.45, 0.45, 0.06, 16), 0, 0.67, 0), '#d94a3a'),
@@ -488,7 +489,7 @@ export const UNITS = {
     piece(root, S.mats.prop, merge(tint(box(1.6, 0.1, 0.8), WOOD), tint(place(box(1.45, 0.62, 0.66), 0, -0.36, 0), WOOD_D)), null, x, 0.72, z);
     const paper = new Node('paper', { pos: [x - 0.3, 0.86, z + 0.18], rot: [38, 0, 0] }); root.add(paper);
     piece(paper, S.mats.prop, box(0.74, 0.5, 0.015), CREAM, 0, 0, 0);
-    for (let k = 0; k < 4; k++) seals.push(piece(paper, S.mats.prop, place(cylinder(0.055, 0.055, 0.03, 10), 0, 0, 0, 90, 0, 0), '#d6382e', -0.26 + k * 0.17, -0.14, 0.012));
+    for (let k = 0; k < 4; k++) seals.push(piece(paper, S.mats.prop, place(cylinder(0.07, 0.07, 0.04, 10), 0, 0, 0, 90, 0, 0), '#d6382e', -0.26 + k * 0.17, -0.12, 0.03));
     return { pos: [x - 0.3, 0.9, z + 0.2], stand: [x - 1.15, z + 0.3], glows: [], set(v) { for (let k = 0; k < 4; k++) seals[k].visible = v * 4 >= k + 0.999; } };
   },
   'chamber-door'(S, root) {
@@ -507,6 +508,7 @@ export const UNITS = {
   },
 };
 
+const FLOOR_UNITS = { 'odds-board': 1, 'surety-bond': 1, 'chamber-door': 1, 'magistrate-desk': 1 };
 function buildUnits(S, who) {
   S.clearUnits();
   const set = S.set;
@@ -515,8 +517,8 @@ function buildUnits(S, who) {
     if (!u) {
       const make = UNITS[who[i]];
       if (!make) throw new Error(`stage: no prop for force type "${who[i]}" on set ${set.id} (have ${Object.keys(UNITS).join(', ')}; or the set answers set.task)`);
-      if (!S.unitRoot) { S.unitRoot = new Node('units'); set.scene.root.add(S.unitRoot); S.mats = S.mats || kitMaterials(); }
-      u = make(S, S.unitRoot, i);
+      if (!S.unitRoot) { S.unitRoot = new Node('units'); S.floorRoot = new Node('floorUnits'); S.unitRoot.add(S.floorRoot); set.scene.root.add(S.unitRoot); S.mats = S.mats || kitMaterials(); }
+      u = make(S, FLOOR_UNITS[who[i]] ? S.floorRoot : S.unitRoot, i);
     }
     u.v = -1; u.shown = 0; u.type = who[i];
     S.units.push(u);
@@ -543,11 +545,11 @@ export const MODES = {
   talk:    { jab: '', chop: '', reach: 0, hold: 'stand', team: false, poses: ['talkPoint', 'talkBoth', 'talkOpen'] },
   walk:    { jab: 'hop', chop: 'hop', reach: 0, hold: 'stand', team: false },
 };
-const PARTY_SLOT = [[-0.9, 0.8], [-1.7, 0.3], [-2.45, 0.95]];
-const OPP_SLOT = [[0.9, 0.8], [1.7, 0.3], [2.45, 0.95]];
-const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]], BACK_L = [[-2.95, 0.02], [-2.2, -0.06], [-1.4, 0.06]];
+const PARTY_SLOT = [[-0.9, 0.8], [-1.7, 0.52], [-2.45, 0.95]];
+const OPP_SLOT = [[0.9, 0.8], [1.7, 0.45], [2.45, 0.95]];
+const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]], BACK_L = [[-3.05, 0.0], [-2.4, -0.1]];
 const LAG = 0.16;      // seconds between a table hit and the stage answering: the time the energy takes to climb
-const MAX_FOLK = 3;
+const MAX_FOLK = 2;    // figures are the band's draw calls: two supporters, a clerk and the hat are already five more
 // scheduled steps
 const DO_STRIKE = 1, DO_LAND = 2, DO_RELEASE = 3, DO_TEAM = 4, DO_GIVE = 5, DO_AWAY = 6, DO_SETTLE = 7, DO_CHEER = 8, DO_UNFOCUS = 9;
 
@@ -561,7 +563,7 @@ function fightOn(S, opts = {}) {
   const sched = []; for (let i = 0; i < 24; i++) sched.push({ on: false, t: 0, code: 0, a: null, b: null, n: 0 });
   const cues = [], cuePool = []; for (let i = 0; i < 12; i++) cuePool.push({ type: '', level: 0, name: '', team: false, big: false, x: NaN, y: NaN, who: null });
   const sparks = [], sparkPool = []; for (let i = 0; i < 14; i++) sparkPool.push({ x0: 0, y0: 0, x1: 0, y1: 0, t: 0, big: false, gold: false, who: null, live: false });
-  const focus = { t: 9, dur: 0, x: 0, z: 0, zoom: 1 };
+  const focus = { t: 9, dur: 0, x: 0, x2: 0, zoom: 1 };
   const HIT = [0, 0];
   let clerk = null, seenN = -2, first = true, won = false, level = 0, turn = 0, oppTurn = 0, power = 0.6, punch = 0, mode = MODES.fight, kind = 'people';
   let done = 0, total = 1, beat = -1, dtLast = 0, stageRef = null, townsfolkId = '', clerkId = '', hitFn = null, nextAura = 0, timeNow = 0, auraOn = false, auraGold = false;
@@ -582,7 +584,7 @@ function fightOn(S, opts = {}) {
     return null;
   }
   const isUnit = (t) => !!t && !t.ch;
-  const tx = (t) => (isUnit(t) ? (t.stand ? t.stand[0] : t.pos[0]) : t.x + t.kx - 0.62);
+  const tx = (t) => (isUnit(t) ? (t.stand ? t.stand[0] : t.pos[0]) : t.x + t.kx - 0.82);
   const tz = (t) => (isUnit(t) ? (t.stand ? t.stand[1] : t.pos[2]) : t.z + 0.04);
 
   /** Energy from the table: a 2D spark from where the ball struck to the actor's chest (the shell supplies the table point). */
@@ -638,11 +640,12 @@ function fightOn(S, opts = {}) {
       // THE TEAM MOVE: the camera goes in on the pair, the lead braces, the second runs up him and comes down on the target
       const c = teamMove(a0.ch, a1.ch), land0 = tx(t), h = a1.ch.height;
       feel(a0, 'anger', 1.7); feel(a1, 'smile', 1.7);
-      // the clip carries the follower 1.3 heights forward on its own; the dash supplies the rest of the way, timed to the leap
-      startDash(a1, land0 - 1.3 * h + 0.25, tz(t), 0.2, 0.82, 0.2, 0.28, 0.2, true);
+      // the clip carries the follower 1.3 heights forward on its own, up and over the lead; the dash supplies the rest of the
+      // way and only starts once she is in the air, so she goes over him and not through him
+      startDash(a1, land0 - 1.3 * h + 0.2, tz(t), 0.7, 0.32, 0.2, 0.3, 0.2, true, 0);
       a0.busyT = c.dur; a1.busyT = c.dur;
       energy(ev, a0, true, true); energy(ev, a1, true, true);
-      focus.t = 0; focus.dur = c.impact; focus.x = (a0.x + a1.x) / 2 + 0.5; focus.z = a0.z; focus.zoom = 0.6;
+      focus.t = 0; focus.dur = c.impact + 0.25; focus.x = (a0.x + a1.x) / 2 + 0.35; focus.x2 = land0 - 0.2; focus.zoom = 0.72;
       const q = cue('combo'); q.team = true; q.name = COMBO_NAMES[Math.min(level, COMBO_NAMES.length - 1)];
       for (const o of opp) feel(o, 'shock', c.impact + 0.6);
       for (let k = 2; k < party.length; k++) at(time + 0.3, DO_CHEER, party[k], null, 0);
@@ -748,10 +751,10 @@ function fightOn(S, opts = {}) {
       let a = null; for (const x of S.actors) if (x.id === ex[i] && x.role === 'old' && !a) a = x;
       // holding a line, the extras ARE the pressure: they stand where an opposition would. Otherwise they watch from the back.
       const s = mode === MODES.hold ? OPP_SLOT[i] : BACK_R[i];
-      const sx = mode === MODES.hold ? s[0] - 0.35 : mode === MODES.walk ? -0.9 + i * 1.5 : s[0];
+      const sx = mode === MODES.hold ? s[0] - 0.35 : mode === MODES.walk ? -0.9 + i * 1.5 : S.units.length ? 2.85 + i * 0.5 : s[0];   // beside a prop they keep to the edge, out of its way
       if (!a) a = S.enter(ex[i], 30 + i, lod, sx, s[1], 0, cut ? null : OFF_X + i * 0.6);
       if (a.held) { a.ch.release(); a.held = false; }
-      a.role = 'extra'; a.side = -1; a.slot = i; a.pose = 'stand'; a.emote = mode === MODES.hold ? 'anger' : 'neutral'; a.gx = sx; a.gz = s[1]; a.face = mode === MODES.walk ? 10 : -42; extras.push(a); if (cut) snapTo(a);
+      a.role = 'extra'; a.side = -1; a.slot = i; a.pose = 'stand'; a.emote = mode === MODES.hold ? 'anger' : 'neutral'; a.gx = sx; a.gz = S.units.length && mode !== MODES.hold && mode !== MODES.walk ? 1.05 - i * 0.55 : s[1]; a.face = mode === MODES.walk ? 10 : -42; extras.push(a); if (cut) snapTo(a);
     }
     for (let i = S.actors.length - 1; i >= 0; i--) if (S.actors[i].role === 'old') S.leave(S.actors[i], cut);
     // supporters already earned stand behind the party from the start
@@ -801,14 +804,14 @@ function fightOn(S, opts = {}) {
       if (!clerkId) return;
       const lead = party[0]; if (!lead) return;
       if (!clerk || S.actors.indexOf(clerk) < 0) clerk = S.enter(clerkId, 40, lod, 0, 0, 62, -OFF_X);
-      clerk.role = 'clerk'; clerk.side = 1; clerk.leaving = false; clerk.gx = lead.gx - 0.72; clerk.gz = lead.gz + 0.3; clerk.face = 62; clerk.speed = WALK * 1.25;
+      clerk.role = 'clerk'; clerk.side = 1; clerk.leaving = false; clerk.gx = lead.gx - 0.5; clerk.gz = lead.gz + 0.5; clerk.face = 62; clerk.speed = WALK * 1.25;
       const eta = Math.hypot(clerk.gx - clerk.x, clerk.gz - clerk.z) / clerk.speed;
       at(time + eta + 0.1, DO_GIVE, clerk, null, 0); at(time + eta + 0.9, DO_AWAY, clerk, null, 1);
       if (e.refused) for (const h of hatters) { feel(h, 'tears', 2); at(time + 1.2, DO_AWAY, h, null, 0); }
     } else if (act === 'aid') {
       if (!hatters.length) hat(time);
       const lead = party[0], h = hatters[0]; if (!h || !lead) return;
-      h.gx = lead.gx - 0.75; h.gz = lead.gz + 0.32; h.speed = WALK * 1.25;
+      h.gx = lead.gx - 0.5; h.gz = lead.gz + 0.5; h.speed = WALK * 1.25;
       const eta = Math.hypot(h.gx - h.x, h.gz - h.z) / h.speed;
       at(time + eta + 0.1, DO_GIVE, h, null, 1);
       for (let k = 0; k < hatters.length; k++) at(time + eta + 1.0 + k * 0.2, DO_SETTLE, hatters[k], null, 0);
@@ -884,7 +887,7 @@ function fightOn(S, opts = {}) {
     const want = won ? 1 : st.power != null ? st.power : 0.6;
     power += (want - power) * Math.min(1, dt * (want > power ? 6 : 1.4));
     set.setPower(clamp(0.22 + 1.05 * power + punch * 0.25, 0, 1.5));
-    const dim = clamp(0.5 + power * 0.9, 0.55, 1);
+    const dim = clamp(0.3 + power * 1.2, 0.5, 1);
     for (const a of S.actors) if (a.ch.skin) { const tn = a.ch.skin.tint; tn[0] = tn[1] = dim; tn[2] = Math.min(1, dim + 0.06); }
     punch = Math.max(0, punch - dt * 3.0);
     // buffs: a standing glow on the party while a boon holds
@@ -894,7 +897,7 @@ function fightOn(S, opts = {}) {
       if (a.aura) { const g = a.aura; g.pos[0] = a.x + a.ox + a.kx; g.pos[1] = a.ch.height * 0.5; g.pos[2] = a.z + a.oz - 0.1; g.alpha += ((auraOn ? 0.34 + 0.08 * Math.sin(time * 4 + a.slot) : 0) - g.alpha) * Math.min(1, dt * 5); g.color[0] = auraGold ? 1 : 0.56; g.color[1] = auraGold ? 0.82 : 0.85; g.color[2] = auraGold ? 0.3 : 1; }
     }
     if (auraOn && sprites && time > nextAura) { nextAura = time + 0.22; const a = party[Math.floor(Math.random() * party.length)]; if (a) particle(sprites, K_STAR, a.x + (Math.random() - 0.5) * 0.5, 0.2, a.z + 0.1, 0, 0.9, 0, 0.16, 0.08, 0.8, auraGold ? '#ffe27a' : '#bfeaff'); }
-    if (focus.t < 8) { focus.t += dt; if (focus.t > focus.dur + 0.15) focus.t = 9; }
+    if (focus.t < 8) { focus.t += dt; if (focus.t > focus.dur + 0.2) focus.t = 9; }
   };
 
   /** The stage camera: the whole strip, pushed in on the pair for a team move, shaken by a blow. */
@@ -902,8 +905,8 @@ function fightOn(S, opts = {}) {
     const fov = 24, tv = Math.tan(fov * DEG / 2);
     let cx = 0, d = Math.min(3.3 / (tv * aspect), 11.5), cy = 1.02;
     if (mode === MODES.walk || mode === MODES.stealth) { const a = party[0]; if (a && aspect < 1.2) cx = a.x; }   // grown toward full screen, the frame is narrower than the strip: stay with the lead
-    if (aspect < 1.2 && party[0] && won) cx = lerp(party[0].x, 0.3, 0.5);
-    if (focus.t < 8) { const k = smooth(focus.t / 0.22) * (1 - smooth((focus.t - focus.dur + 0.1) / 0.14)); cx = lerp(cx, focus.x, k); d *= lerp(1, focus.zoom, k); cy = lerp(cy, 0.85, k); }
+    if (aspect < 1.2 && party.length && won) { cx = 0; for (const a of party) cx += a.x / party.length; }
+    if (focus.t < 8) { const k = smooth(focus.t / 0.25) * (1 - smooth((focus.t - focus.dur + 0.1) / 0.2)); cx = lerp(cx, lerp(focus.x, focus.x2, smooth((focus.t - 0.6) / 0.4)), k); d *= lerp(1, focus.zoom, k); cy = lerp(cy, 0.9, k); }
     RT[0] = cx; RT[1] = cy; RT[2] = 0.5;
     PROBE.fov = fov; PROBE.orbit(RT, d, 7 + Math.sin(time * 0.21) * 1.0, 7);
     rigTo(S.rig, camera, dtLast, false, focus.t < 8 ? 9 : 5, time, punch);
@@ -1029,12 +1032,12 @@ export function createDirector(troupe, { getSet, lod = 'stage' } = {}) {
       if (mode === 'fight') {
         fightIn.stage = st; fightIn.content = f.content; fightIn.game = f.game; fightIn.recent = f.game ? f.game.recent : null; fightIn.voice = f.voice || null; fightIn.hit = f.hit || null; fightIn.camera = camera; fightIn.cut = cut;
         if (!leaving) { if (was === 'lines') S.lines.reset(); S.fight.update(dt, time, fightIn); }
+        if (S.floorRoot) S.floorRoot.visible = true;
         S.tick(dt, time, camera);
         S.fight.frame(camera, aspect, rect.h, time, rect);
         dir.sparks = S.fight.sparks; dir.cues = S.fight.cues; dir.punch = S.fight.punch;
       } else if (mode === 'lines') {
-        const cine = f.game && f.game.cine;
-        lineIn.line = st.line || null; lineIn.on = st.party || NONE; lineIn.cam = st.cam || ''; lineIn.voice = f.voice || null; lineIn.camera = camera; lineIn.cut = cut; lineIn.radio = !!st.radio;
+                lineIn.line = st.line || null; lineIn.on = st.party || NONE; lineIn.cam = st.cam || ''; lineIn.voice = f.voice || null; lineIn.camera = camera; lineIn.cut = cut; lineIn.radio = !!st.radio;
         if (!leaving) S.lines.update(dt, time, lineIn);
         S.tick(dt, time, camera);
         S.lines.frame(camera, aspect, rect.h, time, cut, false);
@@ -1042,7 +1045,7 @@ export function createDirector(troupe, { getSet, lod = 'stage' } = {}) {
         cur.setPower(1);
         for (const a of S.actors) if (a.ch.skin) { const tn = a.ch.skin.tint; tn[0] += (1 - tn[0]) * Math.min(1, dt * 4); tn[1] = tn[0]; tn[2] = Math.min(1, tn[0] + 0.06); }
         for (const u of S.units) u.set(u.v < 0 ? 1 : u.v, time, dt);
-        void cine;
+        if (S.floorRoot) S.floorRoot.visible = false;      // a stand-in prop on the strip would be walked through: it is struck for the lines
       } else {
         S.tick(dt, time, camera);
         cur.frame(PROBE, cur.cameras.wide ? 'wide' : Object.keys(cur.cameras)[0], time); rigTo(S.rig, camera, dt, cut, 3, time, 0);

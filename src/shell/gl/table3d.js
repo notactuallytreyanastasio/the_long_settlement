@@ -171,7 +171,7 @@ function leverArmMesh(P) {
   return merge(
     tint(place(cylinder(0.026, 0.02, 0.46, sg(8, 6)), 0, 0.02, 0), P.steel),
     tint(place(torus(0.03, 0.012, sg(10, 6), sg(5, 4)), 0, 0.44, 0), P.gold),
-    setGlow(tint(place(sphere(0.085, sg(14, 9), sg(10, 6)), 0, 0.54, 0), P.coral), 0.25),
+    tint(place(sphere(0.085, sg(14, 9), sg(10, 6)), 0, 0.54, 0), '#8e3a4a'), // unlit: a dull knob, so any lit state is a change
   );
 }
 
@@ -534,9 +534,9 @@ export function createTableView(content, tableId, opts = {}) {
       ...(art.env || {}),
     }),
     night: makeEnv('night', {
-      key: { dir: [-0.38, 0.72, -0.58], color: '#8fa6f4' },
-      shadow: { tint: '#3140a8', lift: 0.1, saturate: 1.25, ...shadowBox },
-      ambient: { sky: '#4a63d8', ground: '#3a2f96', amount: 0.16 },
+      key: { dir: [-0.38, 0.72, -0.58], color: '#7f96ee' },
+      shadow: { tint: '#2a3aa2', lift: 0.1, saturate: 1.25, ...shadowBox },
+      ambient: { sky: '#4a63d8', ground: '#3a2f96', amount: 0.13 },
       rim: { color: '#c4d8ff', amount: 0.75, edge: 0.72 },
       fog: { density: 0, max: 0 },
       sky: { horizon: '#27408f' },
@@ -668,11 +668,13 @@ export function createTableView(content, tableId, opts = {}) {
         const pos = [WX(l.at[0]), l.h, WZ(l.at[1])];
         const sp = sprites.add({ kind: 'glow', pos, size: l.size || 0.5, color: l.color || '#ffb347', alpha: l.alpha ?? 0.6 });
         lampSprites.push({ sp, size: l.size || 0.5, alpha: l.alpha ?? 0.6, seed: lampSprites.length * 1.7 });
-        if (l.light) artLamps.push({ pos, color: rgb(l.color || '#ffb347'), radius: l.light, seed: artLamps.length * 2.3 });
+        if (l.light) artLamps.push({ pos, color: rgb(l.color || '#ffb347'), radius: l.light, seed: artLamps.length * 2.3, night: !!l.night });
+        if (l.night) lampSprites[lampSprites.length - 1].night = true;
       }
       for (const b of it.beams || []) beams.push(b);
     }
   }
+  artLamps.sort((p, q) => (q.night ? 1 : 0) - (p.night ? 1 : 0)); // by night, the lamps only night has come first
   const mech = group('mech');
   const groupColour = new Map();
   const targets = lay.targets.map((t, i) => {
@@ -732,13 +734,13 @@ export function createTableView(content, tableId, opts = {}) {
   const faceLamps = DX.map((x) => addLamp('', 'face', x, DY + 0.34, DZ + 0.42, 0.001, 0.001, 0.001, P.lot, 1.25, 0));
   const railLamps = [[], []];
   for (let i = 0; i < RAIL_LAMPS; i++) for (let k = 0; k < 2; k++) railLamps[k].push(addLamp('', 'rail', k ? 2.1 : -2.1, 0.262, RAIL_Z[i], 0.05, 0.034, 0.05, P.power, 0.34, 0));
-  const portLamp = addLamp('', 'port', PORT[0], PORT[1], PORT[2], 0.13, 0.15, 0.13, P.power, 1.5, 2.2);
+  const portLamp = addLamp('', 'port', PORT[0], PORT[1], PORT[2], 0.13, 0.15, 0.13, P.power, 1.05, 2.2);
   const leverLamp = addLamp('', 'lever', LEVER[0], LEVER[1] + 0.62, LEVER[2], 0.092, 0.092, 0.092, P.spin, 0.7, 1.2);
   const leverBase = leverLamp.base.slice();
   // ball save: a hammock of lamps slung across the drain between the flipper pivots
   const saveLamps = [];
   { const fl = table.flippers.find((f) => f.id === 'fl'), fr = table.flippers.find((f) => f.id === 'fr');
-    if (fl && fr) for (let i = 0; i < 7; i++) { const u = i / 6, x = fl.pivot[0] + (fr.pivot[0] - fl.pivot[0]) * (0.14 + 0.72 * u), y = Math.min(table.drainY - 8, Math.max(fl.pivot[1], fr.pivot[1]) + 38 + 16 * Math.sin(u * Math.PI)); saveLamps.push(addLamp('', 'save', WX(x), 0.03, WZ(y), 0.05, 0.03, 0.05, P.save, 0.4, 0)); } }
+    if (fl && fr) for (let i = 0; i < 7; i++) { const u = i / 6, x = fl.pivot[0] + (fr.pivot[0] - fl.pivot[0]) * (0.14 + 0.72 * u), y = Math.min(table.drainY - 8, Math.max(fl.pivot[1], fr.pivot[1]) + 38 + 16 * Math.sin(u * Math.PI)); saveLamps.push(addLamp('', 'save', WX(x), 0.03, WZ(y), 0.07, 0.035, 0.07, P.save, 0.62, 0)); } }
   const ballGlow = []; for (let i = 0; i < BALLS; i++) { const g = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: R * 7, color: '#ffffff', alpha: 0 }); g.visible = false; ballGlow.push(g); }
   const armLamps = [-1.86, 1.86].map((x) => addLamp('', 'arm', x, 0.76, -4.66, 0.1, 0.07, 0.1, P.spin, 0.7, 1.4));
   const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.582, -4.135, 0.04, 0.02, 0.04, P.spin, 0, 0));
@@ -1020,15 +1022,18 @@ export function createTableView(content, tableId, opts = {}) {
     // By night a lamp is most of the light there is: halos and reach both grow.
     const nightK = 1 + 0.45 * nightAmount, glowK = (0.8 + 0.3 * power) * (1 + 0.35 * nightAmount);
     const inst = lampNode.instances, D = inst.data; let n = 0, np = 0;
-    for (let pass = 0; pass < 3 && np < POINTS; pass++) {
+    // order of claim on the eight: flashes, what the player should shoot, the set's own lamps, then everything else lit
+    const lampPass = (pass) => {
       for (let i = 0; i < lamps.length && np < POINTS; i++) {
         const L = lamps[i]; if (L.light <= 0 || L.level < 0.08) continue;
         const pr = L.kind === 'bumper' ? 0 : L.tone <= 1 ? 1 : 2; if (pr !== pass || (celebrate > 0 && pr > 0)) continue;
         const c = TONES[L.tone], p = points[np++];
         p.pos[0] = L.pos[0]; p.pos[1] = Math.max(L.pos[1], 0.16) + 0.1; p.pos[2] = L.pos[2]; p.color = c; p.radius = L.light * nightK; p.intensity = L.level * 1.15;
       }
-    }
-    for (let i = 0; i < artLamps.length && np < POINTS; i++) { const a = artLamps[i], p = points[np++]; p.pos[0] = a.pos[0]; p.pos[1] = a.pos[1]; p.pos[2] = a.pos[2]; p.color = a.color; p.radius = a.radius * nightK; p.intensity = 0.9 + 0.1 * Math.sin(time * 9 + a.seed) * Math.sin(time * 5.3 + a.seed); }
+    };
+    lampPass(0); lampPass(1);
+    for (let i = 0; i < artLamps.length && np < POINTS; i++) { const a = artLamps[i]; if (a.night && nightAmount < 0.05) continue; const p = points[np++]; p.pos[0] = a.pos[0]; p.pos[1] = a.pos[1]; p.pos[2] = a.pos[2]; p.color = a.color; p.radius = a.radius * nightK; p.intensity = (0.9 + 0.1 * Math.sin(time * 9 + a.seed) * Math.sin(time * 5.3 + a.seed)) * (a.night ? nightAmount : 1); }
+    lampPass(2);
     for (let i = 0; i < bumpers.length && np < POINTS; i++) { const b = bumpers[i]; if (b.lamp.level >= 0.08) continue; const p = points[np++]; p.pos[0] = b.lamp.pos[0]; p.pos[1] = 0.3; p.pos[2] = b.lamp.pos[2]; p.color = C.done; p.radius = 0.62 * nightK; p.intensity = 0.75; }
     for (; np < POINTS; np++) points[np].intensity = 0;
     for (let i = 0; i < lamps.length; i++) {
@@ -1043,7 +1048,7 @@ export function createTableView(content, tableId, opts = {}) {
       D.set(L.base, o); D[o + 16] = c[0] * k; D[o + 17] = c[1] * k; D[o + 18] = c[2] * k; D[o + 19] = 1;
     }
     inst.count = n; inst.dirty = true;
-    for (let i = 0; i < lampSprites.length; i++) { const l = lampSprites[i], f = 0.93 + 0.07 * Math.sin(time * 9 + l.seed) * Math.sin(time * 5.3 + l.seed); l.sp.size[0] = l.sp.size[1] = l.size * f * (1 + 0.25 * nightAmount); l.sp.alpha = Math.min(1, l.alpha * (1 + 0.5 * nightAmount)); }
+    for (let i = 0; i < lampSprites.length; i++) { const l = lampSprites[i], f = 0.93 + 0.07 * Math.sin(time * 9 + l.seed) * Math.sin(time * 5.3 + l.seed); l.sp.size[0] = l.sp.size[1] = l.size * f * (1 + 0.25 * nightAmount); l.sp.alpha = Math.min(1, l.alpha * (l.night ? nightAmount : 1 + 0.5 * nightAmount)); }
 
     // bolts: each one a bright head on a bent path, shedding a line of light that fades behind it
     for (let i = 0; i < BOLTS; i++) {
@@ -1052,9 +1057,14 @@ export function createTableView(content, tableId, opts = {}) {
       const u = Math.min(1, b.t), e = u * u * (3 - 2 * u), q = 1 - e;
       const x = q * q * b.a[0] + 2 * q * e * b.c[0] + e * e * b.b[0], y = q * q * b.a[1] + 2 * q * e * b.c[1] + e * e * b.b[1], z = q * q * b.a[2] + 2 * q * e * b.c[2] + e * e * b.b[2];
       if (dt > 0) {
-        const steps = Math.max(1, Math.min(6, Math.ceil(Math.hypot(x - b.prev[0], y - b.prev[1], z - b.prev[2]) / 0.11)));
-        V3[0] = 0; V3[1] = 0; V3[2] = 0;
-        for (let k = 1; k <= steps; k++) { const f = k / steps; P3[0] = b.prev[0] + (x - b.prev[0]) * f; P3[1] = b.prev[1] + (y - b.prev[1]) * f; P3[2] = b.prev[2] + (z - b.prev[2]) * f; sprites.spawn({ kind: 'glow', pos: P3, vel: V3, size: 0.2 + 0.16 * b.strength, endSize: 0.04, life: 0.22 + 0.1 * b.strength, color: b.col, alpha: 0.9 }); }
+        // one long glow per frame laid along the step just taken (aimed on screen), so the trail is a line and not a row of dots
+        const len = Math.hypot(x - b.prev[0], y - b.prev[1], z - b.prev[2]);
+        if (len > 1e-4) {
+          projectWorld(b.prev[0], b.prev[1], b.prev[2], S2); const sx = S2[0], sy = S2[1]; projectWorld(x, y, z, S2);
+          const th = 0.15 + 0.1 * b.strength;
+          P3[0] = (x + b.prev[0]) / 2; P3[1] = (y + b.prev[1]) / 2; P3[2] = (z + b.prev[2]) / 2; V3[0] = 0; V3[1] = 0; V3[2] = 0;
+          sprites.spawn({ kind: 'glow', pos: P3, vel: V3, size: th, endSize: th * 0.25, aspect: Math.max(1, (len * 2.6) / th), rot: Math.atan2(sy - S2[1], S2[0] - sx), life: 0.26 + 0.12 * b.strength, color: b.col, alpha: 1 });
+        }
       }
       b.prev[0] = x; b.prev[1] = y; b.prev[2] = z;
       b.head.visible = true; b.head.pos[0] = x; b.head.pos[1] = y; b.head.pos[2] = z; b.head.color = C.hot; b.head.alpha = 0.95; b.head.size[0] = b.head.size[1] = 0.34 + 0.3 * b.strength;
@@ -1262,7 +1272,9 @@ export function tableEvents(content, before, msg, after, out = []) {
  *   bumperTop(g, w, h)   the emblem on top of every bumper
  *   scenery(kit) -> [{ mesh, at: [x, y], y, rot, scale, lamps: [{ at, h, color, size, alpha, light }], beams: [{ at, h, length, spread, tilt, speed, color }] }]
  *                toy scenery standing where no ball goes (at is in table units; mesh is in world units,
- *                0.01 per table unit). lamps are glow sprites (and point lights when `light` is a radius).
+ *                0.01 per table unit). lamps are glow sprites (and point lights when `light` is a radius);
+ *                a lamp with night: true is lit only in the night light (what the dusk sun makes needless).
+ *   env, envNight, envDay   overrides of each of the three lighting environments
  *   glints       [[x0, y0, x1, y1], ...] rectangles of open water that sparkle
  */
 export const TABLE_ART = {};
@@ -1385,14 +1397,15 @@ registerTableArt('vessery', {
   scenery(kit) {
     const { P } = kit;
     return [
-      { name: 'lighthouse', mesh: vLighthouse(P), at: [54, 76], scale: 1.15, lamps: [{ at: [54, 76], h: 1.18, color: '#ffe08a', size: 1.1, alpha: 0.55 }], beams: [{ at: [54, 76], h: 1.17, length: 3.4, spread: 0.55, tilt: 74, speed: 34 }] },
+      { name: 'lighthouse', mesh: vLighthouse(P), at: [54, 76], scale: 1.15, lamps: [{ at: [54, 76], h: 1.18, color: '#ffe08a', size: 1.1, alpha: 0.55 }, { at: [60, 120], h: 0.4, color: '#ffe08a', size: 0.5, alpha: 0.0, light: 1.3, night: true }], beams: [{ at: [54, 76], h: 1.17, length: 3.4, spread: 0.55, tilt: 74, speed: 34 }] },
       { name: 'stall', mesh: vStall(P), at: [27, 430], rot: 62 * YAW_SIGN, scale: 0.92, lamps: [{ at: [44, 440], h: 0.3, color: '#ffb347', size: 0.42, alpha: 0.7, light: 0.9 }] },
       { name: 'crates', mesh: vCrates(P), at: [352, 428], rot: -20, scale: 0.95, lamps: [{ at: [362, 418], h: 0.42, color: '#ffb347', size: 0.42, alpha: 0.7, light: 0.9 }] },
       { name: 'buoyL', mesh: vBuoy(P), at: [84, 630], lamps: [{ at: [84, 630], h: 0.225, color: '#ffd24a', size: 0.3, alpha: 0.6 }] },
       { name: 'buoyR', mesh: vBuoy(P), at: [290, 630], lamps: [{ at: [290, 630], h: 0.225, color: '#ffd24a', size: 0.3, alpha: 0.6 }] },
       { name: 'boatL', mesh: vBoat(P), at: [84, 752], rot: 28, scale: 1.25 },
       { name: 'boatR', mesh: vBoat(P, '#ffd24a'), at: [292, 756], rot: 150, scale: 1.15 },
-      { name: 'garland', mesh: vGarland(P, [-10, 168, 0.72], [410, 150, 0.72], 13, 0.2, kit), at: [200, 400] },
+      { name: 'garland', mesh: vGarland(P, [-10, 168, 0.72], [410, 150, 0.72], 13, 0.2, kit), at: [200, 400],
+        lamps: [[70, 166], [200, 172], [330, 158]].map((at, i) => ({ at, h: 0.5, color: ['#ff9a5a', '#ffd27a', '#ff8fb8'][i], size: 0.9, alpha: 0.4, light: 1.5, night: true })) },
       { name: 'stall2', mesh: vStall(P, '#33c9a4', P.cream), at: [374, 26], rot: 215, scale: 0.62 },
     ];
   },

@@ -25,6 +25,7 @@
 // The cast on a quay: contact sheets for the character artist. Query string:
 //   ?view=sheet (default)  one row per character: body, four emotes close up, and the stage-size figure (lod 'stage').
 //                          ?page=0.. (8 rows a page)  ?ids=ren,ilse,... (default: all of CAST)
+//        =heads            big heads of ?ids, three across (12 a page)   ?emote= ?speak=1 ?lod=
 //        =lineup           every id at stage size, in 430 x 220 bands as the live view draws them (lod 'stage')
 //        =close            ?who alone, head and shoulders, full detail      =turn  ?who from four sides
 //        =emotes           ?who, all seven emotes and talking               =poses ?ids, signature poses
@@ -43,7 +44,7 @@ try {
   const { createRenderer, createCamera, createScene, makeEnv, material, node, group, mergeStatic, createSprites, createClouds, merge, tint, place, roundedBox, cylinder, lathe, sphere, blob, setGlow, rng, DEG } = GL;
 
   const q = new URLSearchParams(location.search);
-  const LIGHTS = ['sunset', 'night', 'day'], VIEWS = ['sheet', 'lineup', 'close', 'turn', 'emotes', 'poses', 'clips', 'act', 'strip', 'crowd'];
+  const LIGHTS = ['sunset', 'night', 'day'], VIEWS = ['sheet', 'heads', 'lineup', 'close', 'turn', 'emotes', 'poses', 'clips', 'act', 'strip', 'crowd'];
   const light = q.get('light') || 'sunset', view = q.get('view') || 'sheet', who = q.get('who') || 'ilse';
   if (!LIGHTS.includes(light)) throw new Error(`unknown light "${light}" (have ${LIGHTS.join(', ')})`);
   if (!VIEWS.includes(view)) throw new Error(`unknown view "${view}" (have ${VIEWS.join(', ')})`);
@@ -91,6 +92,7 @@ try {
   let ids, lods;
   if (view === 'sheet') { ids = (want || ALL).slice(page * PAGE, page * PAGE + PAGE); lods = ['full', 'stage']; }
   else if (view === 'lineup') { ids = want || ALL; lods = ['stage']; }
+  else if (view === 'heads') { ids = (want || ALL).slice(page * 12, page * 12 + 12); lods = [lodQ]; }
   else if (view === 'poses') { ids = want || ['ren', 'ilse', 'nan', 'bailiff']; lods = ['full']; }
   else if (view === 'crowd') { ids = []; lods = []; }
   else if (view === 'act' && q.get('act') === 'team') { ids = ['ren', 'ilse', 'bailiff']; lods = [lodQ]; }
@@ -125,6 +127,9 @@ try {
         cells.push({ x: bw + 4 * ew, y, w: sw, h: rh, show: [S], shot: 'body', of: S, yaw: 28, pitch: 8, margin: rh / 76, thin: true, state: { [S]: { face: 0 } } });
         tag(2, y + 2, `${id}  ${cast[F].stats.triangles} / ${cast[S].stats.triangles} tris`); });
       FOUR.forEach((e, i) => tag(bw + i * ew + 2, H - 12, e)); tag(bw + 4 * ew + 2, H - 12, 'stage 76px');
+    } else if (view === 'heads') { // big heads, three across: the faces as a cutscene close-up shows them
+      const cols = Number(q.get('cols') || 3), rows = Math.ceil(ids.length / cols), cw = W / cols, chh = Math.min(H / rows, cw * 1.15);
+      ids.forEach((id, i) => { const x = (i % cols) * cw, y = Math.floor(i / cols) * chh; cells.push({ x, y, w: cw, h: chh, show: [id], shot: 'head', of: id, yaw: camYaw + (i % 2 ? -18 : 18), pitch: 3, margin: 1.4, state: { [id]: { look: 'camera', face: 0, emote: base.emote, talk: base.speaking ? 0.7 : 0 } } }); tag(x + 3, y + 3, id); });
     } else if (view === 'lineup') {
       const bh = Math.round(W * 220 / 430), per = 7;
       for (let b = 0; b * per < ids.length; b++) { const row = ids.slice(b * per, b * per + per), at = {}, st = {};
@@ -135,7 +140,7 @@ try {
       all.forEach((e, i) => { const x = (i % cols) * cw, y = Math.floor(i / cols) * chh;
         cells.push({ x, y, w: cw, h: chh, show: [who], shot: 'head', of: who, yaw: (i % 2 ? -1 : 1) * 22, pitch: 3, margin: 1.45, state: { [who]: e === 'talk' ? { emote: 'smile', talk: 0.8, look: 'camera', face: 0 } : { emote: e, look: 'camera', face: 0 } } }); tag(x + 3, y + 3, e); });
     } else if (view === 'turn') { [0, 40, 90, 150, 180, -60].forEach((yw, i) => { cells.push({ x: (i % 3) * W / 3, y: Math.floor(i / 3) * H / 2, w: W / 3, h: H / 2, show: [who], shot: i === 4 ? 'head' : 'body', of: who, yaw: yw, pitch: 6, margin: i === 4 ? 1.5 : 1.25, state: { [who]: { face: 0 } } }); }); }
-    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: [who], shot: 'bust', of: who, yaw: camYaw + 16, pitch: 4, margin: 1.0, state: { [who]: { look: 'camera', face: 0 } } });
+    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: [who], shot: q.get('shot') || 'head', of: who, margin0: 1, yaw: camYaw + 16, pitch: 4, margin: 1.5, state: { [who]: { look: 'camera', face: 0 } } });
     else if (view === 'poses') ids.forEach((id, i) => { const n = Math.ceil(ids.length / 2), x = (i % 2) * W / 2, y = Math.floor(i / 2) * H / n; cells.push({ x, y, w: W / 2, h: H / n, show: [id], shot: 'body', of: id, yaw: i % 2 ? 26 : -26, pitch: 6, margin: 1.4, state: { [id]: { pose: 'signature', face: 0, emote: 'smile' } } }); tag(x + 3, y + 3, id + ': signature'); });
     else if (view === 'clips') {
       const list = [['strike', 0.27], ['strike2', 0.2], ['strike2', 0.36], ['windup', 0.42], ['release', 0.16], ['hit', 0.12], ['cheer', 0.3], ['stepF', 0.16], ['yield', 0.7], ['surrender', 0.5], ['teamLead', 0.5], ['teamFollow', 0.78]];

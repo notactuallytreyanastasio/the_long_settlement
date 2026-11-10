@@ -152,13 +152,23 @@ async function fetchManifest() {
   return manifest;
 }
 
+/** Can this browser make a WebGL2 context? Asked of a scratch canvas, whose context is handed straight back. */
+function hasWebGL2() {
+  if (typeof WebGL2RenderingContext === 'undefined') return false;
+  let gl = null;
+  try { gl = document.createElement('canvas').getContext('webgl2'); } catch { return false; }
+  if (!gl) return false;
+  const lose = gl.getExtension('WEBGL_lose_context');
+  if (lose) lose.loseContext();        // a page gets only so many contexts; do not leave this one to the collector
+  return true;
+}
+
 /**
  * The 3D renderer, or null: not wanted, no #gl canvas in this page, the module failed to load, or no WebGL2.
  * Asked for by name (?gl=1), a failure to load is thrown; as a default it is logged and the 2D game goes on.
  */
 async function loadGl(glCanvas, hudCanvas) {
-  if (!GL_WANTED || !glCanvas) return null;
-  if (typeof WebGL2RenderingContext === 'undefined') return null;          // no WebGL2: never touch the GL path
+  if (!GL_WANTED || !glCanvas || !hasWebGL2()) return null;                // no WebGL2: never touch the GL path
   try {
     const { createGlApp } = await import('./gl/app.js');
     const app = createGlApp(glCanvas, hudCanvas, { quality: GL_QUALITY === 'low' || GL_QUALITY === 'mid' || GL_QUALITY === 'high' ? GL_QUALITY : null });

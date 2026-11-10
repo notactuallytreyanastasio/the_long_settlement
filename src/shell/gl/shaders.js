@@ -371,6 +371,9 @@ void main() {
   if (uShoreBoxR.y > 0.0) {
     vec2 o = p - uShoreBox.xy; vec2 q = abs(o) - uShoreBox.zw + uShoreBoxR.x;
     float d = (length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uShoreBoxR.x) / uShoreBoxR.y;
+    // scallops along the straight sides: the foam leaves a quay in a row of arcs, not as a ruled line
+    float along = q.x > q.y ? o.y : o.x;
+    d -= abs(sin(along * 2.9 + 0.6)) * 1.25 * (1.0 - smoothstep(0.0, uShoreBoxR.x, min(q.x, q.y) + uShoreBoxR.x)) * (1.0 - smoothstep(0.6, 2.4, d));
     if (d < dmin) { dmin = d; near = o; }
   }
   float ang = atan(near.y, near.x);
@@ -439,7 +442,8 @@ uniform mat4 uViewProj; uniform vec3 uCamRight; uniform vec3 uCamUp; uniform vec
 out vec2 vP; out vec4 vColor; out float vKind; out float vPhase; out vec2 vUv;
 void main() {
   float cs = cos(iB.z), sn = sin(iB.z);
-  vec2 r = vec2(aCorner.x * cs - aCorner.y * sn, aCorner.x * sn + aCorner.y * cs) * iB.xy * 0.5;
+  vec2 sc = aCorner * iB.xy * 0.5;                                          // size first, then turn: a long sprite stays a rectangle
+  vec2 r = vec2(sc.x * cs - sc.y * sn, sc.x * sn + sc.y * cs);
   vec3 w;
   if ((iA.w > 3.5 && iA.w < 4.5) || (iA.w > 6.5 && iA.w < 7.5)) w = iA.xyz + vec3(r.x, 0.0, r.y);   // rings and shades lie on the ground
   else {

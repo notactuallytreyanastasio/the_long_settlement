@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 29045,
-  "lines": 546
+  "bytes": 26105,
+  "lines": 500
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 147898,
-  "lines": 1998
+  "bytes": 148431,
+  "lines": 1997
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12551,13 +12551,13 @@
  },
  {
   "path": "src/shell/gl/sets/bench.js",
-  "bytes": 15280,
-  "lines": 192
+  "bytes": 17602,
+  "lines": 225
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
-  "bytes": 20133,
-  "lines": 264
+  "bytes": 21135,
+  "lines": 270
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
@@ -12586,13 +12586,13 @@
  },
  {
   "path": "src/shell/gl/sets/pier-riot.js",
-  "bytes": 24813,
-  "lines": 310
+  "bytes": 25961,
+  "lines": 317
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 28097,
-  "lines": 555
+  "bytes": 28490,
+  "lines": 559
  },
  {
   "path": "src/shell/gl/sprites.js",
@@ -12601,13 +12601,13 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 74880,
-  "lines": 1067
+  "bytes": 75938,
+  "lines": 1070
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 102177,
-  "lines": 1400
+  "bytes": 103393,
+  "lines": 1413
  },
  {
   "path": "src/shell/input.js",
@@ -12621,8 +12621,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 22585,
-  "lines": 477
+  "bytes": 23068,
+  "lines": 487
  },
  {
   "path": "src/shell/render.js",
@@ -12711,8 +12711,8 @@
  },
  {
   "path": "tools/gl-characters.html",
-  "bytes": 24135,
-  "lines": 265
+  "bytes": 24956,
+  "lines": 270
  },
  {
   "path": "tools/gl-demo.html",

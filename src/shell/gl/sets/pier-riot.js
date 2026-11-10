@@ -27,7 +27,7 @@ import {
 import {
   PAL, kitMaterials, anchorAt, scatter, pickLight, setRig, paperLantern, lanternString, lanternLines, crowd, bunting,
   crate, barrel, sack, bollard, ropeCoil, lighthouse, pole, headland, cloudBank, quayEdge, cobble, rock,
-  pier, crane, steps, townBank, floatLight, flame, wreck, archWindow,
+  pier, crane, steps, townBank, floatLight, flame, wreck, archWindow, cloud,
 } from './kit.js';
 
 const QUAY_Z = -6.4, WATER = -0.5;
@@ -39,15 +39,15 @@ const LIGHTS = {
   night: {
     preset: 'night', power: 1.15, unlit: 0.4, glow: 0.7, riot: 0.8,
     env: {
-      key: { dir: dirFrom(5, 17), color: '#ffb890' },                 // the fire, low and behind
-      shadow: { tint: '#3b3aae', lift: 0.13, saturate: 1.3 },
-      ambient: { sky: '#4a52d0', ground: '#3a2f9a', amount: 0.2 },
-      rim: { color: '#ff9a52', amount: 1.25, edge: 0.7 },
+      key: { dir: dirFrom(9, 36), color: '#8aa2f4' },                 // the moon, behind and above: the stones stay blue
+      shadow: { tint: '#2f3aa6', lift: 0.12, saturate: 1.3 },
+      ambient: { sky: '#4458d0', ground: '#33309a', amount: 0.18 },
+      rim: { color: '#ff9a52', amount: 1.4, edge: 0.7 },             // and every edge that faces down the pier is the fire's
       fog: { color: '#6a4fc0', density: 0.0046, start: 14, max: 0.84 },
       sky: { zenith: '#0c1568', mid: '#2a2f9c', midAt: 0.4, horizon: '#b0509a', below: '#6a3aa0', glow: '#ff8a4a', glowAmount: 0.95, sunDir: dirFrom(2.5, 1.5), moon: 0, stars: 0.8, sun: { size: 0.01, color: '#ff9a50', halo: '#ff8a4a', haloAmount: 0.55 } },
       water: { deep: '#14237e', mid: '#2c3aa8', shallow: '#c8569a', foam: '#ffc8b0', glint: '#ff9a5a', glintDensity: 0.3 },
     },
-    cloud: { color: '#9a7fe0', shadowTint: '#4a3aa0' }, ray: 0.42, beam: 0.2, smoke: '#7a4a9a', smoke2: '#b0608a',
+    cloud: { color: '#9a7fe0', shadowTint: '#4a3aa0' }, ray: 0.42, beam: 0.2, smoke: '#a98ae6', smokeShade: '#4a3a9c', smoke2: '#9a66b8',
   },
 };
 
@@ -75,27 +75,28 @@ function build(engine = GL0, { light, low = false } = {}) {
   const M = kitMaterials(), r = rng(5151), FAR = low ? M.farFlat : M.far;
   const PIER_X = 0.55, PIER_W = 2.6, PIER_LEN = 17;
   const CRANE = [2.55, 0, -4.1], CRANE_YAW = 180 - 8;          // boom reaches back over the pier's root
-  const HALL_X = -3.5, STEP_TOP = -4.9, STEP_N = 6, RISE = 0.24, RUN = 0.44, LAND_Y = STEP_N * RISE;
+  const HALL_X = -3.9, STEP_TOP = -4.9, STEP_N = 6, RISE = 0.24, RUN = 0.44, LAND_Y = STEP_N * RISE;
   const FIRE = [PIER_X + 0.1, 0, QUAY_Z + 0.25 - PIER_LEN + 1.3];
   const FALLEN = [-1.35, 0, -1.75];
 
   const near = group('near'), mid = group('mid'), ground = group('ground');
   ground.add(node('ground', tint(place(plane(90, 22, 1, 1), 0, 0, QUAY_Z + 0.3 + 11), '#e2cfa8'), M.ground));
-  ground.add(node('quay', quayEdge({ len: low ? 16 : 22, drop: 1.7, seed: 9 }), M.ground, { pos: [(low ? 8 : 11) - 1.0, 0, QUAY_Z] }));
+  ground.add(node('quay', quayEdge({ len: low ? 17 : 24, drop: 1.7, seed: 9 }), M.ground, { pos: [(low ? 8.5 : 12) - 2.4, 0, QUAY_Z] }));
   ground.add(node('quay-far', tint(place(box(32, 1.9, 0.5), 36, -0.95, QUAY_Z + 0.3), PAL.stone2), M.ground));
-  ground.add(node('hall-foot', tint(place(box(13, 2.2, 4.4), 0, -1.1, 0), PAL.stone2), M.ground, { pos: [HALL_X - 2.2, 0, STEP_TOP - 3.3] }));
+  ground.add(node('hall-foot', tint(place(box(10, 2.2, 4.4), 0, -1.1, 0), PAL.stone2), M.ground, { pos: [HALL_X - 3.5, 0, STEP_TOP - 3.3] }));
   ground.traverse((n) => { n.castShadow = false; });
 
   // ---- left: the foot of the hall steps, two fat columns, the hall's flank with one lit door
   const stepsMesh = steps({ w: 5.4, n: STEP_N, rise: RISE, run: RUN });
   near.add(node('steps', stepsMesh, M.prop, { pos: [HALL_X, LAND_Y, STEP_TOP], rot: [0, 180, 0] }));
   near.add(node('landing', tint(place(box(5.4, LAND_Y + 0.4, 3.6), 0, (LAND_Y - 0.4) / 2, -1.8), PAL.stone), M.prop, { pos: [HALL_X, 0, STEP_TOP] }));
-  for (const sx of [-1, 1]) near.add(node('cheek', tint(place(roundedBox(0.5, LAND_Y + 0.5, STEP_N * RUN + 0.3, 0.06, 1), 0, (LAND_Y + 0.5) / 2 - 0.1, STEP_N * RUN / 2), PAL.stone2), M.prop, { pos: [HALL_X + sx * 2.95, 0, STEP_TOP] }));
+  near.add(node('cheek', tint(place(roundedBox(0.5, LAND_Y + 0.5, STEP_N * RUN + 0.3, 0.06, 1), 0, (LAND_Y + 0.5) / 2 - 0.1, STEP_N * RUN / 2), PAL.stone2), M.prop, { pos: [HALL_X - 2.95, 0, STEP_TOP] }));
+  near.add(node('newel', merge(tint(place(roundedBox(0.56, 0.5, 0.56, 0.06, 1), 0, 0.25, 0), PAL.stone2), tint(place(GL0.sphere(0.2, 10, 7), 0, 0.64, 0), PAL.stone)), M.prop, { pos: [HALL_X + 2.95, 0, STEP_TOP + STEP_N * RUN - 0.1] })); // the open side: only a low post, so the steps read from the stage
   const colMesh = () => merge(tint(place(cylinder(0.42, 0.42, 0.3, 12), 0, 0, 0), PAL.stone2), tint(place(cylinder(0.34, 0.3, 4.3, 12), 0, 0.3, 0), PAL.cream), tint(place(roundedBox(0.95, 0.3, 0.95, 0.06, 1), 0, 4.75, 0), PAL.stone2));
   for (const x of [-1.25, 1.25]) mid.add(node('column', colMesh(), M.prop, { pos: [HALL_X + x, LAND_Y, STEP_TOP - 0.75] }));
-  mid.add(node('lintel', tint(place(box(5.8, 0.9, 1.3), 0, LAND_Y + 5.35, -0.75), PAL.cream), M.prop, { pos: [HALL_X, 0, STEP_TOP] }));
-  mid.add(node('hall-wall', tint(place(box(9, 9, 0.6), -1.2, 4.5, -2.6), '#f2e2c4'), M.prop, { pos: [HALL_X, 0, STEP_TOP] }));
-  const DOOR = [HALL_X, LAND_Y, STEP_TOP - 2.28];
+  mid.add(node('lintel', tint(place(box(4.6, 0.9, 1.3), -0.6, LAND_Y + 5.35, -0.75), PAL.cream), M.prop, { pos: [HALL_X, 0, STEP_TOP] }));
+  mid.add(node('hall-wall', tint(place(box(7, 9, 0.6), -2.0, 4.5, -2.6), '#eadcc6'), M.prop, { pos: [HALL_X, 0, STEP_TOP] })); // its right edge stops at x -2.4: a portrait frame keeps the pier and the fire
+  const DOOR = [HALL_X - 0.4, LAND_Y, STEP_TOP - 2.28];
   mid.add(node('hall-door', archWindow({ w: 1.7, h: 3.3, glass: '#ffc46a', frame: PAL.stone2, bars: PAL.woodDark, glow: 0.95 }), M.prop, { pos: DOOR }));
 
   // ---- centre: the pier, and the wreck burning at its end
@@ -106,7 +107,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   mid.add(node('pier-crate', crate({ s: 0.6, seed: 8 }), M.prop, { pos: [PIER_X + 0.8, 0, -9.4], rot: [0, 30, 0] }), node('pier-barrel', barrel({}), M.prop, { pos: [PIER_X - 0.85, 0.27, -11.2], rot: [90, 40, 0] }));
 
   // ---- right: the crane, its bollard, the cargo it was working
-  const craneMesh = crane({ h: 4.7, reach: 3.1, seed: 2, line: 0.36 });
+  const craneMesh = crane({ h: 4.7, reach: 3.1, seed: 2, line: 0.22 });
   near.add(node('crane', craneMesh, M.prop, { pos: CRANE, rot: [0, CRANE_YAW, 0] }));
   const craneLamp = anchorAt(craneMesh, 'lamp', CRANE, CRANE_YAW), craneTop = anchorAt(craneMesh, 'top', CRANE, CRANE_YAW);
   near.add(node('bollard', bollard({ s: 1.5 }), M.prop, { pos: [3.05, 0, -0.95] }), node('coil', ropeCoil({ r: 0.3 }), M.prop, { pos: [3.9, 0, -1.25] }));
@@ -183,7 +184,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     for (let i = 0; i < 9; i++) onQuay.push({ pos: [3.4 + (i % 4) * 0.8 + r() * 0.4, 0, -3.6 - Math.floor(i / 4) * 0.85 - r() * 0.3], face: -40 - r() * 60 });
     for (let i = 0; i < 14; i++) { if (i < onPier.length) spots.push(onPier[i]); if (i < onSteps.length) spots.push(onSteps[i]); if (i < onQuay.length) spots.push(onQuay[i]); }
   }
-  const folk = crowd({ spots: low ? spots.filter((_, i) => i % 3 !== 2) : spots, material: M.prop, sprites, seed: 31, hold: 'torch', colors: RIOT_COATS, glow: '#ff9a40', glowSize: 0.9, amount: L.riot, variants: low ? 2 : 3 });
+  const folk = crowd({ spots: low ? spots.filter((_, i) => i % 3 !== 2) : spots, material: M.prop, sprites, seed: 31, hold: 'torch', colors: RIOT_COATS, glow: '#ff9a40', glowSize: 0.5, amount: L.riot, variants: low ? 2 : 3 });
   scene.root.add(folk.node);
 
   // ---- fire: the wreck at the pier's end, and the lantern the shot brought down still burning by the steps
@@ -195,14 +196,18 @@ function build(engine = GL0, { light, low = false } = {}) {
   ];
   for (const f of flames) { f.n.castShadow = false; scene.root.add(f.n); }
   const FIRE_TOP = [fireAt[0][0], fireAt[0][1] + 1.2, fireAt[0][2]];
+  // the smoke: lobed toon clouds climbing off the fire and leaning down the wind, one instanced draw, looping
+  const SMOKE_N = low ? 5 : 7;
+  const smoke = node('smoke', tint(cloud({ seed: 4, w: 2.2, puffs: 3 }), L.smoke), GL0.material({ name: 'riot-smoke', outline: false, rim: 0, fog: 0.2, shadowTint: L.smokeShade, receiveShadow: false, castShadow: false, bandEdge: 0.1, bandSoft: 0.01, lightUp: 0.6 }));
+  smoke.castShadow = false; smoke.instances = GL0.makeInstances(SMOKE_N); smoke.instances.count = SMOKE_N; scene.root.add(smoke);
 
   const lamps = [
-    { name: 'crane', pos: craneLamp, color: '#ffc470', radius: 7.2, base: 1.2 },
+    { name: 'crane', pos: craneLamp, color: '#ffc470', radius: 5.8, base: 1.2 },
     { name: 'fire', pos: FIRE_TOP, color: '#ff8a3a', radius: 15, base: 1.3 },
-    { name: 'fallen', pos: [FALLEN[0], 0.5, FALLEN[2]], color: '#ff9a48', radius: 3.4, base: 0.9 },
-    { name: 'hall-door', pos: [DOOR[0], DOOR[1] + 1.6, DOOR[2] + 1.0], color: '#ffc46a', radius: 6.0, base: 1 },
-    { name: 'torches-pier', pos: [PIER_X, 1.5, -9.0], color: '#ff9a48', radius: 5.0, base: 0.9 },
-    { name: 'torches-quay', pos: [4.4, 1.6, -3.8], color: '#ff9a48', radius: 3.8, base: 0.8 },
+    { name: 'fallen', pos: [FALLEN[0], 0.5, FALLEN[2]], color: '#ff9a48', radius: 2.4, base: 0.9 },
+    { name: 'hall-door', pos: [DOOR[0], DOOR[1] + 1.4, DOOR[2] + 0.9], color: '#ffc46a', radius: 3.4, base: 0.85 },
+    { name: 'torches-pier', pos: [PIER_X, 1.5, -10.0], color: '#ff9a48', radius: 4.6, base: 0.9 },
+    { name: 'torches-quay', pos: [4.6, 1.6, -4.0], color: '#ff9a48', radius: 3.0, base: 0.8 },
   ];
   env.points = lamps.map((l) => ({ pos: l.pos, color: rgb(l.color), radius: l.radius, intensity: l.base * L.power }));
 
@@ -210,7 +215,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   const fireGlow = sprites.add({ kind: 'glow', pos: FIRE_TOP, size: 9, color: '#ff8030', alpha: 0 });
   const fireCore = sprites.add({ kind: 'glow', pos: [FIRE_TOP[0], FIRE_TOP[1] - 0.4, FIRE_TOP[2]], size: 3.2, color: '#ffd070', alpha: 0 });
   const fallenGlow = sprites.add({ kind: 'glow', pos: [FALLEN[0], 0.3, FALLEN[2]], size: 0.9, color: '#ffa040', alpha: 0 });
-  const doorGlow = sprites.add({ kind: 'glow', pos: [DOOR[0], DOOR[1] + 1.7, DOOR[2] + 0.2], size: 3.4, color: '#ffb450', alpha: 0 });
+  const doorGlow = sprites.add({ kind: 'glow', pos: [DOOR[0], DOOR[1] + 1.7, DOOR[2] + 0.2], size: 2.2, color: '#ffb450', alpha: 0 });
   const winGlows = [];
   if (!low) anchorAt(town, 'windows', TOWN, TOWN_YAW).slice(0, 16).forEach((p) => winGlows.push(sprites.add({ kind: 'glow', pos: p, size: 3.2, color: '#ffc060', alpha: 0 })));
   const lhLamp = anchorAt(lh, 'lamp', LH), lhGlow = sprites.add({ kind: 'glow', pos: lhLamp, size: 15, color: '#ffe08a', alpha: 0 });
@@ -239,8 +244,8 @@ function build(engine = GL0, { light, low = false } = {}) {
   const actors = group('actors'); scene.root.add(actors);
 
   let power = 1, riot = L.riot, riotNow = L.riot;
-  const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(77);
-  let nextSmoke = 0, nextSpark = 0, nextEmber = 0, nextRing = 0.8, lastT = -1;
+  const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(77), SM_P = [0, 0, 0], SM_S = [1, 1, 1], SM_Q = GL0.quat.create(), SM_M = m4.create();
+  let nextSpark = 0, nextEmber = 0, nextRing = 0.8, lastT = -1;
   const setPower = (p) => { power = Math.max(0, Math.min(1.5, p)); };
   const setRiot = (a) => { riot = Math.max(0, Math.min(1, a)); folk.setAmount(riot); };
   function cue(lineId) { const c = CUES[lineId]; if (!c) return false; setRiot(c.riot); return true; }
@@ -264,18 +269,21 @@ function build(engine = GL0, { light, low = false } = {}) {
     env.points[3].intensity = lamps[3].base * Math.max(0.6, on);
     env.points[4].intensity = lamps[4].base * riotNow * flick; env.points[5].intensity = lamps[5].base * riotNow * fl2;
     craneGlow.alpha = 0.6 * Math.min(1.2, pw); shaft.visible = pw > 0.05;
-    fireGlow.alpha = 0.34 * big * flick; fireGlow.size[0] = fireGlow.size[1] = 9 * big; fireCore.alpha = 0.6 * flick; fallenGlow.alpha = 0.7 * fl2; doorGlow.alpha = 0.4;
+    fireGlow.alpha = 0.34 * big * flick; fireGlow.size[0] = fireGlow.size[1] = 9 * big; fireCore.alpha = 0.6 * flick; fallenGlow.alpha = 0.7 * fl2; doorGlow.alpha = 0.3;
     for (let i = 0; i < winGlows.length; i++) winGlows[i].alpha = 0.36;
     beam.setRot(0, time * 22, 0);
     lhGlow.alpha = 0.3 + 0.3 * Math.pow(Math.abs(Math.cos(time * 22 * DEG)), 6);
     for (let i = 0; i < floats.length; i++) floats[i].glow.alpha = 0.5 + 0.2 * Math.sin(time * 2.1 + floats[i].ph);
     clouds.update(time); if (high) high.update(time);
+    for (let i = 0; i < SMOKE_N; i++) { // each lobe rises 9 units over 14 seconds, growing, then starts again small
+      const u = ((time / 14 + i / SMOKE_N) % 1 + 1) % 1, sc = (0.35 + 1.5 * u) * big * Math.min(1, u * 8) * Math.min(1, (1 - u) * 5);
+      SM_P[0] = FIRE_TOP[0] + 0.3 + u * u * 5.5 + Math.sin(i * 2.4 + time * 0.3) * 0.25; SM_P[1] = FIRE_TOP[1] + 0.9 + u * 9; SM_P[2] = FIRE_TOP[2] - 0.6 - u * 2;
+      GL0.quat.fromEuler(SM_Q, 0, i * 1.3 + time * 0.05, Math.sin(i * 1.7) * 0.2); SM_S[0] = SM_S[1] = SM_S[2] = Math.max(0.001, sc);
+      m4.fromTRS(SM_M, SM_P, SM_Q, SM_S); smoke.instances.data.set(SM_M, i * 20);
+    }
+    smoke.instances.dirty = true;
 
     if (lastT >= 0 && time - lastT < 0.5 && dt > 0) {
-      if (time > nextSmoke) { // the column: fat violet puffs going up and over to the right
-        nextSmoke = time + 0.3 / big; P[0] = FIRE_TOP[0] + (rnd() - 0.5) * 0.8; P[1] = FIRE_TOP[1] + 0.8; P[2] = FIRE_TOP[2]; V[0] = 0.5 + rnd() * 0.4; V[1] = 1.5 + rnd() * 0.7; V[2] = -0.1;
-        sprites.spawn({ kind: 'puff', pos: P, vel: V, size: 1.1 * big, endSize: 3.4 * big, life: 5.5, color: rnd() < 0.5 ? L.smoke : L.smoke2, drag: 0.12 });
-      }
       if (time > nextSpark) { // sparks off the fire, and now and then off a torch
         nextSpark = time + 0.09; P[0] = FIRE_TOP[0] + (rnd() - 0.5) * 1.4; P[1] = FIRE_TOP[1] - 0.6 + rnd(); P[2] = FIRE_TOP[2]; V[0] = (rnd() - 0.3) * 1.2; V[1] = 1.6 + rnd() * 1.6; V[2] = (rnd() - 0.5) * 0.6;
         sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.16 + rnd() * 0.14, life: 1.6 + rnd(), color: '#ffb050', alpha: 1, gravity: -0.3 });
@@ -283,7 +291,6 @@ function build(engine = GL0, { light, low = false } = {}) {
       if (time > nextEmber) { // embers and burnt paper drifting across the stage on the wind
         nextEmber = time + 0.22; P[0] = -5 + rnd() * 10; P[1] = 0.2 + rnd() * 3.2; P[2] = -6 + rnd() * 7; V[0] = 0.5 + rnd() * 0.5; V[1] = 0.2 + rnd() * 0.3; V[2] = 0.3;
         sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.07 + rnd() * 0.07, life: 3.5, color: rnd() < 0.7 ? '#ff9a48' : '#ffd890', alpha: 0.95 });
-        if (rnd() < 0.3) { P[0] = FALLEN[0]; P[1] = 0.3; P[2] = FALLEN[2]; sprites.puff(P, { count: 1, size: 0.3, rise: 0.5, spread: 0.1, life: 1.8, color: L.smoke2 }); }
       }
       if (time > nextRing) { nextRing = time + 1.7; P[0] = 2.5 + rnd() * 12; P[1] = WATER + 0.03; P[2] = QUAY_Z - 1.2 - rnd() * 7; sprites.splash(P, { size: 0.9 + rnd() * 0.6, life: 1.4, spray: 0, color: '#ffc8b0' }); }
       sprites.update(dt);

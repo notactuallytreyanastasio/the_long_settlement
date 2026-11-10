@@ -33,6 +33,7 @@ import { stageState, setsNeeded } from '../../core/stage.js';
 import { currentChapter } from '../../core/story.js';
 import { SETS } from './sets/index.js';
 import { drawHud, HUD_BAND_HEAD, HUD_BAND_FOOT } from './hud.js';
+import { createDirector } from './stage.js';
 
 /**
  * TEMPORARY, for the integrator to delete: chapter 1's sets that did not exist when this was written are stood in
@@ -60,6 +61,9 @@ export const TIERS = Object.freeze({
 });
 const TIER_ORDER = ['high', 'mid', 'low'];
 
+/** The table's three looks (table3d setLight), by the core's light names for an encounter (core/stage.js LIGHTS). */
+const TABLE_LIGHT = Object.freeze({ dusk: 'dusk', night: 'night', predawn: 'night', dawn: 'dusk', day: 'day', interior: 'night' });
+
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const smooth = (t) => t * t * (3 - 2 * t);
 
@@ -78,21 +82,25 @@ function lightFor(def, light) {
   return def.lights.includes(light) ? light : def.lights[0];
 }
 
-/** Every figure a chapter puts on the stage: parties, people in the way, extras, whoever a cinematic shows, the clerk and the townsfolk. */
+/** The figures a chapter puts on the stage, as { id, lod }: 'stage' for parties and people in the way (the live band), 'full' for whoever a cinematic shows. */
 function chapterCast(chapter) {
-  const ids = new Set();
-  const lines = (ls) => { for (const l of ls) if (l.on) for (const id of l.on) ids.add(id); };
-  lines(chapter.prologue); lines(chapter.epilogue);
+  const out = [], seen = new Set();
+  const want = (id, lod) => { const k = `${id}:${lod}`; if (!seen.has(k)) { seen.add(k); out.push({ id, lod }); } };
+  const lines = (ls) => { for (const l of ls) if (l.on) for (const id of l.on) want(id, 'full'); };
+  lines(chapter.prologue);
   for (const s of chapter.scenes) {
+    const e = s.encounter;
+    if (e) {
+      for (const id of e.party) want(id, 'stage');
+      if (e.opposition.kind === 'people') for (const id of e.opposition.who) want(id, 'stage');
+      for (const id of e.extras || []) want(id, 'stage');
+    }
     lines(s.cutscene);
-    const e = s.encounter; if (!e) continue;
-    for (const id of e.party) ids.add(id);
-    if (e.opposition.kind === 'people') for (const id of e.opposition.who) ids.add(id);
-    for (const id of e.extras || []) ids.add(id);
   }
-  if (chapter.stage.clerk) ids.add(chapter.stage.clerk);
-  if (chapter.stage.townsfolk) ids.add(chapter.stage.townsfolk);
-  return [...ids];
+  lines(chapter.epilogue);
+  if (chapter.stage.clerk) want(chapter.stage.clerk, 'stage');
+  if (chapter.stage.townsfolk) want(chapter.stage.townsfolk, 'stage');
+  return out;
 }
 
 /** Every (set key, light) a chapter uses, in first-use order. */
@@ -147,7 +155,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const troupe = GL.createTroupe({ detail: 1 });
   const built = new Map();        // 'key|light' -> set
   const tables = new Map();       // table id -> table view
-  const queue = [];               // { kind: 'set', key, light } | { kind: 'table', id } | { kind: 'cast', ids }, in the order they will be wanted
+  const queue = [];               // { kind: 'set', key, light } | { kind: 'table', id } | { kind: 'figure', id, lod }, in the order they will be wanted
   let planned = -1, total = 0, sincePump = 0, settle = SETTLE;
   const warmCam = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
 
@@ -186,8 +194,11 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       if (k && !built.has(k) && !seen.has(k)) { seen.add(k); queue.push({ kind: 'set', key: p.set, light: p.light }); }
       if (i === 0 && !tables.has(chapter.tableId)) queue.push({ kind: 'table', id: chapter.tableId });
     });
-    // the cast, if the director can build figures ahead of the scene that needs them (it returns true when all are ready)
-    if (typeof director.castReady === 'function') queue.splice(Math.min(2, queue.length), 0, { kind: 'cast', ids: chapterCast(chapter) });
+    // the cast, one figure a turn, after the first set and the table: the band's light figures for whoever fights,
+    // the full ones for whoever speaks in a cinematic. (Doubles and walk-ons are still built by the director on entry.)
+    const figures = [];
+    for (const { id, lod } of chapterCast(chapter)) if (troupe.has(id) && !troupe.pool.has(`${id}#0:${lod}`)) figures.push({ kind: 'figure', id, lod });
+    queue.splice(Math.min(2, queue.length), 0, ...figures);
     total = queue.length;
   }
 
@@ -199,16 +210,24 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (++sincePump < PUMP_EVERY) return false;
     sincePump = 0;
     const item = queue[0];
-    if (item.kind === 'cast') { if (!director.castReady(item.ids)) return true; }      // not all yet: it stays at the head of the queue
+    queue.shift();
+    if (item.kind === 'figure') { troupe.take(item.id, 0, item.lod); app.stats.built++; settle = SETTLE; }
     else if (item.kind === 'table') { if (!tables.has(item.id)) tableNow(content, item.id); }
     else buildSet(item.key, item.light);
-    queue.shift();
     return true;
   }
 
-  /** The director's getSet: a built set, built now if it has to be. */
+  /** The director's getSet, asked every frame: a built set, built now if it has to be. */
+  const asked = new Map();        // key -> Map(light -> set)
   function getSet(key, light) {
     if (key == null) return null;
+    let byLight = asked.get(key);
+    if (!byLight) asked.set(key, byLight = new Map());
+    let set = byLight.get(light);
+    if (!set) byLight.set(light, set = buildNow(key, light));
+    return set;
+  }
+  function buildNow(key, light) {
     const k = pairKey(key, light);
     if (!k) throw new Error(`gl/app: the stage asked for set "${key}", which does not exist (have ${Object.keys(SETS).join(', ')})`);
     const have = built.get(k);
@@ -233,10 +252,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
 
   // ───────────────────────── the director ─────────────────────────
 
-  const director = typeof GL.createDirector === 'function'
-    ? GL.createDirector(troupe, { getSet })
-    : createLegacyDirector(troupe, getSet);
-  app.stats.director = typeof GL.createDirector === 'function' ? 'stage.js createDirector' : 'TEMPORARY legacy shim (app.js)';
+  const director = createDirector(troupe, { getSet });
 
   // ───────────────────────── per-frame state ─────────────────────────
 
@@ -249,8 +265,8 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const F = { content: null, game: null, stage: null, camera: stageCam, rect: bandCss, voice: null, hit, events: frameEvents, cine: 0, pad: { top: 0, bottom: 0 }, quality: tierName };
   const voice = { who: '', level: 0, line: null };
   const hudFx = {};
-  const anchors = {}, anchorPool = [], P2 = [0, 0];
-  let lastT = null, lastKind = null, cineW = 1, veil = 0, titleSet = null, tview = null, lastLight = null;
+  const anchors = {}, anchorPool = [];
+  let lastT = null, lastKind = null, cineW = 1, veil = 0, titleSet = null, tview = null, lastLight = null, lastLit = null;
   let acc = 0, accN = 0, ema = 0;
 
   /** Where on the glass (CSS px) a logged table event happened. For the director's energy arcs. */
@@ -337,7 +353,13 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     bandCss.x = bandLogical.x * k; bandCss.y = bandLogical.y * k; bandCss.w = bandLogical.w * k; bandCss.h = bandLogical.h * k;
 
     tview = tableFor(content, game, layout, k);
-    if (stage.light !== lastLight) { lastLight = stage.light; if (typeof tview.setLight === 'function' && stage.light) tview.setLight(stage.light); }
+    // the table is lit like the encounter it powers. (A cinematic's backdrop may be lit otherwise; the table is away then.)
+    if ((stage.phase === 'fight' || stage.phase === 'resolve') && stage.light && (stage.light !== lastLight || tview !== lastLit)) {
+      lastLight = stage.light; lastLit = tview;
+      const name = TABLE_LIGHT[stage.light];
+      if (!name) throw new Error(`gl/app: no table light for the stage light "${stage.light}" (have ${Object.keys(TABLE_LIGHT).join(', ')})`);
+      if (typeof tview.setLight === 'function') tview.setLight(name);
+    }
 
     if (fx.speaking) { voice.who = fx.speaking.who; voice.level = fx.voiceLevel; voice.line = fx.speaking; F.voice = voice; } else F.voice = null;
     F.content = content; F.game = game; F.stage = stage; F.cine = e; F.quality = tierName;
@@ -370,18 +392,16 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (isStage) {
       if (!director.set) { hud.fillStyle = '#000'; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); }
       if (director.fade > 0.003) { hud.globalAlpha = clamp(director.fade, 0, 1); hud.fillStyle = director.fadeColor || INK; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); hud.globalAlpha = 1; }
-      if (typeof director.drawOverlay === 'function') { hud.save(); director.drawOverlay(hud); hud.restore(); }
+      hud.save(); director.drawOverlay(hud); hud.restore();
     }
     if (veil > 0.003) { hud.globalAlpha = smooth(clamp(veil, 0, 1)); hud.fillStyle = INK; hud.fillRect(0, 0, cssW, cssH); hud.globalAlpha = 1; }
 
     // logical px: the HUD module's
     hud.setTransform(dev * k, 0, 0, dev * k, 0, 0);
     for (const id in anchors) { anchorPool.push(anchors[id]); delete anchors[id]; }
-    if (isStage && typeof director.headOf === 'function') {
-      const pin = (id) => { if (typeof id !== 'string' || anchors[id]) return; if (director.headOf(id, P2)) { const a = anchorPool.pop() || { x: 0, y: 0 }; a.x = P2[0] / k; a.y = P2[1] / k; anchors[id] = a; } };
-      if (stage.party) stage.party.forEach(pin);
-      if (stage.opposition && stage.opposition.who) stage.opposition.who.forEach(pin);
-      if (fx.speaking) pin(fx.speaking.who);
+    if (isStage) {
+      const from = director.anchors;      // head tops, CSS px
+      for (const id in from) { const a = anchorPool.pop() || { x: 0, y: 0 }; a.x = from[id].x / k; a.y = from[id].y / k; anchors[id] = a; }
     }
     Object.assign(hudFx, fx);
     hudFx.band = isStage ? bandLogical : null;
@@ -435,6 +455,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       drawScreen(content, game, layout, time, dt, cssW, cssH);
     }
     frameEvents.length = 0;
+    app.stats.cineW = cineW; app.stats.phase = stage ? stage.phase : 'idle';
     drawHudPass(content, game, fx, layout, cssW, cssH, k, stage, isStage);
     measure(real * 1000, mode, builtNow);
   }
@@ -467,7 +488,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   function dispose() {
     if (disposed) return;
     disposed = true; app.ok = false; app.reason = 'disposed';
-    if (typeof director.dispose === 'function') director.dispose();
+    director.dispose();
     renderer.dispose();
   }
 
@@ -475,71 +496,4 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   app.renderer = renderer; app.director = director; app.sets = built; app.tables = tables;
   Object.defineProperty(app, 'tier', { get: () => tierName });
   return app;
-}
-
-// ───────────────────────── TEMPORARY: the director's shape, on the slice's createEncounter / createCine ─────────────────────────
-
-/**
- * Stands in for stage.js createDirector until it exists, so the shell can be driven end to end: the same surface
- * (update, set, view, fade, headOf, dispose), played with the vertical slice's encounter and cutscene objects. It knows
- * only the slice's four cast members, shows nobody for anyone else, and cuts (under a fade) where the real one moves.
- */
-function createLegacyDirector(troupe, getSet) {
-  const known = (id) => Object.hasOwn(GL.CAST, id);
-  const view = { shadowCenter: [0, 0, 0.5], shadowRadius: 3 };
-  const dir = { set: null, view, fade: 0, fadeColor: INK, sub: { who: '', onStage: false, x: NaN, y: NaN, radio: false }, cues: [], punch: 0 };
-  let key = '', enc = null, cine = null, actors = [], rect = null, camera = null;
-  const state = { speaker: '', emote: 'neutral', cam: 'wide', camera: null, aspect: 1, viewHeight: 400, snap: false };
-  function strike() {
-    for (const ch of actors) { if (ch.root.parent) ch.root.parent.remove(ch.root); if (ch.glow && dir.set && dir.set.scene.sprites) dir.set.scene.sprites.remove(ch.glow); }
-    actors = []; enc = null; cine = null;
-  }
-  dir.update = (dt, time, f) => {
-    const { game, stage } = f; camera = f.camera; rect = f.rect;
-    const aspect = rect.w / rect.h;
-    const fight = stage.phase === 'fight' || stage.phase === 'resolve';
-    const want = fight ? `enc|${game.chapter}|${game.scene}` : `cine|${stage.set}|${stage.light}|${stage.party.join(',')}`;
-    if (want !== key) {
-      const set = getSet(stage.set, stage.light);
-      if (!(fight && enc && key.startsWith('enc'))) dir.fade = dir.set ? 1 : 0;
-      strike(); key = want; dir.set = set;
-      if (fight) {
-        const party = stage.party.filter(known), opp = stage.opposition.who.map((w) => (known(w) ? w : 'bailiff'));
-        enc = GL.createEncounter(set, troupe, { party: party.length ? party : ['ren'], opposition: opp, title: stage.opposition.name });
-        actors = enc.all;
-      } else {
-        const on = stage.party.filter(known).slice(0, 3);
-        if (on.length) { cine = GL.createCine(set, troupe, { on }); actors = cine.list; }
-      }
-    }
-    dir.fade = Math.max(0, dir.fade - dt / 0.35);
-    const set = dir.set;
-    set.update(time, dt);
-    if (enc) {
-      if (set.foreground) set.foreground.visible = false;
-      enc.update(dt, time, stage.phase === 'resolve' && !enc.won ? [{ type: 'sceneClear' }] : f.events, stage.progress);
-      enc.frame(camera, aspect, time, rect.h);
-      view.shadowCenter = enc.view.shadowCenter; view.shadowRadius = enc.view.shadowRadius;
-      dir.punch = enc.punch;
-    } else if (cine) {
-      state.speaker = stage.speaker; state.emote = stage.emote || 'neutral'; state.cam = stage.cam || 'wide'; state.camera = camera; state.aspect = aspect; state.viewHeight = rect.h;
-      if (set.setPower) set.setPower(1);
-      cine.update(dt, time, state);
-      view.shadowCenter = cine.view.shadowCenter; view.shadowRadius = cine.view.shadowRadius;
-    } else {
-      const name = set.cameras[stage.cam] ? stage.cam : 'wide';
-      if (set.foreground) set.foreground.visible = true;
-      set.frame(camera, name, time); troupe.aim(camera);
-      const v = set.view(name); view.shadowCenter = v.shadowCenter; view.shadowRadius = v.shadowRadius;
-    }
-  };
-  const HP = [0, 0, 0];
-  dir.headOf = (id, out) => {
-    const ch = actors.find((c) => c.id === id || (typeof c.id === 'string' && c.id.replace(/\d+$/, '') === id));
-    if (!ch || !rect) return false;
-    HP[0] = ch.headPos[0]; HP[1] = ch.headPos[1] + ch.headRadius * 1.1; HP[2] = ch.headPos[2];
-    return GL.projectTo(camera, HP, rect, out);
-  };
-  dir.dispose = strike;
-  return dir;
 }
