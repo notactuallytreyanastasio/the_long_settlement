@@ -266,8 +266,8 @@ function drawMarks(spec) {
     }
     if (spec.scar) { // a pale nick down through one brow
       const s = spec.scar === 'R' ? -1 : 1;
-      g.strokeStyle = rgba(mix(skin, '#fff0e8', 0.75), 0.95); g.lineWidth = 1.5 * DEGX;
-      g.beginPath(); g.moveTo(wx(s * 30), wy(19.5)); g.lineTo(wx(s * 26.5), wy(8.5)); g.stroke();
+      g.strokeStyle = rgba(mix(skin, '#ffe6dc', 0.7), 1); g.lineWidth = 2.3 * DEGX;
+      g.beginPath(); g.moveTo(wx(s * 34), wy(20.5)); g.lineTo(wx(s * 27.5), wy(9)); g.stroke();
     }
     if (spec.beauty) { g.fillStyle = rgba(mix(skin, '#2a1410', 0.8), 0.9); g.beginPath(); g.arc(wx(spec.beauty === 'R' ? -30 : 30), wy(-30), 0.9 * DEGX, 0, 7); g.fill(); }
     if (spec.stubble) blush(g, 0, -36, 24, 9, mix(skin, '#30344a', 0.6), 0.4);
