@@ -10,12 +10,18 @@ const BIBLE = {
     'lotL', 'lotC', 'lotR', 'pierRamp', 'dockOrbit', 'bench', ...COMMON],
   saltmere: ['shaft1', 'shaft2', 'shaft3', 'strikeA', 'strikeB', 'strikeC', 'lienL', 'lienI', 'lienE', 'lienN',
     'saltL', 'saltC', 'saltR', 'causewayRamp', 'courtOrbit', 'orrery', ...COMMON],
+  halcyon: ['drill1', 'drill2', 'drill3', 'dormA', 'dormB', 'dormC', 'bondB', 'bondO', 'bondN', 'bondD',
+    'oathL', 'oathC', 'oathR', 'galleryRamp', 'paradeOrbit', 'vault', ...COMMON],
+  brand: ['reef1', 'reef2', 'reef3', 'netA', 'netB', 'netC', 'wickW', 'wickI', 'wickC', 'wickK',
+    'tideL', 'tideC', 'tideR', 'breakwaterRamp', 'underlaneOrbit', 'hearth', ...COMMON],
+  tallis: ['pit1', 'pit2', 'pit3', 'queueA', 'queueB', 'queueC', 'noteM', 'noteA', 'noteR', 'noteK',
+    'bellL', 'bellC', 'bellR', 'stepsRamp', 'clearingOrbit', 'strongroom', ...COMMON],
 };
 
 const elementIds = (t) => [...t.bumpers, ...t.slings, ...t.targets, ...t.rollovers, ...t.shots, ...t.saucers].map((e) => e.id);
 
-test('tables export exactly vessery and saltmere', () => {
-  assert.deepEqual(Object.keys(tables).sort(), ['saltmere', 'vessery']);
+test('tables export exactly the five the chapters name', () => {
+  assert.deepEqual(Object.keys(tables).sort(), ['brand', 'halcyon', 'saltmere', 'tallis', 'vessery']);
 });
 
 for (const id of Object.keys(BIBLE)) {
@@ -75,6 +81,157 @@ test('the two layouts are different tables, and Saltmere is the steeper and tigh
   };
   assert.ok(gap(v) > 16 && gap(s) > 16, 'a ball fits between the flippers');
   assert.notDeepEqual(v.theme, s.theme);
+});
+
+// Smallest clear gap between two bumpers, and the three centres' mean distance apart.
+const bumperGap = (t) => Math.min(...t.bumpers.flatMap((a, i) => t.bumpers.slice(i + 1).map(
+  (b) => Math.hypot(a.pos[0] - b.pos[0], a.pos[1] - b.pos[1]) - a.r - b.r)));
+const bumperSpread = (t) => mean(t.bumpers.flatMap((a, i) => t.bumpers.slice(i + 1).map(
+  (b) => Math.hypot(a.pos[0] - b.pos[0], a.pos[1] - b.pos[1]))));
+const luminance = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  return 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+};
+const centreX = (t) => (t.flippers[0].pivot[0] + t.flippers[1].pivot[0]) / 2;
+
+test('the five layouts are five different tables', () => {
+  const ids = Object.keys(BIBLE);
+  const shape = (t) => ({
+    bumpers: t.bumpers.map((b) => b.pos), lanes: t.rollovers.slice(0, 3).map((r) => r.pos),
+    targets: t.targets.map((x) => [x.a, x.b]), saucer: t.saucers[0].pos, shots: t.shots.map((x) => [x.a, x.b]),
+    walls: t.walls.length, gravity: t.gravity,
+  });
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = shape(tables[ids[i]]), b = shape(tables[ids[j]]);
+      for (const k of ['bumpers', 'lanes', 'targets', 'saucer', 'shots', 'gravity']) {
+        assert.notDeepEqual(a[k], b[k], `${ids[i]} and ${ids[j]} have the same ${k}`);
+      }
+      assert.notDeepEqual(tables[ids[i]].theme, tables[ids[j]].theme);
+      assert.notDeepEqual(tables[ids[i]].decor, tables[ids[j]].decor);
+      assert.notEqual(tables[ids[i]].name, tables[ids[j]].name);
+    }
+  }
+  for (const id of ids) {
+    const [l, r] = tables[id].flippers;
+    const gap = (r.pivot[0] + Math.cos(r.restAngle) * r.length) - (l.pivot[0] + Math.cos(l.restAngle) * l.length) - l.radius - r.radius;
+    assert.ok(gap > 16, `${id}: a ball fits between the flippers (${gap.toFixed(1)})`);
+    assert.ok(bumperGap(tables[id]) > 16, `${id}: a ball fits between any two bumpers`);
+  }
+});
+
+test('Halcyon is the fast, symmetrical one', () => {
+  const h = tables.halcyon;
+  for (const id of Object.keys(BIBLE)) if (id !== 'halcyon') assert.ok(h.gravity > tables[id].gravity, `steeper than ${id}`);
+  const cx = centreX(h);
+  const mirrored = (ps) => ps.map(([x, y]) => [2 * cx - x, y]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const sorted = (ps) => [...ps].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  assert.deepEqual(mirrored(h.bumpers.map((b) => b.pos)), sorted(h.bumpers.map((b) => b.pos)), 'the drill formation mirrors');
+  assert.deepEqual(mirrored(h.rollovers.map((r) => r.pos)), sorted(h.rollovers.map((r) => r.pos)), 'every lane mirrors');
+  assert.equal(h.saucers[0].pos[0], cx, 'the vault is on the centre line');
+  assert.deepEqual(mirrored(h.shots.flatMap((s) => [s.a, s.b])), sorted(h.shots.flatMap((s) => [s.a, s.b])), 'gallery and parade mirror');
+  // the banks face each other at the same distance from the centre line
+  assert.deepEqual([...new Set(h.targets.flatMap((t) => [t.a[0], t.b[0]]).map((x) => Math.abs(x - cx)))].length, 1);
+  // no other table keeps its saucer on the centre line
+  for (const id of Object.keys(BIBLE)) {
+    if (id === 'halcyon') continue;
+    assert.ok(Math.abs(tables[id].saucers[0].pos[0] - centreX(tables[id])) > 1, `${id} is not symmetrical`);
+  }
+  assert.ok(h.oneWays.length > tables.vessery.oneWays.length, 'the pediment has a door of its own');
+});
+
+test('Brand is the dark, open one, with the hearth under a roof', () => {
+  const b = tables.brand;
+  for (const id of Object.keys(BIBLE)) {
+    if (id === 'brand') continue;
+    const t = tables[id];
+    assert.ok(mean(b.theme.bg.map(luminance)) < mean(t.theme.bg.map(luminance)), `darker than ${id}`);
+    assert.ok(bumperSpread(b) > bumperSpread(t), `reefs farther apart than ${id}'s bumpers`);
+    assert.ok(b.gravity < t.gravity, `slower than ${id}`);
+  }
+  // a wall passes within 60 units above the hearth: it cannot be dropped into from the top of the table
+  const [hx, hy] = b.saucers[0].pos;
+  const roof = b.walls.some((w) => {
+    if (w.a[0] === w.b[0]) return false;
+    const [p, q] = w.a[0] < w.b[0] ? [w.a, w.b] : [w.b, w.a];
+    if (hx < p[0] || hx > q[0]) return false;
+    const y = p[1] + (q[1] - p[1]) * (hx - p[0]) / (q[0] - p[0]);
+    return y < hy && y > hy - 60;
+  });
+  assert.ok(roof, 'the cove has a roof');
+  assert.ok(hx > 300, 'and it is tucked against the right side');
+});
+
+test('Tallis is the dense one', () => {
+  const t = tables.tallis;
+  for (const id of Object.keys(BIBLE)) {
+    if (id === 'tallis') continue;
+    assert.ok(bumperGap(t) < bumperGap(tables[id]), `pits closer together than ${id}'s bumpers`);
+    assert.ok(Math.max(...t.bumpers.map((b) => b.kick)) > Math.max(...tables[id].bumpers.map((b) => b.kick)), `louder than ${id}`);
+  }
+  assert.ok(bumperGap(t) < 2 * t.ballRadius * 1.5, 'under a ball and a half between pits');
+  // both banks stand within 70 units of a pit: the walls of the trading floor
+  for (const tg of t.targets) {
+    const m = [(tg.a[0] + tg.b[0]) / 2, (tg.a[1] + tg.b[1]) / 2];
+    const d = Math.min(...t.bumpers.map((b) => Math.hypot(b.pos[0] - m[0], b.pos[1] - m[1]) - b.r));
+    assert.ok(d < 70, `${tg.id} is ${d.toFixed(0)} from the nearest pit`);
+  }
+});
+
+test('every shot gate lies inside its lane mouth, and every ramp lands in an inlane', () => {
+  for (const id of Object.keys(BIBLE)) {
+    const t = tables[id];
+    assert.equal(t.shots.length, 2);
+    const ramps = t.shots.filter((s) => s.exit);
+    assert.equal(ramps.length, 1, `${id} has one ramp and one orbit`);
+    const inlanes = t.rollovers.filter((r) => r.id === 'inL' || r.id === 'inR');
+    const d = Math.min(...inlanes.map((r) => Math.hypot(r.pos[0] - ramps[0].exit.pos[0], r.pos[1] - ramps[0].exit.pos[1])));
+    assert.ok(d < 60, `${id}: ramp exit is ${d.toFixed(0)} from an inlane`);
+    for (const s of t.shots) {
+      assert.deepEqual(s.dir, [0, -1]);
+      assert.equal(s.a[1], s.b[1], 'gates are level');
+      assert.ok(Math.abs(s.a[0] - s.b[0]) > 2.5 * t.ballRadius, `${s.id} is wide enough to shoot`);
+      // both ends of a gate rest on a wall
+      for (const p of [s.a, s.b]) {
+        const near = Math.min(...t.walls.map((w) => {
+          const ex = w.b[0] - w.a[0], ey = w.b[1] - w.a[1];
+          const k = Math.max(0, Math.min(1, ((p[0] - w.a[0]) * ex + (p[1] - w.a[1]) * ey) / (ex * ex + ey * ey)));
+          return Math.hypot(p[0] - w.a[0] - ex * k, p[1] - w.a[1] - ey * k);
+        }));
+        assert.ok(near < 0.01, `${s.id} end ${p} is ${near.toFixed(2)} from a wall`);
+      }
+    }
+  }
+});
+
+test('nothing solid stands a pinch apart: every gap is closed or wider than a ball', () => {
+  const ptSeg = (p, a, b) => {
+    const ex = b[0] - a[0], ey = b[1] - a[1];
+    const k = Math.max(0, Math.min(1, ((p[0] - a[0]) * ex + (p[1] - a[1]) * ey) / (ex * ex + ey * ey)));
+    return Math.hypot(p[0] - a[0] - ex * k, p[1] - a[1] - ey * k);
+  };
+  for (const id of Object.keys(BIBLE)) {
+    const t = tables[id];
+    const D = 2 * t.ballRadius;
+    // free-standing things (targets, bumpers) against the walls and each other
+    for (const tg of t.targets) {
+      for (const w of t.walls) {
+        const d = Math.min(ptSeg(tg.a, w.a, w.b), ptSeg(tg.b, w.a, w.b), ptSeg(w.a, tg.a, tg.b), ptSeg(w.b, tg.a, tg.b));
+        // 3 is a bank mounted on its wall
+        assert.ok(d <= 3.01 || d > D + 3, `${id}: ${tg.id} stands ${d.toFixed(1)} from wall ${w.a}-${w.b}`);
+      }
+      for (const b of t.bumpers) {
+        const d = ptSeg(b.pos, tg.a, tg.b) - b.r;
+        assert.ok(d > D + 3, `${id}: ${tg.id} stands ${d.toFixed(1)} from ${b.id}`);
+      }
+    }
+    for (const b of t.bumpers) {
+      for (const w of t.walls) {
+        const d = ptSeg(b.pos, w.a, w.b) - b.r;
+        assert.ok(d > D + 3, `${id}: ${b.id} stands ${d.toFixed(1)} from wall ${w.a}-${w.b}`);
+      }
+    }
+  }
 });
 
 // ───────────────────────── playability, by simulation ─────────────────────────
@@ -155,6 +312,31 @@ function play(table, seedN, seconds) {
 }
 
 const mean = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
+
+test('a ball does not come to rest on the tip of a post', () => {
+  // Found on Vessery: balls settled on the right outlane post, the same spot to 14 digits,
+  // on 2 seeds in 13. Dropped from just off the top of each table's posts, a ball must be gone in a second.
+  for (const id of Object.keys(BIBLE)) {
+    const t = tables[id];
+    const posts = t.rollovers.filter((r) => r.id === 'inL' || r.id === 'inR').map((r) => {
+      const out = t.rollovers.find((o) => o.id === (r.id === 'inL' ? 'outL' : 'outR'));
+      const x = t.walls.map((w) => w.a).concat(t.walls.map((w) => w.b))
+        .filter((p) => p[0] > Math.min(r.pos[0], out.pos[0]) && p[0] < Math.max(r.pos[0], out.pos[0]) && p[1] < r.pos[1])
+        .sort((a, b) => a[1] - b[1])[0];
+      assert.ok(x, `${id}: found the post between ${r.id} and ${out.id}`);
+      return x;
+    });
+    for (const post of posts) {
+      for (const off of [-0.18, 0.18]) {
+        let phys = { ...initPhys(t), balls: [{ id: 1, pos: [post[0] + off, post[1] - 8.5], vel: [0, 0], state: 'live', inside: [] }], nextBallId: 2 };
+        for (let i = 0; i < 120; i++) phys = stepPhysics(t, phys, { left: false, right: false, plunge: false, nudge: null }, STEP).phys;
+        const b = phys.balls[0];
+        assert.ok(!b || Math.hypot(b.pos[0] - post[0], b.pos[1] - (post[1] - 8)) > 4,
+          `${id}: ball still on the post at ${post} after one second: ${b && b.pos}`);
+      }
+    }
+  }
+});
 
 for (const id of Object.keys(BIBLE)) {
   test(`${id}: five minutes of bot play hits every element, never sticks, never escapes, balls last 20-90 s`, (t) => {

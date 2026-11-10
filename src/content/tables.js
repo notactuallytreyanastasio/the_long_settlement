@@ -321,7 +321,7 @@ function saltmere() {
       { text: 'SALTMERE', pos: [187, 500], size: 28 },
       { text: 'IN ARREARS', pos: [187, 526], size: 11 },
       { text: 'ORRERY', pos: [172, 250], size: 9, angle: -1.445 },
-      { text: 'PICKET', pos: [84, 206], size: 8, angle: 0.71 },
+      { text: 'PICKET', pos: [86, 254], size: 8, angle: -0.75 },
       { text: 'CAUSEWAY', pos: [24, 316], size: 9, angle: -1.5708 },
       { text: 'CIRCUIT BENCH', pos: [mx(23), 296], size: 9, angle: 1.5708 },
       { text: 'NOTICE OF FORECLOSURE', pos: [187, 566], size: 8 },

@@ -2791,7 +2791,7 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 27075,
+  "bytes": 27076,
   "lines": 611
  },
  {
@@ -2836,8 +2836,8 @@
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 195082,
-  "lines": 3265
+  "bytes": 229534,
+  "lines": 3681
  },
  {
   "path": "src/shell/input.js",
@@ -2906,8 +2906,8 @@
  },
  {
   "path": "test/tables.test.js",
-  "bytes": 10051,
-  "lines": 196
+  "bytes": 19932,
+  "lines": 378
  },
  {
   "path": "tools/render-voices.mjs",
