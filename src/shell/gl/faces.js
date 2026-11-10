@@ -61,7 +61,7 @@ export const FACE = {
 };
 
 const LW = 128, LH = 144;   // lid cell
-const BS = 192;             // eyeball cell
+const BS = 160;             // eyeball cell
 const MW = 128, MH = 88;    // mouth cell
 const WW = 288, WH = 190;   // marks / fx cell
 const INK = '#3d2a4c';      // lash and mouth ink (the lash is multiplied by the skin tint, so it lands near plum-black)

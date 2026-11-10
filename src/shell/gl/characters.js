@@ -458,7 +458,8 @@ let seedCounter = 1;
  *   root            place it: root.setPos(x, y, z). Feet stand on the root's origin, the figure faces the root's +Z
  *   update(dt, state)
  *   act(name, { speed = 1 }) -> the clip (dur, impact)       play a one-shot from CLIPS
- *   busy            true while a clip is running (a held clip is not busy)
+ *   release()       drop a held clip (windup, yield, surrender);  offset / home(): see stepF
+ *   busy            true while a clip is running (a held clip is not busy);  clip: its name, or ''
  *   height          world units, crown of the head (hair excluded)
  *   headPos         Float32Array(3), world position of the head's centre after the last update: look targets, speech ticks
  *   headRadius      world half-width of the head (hair excluded), for framing portraits
@@ -562,7 +563,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     else if (k.kind === 'scarf') parts.chest.push(tint(place(scaleMesh(torus(0.09 * w, 0.042, S(16), 7), 1, 0.85, 0.95), 0, y, 0), k.color));
     else throw new Error(`createCharacter(${def.id}): unknown collar kind "${k.kind}" (have stand, flat, scarf)`);
   }
-  // ---- extras that reshape other parts (the shawl turns the upper arms into drapes) run before the arms
+  // ---- fail on an unknown extra before building anything else
   for (const e of C.extras || []) { const f = EXTRAS[e.kind]; if (!f) throw new Error(`createCharacter(${def.id}): unknown costume extra "${e.kind}" (have ${Object.keys(EXTRAS).join(', ')})`); }
 
   // ---- head: skull, ears, nose, hair
@@ -588,6 +589,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     }
     parts.head.push(place(merge(head), 0, dim.headC, 0));
   }
+  // extras run before the arms: some reshape them (the shawl turns the upper arms into drapes)
   for (const e of C.extras || []) EXTRAS[e.kind](b, e);
 
   // ---- arms and mitten hands
@@ -733,6 +735,9 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     },
     /** Drop a held clip (windup, yield, surrender) and go back to the pose. */
     release() { clip = null; clipHeld = false; ch.busy = false; ch.clip = ''; },
+    /** stepF / stepB leave the figure standing off its root by this many heights along its facing. home() puts it back (move the root first). */
+    get offset() { return travel; },
+    home() { travel = 0; },
     setLit(on) { lit = on ? 1 : 0; },
     bounds() { return nodeBounds(root); },
 
@@ -1016,7 +1021,7 @@ export const CAST = {
       top: { color: '#2f8f8a', hem: -0.13, flare: 1.34, trim: '#1f6f72', lining: '#1a4a5a' },
       sleeves: { color: '#2f8f8a', flare: 1.2 },
       legs: { color: '#5a3a2a' }, shoes: { color: '#7a4a2a', sole: '#4a2a1a' },
-      extras: [{ kind: 'apron', color: '#fff3d8', pocket: '#ffd98a', spread: 1.7 }, { kind: 'shawl', color: '#f2503f', color2: '#cf3434', trim: '#ffe9c4', length: 0.125 }],
+      extras: [{ kind: 'apron', color: '#fff3d8', pocket: '#ffd98a', spread: 1.7 }, { kind: 'shawl', color: '#f2503f', color2: '#cf3434', trim: '#ffe9c4', length: 0.098 }],
     },
     props: [{ kind: 'lantern', hand: 'R' }],
     poses: {
