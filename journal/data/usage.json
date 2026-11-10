@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T06:34:09.865Z",
+ "generated": "2026-11-10T06:41:56.408Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -51,24 +51,24 @@
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T06:33:05.215Z",
+ "last": "2026-11-10T06:40:21.131Z",
  "total": {
-  "responses": 916,
-  "input": 1960,
-  "write5m": 6436961,
-  "write1h": 619502,
-  "read": 177576279,
-  "output": 2242971,
-  "thinking": 854389,
+  "responses": 933,
+  "input": 1996,
+  "write5m": 6485688,
+  "write1h": 621059,
+  "read": 181426162,
+  "output": 2257037,
+  "thinking": 859374,
   "cost": {
-   "input": 0.0132,
-   "write5m": 64.3696,
-   "write1h": 6.5512,
-   "read": 35.5153,
-   "output": 86.0853,
-   "total": 192.5345
+   "input": 0.0134,
+   "write5m": 64.8569,
+   "write1h": 6.5636,
+   "read": 36.2852,
+   "output": 86.6365,
+   "total": 194.3557
   },
-  "uncachedCost": 1308.8553,
+  "uncachedCost": 1335.1867,
   "unpriced": 0
  },
  "byGroup": {
@@ -92,81 +92,81 @@
    "unpriced": 0
   },
   "helpers": {
-   "responses": 592,
-   "input": 1188,
-   "write5m": 6436961,
+   "responses": 606,
+   "input": 1216,
+   "write5m": 6485688,
    "write1h": 0,
-   "read": 106497555,
-   "output": 1953691,
-   "thinking": 787287,
+   "read": 108993619,
+   "output": 1967188,
+   "thinking": 792179,
    "cost": {
-    "input": 0.0095,
-    "write5m": 64.3696,
+    "input": 0.0097,
+    "write5m": 64.8569,
     "write1h": 0,
-    "read": 21.2995,
-    "output": 78.1476,
-    "total": 163.8263
+    "read": 21.7987,
+    "output": 78.6875,
+    "total": 165.3529
    },
-   "uncachedCost": 981.6333,
+   "uncachedCost": 1002.5317,
    "unpriced": 0
   },
   "journal": {
-   "responses": 272,
-   "input": 628,
+   "responses": 275,
+   "input": 636,
    "write5m": 0,
-   "write1h": 438484,
-   "read": 63187247,
-   "output": 182189,
-   "thinking": 34712,
+   "write1h": 440041,
+   "read": 64541066,
+   "output": 182758,
+   "thinking": 34805,
    "cost": {
-    "input": 0.0025,
+    "input": 0.0026,
     "write5m": 0,
-    "write1h": 3.6549,
-    "read": 12.6374,
-    "output": 3.654,
-    "total": 19.9488
+    "write1h": 3.6673,
+    "read": 12.9082,
+    "output": 3.6654,
+    "total": 20.2435
    },
-   "uncachedCost": 258.3573,
+   "uncachedCost": 263.7902,
    "unpriced": 0
   }
  },
  "byModel": {
   "claude-fable-5-2": {
-   "responses": 645,
-   "input": 1334,
-   "write5m": 6436961,
+   "responses": 659,
+   "input": 1362,
+   "write5m": 6485688,
    "write1h": 199395,
-   "read": 114420120,
-   "output": 2061292,
-   "thinking": 819783,
+   "read": 116916184,
+   "output": 2074789,
+   "thinking": 824675,
    "cost": {
-    "input": 0.0107,
-    "write5m": 64.3696,
+    "input": 0.0109,
+    "write5m": 64.8569,
     "write1h": 3.1903,
-    "read": 22.884,
-    "output": 82.4517,
-    "total": 172.9063
+    "read": 23.3832,
+    "output": 82.9916,
+    "total": 174.4329
    },
-   "uncachedCost": 1050.9142,
+   "uncachedCost": 1071.8126,
    "unpriced": 0
   },
   "claude-opus-5-5": {
-   "responses": 271,
-   "input": 626,
+   "responses": 274,
+   "input": 634,
    "write5m": 0,
-   "write1h": 420107,
-   "read": 63156159,
-   "output": 181679,
-   "thinking": 34606,
+   "write1h": 421664,
+   "read": 64509978,
+   "output": 182248,
+   "thinking": 34699,
    "cost": {
     "input": 0.0025,
     "write5m": 0,
-    "write1h": 3.3609,
-    "read": 12.6312,
-    "output": 3.6336,
-    "total": 19.6282
+    "write1h": 3.3733,
+    "read": 12.902,
+    "output": 3.645,
+    "total": 19.9228
    },
-   "uncachedCost": 257.9411,
+   "uncachedCost": 263.3741,
    "unpriced": 0
   }
  },
@@ -386,11 +386,23 @@
    "lead": 8.7594,
    "helpers": 163.8263,
    "journal": 19.9488
+  },
+  {
+   "at": "2026-11-10T06:40:00.000Z",
+   "lead": 8.7594,
+   "helpers": 164.9115,
+   "journal": 20.2435
+  },
+  {
+   "at": "2026-11-10T06:45:00.000Z",
+   "lead": 8.7594,
+   "helpers": 165.3529,
+   "journal": 20.2435
   }
  ],
  "tools": {
   "journal": {
-   "Bash": 167,
+   "Bash": 168,
    "ToolSearch": 6,
    "mcp__deciduous__check_activity": 1,
    "mcp__deciduous__list_workspaces": 1,
@@ -403,16 +415,16 @@
    "mcp__deciduous__add_node": 5,
    "Monitor": 6,
    "CronDelete": 1,
-   "ScheduleWakeup": 30,
+   "ScheduleWakeup": 31,
    "TaskStop": 2,
    "Read": 26,
    "PushNotification": 2,
    "Skill": 2
   },
   "helpers": {
-   "Read": 324,
+   "Read": 338,
    "Write": 40,
-   "Bash": 474,
+   "Bash": 485,
    "Edit": 14,
    "ToolSearch": 2,
    "mcp__deciduous__read_messages": 1,

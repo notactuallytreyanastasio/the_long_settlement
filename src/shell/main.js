@@ -352,7 +352,8 @@ async function boot() {
   $('begin').focus();
 
   // for the console and for driving the game from a test script
-  window.tls = { game: () => game, send: dispatch, content, audio, voice, layout: () => layout, fx, input: () => (controls ? controls.state() : NO_INPUT) };
+  // `set` replaces the state outright: a measuring script uses it to stand the game in a given cinematic
+  window.tls = { game: () => game, set: (g) => { game = g; }, send: dispatch, content, audio, voice, layout: () => layout, fx, input: () => (controls ? controls.state() : NO_INPUT) };
 }
 
 boot().catch(fatal);

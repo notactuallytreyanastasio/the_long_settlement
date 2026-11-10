@@ -897,7 +897,16 @@ export function createRenderer(canvas) {
     }
     if (kind === 'rollover') return [e.pos[0], e.pos[1] + laneRad(table, e) + 11];
     if (kind === 'saucer') return [e.pos[0], e.pos[1] + e.r + 13];
-    if (kind === 'bumper') return [e.pos[0], e.pos[1] + e.r + 12];
+    if (kind === 'bumper') {
+      // under the cap, unless a target's letter already sits there (Halcyon's drills stand
+      // beside the dormitory and bond banks): then over it
+      const below = [e.pos[0], e.pos[1] + e.r + 12];
+      const crowded = table.targets.some((t) => {
+        const s = labelSpot(table, 'target', t);
+        return Math.abs(s[0] - below[0]) < 34 && Math.abs(s[1] - below[1]) < 12;
+      });
+      return crowded ? [e.pos[0], e.pos[1] - e.r - 11] : below;
+    }
     if (kind === 'target') {
       const n = inwardNormal(e.a, e.b);
       const m = mid(e.a, e.b);
