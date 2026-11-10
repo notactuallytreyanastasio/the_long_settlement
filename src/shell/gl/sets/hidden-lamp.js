@@ -245,7 +245,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     if (type !== 'hidden-wick') return null;
     return wickUnit || (wickUnit = taskUnit([FLAME[0], FLAME[1] + 0.1, FLAME[2] + 0.1], [PED[0] + 1.0, PED[2] + 1.45], (v) => { setTrim(0.36 + 0.64 * v); setShutter(0.1 + 0.2 * v); setSignal(false); setAnswers(v > 0.95 ? 2 : v > 0.45 ? 1 : 0); }));
   }
-  const setback = () => { duck = 1; P[0] = 1.4; P[1] = WATER + 0.1; P[2] = LIP - 0.4; sprites.splash(P, { size: 2.2, life: 1.2, spray: 8, color: '#cfe6ff' }); sprites.puff(P, { count: 5, size: 0.6, rise: 1.5, spread: 1, life: 1.2, color: '#bcd8ff' }); };
+  const setback = () => { duck = 1; P[0] = 1.4; P[1] = WATER + 0.1; P[2] = LIP - 0.4; sprites.splash(P, { size: 2.2, life: 1.2, spray: 8, color: '#cfe6ff' }); sprites.puff(P, { count: 4, size: 0.3, rise: 1.3, spread: 0.8, life: 1.0, color: '#bcd8ff' }); };
 
   return c4Shell({
     id: 'hidden-lamp', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,

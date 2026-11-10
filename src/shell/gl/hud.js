@@ -347,18 +347,6 @@ const BOON_LOOK = {
   kickback: ['KICK', '#ffc08a'],
 };
 
-function drawScore(g, x, y, score) {
-  const text = fmtInt(score);
-  g.font = font(16, 800);
-  const w = g.measureText(text).width + 40;
-  panel(g, x, y, w, 26);
-  star(g, x + 15, y + 13.5, 8);
-  g.fillStyle = NAVY;
-  g.textAlign = 'left';
-  g.fillText(text, x + 28, y + 19);
-  return w;
-}
-
 /** The opposition: its name on a pill and, under it, what is left of it. Returns { bottom, left } of the block. */
 function drawOpposition(g, right, y, stage, now, maxW) {
   // a scene with no encounter has no opposition: the bar is then just the objective's
@@ -596,7 +584,20 @@ function drawStrip(g, S, game, stage, now, mute) {
   g.strokeStyle = NAVY_DEEP;
   g.lineWidth = 1.8;
   g.stroke();
-  const trustLeft = tx - 22;
+  let trustLeft = tx - 22;
+
+  // the score: on the strip, not on the picture, so the head of the band is the party's
+  {
+    const text = fmtInt(e.score);
+    g.font = font(13.5, 800);
+    const w = g.measureText(text).width;
+    g.fillStyle = CREAM;
+    g.textAlign = 'right';
+    g.fillText(text, trustLeft - 4, base + 0.5);
+    g.textAlign = 'left';
+    star(g, trustLeft - 4 - w - 10, cy - 0.5, 6.5, GOLD, 1.6);
+    trustLeft -= w + 26;
+  }
 
   // what is owed to the Mint, only while something is
   if (e.debt > 0) {
@@ -860,85 +861,82 @@ function drawToasts(g, toasts, cx, y, maxW, hidePlateKinds) {
   g.textAlign = 'left';
 }
 
-/** The objective line: the scene's hint, standing on the picture at the foot of the band. */
 // When each bark was first drawn, so a long one can turn its pages. A cache of the clock, not of the game.
 const barkSeen = { id: null, since: 0 };
 
 /**
- * A bark: the speaker's name and words in a small bubble with a tick down to their head. Without an anchor
- * for the speaker it lies along the foot of the band where the objective line was. Returns true when it took
- * the objective line's place.
+ * THE VOICE STRIP: what is being said in play, in a slim pill of its own just under the band (over the canopy of the
+ * drums, which is decoration), so a line never lies across the party, the opposition's bar, the score or the combo.
+ * Name in the speaker's colour, the words on one line, or two smaller ones; longer lines turn pages. A call over the
+ * Line is the cold dashed pill with a wave. With nobody speaking the same place says what the stage has just come to
+ * (`beat`: { title, name, color, alpha }) for a few seconds. Returns the height it took (0: nothing drawn).
  */
-function drawBark(g, content, line, fx, B, foot, now, minY = B.y + 4) {
+function drawVoiceStrip(g, content, line, beat, fx, B, y, now) {
+  const maxW = B.w - 16;
+  if (!line) {
+    if (!beat || beat.alpha <= 0.01) return 0;
+    const a0 = g.globalAlpha;
+    g.globalAlpha = a0 * beat.alpha;
+    g.font = font(12, 800);
+    const tw = g.measureText(beat.title).width;
+    g.font = font(12, 700);
+    const text = beat.name ? ellipsize(g, beat.name, maxW - tw - 44) : '';
+    const w = tw + (text ? g.measureText(text).width + 14 : 0) + 26;
+    const x = B.x + (B.w - w) / 2;
+    panel(g, x, y, w, 24, { r: 12, fill: NAVY, ink: NAVY_DEEP, drop: 2 });
+    g.textAlign = 'left';
+    g.font = font(12, 800);
+    g.fillStyle = beat.color;
+    g.fillText(beat.title, x + 13, y + 16.5);
+    if (text) { g.font = font(12, 700); g.fillStyle = CREAM; g.fillText(text, x + 13 + tw + 14, y + 16.5); g.fillStyle = 'rgba(255,247,226,0.45)'; g.fillRect(x + 13 + tw + 6, y + 7, 1.5, 11); }
+    g.globalAlpha = a0;
+    return 24;
+  }
   const who = content.cast[line.who];
   if (!who) throw new Error(`hud: line '${line.id}' is spoken by unknown cast id '${line.who}'`);
   if (barkSeen.id !== line.id || now < barkSeen.since) { barkSeen.id = line.id; barkSeen.since = now; }
-  const anchor = fx.anchors && fx.anchors[line.who];
   const radio = line.fx === 'radio';
-  const maxW = anchor ? 208 : B.w - 44;
-  const perPage = anchor ? 3 : 2;
-  g.font = font(12, 700);
-  const lines = wrap(g, line.text, maxW);
+  const name = who.name.split(' ')[0].toUpperCase();
+  g.font = font(MIN_TYPE, 800);
+  const nameW = g.measureText(name).width + (radio ? 40 : 22);
+  // one line of 13 px if it fits, else two of 11.5; beyond that the pages turn
+  g.font = font(13, 700);
+  let size = 13, lh = 16, lines = wrap(g, line.text, maxW - nameW - 30);
+  if (lines.length > 1) { size = 11.5; lh = 13.5; g.font = font(size, 700); lines = wrap(g, line.text, maxW - nameW - 30); }
+  const perPage = 2;
   const pages = Math.ceil(lines.length / perPage);
   const page = Math.min(pages - 1, Math.floor(((now - barkSeen.since) / 1000 / lineSeconds(line)) * pages));
   const shown = lines.slice(page * perPage, page * perPage + perPage);
-  const name = who.name.toUpperCase();
-  g.font = font(MIN_TYPE, 800);
-  const nameW = g.measureText(name).width;
-  g.font = font(12, 700);
-  const w = Math.max(nameW + 26, ...shown.map((l) => g.measureText(l).width)) + 22;
-  const h = 22 + shown.length * 15;
-  let x;
-  let y;
-  if (anchor) {
-    x = clamp(anchor.x - w / 2, B.x + 6, B.x + B.w - w - 6);
-    y = Math.max(minY, anchor.y - 12 - h);
-  } else {
-    x = B.x + (B.w - w) / 2;
-    y = foot - h - 2;
-  }
+  const textW = Math.max(...shown.map((l) => g.measureText(l).width));
+  const w = Math.min(maxW, nameW + textW + 30 + (pages > 1 ? 8 + pages * 7 : 0));
+  const h = shown.length > 1 ? 36 : 26;
+  const x = B.x + (B.w - w) / 2;
   const fill = radio ? '#dff3ff' : CREAM;
-  panel(g, x, y, w, h, { r: 11, fill, drop: 2.5, dash: radio ? [5, 3] : null });
-  if (anchor) {
-    // the tick
-    const tx = clamp(anchor.x, x + 14, x + w - 14);
-    g.beginPath();
-    g.moveTo(tx - 6, y + h - 1.2);
-    g.lineTo(tx + (anchor.x - tx) * 0.5, y + h + 9);
-    g.lineTo(tx + 6, y + h - 1.2);
-    g.fillStyle = fill;
-    g.fill();
-    g.strokeStyle = NAVY;
-    g.lineWidth = 2.5;
-    g.lineJoin = 'round';
-    g.stroke();
-    g.fillStyle = fill;
-    g.fillRect(tx - 5, y + h - 3.2, 10, 2.6);
-  }
-  // who: a bead in their colour, then the name
-  g.beginPath();
-  g.arc(x + 14, y + 11.5, 4 + clamp(fx.voiceLevel || 0, 0, 1) * 1.5, 0, TAU);
-  g.fillStyle = who.color;
+  panel(g, x, y, w, h, { r: 13, fill, ink: radio ? '#1c3f7a' : NAVY, drop: 2.5, dash: radio ? [6, 4] : null });
+  // who: a plate in their colour, the name on it; over the Line, the cold plate with the wave
+  const plate = radio ? '#2d6fb3' : who.color;
+  rr(g, x + 4, y + 4, nameW, h - 8, Math.min(10, (h - 8) / 2));
+  g.fillStyle = plate;
   g.fill();
-  g.strokeStyle = NAVY;
+  g.strokeStyle = radio ? '#1c3f7a' : NAVY;
   g.lineWidth = 1.6;
   g.stroke();
-  g.textAlign = 'left';
   g.font = font(MIN_TYPE, 800);
-  g.fillStyle = radio ? '#2d6fb3' : CORAL;
-  g.fillText(name, x + 23, y + 15.5);
-  g.font = font(12, 700);
-  g.fillStyle = NAVY;
-  shown.forEach((l, i) => g.fillText(l, x + 11, y + 31 + i * 15));
-  if (pages > 1) {
-    for (let k = 0; k < pages; k++) {
-      g.beginPath();
-      g.arc(x + w - 10 - (pages - 1 - k) * 7, y + 10, 2, 0, TAU);
-      g.fillStyle = k === page ? NAVY : 'rgba(29,42,92,0.3)';
-      g.fill();
-    }
-  }
-  return !anchor;
+  g.fillStyle = luminance(plate) > 0.55 ? NAVY : WHITE;
+  g.textAlign = 'left';
+  const level = clamp(fx.voiceLevel || 0, 0, 1);
+  if (radio) {
+    g.beginPath();
+    for (let i = 0; i <= 12; i++) { const u = i / 12, a = (2 + level * 5) * Math.sin(u * Math.PI) * Math.sin(u * 13 + now / 70); if (i === 0) g.moveTo(x + 11 + u * 16, y + h / 2 + a); else g.lineTo(x + 11 + u * 16, y + h / 2 + a); }
+    g.strokeStyle = WHITE; g.lineWidth = 1.8; g.stroke();
+    g.fillText(name, x + 32, y + h / 2 + 4);
+  } else g.fillText(name, x + 15, y + h / 2 + 4);
+  g.font = font(size, 700);
+  g.fillStyle = radio ? '#17305e' : NAVY;
+  const ty = y + (h - shown.length * lh) / 2 + lh * 0.76;
+  shown.forEach((l, i) => g.fillText(l, x + nameW + 13, ty + i * lh));
+  if (pages > 1) for (let k = 0; k < pages; k++) { g.beginPath(); g.arc(x + w - 11 - (pages - 1 - k) * 7, y + h / 2, 2, 0, TAU); g.fillStyle = k === page ? NAVY : 'rgba(29,42,92,0.3)'; g.fill(); }
+  return h;
 }
 
 function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
@@ -1006,45 +1004,36 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   g.save();
   g.translate(0, -out * (HUD_BAND_HEAD + top + 30));
   g.globalAlpha = 1 - out;
-  const sw = drawScore(g, B.x + 10, top, game.econ.score);
-  const opp = drawOpposition(g, B.x + B.w - 10, top, stage, now, Math.min(B.w - sw - 34, 190));
+  // the score is on the strip at the foot: the head of the band has the opposition at the right and the chain at the left, and the rest is the party's
+  const opp = drawOpposition(g, B.x + B.w - 10, top, stage, now, Math.min(B.w - 44, 190));
   drawBoons(g, B.x + B.w - 10, opp.bottom + 5, boonsOf(game, stage));
-  // the combo has the clear air between the score and the opposition, over the gap the two sides face each other across
-  const comboOn = Boolean(stage.combo && stage.combo.count > 0);
-  const gapL = B.x + 10 + sw + 6;
+  const gapL = B.x + 8;
   const gapR = opp.left - 6;
-  drawCombo(g, clamp((gapL + gapR) / 2, B.x + 150, B.x + B.w - 150), top - 4, stage.combo, now, Math.max(96, gapR - gapL));
-  // the scene's name in its thread's colour and what the stage has just come to (stage.beat.name): said when it changes, then out of the way
+  drawCombo(g, clamp(gapL + 62, B.x + 62, Math.max(B.x + 62, gapR - 62)), top - 4, stage.combo, now, Math.max(96, Math.min(150, gapR - gapL)));
+  g.restore();
+
+  // ── what is said, and what the stage has come to ── in the voice strip under the band, never on the picture
+  let beatInfo = null;
   if (scene) {
     const beat = stage.beat && typeof stage.beat.name === 'string' ? stage.beat.name : '';
     const key = `${scene.id}|${beat}`;
     if (beatSeen.key !== key || now < beatSeen.since) { beatSeen.key = key; beatSeen.since = now; }
     const age = (now - beatSeen.since) / 1000;
     const show = clamp(age / 0.25, 0, 1) * clamp((BEAT_SHOWN - age) / 0.5, 0, 1);
-    if (show > 0.01) {
-      const col = THREADS[scene.thread];
-      if (!col) throw new Error(`hud: scene '${scene.id}' has unknown thread '${scene.thread}'`);
-      const title = scene.title.toUpperCase();
-      const room = B.w * 0.5;
-      g.globalAlpha = (1 - out) * show;
-      g.textAlign = 'left';
-      fit(g, title, room, 12, MIN_TYPE, 800);
-      inked(g, ellipsize(g, title, room), B.x + 12, top + 44, { fill: col, lw: 3.5, drop: 1.5 });
-      if (beat) {
-        g.font = font(12, 700);
-        inked(g, ellipsize(g, beat, room), B.x + 12, top + 60, { fill: CREAM, lw: 3.5, drop: 1.5 });
-      }
-      g.globalAlpha = 1 - out;
-    }
+    const col = THREADS[scene.thread];
+    if (!col) throw new Error(`hud: scene '${scene.id}' has unknown thread '${scene.thread}'`);
+    if (show > 0.01) beatInfo = { title: scene.title.toUpperCase(), name: beat, color: col, alpha: show };
   }
-  g.restore();
-
-  // ── what is said, and what to do ── over everything else: a bark lasts a few seconds
   g.save();
   g.translate(0, fx.band ? Math.max(0, fx.band.y + fx.band.h - (B.y + B.h)) : 0);
   g.globalAlpha = 1 - out;
-  if (fx.speaking) drawBark(g, content, fx.speaking, fx, B, S.y - 4, now, top - 2);
+  // (the wide layout's band reaches the foot of the canvas: there the strip stands on the picture, over the status strip)
+  drawVoiceStrip(g, content, fx.speaking || null, beatInfo, fx, B, B.y + B.h + 44 > layout.H ? S.y - 42 : B.y + B.h + 3, now);
   g.restore();
+  // whoever is speaking, if they are on the stage: the small bubble over their head (kept under the head row)
+  const sp = fx.speaking;
+  const at = sp && sp.fx !== 'radio' && fx.anchors ? fx.anchors[sp.who] : null;
+  if (at && out < 0.5) { g.save(); g.globalAlpha = 1 - out * 2; drawSpeaking(g, clamp(at.x, B.x + 24, B.x + B.w - 24), Math.max(at.y, top + 52), fx); g.restore(); }
 }
 
 // When the stage last came to a new beat, so its name can be shown and then got out of the way. A cache of the clock, not of the game.
@@ -1212,15 +1201,45 @@ function drawSpeaking(g, x, y, fx) {
   }
 }
 
-function drawCine(g, content, game, fx, layout, rects, grow) {
+// When the stage was last still resolving an encounter: the first line's box waits for that to finish (the shell holds
+// the line's voice for the same moment), then comes up. A cache of the clock, not of the game.
+const resolveSeen = { until: 0 };
+
+/** A caller over the Line who is not on the stage: the frame round the small 3D picture of them the shell has drawn at fx.inset. */
+function drawInset(g, content, line, fx, alpha) {
+  const r = fx.inset;
+  if (!r || !line) return;
+  const now = fx.timeMs, level = clamp(fx.voiceLevel || 0, 0, 1);
+  g.save();
+  g.globalAlpha = alpha;
+  // the frame is drawn round the picture, not over it
+  g.lineJoin = 'round';
+  g.strokeStyle = '#1c3f7a'; g.lineWidth = 6; rr(g, r.x - 1, r.y - 1, r.w + 2, r.h + 2, 14); g.stroke();
+  g.strokeStyle = '#dff3ff'; g.lineWidth = 2.5; g.setLineDash([7, 5]); g.lineDashOffset = -now / 60; rr(g, r.x - 1, r.y - 1, r.w + 2, r.h + 2, 14); g.stroke(); g.setLineDash([]);
+  // the tag: a wave that moves with the voice, and that this is the Line
+  const tw = Math.min(r.w + 8, 92), tx = r.x + (r.w - tw) / 2, ty = r.y + r.h - 9;
+  panel(g, tx, ty, tw, 20, { r: 10, fill: '#2d6fb3', ink: '#1c3f7a', drop: 2, lw: 2.2 });
+  g.beginPath();
+  for (let i = 0; i <= 12; i++) { const u = i / 12, a = (2 + level * 5) * Math.sin(u * Math.PI) * Math.sin(u * 13 + now / 70); if (i === 0) g.moveTo(tx + 8 + u * 16, ty + 10 + a); else g.lineTo(tx + 8 + u * 16, ty + 10 + a); }
+  g.strokeStyle = WHITE; g.lineWidth = 1.8; g.stroke();
+  g.font = font(MIN_TYPE, 800); g.fillStyle = WHITE; g.textAlign = 'left';
+  g.fillText(ellipsize(g, 'THE LINE', tw - 34), tx + 29, ty + 14);
+  g.restore();
+}
+
+function drawCine(g, content, game, stage, fx, layout, rects, grow) {
   const cine = game.cine;
   if (!cine || !Array.isArray(cine.lines)) throw new Error(`hud: game.mode is 'cine' but game.cine is ${JSON.stringify(cine)}`);
-  const alpha = grow === null ? 1 : clamp((grow - 0.55) / 0.35, 0, 1);
+  let alpha = grow === null ? 1 : clamp((grow - 0.55) / 0.35, 0, 1);
+  if (stage && stage.phase === 'resolve') resolveSeen.until = fx.timeMs;
+  else if (fx.timeMs < resolveSeen.until) resolveSeen.until = 0;
+  if (stage && stage.phase === 'resolve') alpha = 0; else alpha *= clamp((fx.timeMs - resolveSeen.until) / 260, 0, 1);
   if (alpha <= 0) return;
   drawSubtitle(g, content, cine, fx, rects.sub, alpha);
   g.save();
   g.globalAlpha = alpha;
   const line = cine.lines[cine.index];
+  drawInset(g, content, line, fx, alpha);
   const at = line && fx.anchors && fx.anchors[line.who];
   if (at && line.fx !== 'radio') drawSpeaking(g, at.x, at.y, fx);
   drawSkip(g, rects.skip, Boolean(fx.touch));
@@ -1675,7 +1694,7 @@ export function drawHud(g, content, game, stage, fx, layout) {
   if (game.mode === 'title') drawTitle(g, content, game, fx, layout);
   else if (game.mode === 'card') drawCard(g, content, game, fx, layout);
   else if (game.mode === 'end') drawEnd(g, content, game, fx, layout);
-  else if (game.mode === 'cine') drawCine(g, content, game, fx, layout, rects, grow);
+  else if (game.mode === 'cine') drawCine(g, content, game, stage, fx, layout, rects, grow);
   else if (game.mode === 'play') drawPlay(g, content, game, stage, fx, layout, rects, grow);
   else throw new Error(`hud: unknown game mode '${game.mode}'`);
   // A flash is two hard steps, not a fade.

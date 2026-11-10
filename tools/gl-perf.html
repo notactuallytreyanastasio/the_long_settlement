@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>gl perf</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10183a; color: #e8ecff; font: 12px/1.45 ui-monospace, Menlo, monospace; }
+  #wrap { display: flex; gap: 12px; align-items: flex-start; padding: 8px; box-sizing: border-box; }
+  #view { flex: none; background: #000; outline: 1px solid #39428a; }
+  #view iframe, #view canvas { display: block; border: 0; width: 100%; height: 100%; }
+  #out { margin: 0; white-space: pre-wrap; flex: 1; min-width: 0; }
+  .bad { color: #ffb0a0; } .ok { color: #a8f0c0; } .dim { color: #8f98d0; }
+  body.bare #wrap { padding: 0; } body.bare #out { position: fixed; left: 0; top: 0; right: 0; max-height: 45%; overflow: auto; background: #10183ad0; padding: 4px; font-size: 9px; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="wrap"><div id="view"></div><pre id="out">measuring...</pre></div>
+<script type="module">
+// What one frame of the 3D game costs: draws, triangles, where they go, fragments shaded, frame time.
+//
+//   /tools/gl-perf.html                      chapter 1, every scene, play view, tier mid
+//   /tools/gl-perf.html?ch=3&scene=2&q=low   one scene (both 1-based)        q = high | mid | low | auto (the app picks and may step down)
+//   ...&view=cine | both                     also (or only) the scene's cutscene: the band grown to the whole canvas
+//   ...&frames=120&settle=5                  frames sampled per view, seconds waited before sampling
+//   ...&fill=0                               skip the fragment count (it is the slow part)
+//   ...&w=393&h=852                          the phone, CSS px. The numbers that depend on pixels are per DEVICE pixel: open this
+//                                            page at the device pixel ratio you mean (headless Chrome: --force-device-scale-factor=3)
+//   ...&bare=1                               no margins: the game fills the window, the report floats over it (for a phone)
+//
+// GAME MODE (above) runs the real game in a frame and reads it through its test hook (window.tls), so it measures what ships:
+// the chapter must draw in 3D, which needs its stage data and every one of its sets registered. If it does not, the report
+// says which sets are missing, and SET MODE measures a set file before anyone registers it:
+//
+//   /tools/gl-perf.html?set=kedge-roads             a file in src/shell/gl/sets/ (or a registered id), as the live band: the set,
+//                                                   its `stage` camera, an encounter of party vs opposition, in a 430x220 band
+//   ...&light=night&low=1                           build options (low defaults to 1: the phone build)
+//   ...&cam=wide                                    a camera mark full screen instead of the band (a cutscene's cost)
+//   ...&party=ren,ilse&opp=steward,steward          who stands on it ('' for nobody)
+//   ...&detail=0.7                                  build under mesh.js withDetail(k)
+//   ...&trim=0 &batch=0                             renderer switches, to see what each saves
+//   ...&sets=a,b,c                                  several sets one after another (a table of them)
+// Set mode has no table: add what a table costs from a game-mode run (tools/gl-table.html draws one alone).
+//
+// WHAT THE COLUMNS MEAN
+//   draws / tris      per frame, median and worst of the sampled frames, shadow pass included (the renderer's own counters)
+//   stage / table     the two render() calls of a play frame. Per pass: shadow, opaque, outline, blended (faces), beams, sprites
+//   fig               skinned figures, all passes together
+//   fill              fragments shaded in one frame, counted by drawing every pass additively and reading the canvas back
+//                     (renderer.measureFill); depth-rejected fragments are not counted, the shadow pass is depth only and not in it.
+//                     `x` is fragments per canvas pixel. The present pass (antialiasing) adds one more canvas of cheap fragments.
+//   ms                js = time inside the app's draw(); gap = time between frames; done = draw() followed by gl.finish(), which on
+//                     THIS machine is roughly CPU + GPU for the frame. None of it is a phone's number.
+// The same numbers are left in window.__perf (JSON-able) and document.title becomes 'gl perf: done' for scripts.
+
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) && q.get(k) !== '' && Number.isFinite(Number(q.get(k))) ? Number(q.get(k)) : d);
+const out = document.getElementById('out'), host = document.getElementById('view');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const lines = [];
+const say = (s = '', cls = '') => { lines.push(cls ? `<span class="${cls}">${esc(s)}</span>` : esc(s)); out.innerHTML = lines.join('\n'); };
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const k1 = (n) => (n / 1000).toFixed(1) + 'k';
+const M2 = (n) => (n / 1e6).toFixed(2) + 'M';
+const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+const PASSES = ['shadow', 'opaque', 'outline', 'water', 'sky', 'blended', 'beams', 'sprites'];
+const FRAMES = num('frames', 120), SETTLE = num('settle', 5), FILL = q.get('fill') !== '0';
+const VW = num('w', 393), VH = num('h', 852);
+const BUDGET = { draws: 60, tris: 150000 };
+if (q.get('bare') === '1') { document.body.classList.add('bare'); host.style.width = '100vw'; host.style.height = '100vh'; } else { host.style.width = VW + 'px'; host.style.height = VH + 'px'; }
+window.__perf = { rows: [], done: false };
+
+async function until(fn, ms, what) { const t0 = performance.now(); for (;;) { let v = null; try { v = fn(); } catch { v = null; } if (v) return v; if (performance.now() - t0 > ms) throw new Error('timed out waiting for ' + what); await sleep(100); } }
+
+/** Wrap a renderer so every render() call of a frame is recorded. frameFn() draws one frame. Returns { sample(n), fill() }. */
+function probe(renderer, classify, frameFn, win = window) {
+  let cur = null; const r0 = renderer.render;
+  renderer.render = function (scene, cam, t, view) {
+    const s = r0.call(this, scene, cam, t, view);
+    if (cur) cur.push({ what: classify(scene), w: s.width, h: s.height, draws: s.drawCalls, tris: s.triangles, figDraws: s.figures.draws, figTris: s.figures.tris, lights: s.lights, culled: s.culled, trimMiss: s.trimMiss, batched: s.batched, kept: s.shadowKept, cpuMs: s.cpuMs, pass: Object.fromEntries(PASSES.map((p) => [p, { draws: s.pass[p].draws, tris: s.pass[p].tris }])) });
+    return s;
+  };
+  const gl = renderer.gl, px = new Uint8Array(4);
+  return {
+    restore() { renderer.render = r0; },
+    /** n frames on the page's own clock: [{ calls, js, gap }] */
+    async sample(n) {
+      const frames = []; let last = 0;
+      await new Promise((done) => {
+        const step = (now) => { cur = []; const t = performance.now(); frameFn(); const js = performance.now() - t; frames.push({ calls: cur, js, gap: last ? now - last : 0 }); cur = null; last = now; if (frames.length < n) win.requestAnimationFrame(step); else done(); };
+        win.requestAnimationFrame(step);
+      });
+      return frames;
+    },
+    /** ms for a frame that is waited for (draw, then gl.finish and a one-pixel read), median of n */
+    finished(n = 12) { const ms = []; for (let i = 0; i < n; i++) { const t = performance.now(); frameFn(); gl.finish(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); ms.push(performance.now() - t); } return median(ms); },
+    fill() {
+      const cc = gl.clearColor; gl.clearColor = () => cc.call(gl, 0, 0, 0, 0);     // the app clears the canvas to ink before it draws: that must not be counted
+      try { const all = renderer.measureFill(frameFn); const by = {}; for (const p of PASSES.slice(1)) by[p] = renderer.measureFill(frameFn, p).fragments; return { fragments: all.fragments, pixels: all.pixels, perPixel: all.perPixel, saturated: all.saturated, by }; } finally { gl.clearColor = cc; }
+    },
+  };
+}
+
+function summarise(label, frames, fill, finishedMs, extra = {}) {
+  const whats = [...new Set(frames.flatMap((f) => f.calls.map((c) => c.what)))];
+  const tot = (f, key) => f.calls.reduce((a, c) => a + c[key], 0);
+  const draws = frames.map((f) => tot(f, 'draws')), tris = frames.map((f) => tot(f, 'tris'));
+  const worst = frames[tris.indexOf(Math.max(...tris))], typical = frames[tris.indexOf(median(tris))] || worst;
+  const row = {
+    label, ...extra, frames: frames.length, draws: { median: median(draws), max: Math.max(...draws) }, tris: { median: median(tris), max: Math.max(...tris) },
+    keptRedraws: frames.filter((f) => f.calls.some((c) => c.kept)).length, trimMiss: Math.max(...frames.map((f) => tot(f, 'trimMiss'))),
+    jsMs: +median(frames.map((f) => f.js)).toFixed(2), jsMax: +Math.max(...frames.map((f) => f.js)).toFixed(1), gapMs: +median(frames.slice(1).map((f) => f.gap)).toFixed(1), gapMax: +Math.max(...frames.slice(1).map((f) => f.gap)).toFixed(0), finishedMs: finishedMs == null ? null : +finishedMs.toFixed(2),
+    parts: {}, fill,
+  };
+  for (const w of whats) { const c = typical.calls.find((x) => x.what === w) || worst.calls.find((x) => x.what === w); if (c) row.parts[w] = c; }
+  window.__perf.rows.push(row);
+  const over = row.draws.max > BUDGET.draws || row.tris.max > BUDGET.tris;
+  say(`${label}`, 'ok');
+  say(`  draws ${row.draws.median} (worst ${row.draws.max})   tris ${k1(row.tris.median)} (worst ${k1(row.tris.max)})   ${over ? 'OVER' : 'within'} the play budget of ${BUDGET.draws} draws / ${k1(BUDGET.tris)}`, over ? 'bad' : '');
+  for (const [w, c] of Object.entries(row.parts)) {
+    say(`  ${w.padEnd(6)} ${String(c.draws).padStart(3)} draws ${k1(c.tris).padStart(7)}  ${c.w}x${c.h}px  ` + PASSES.filter((p) => c.pass[p].draws).map((p) => `${p} ${c.pass[p].draws}/${k1(c.pass[p].tris)}`).join('  ') + `   fig ${c.figDraws}/${k1(c.figTris)}  lamps ${c.lights}  culled ${c.culled}  batched ${c.batched}`);
+  }
+  if (row.keptRedraws || row.trimMiss) say(`  static shadow map redrawn in ${row.keptRedraws} of ${frames.length} frames; trimmed meshes drawn whole (camera outside their box): up to ${row.trimMiss} a frame`, 'dim');
+  if (fill) say(`  fill   ${M2(fill.fragments)} fragments on ${fill.pixels} px = ${fill.perPixel} x` + (fill.saturated ? ' (SATURATED: more than 31 layers somewhere, undercounted)' : '') + '   ' + Object.entries(fill.by).filter(([, v]) => v > 0).map(([p, v]) => `${p} ${M2(v)}`).join('  '));
+  say(`  ms     js ${row.jsMs} (max ${row.jsMax})   gap ${row.gapMs} (max ${row.gapMax})` + (finishedMs == null ? '' : `   done ${row.finishedMs}`), 'dim');
+  return row;
+}
+
+// ───────────────────────── game mode ─────────────────────────
+
+async function gameMode() {
+  const tier = q.get('q') || 'mid', chN = Math.max(1, num('ch', 1)), view = q.get('view') || 'play';
+  const frame = document.createElement('iframe');
+  frame.src = `/index.html?gl=1${tier === 'auto' ? '' : '&q=' + tier}`;
+  host.appendChild(frame);
+  const W = await until(() => (frame.contentWindow && frame.contentWindow.tls && !frame.contentWindow.document.getElementById('begin').disabled ? frame.contentWindow : null), 30000, 'the game to load');
+  const tls = W.tls, content = tls.content, chapter = content.chapters[chN - 1];
+  if (!chapter) throw new Error(`there is no chapter ${chN} (the game has ${content.chapters.length})`);
+  const app = tls.gl();
+  if (!app || !app.ok) throw new Error('the game has no 3D renderer here: ' + (app ? app.reason : 'WebGL2 is missing'));
+  // can this chapter draw in 3D at all?
+  const { setsNeeded } = await import('../src/core/stage.js'); const { SETS } = await import('../src/shell/gl/sets/index.js');
+  const need = setsNeeded(chapter), missing = need.filter((id) => !Object.hasOwn(SETS, id));
+  say(`chapter ${chN} "${chapter.title || chapter.id}"  table ${chapter.tableId}  tier ${tier}  canvas ${VW}x${VH} css, device pixel ratio ${window.devicePixelRatio}`);
+  if (need.length === 0) { say(`chapter ${chN} has no stage data (chapter.stage and scene.encounter): it draws in 2D. Nothing to measure; use ?set=<file> for its sets.`, 'bad'); return; }
+  if (missing.length) { say(`chapter ${chN} draws in 2D: ${missing.length} of its ${need.length} sets are not in sets/index.js: ${missing.join(', ')}. Measure them with ?sets=${missing.join(',')}`, 'bad'); return; }
+  W.document.getElementById('begin').click(); await sleep(500);
+  const load = (scene) => { const g = tls.game(); tls.send({ type: 'load', save: { v: 4, chapter: chN - 1, scene, econ: { ...g.econ, writs: 3, marks: 40 }, seed: 7, reels: { cells: [{ sym: null, spin: 0 }, { sym: null, spin: 0 }, { sym: null, spin: 0 }], source: null, armed: false, charge: 0 }, ending: null } }); };
+  const t0 = performance.now(); load(0);
+  await until(() => app.stats.queued === 0 && tls.game().mode === 'play', 90000, 'the chapter to build');
+  const heap0 = performance.memory ? performance.memory.usedJSHeapSize : 0;
+  say(`built ${app.stats.built} things (sets, table, figures) in ${((performance.now() - t0) / 1000).toFixed(1)} s, ${app.stats.urgent} of them late (a long frame); sets are the ${app.stats.lowSets ? 'low' : 'full'} builds` + (heap0 ? `; JS heap ${(heap0 / 1048576).toFixed(0)} MB` : ''), 'dim');
+  const P = probe(app.renderer, (scene) => ([...app.tables.values()].some((v) => v.scene === scene) ? 'table' : 'stage'), () => app.draw(content, tls.game(), tls.fx, tls.layout()), W);
+  const scenes = q.get('scene') && q.get('scene') !== 'all' ? [num('scene', 1) - 1] : chapter.scenes.map((_, i) => i);
+  for (const s of scenes) {
+    if (!chapter.scenes[s]) { say(`no scene ${s + 1}`, 'bad'); continue; }
+    load(s); await sleep(SETTLE * 1000);
+    const enc = chapter.scenes[s].encounter, where = enc ? `${chapter.stage.sets[enc.set].set}${chapter.stage.sets[enc.set].light ? ' / ' + chapter.stage.sets[enc.set].light : ''}` : '';
+    if (view !== 'cine') summarise(`ch${chN} s${s + 1} play  (${where})  tier ${app.tier}`, await P.sample(FRAMES), FILL ? P.fill() : null, P.finished(), { chapter: chN, scene: s + 1, view: 'play', tier: app.tier });
+    if (view === 'cine' || view === 'both') {
+      // finish the objective the way a ball would: everything but the last target is marked hit, then the ball is put on the last one
+      const sc = chapter.scenes[s], o = sc.objective, g = tls.game(); let hits = { ...g.hits }, seq = g.seq, last;
+      if (o.kind === 'all') { const ids = [...new Set(o.ids)]; ids.slice(0, -1).forEach((id) => { hits[id] = 1; }); last = ids[ids.length - 1]; } else if (o.kind === 'count') { hits = { [o.ids[0]]: o.n - 1 }; last = o.ids[0]; } else { seq = o.ids.length - 1; last = o.ids[seq]; }
+      const T = content.tables[chapter.tableId], t = [...T.targets, ...T.bumpers, ...T.shots, ...T.saucers, ...T.rollovers].find((x) => x.id === last);
+      if (!t || !g.phys || !g.phys.balls.length) { say(`  cannot stage the cutscene of s${s + 1} (no element ${last} or no ball)`, 'bad'); continue; }
+      let mid, n;
+      if (t.a) { mid = [(t.a[0] + t.b[0]) / 2, (t.a[1] + t.b[1]) / 2]; const dx = t.b[0] - t.a[0], dy = t.b[1] - t.a[1], l = Math.hypot(dx, dy); n = t.dir ? [-t.dir[0], -t.dir[1]] : [-dy / l, dx / l]; if (!t.dir && (n[0] * (200 - mid[0]) + n[1] * (520 - mid[1])) < 0) n = [-n[0], -n[1]]; } else { mid = t.pos; n = [0, 1]; }
+      const b = g.phys.balls[0], nb = { ...b, state: 'live', pos: [mid[0] + n[0] * 26, mid[1] + n[1] * 26], vel: [-n[0] * 500, -n[1] * 500] };
+      tls.set({ ...g, hits, seq, phys: { ...g.phys, balls: g.phys.balls.map((x) => (x === b ? nb : x)) } });
+      try { await until(() => tls.game().mode === 'cine', 6000, 'the cutscene'); } catch (e) { say(`  the cutscene of s${s + 1} did not start (${e.message})`, 'bad'); continue; }
+      await sleep(2600);
+      summarise(`ch${chN} s${s + 1} cine  tier ${app.tier}`, await P.sample(FRAMES), FILL ? P.fill() : null, P.finished(), { chapter: chN, scene: s + 1, view: 'cine', tier: app.tier });
+    }
+  }
+  P.restore();
+  const gl = app.renderer.gl, heap1 = performance.memory ? performance.memory.usedJSHeapSize : 0;
+  say(`sets built ${app.sets.size}, tables ${app.tables.size}` + (app.renderer.memory ? `; GPU memory held (estimate): ${memLine(app.renderer.memory())}` : '') + (heap1 ? `; JS heap ${(heap1 / 1048576).toFixed(0)} MB` : '') + (app.stats.steps.length ? `; the app stepped down: ${JSON.stringify(app.stats.steps)}` : ''), 'dim');
+}
+const memLine = (m) => `${(m.total / 1048576).toFixed(1)} MB (geometry ${(m.geometry / 1048576).toFixed(1)}, textures ${(m.textures / 1048576).toFixed(1)}, shadow maps ${(m.shadows / 1048576).toFixed(1)}, colour target ${(m.target / 1048576).toFixed(1)}; ${m.meshes} meshes, ${m.textureCount} textures)`;
+
+// ───────────────────────── set mode ─────────────────────────
+
+async function setMode() {
+  const GL = await import('../src/shell/gl/index.js');
+  const names = (q.get('sets') || q.get('set')).split(',').map((s) => s.trim()).filter(Boolean);
+  const tierName = { mid: 'medium', auto: 'medium' }[q.get('q') || 'mid'] || q.get('q') || 'medium';
+  const canvas = document.createElement('canvas'); host.appendChild(canvas);
+  const renderer = GL.createRenderer(canvas, { quality: tierName });
+  if (q.get('trim') === '0') renderer.setQuality({ trim: false, autoTrim: false });
+  if (q.get('batch') === '0') renderer.setQuality({ batch: false });
+  const troupe = GL.createTroupe({ detail: 1 });
+  const ids = (k, d) => (q.has(k) ? q.get(k) : d).split(',').map((s) => s.trim()).filter((id) => id && troupe.has(id));
+  const party = ids('party', 'ren,ilse'), opposition = ids('opp', 'steward,steward');
+  const low = q.get('low') !== '0', detail = num('detail', 1), camName = q.get('cam') || 'stage';
+  say(`set mode: tier ${renderer.quality.name}, ${low ? 'low' : 'full'} builds, detail ${detail}, camera ${camName}, party [${party}] vs [${opposition}], canvas ${VW}x${VH} css at device pixel ratio ${window.devicePixelRatio} (buffer ${renderer.ctx.width}x${renderer.ctx.height})`);
+  const camera = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
+  for (const name of names) {
+    let def = GL.SETS[name];
+    if (!def) {
+      const file = name.endsWith('.js') ? name : name + '.js';
+      let mod; try { mod = await import(`../src/shell/gl/sets/${file}`); } catch (e) { say(`${name}: could not import sets/${file}: ${e.message}`, 'bad'); continue; }
+      def = (q.get('export') && mod[q.get('export')]) || Object.values(mod).find((v) => v && typeof v.build === 'function' && v.id === name.replace(/\.js$/, '')) || Object.values(mod).find((v) => v && typeof v.build === 'function');
+      if (!def) { say(`${name}: sets/${file} exports nothing with a build()`, 'bad'); continue; }
+    }
+    const light = q.get('light') && (!def.lights || def.lights.includes(q.get('light'))) ? q.get('light') : def.lights ? def.lights[0] : undefined;
+    const heapA = performance.memory ? performance.memory.usedJSHeapSize : 0, t0 = performance.now();
+    let set; try { set = GL.withDetail(detail, () => def.build(GL, { light, low })); } catch (e) { say(`${name}: build() threw: ${e.stack || e.message}`, 'bad'); continue; }
+    const buildMs = performance.now() - t0;
+    const trimmed = q.get('trim') === '0' ? null : GL.trimSet(set);
+    const band = camName === 'stage', bw = VW, bh = band ? Math.round(220 * VW / 430) : VH;
+    let enc = null, time = 0;
+    if (band && (party.length || opposition.length)) { try { enc = GL.createEncounter(set, troupe, { party, opposition, title: name }); } catch (e) { say(`${name}: createEncounter threw (measuring the bare set): ${e.message}`, 'bad'); } }
+    const frameFn = () => {
+      time += 1 / 60;
+      if (set.update) set.update(time, 1 / 60);
+      if (enc) { enc.update(1 / 60, time, [], { done: 0, total: 3 }); enc.frame(camera, bw / bh, time, bh); renderer.render(set.scene, camera, time, { x: 0, y: 0, w: bw, h: bh, ...enc.view }); }
+      else { const nm = set.cameras[camName] ? camName : Object.keys(set.cameras)[0]; set.frame(camera, nm, time); if (set.foreground && band) set.foreground.visible = false; renderer.render(set.scene, camera, time, { x: 0, y: 0, w: bw, h: bh, ...set.view(nm) }); }
+    };
+    const t1 = performance.now(); frameFn(); renderer.gl.finish(); const firstMs = performance.now() - t1;
+    for (let i = 0; i < Math.round(SETTLE * 20); i++) frameFn();      // let walk-ons arrive (SETTLE is seconds of the game's clock here)
+    const P = probe(renderer, () => 'stage', frameFn);
+    const frames = await P.sample(FRAMES), fill = FILL ? P.fill() : null, fin = P.finished();
+    P.restore();
+    const heapB = performance.memory ? performance.memory.usedJSHeapSize : 0;
+    const row = summarise(`${def.id || name}  light ${set.light || light}  (${band ? 'band ' + bw + 'x' + bh : camName + ' full screen'})`, frames, fill, fin, { set: def.id || name, light: set.light || light, buildMs: +buildMs.toFixed(1), firstFrameMs: +firstMs.toFixed(1) });
+    say(`  build ${buildMs.toFixed(0)} ms, first frame (upload + shaders) ${firstMs.toFixed(0)} ms` + (trimmed ? `; trimSet: of ${k1(trimmed.triangles)} static triangles the colour pass draws ${k1(trimmed.view)}, the outline pass ${k1(trimmed.outline)}` : '') + (heapB ? `; JS heap +${((heapB - heapA) / 1048576).toFixed(1)} MB` : '') + (renderer.memory ? `; GPU ${memLine(renderer.memory())}` : ''), 'dim');
+    row.trimmed = trimmed;
+    if (enc && enc.dispose) enc.dispose();
+    if (renderer.release) renderer.release(set.scene);
+    await sleep(30);
+  }
+}
+
+try {
+  if (q.has('set') || q.has('sets')) await setMode(); else await gameMode();
+  say('done.', 'dim');
+} catch (e) {
+  say(String(e && (e.stack || e.message) || e), 'bad');
+  window.__perf.error = String(e && e.message || e);
+}
+window.__perf.done = true; window.__perf.text = out.textContent;
+document.title = 'gl perf: done';
+</script>
+</body>
+</html>

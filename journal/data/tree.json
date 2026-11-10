@@ -12356,12 +12356,12 @@
  },
  {
   "path": "src/content/chapter2.js",
-  "bytes": 55747,
-  "lines": 749
+  "bytes": 55739,
+  "lines": 748
  },
  {
   "path": "src/content/chapter3.js",
-  "bytes": 64584,
+  "bytes": 64601,
   "lines": 790
  },
  {
@@ -12386,8 +12386,8 @@
  },
  {
   "path": "src/content/chapter8.js",
-  "bytes": 96523,
-  "lines": 1049
+  "bytes": 97987,
+  "lines": 1063
  },
  {
   "path": "src/content/index.js",
@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 28971,
-  "lines": 521
+  "bytes": 31812,
+  "lines": 556
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 63715,
-  "lines": 1689
+  "bytes": 67083,
+  "lines": 1708
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12556,13 +12556,13 @@
  },
  {
   "path": "src/shell/gl/sets/academy-yard.js",
-  "bytes": 27988,
-  "lines": 334
+  "bytes": 28251,
+  "lines": 337
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
-  "bytes": 19042,
-  "lines": 202
+  "bytes": 20203,
+  "lines": 216
  },
  {
   "path": "src/shell/gl/sets/bench.js",
@@ -12581,8 +12581,8 @@
  },
  {
   "path": "src/shell/gl/sets/causeway.js",
-  "bytes": 14227,
-  "lines": 171
+  "bytes": 14338,
+  "lines": 172
  },
  {
   "path": "src/shell/gl/sets/cell.js",
@@ -12596,8 +12596,8 @@
  },
  {
   "path": "src/shell/gl/sets/commons-hall.js",
-  "bytes": 22809,
-  "lines": 252
+  "bytes": 22972,
+  "lines": 254
  },
  {
   "path": "src/shell/gl/sets/commons-queue.js",
@@ -12621,12 +12621,12 @@
  },
  {
   "path": "src/shell/gl/sets/court.js",
-  "bytes": 15790,
-  "lines": 203
+  "bytes": 15968,
+  "lines": 206
  },
  {
   "path": "src/shell/gl/sets/cresset-harbour.js",
-  "bytes": 14925,
+  "bytes": 14928,
   "lines": 174
  },
  {
@@ -12641,13 +12641,13 @@
  },
  {
   "path": "src/shell/gl/sets/dark-village.js",
-  "bytes": 28501,
-  "lines": 279
+  "bytes": 29306,
+  "lines": 288
  },
  {
   "path": "src/shell/gl/sets/dormitory.js",
-  "bytes": 24110,
-  "lines": 271
+  "bytes": 24186,
+  "lines": 273
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
@@ -12686,13 +12686,13 @@
  },
  {
   "path": "src/shell/gl/sets/founders-lamp.js",
-  "bytes": 20238,
+  "bytes": 20337,
   "lines": 217
  },
  {
   "path": "src/shell/gl/sets/full-bench.js",
-  "bytes": 18693,
-  "lines": 198
+  "bytes": 21847,
+  "lines": 222
  },
  {
   "path": "src/shell/gl/sets/hall-steps.js",
@@ -12706,12 +12706,12 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 30368,
-  "lines": 310
+  "bytes": 30874,
+  "lines": 314
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
-  "bytes": 25280,
+  "bytes": 25282,
   "lines": 259
  },
  {
@@ -12796,7 +12796,7 @@
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
-  "bytes": 20506,
+  "bytes": 20495,
   "lines": 237
  },
  {
@@ -12806,8 +12806,8 @@
  },
  {
   "path": "src/shell/gl/sets/mole-dark.js",
-  "bytes": 13729,
-  "lines": 156
+  "bytes": 13817,
+  "lines": 157
  },
  {
   "path": "src/shell/gl/sets/mole-lanterns.js",
@@ -12821,8 +12821,8 @@
  },
  {
   "path": "src/shell/gl/sets/picket.js",
-  "bytes": 19631,
-  "lines": 235
+  "bytes": 19906,
+  "lines": 238
  },
  {
   "path": "src/shell/gl/sets/pier-riot.js",
@@ -12831,8 +12831,8 @@
  },
  {
   "path": "src/shell/gl/sets/proctor-office.js",
-  "bytes": 20678,
-  "lines": 228
+  "bytes": 20883,
+  "lines": 231
  },
  {
   "path": "src/shell/gl/sets/quarter-flame.js",
@@ -12846,8 +12846,8 @@
  },
  {
   "path": "src/shell/gl/sets/shore-dusk.js",
-  "bytes": 19295,
-  "lines": 234
+  "bytes": 19510,
+  "lines": 236
  },
  {
   "path": "src/shell/gl/sets/stall-day.js",
@@ -12861,12 +12861,12 @@
  },
  {
   "path": "src/shell/gl/sets/underwriting-floor.js",
-  "bytes": 25000,
-  "lines": 268
+  "bytes": 25108,
+  "lines": 270
  },
  {
   "path": "src/shell/gl/sets/wreck-shore.js",
-  "bytes": 20029,
+  "bytes": 20030,
   "lines": 205
  },
  {
@@ -12881,13 +12881,13 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 107239,
-  "lines": 1464
+  "bytes": 107696,
+  "lines": 1467
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 107678,
-  "lines": 1454
+  "bytes": 107907,
+  "lines": 1456
  },
  {
   "path": "src/shell/input.js",
@@ -12901,8 +12901,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 23798,
-  "lines": 501
+  "bytes": 25163,
+  "lines": 523
  },
  {
   "path": "src/shell/render.js",
@@ -13003,6 +13003,11 @@
   "path": "tools/gl-demo.html",
   "bytes": 37643,
   "lines": 438
+ },
+ {
+  "path": "tools/gl-perf.html",
+  "bytes": 22264,
+  "lines": 246
  },
  {
   "path": "tools/gl-set.html",

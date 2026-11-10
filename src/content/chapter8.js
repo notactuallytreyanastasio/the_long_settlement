@@ -60,6 +60,21 @@ export const chapter8 = {
     },
     clerk: 'clerk',
     townsfolk: 'townsman',
+    // Costumes (the director resolves them; voice and name stay the plain id). wearAt holds from that line on, in
+    // script order, so within a scene the commons lines come before the mint lines.
+    wear: { ren: 'ren-volunteer' },
+    wearAt: {
+      'ch8.pro.14': { maravel: 'maravel-plain' },        // the cell, then the dock: no bands, no gavel
+      'ch8.s1.c30': { maravel: null },                   // restored to his bench: robed from the afternoon on
+      'ch8.m6.c20': { maravel: 'maravel-plain' },        // "a magistrate in his shirtsleeves"
+      'ch8.m6.c25': { maravel: null },
+      'ch8.s7.c03': { corvane: 'corvane-plain' },        // the chain of the Mint is on the table (and in THE SUM he holds no office)
+      'ch8.epi.05': { sable: 'sable-plain' },            // he gave up the Audit's pin
+      'ch8.epi.28': { narrator: 'ilse-old' },            // the Ledger puts her hood back: both endings (ch8.mepi.29, ch8.end.01)
+      'ch8.mepi.01': { sable: null },                    // "I am keeping the pin"
+      'ch8.mepi.13': { ren: 'ren-hooded', ilse: 'ilse-hooded' },   // the under-lane
+      'ch8.mepi.19': { ren: 'ren-volunteer', ilse: null },
+    },
   },
 
   endings: {
@@ -119,19 +134,18 @@ export const chapter8 = {
       hint: 'Answer the warrant: hit all three BENCH targets',
       objective: { kind: 'all', ids: ['benchA', 'benchB', 'benchC'] },
       reward: { points: 20000, trust: 15 },
-      // A hearing, not a fight. Sable answers his own warrant from the floor; Ren stands by him in irons. The
-      // opposition is the three magistrates on the bench (the set's own), satisfied one at a time.
+      // A hearing, not a fight. Sable answers his own warrant from the floor; Ren stands by him in irons. What is
+      // won is on the clerk's table under the bench: three exhibits, and a lamp on the bench for each.
       encounter: {
         set: 'full-bench', light: 'day', mode: 'talk',
         party: ['sable', 'ren'],
-        opposition: { kind: 'force', who: ['magistrate', 'magistrate', 'magistrate'], name: 'THE FULL BENCH' },
-        extras: ['steward'],
-        setback: { cue: 'bench-confers', show: 'The three lean together and confer behind a hand. An usher steps out and puts Sable back from the bar; he has to begin the point again.' },
+        opposition: { kind: 'force', who: ['exhibit', 'exhibit', 'exhibit'], name: 'THE FULL BENCH' },
+        setback: { cue: 'bench-confers', show: 'The three magistrates turn in to the middle one and confer behind a hand; their lamps dip. Sable is left standing and has to begin the point again.' },
         beats: [
-          { at: 0, cue: 'all-rise', name: 'All three', show: 'Three magistrates under the high window, none of them looking down. Sable at the bar with the file; Ren a pace behind him, wrists together. The three desk lamps on the bench are dark.' },
-          { at: 1, cue: 'the-log', name: 'The log gives one name', show: 'The first magistrate leans in and nods; the lamp at his place comes up. Sable holds the log open toward the bench.' },
-          { at: 2, cue: 'the-cipher', name: 'The shot was mine', show: 'The second leans in; two lamps burn. Sable has laid the ciphered instruction on the bar. Ren has turned to look at him.' },
-          { at: 3, cue: 'charge-dismissed', name: 'Strike the irons', show: 'All three lamps burn and the slowest of the three has nodded. The bench is lit from end to end under the window.' },
+          { at: 0, cue: 'all-rise', name: 'All three', show: "Three magistrates under the high window, none of them looking down; the desk lamps at their places are dark. Sable at the clerk's table with the file; Ren a pace behind him, wrists together." },
+          { at: 1, cue: 'the-log', name: 'The log gives one name', show: "The warden's log lies open and lit on the clerk's table. The first lamp on the bench has come up and the magistrate under it leans in." },
+          { at: 2, cue: 'the-cipher', name: 'The shot was mine', show: 'A second paper stands on the table beside the log, a red seal at its foot: the instruction, in cipher. Two lamps burn. Ren has turned to look at his brother.' },
+          { at: 3, cue: 'charge-dismissed', name: 'Strike the irons', show: 'The irons lie open on the table. All three lamps burn; the bench is lit from end to end under the window.' },
         ],
       },
       briefing: [
@@ -211,20 +225,19 @@ export const chapter8 = {
       hint: 'Answer Halcyon: two shots round the ASSEMBLY orbit',
       objective: { kind: 'count', ids: ['assemblyOrbit'], n: 2 },
       reward: { points: 25000 },
-      // An argument won on the law, and the thing won is the Bench's ruling: the opposition is the motion before
-      // the three magistrates (the set's own), who come round one lamp at a time. Counsel for Halcyon (a 'crowd'
-      // voice in the script, a robed clerk on the stage) stands by, and is who steps in on a drain; Maravel stands
-      // behind him, the witness whose honest answer is against her.
+      // An argument won on the law, person to person: Counsel for Halcyon (a 'crowd' voice in the script; on the
+      // stage, one of Halcyon's own in grey and gold). Maravel stands by, the witness whose honest answer is
+      // against her. The bench's three lamps come up as she goes (the set's beat hook).
       encounter: {
         set: 'full-bench', light: 'dusk', mode: 'talk',
         party: ['ilse', 'tobb'],
-        opposition: { kind: 'force', who: ['bench-ruling'], name: 'THE MOTION TO VOID' },
-        extras: ['clerk', 'maravel'],
-        setback: { cue: 'counsel-rises', show: 'Counsel rises again, courteous and unhurried, and steps into her argument; Ilse gives ground and Tobb loses his place in the tally.' },
+        opposition: { kind: 'people', who: ['underwriter'], name: 'COUNSEL FOR HALCYON' },
+        extras: ['maravel'],
+        setback: { cue: 'counsel-rises', show: 'Counsel rises again, courteous and unhurried, and steps into her argument; Ilse gives ground and Tobb loses his place in the tally. On the bench the three confer.' },
         beats: [
-          { at: 0, cue: 'the-third-road', name: 'The third road to a lapse', show: 'Afternoon light, long across the floor. The three desk lamps on the bench are dark. Counsel for Halcyon stands easy, stage right, Maravel behind him, called as a witness. Ilse and Tobb face the bench.' },
-          { at: 1, cue: 'chandlers-case', name: "The Chandlers' case", show: 'Ilse has one finger raised. One lamp burns on the bench and a second is coming up; the magistrate under it has leaned in.' },
-          { at: 2, cue: 'the-lot-stands', name: 'The lot stands', show: 'All three lamps burn. The bench has ruled; counsel has his papers down. Maravel has not moved.' },
+          { at: 0, cue: 'the-third-road', name: 'The third road to a lapse', show: 'Afternoon light, long across the floor; the lamps on the bench are dark. Counsel for Halcyon stands easy, stage right, with Maravel beyond him, called as a witness. Ilse and Tobb face them.' },
+          { at: 1, cue: 'chandlers-case', name: "The Chandlers' case", show: 'Ilse has one finger raised and counsel is listening with his slate lowered. One lamp burns on the bench and a second is coming up.' },
+          { at: 2, cue: 'the-lot-stands', name: 'The lot stands', show: 'All three lamps burn. Counsel has inclined his head: the bench has ruled. Maravel has not moved.' },
         ],
       },
       briefing: [
@@ -475,16 +488,17 @@ export const chapter8 = {
       objective: { kind: 'all', ids: ['seatL', 'seatC', 'seatR'] },
       reward: { points: 35000 },
       // A report read to a house. The opposition is the horseshoe itself, in three blocks: each block she reaches
-      // gets to its feet to hear the rest.
+      // gets to its feet to hear the rest. Three delegates have come down onto the floor to hear it close to;
+      // they are who she is speaking to, and they are answered one at a time.
       encounter: {
         set: 'assembly', light: 'day', mode: 'talk',
         party: ['ilse', 'tobb'],
         opposition: { kind: 'force', who: ['seat-block', 'seat-block', 'seat-block'], name: 'THE ASSEMBLY' },
-        extras: ['steward'],
-        setback: { cue: 'house-in-uproar', show: 'A block of the house is shouting; an usher comes down the floor at her and Ilse loses her place in the page.' },
+        extras: ['member', 'member', 'member'],
+        setback: { cue: 'house-in-uproar', show: 'Uproar: all round the horseshoe delegates are up and down out of their seats, shouting, and Ilse loses her place in the page.' },
         beats: [
-          { at: 0, cue: 'the-house-sits', name: 'Forty seats, twelve in grey', show: 'The horseshoe under the open eye of sky, white with noon. Twenty-eight delegates sit; twelve seats are under grey cloth. Ilse at the lectern with the record, Tobb at her shoulder.' },
-          { at: 1, cue: 'seven-hearings', name: 'The sum is short', show: 'One block of the house is on its feet, turned toward her. The rest sit.' },
+          { at: 0, cue: 'the-house-sits', name: 'Forty seats, twelve in grey', show: 'The horseshoe under the open eye of sky, white with noon. Twenty-eight delegates sit; twelve seats are under grey cloth. Ilse on the floor with the record, Tobb at her shoulder; three delegates have come down to face her.' },
+          { at: 1, cue: 'seven-hearings', name: 'The sum is short', show: 'The first delegate has his answer. Behind him one block of the house is on its feet, turned toward her. The rest sit.' },
           { at: 2, cue: 'seats-in-grey', name: 'The seats in grey, by name', show: 'Two blocks stand. The grey cloths show between them like missing teeth.' },
           { at: 3, cue: 'his-order-read', name: 'His order, read aloud', show: 'The whole house is standing. Nobody is looking at the Chancellor.' },
         ],
@@ -716,10 +730,10 @@ export const chapter8 = {
         set: 'assembly', light: 'day', mode: 'talk',
         party: ['ilse', 'tobb'],
         opposition: { kind: 'force', who: ['casting-vote'], name: 'FOURTEEN AND FOURTEEN' },
-        extras: ['steward'],
-        setback: { cue: 'gallery-shouts', show: 'Shouting from the gallery; an usher comes down the floor to clear the bar and the count begins again.' },
+        extras: ['member', 'member'],
+        setback: { cue: 'gallery-shouts', show: 'Shouting from the gallery and the house is up and down out of its seats; the count begins again.' },
         beats: [
-          { at: 0, cue: 'renewal-day', name: 'Renewal Day', show: 'The eye of sky is white again. The delegates are still finding their seats; the treaty lies on the table in the middle of the floor. Ilse and Tobb wait by it.' },
+          { at: 0, cue: 'renewal-day', name: 'Renewal Day', show: 'The eye of sky is white again. The delegates are still finding their seats; the treaty lies on the table in the middle of the floor. Ilse and Tobb wait by it, with a teller from each side of the house.' },
           { at: 1, cue: 'house-to-order', name: 'The house comes to order', show: 'Everyone who is coming has sat. The twelve grey cloths have not moved.' },
           { at: 2, cue: 'divide', name: 'Divide', show: 'The ayes are on their feet, one arm of the horseshoe.' },
           { at: 3, cue: 'house-equal', name: 'The house is equal', show: 'The other arm has risen too: both sides standing, the same number each.' },

@@ -378,7 +378,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
 
     if (fx.speaking) { voice.who = fx.speaking.who; voice.level = fx.voiceLevel; voice.line = fx.speaking; F.voice = voice; } else F.voice = null;
     F.content = content; F.game = game; F.stage = stage; F.cine = e; F.quality = tierName;
-    F.pad.top = HUD_BAND_HEAD * k * (1 - e); F.pad.bottom = HUD_BAND_FOOT * k * (1 - e);
+    F.pad.top = (HUD_BAND_HEAD + Math.max(0, fx.safe ? fx.safe.top : 0)) * k * (1 - e); F.pad.bottom = HUD_BAND_FOOT * k * (1 - e);
     director.update(dt, time, F);
 
     clearAll(INK);
@@ -393,6 +393,40 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       const extra = cineW === 0 ? TIERS[tierName].band : null;
       count(renderer.render(set.scene, stageCam, time, { x: bandCss.x, y: bandCss.y, w: bandCss.w, h: bandCss.h, ...director.view, ...extra }), 'stage');
     }
+    drawInset(fx, layout, time, dt, k, e);
+  }
+
+  // ───────────────────────── the caller's inset ─────────────────────────
+  // A line over the Line from somebody who is not on the stage: their own figure, talking, in a small picture at the
+  // head of the cinematic (hud.js draws the frame at fx.inset). One figure on a cold flat ground: 3 draws, 10k triangles.
+
+  let insetScene = null, insetCam = null, insetFig = null, insetId = '', insetOn = 0;
+  const insetRect = { x: 0, y: 0, w: 0, h: 0 }, insetAt = [0, 0, 0], insetState = { emote: 'neutral', talk: 0, speaking: false, pose: 'stand', look: 'camera', face: 10, camera: null, snap: false, energy: 1 };
+  function drawInset(fx, layout, time, dt, k, e) {
+    const ins = director.inset;
+    insetOn = clamp(insetOn + (ins && e > 0.9 ? dt : -dt) / 0.25, 0, 1);
+    if (!ins || insetOn <= 0) { insetRect.w = 0; return; }
+    if (!insetScene) {
+      insetScene = GL.createScene(GL.makeEnv('night', { sky: { zenith: '#1c3f7a', mid: '#2d6fb3', horizon: '#9fd0f4', below: '#2d6fb3', glowAmount: 0, stars: 0, moon: 0 }, fog: { density: 0 }, water: null, ambient: { amount: 0.85 } }));
+      insetCam = GL.createCamera({ fov: 22, near: 0.2, far: 60 });
+    }
+    if (insetId !== ins.as) {
+      if (insetFig) insetScene.root.remove(insetFig.root);
+      insetFig = troupe.take(ins.as, 7, 'full'); insetFig.release(); insetFig.home(); insetFig.root.setPos(0, 0, 0);
+      insetScene.root.add(insetFig.root); insetId = ins.as; insetState.snap = true;
+    }
+    const line = F.stage && F.stage.line ? F.stage.line : null;
+    insetState.emote = (line && line.emote) || 'neutral'; insetState.talk = F.voice ? Math.max(F.voice.level || 0, 0.03) : 0; insetState.camera = insetCam;
+    insetFig.update(dt, insetState); insetState.snap = false;
+    const hp = insetFig.headPos, hr = insetFig.headRadius, top = insetFig.height;
+    insetAt[0] = hp[0]; insetAt[1] = hp[1] > 0.1 ? hp[1] - hr * 0.2 : top * 0.78; insetAt[2] = hp[2];
+    insetCam.fov = 22; insetCam.orbit(insetAt, hr * 9.2, -12, 2);
+    const side = 96, safeTop = fx.safe ? fx.safe.top : 0;
+    insetRect.w = side; insetRect.h = side; insetRect.x = layout.kind === 'wide' ? 28 : 16; insetRect.y = layout.kind === 'wide' ? 24 : Math.max(18, safeTop + 10);
+    troupe.aim(insetCam);
+    const grow = 0.6 + 0.4 * smooth(insetOn), w = side * grow * k, x = (insetRect.x + side * (1 - grow) / 2) * k, y = (insetRect.y + side * (1 - grow) / 2) * k;
+    insetRect.x = x / k; insetRect.y = y / k; insetRect.w = w / k; insetRect.h = w / k;
+    count(renderer.render(insetScene, insetCam, time, { x, y, w, h: w, shadow: 'off' }), 'inset');
   }
 
   function drawHudPass(content, game, fx, layout, cssW, cssH, k, stage, isStage) {
@@ -430,6 +464,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     hudFx.anchors = anchors;
     hudFx.sub = isStage ? director.sub || null : null;
     hudFx.cues = isStage ? director.cues || null : null;
+    hudFx.inset = isStage && insetRect.w > 0 ? insetRect : null;
     hudFx.k = k;
     hudFx.loading = total > 0 && queue.length > 0 ? 1 - queue.length / total : 1;
     hudFx.quality = tierName;

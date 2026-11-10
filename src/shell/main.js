@@ -287,9 +287,30 @@ async function boot() {
     if (line) speak(line, false);
   }
 
+  // THE RESOLVE HOLD (3D only). A scene's cutscene begins the tick its objective completes, and the core's stage
+  // model keeps showing the encounter, won, for the first RESOLVE_HOLD of it: the band grows to the whole glass over
+  // the party's cheer. Line one used to be spoken over that. Here its voice waits until the stage is the cutscene:
+  // the line is held and spoken from the frame loop once `held.at` has passed, if the story is still on it. The
+  // core's own clock is not touched (its safety net allows a line half as long again plus two seconds).
+  const RESOLVE_HOLD_MS = 1150;
+  let held = null;              // { line, at } | null
+  function holdsForResolve(line) {
+    const c = game.cine;
+    return glOn && game.mode === 'cine' && !!c && c.kind === 'scene' && c.index === 0 && c.lines[0] === line && c.t < 0.2
+      && !!content.chapters[game.chapter].scenes[game.scene].encounter;
+  }
+  function speakHeld(now) {
+    if (!held || now < held.at) return;
+    const { line } = held;
+    held = null;
+    const c = game.cine;
+    if (game.mode === 'cine' && c && c.lines[c.index] === line) speak(line, true);
+  }
+
   const EFFECTS = {
     say(e) {
-      if (e.blocking) { chatter.length = 0; speak(e.line, true); return; }
+      if (e.blocking && holdsForResolve(e.line)) { chatter.length = 0; voice.hush(); fx.speaking = null; held = { line: e.line, at: performance.now() + RESOLVE_HOLD_MS }; return; }
+      if (e.blocking) { held = null; chatter.length = 0; speak(e.line, true); return; }
       // voice.js drops a non-blocking line while anything is speaking. A briefing is two
       // or three of them emitted on one tick, so they queue here; barks beyond a short
       // queue are let go, since by the time they were heard the moment would have passed.
@@ -299,7 +320,7 @@ async function boot() {
       }
       speak(e.line, false);
     },
-    hush() { chatter.length = 0; fx.speaking = null; voice.hush(); },
+    hush() { held = null; chatter.length = 0; fx.speaking = null; voice.hush(); },
     sfx(e) { audio.sfx(e.name, e.vol === undefined ? 1 : e.vol); },
     music(e) { audio.music(e.mood); },
     shake(e) { fx.shake = Math.min(1, Math.max(fx.shake, e.power)); },
@@ -392,6 +413,7 @@ async function boot() {
         dispatch({ type: 'tick', dt: STEP, input });
         bank -= STEP;
       }
+      speakHeld(now);
       fx.timeMs = now;
       fx.voiceLevel = voice.level();
       fx.shake = Math.max(0, fx.shake - real * 2.2);

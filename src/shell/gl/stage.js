@@ -623,7 +623,7 @@ const OPP_SLOT = [[0.9, 0.8], [1.72, 0.4], [2.5, 1.24]];
 const LANE = [0.04, -0.46, 0.46];
 const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]];
 const HALF_W = 3.0;    // world units of the strip either side of centre that the fight's camera keeps in frame
-const HALF_TAB = 1.95; // the closest a tableau is framed
+const HALF_TAB = 2.3;  // the closest a tableau is framed: a figure is then about 95 px tall in a 220 px band, a third more than in the fight
 const STANDOFF = 1.0;  // how far short of a person a blow is carried: chibi heads are wide, and at 0.82 they met
 const LAG = 0.16;      // seconds between a table hit and the stage answering: the time the energy takes to climb
 const TAB_IMPACT = 0.27; // seconds into a tableau's working clip that the hand lands (the bolt is timed to it)
@@ -905,6 +905,9 @@ function fightOn(S, opts = {}) {
     if (lo > hi) { lo = -HALF_TAB; hi = HALF_TAB; }
     tab.half = clamp((hi - lo) / 2 + 0.1, HALF_TAB, HALF_W);
     tab.cx = clamp((hi + lo) / 2, -HALF_W - 0.6 + tab.half, HALF_W + 0.6 - tab.half);
+    // a thing that hangs high would be behind the opposition's pill at the right of the head row: it is framed left of the middle
+    const t = mode.route ? null : target(false);
+    if (isUnit(t) && t.pos[1] > 1.0) { const c2 = t.pos[0] + 0.16 * tab.half; if (c2 > tab.cx) { tab.cx = c2; tab.half = clamp(Math.max(tab.half, tab.cx - lo + 0.05), HALF_TAB, HALF_W); } }
   }
 
   /** A new scene's encounter on this stage. Figures already here walk to their new places; cut: everyone is simply there. */
@@ -954,7 +957,7 @@ function fightOn(S, opts = {}) {
       if (marks && marks[i]) { gx = marks[i].pos[0]; gz = marks[i].pos[2]; face = marks[i].face; }
       else if (pressing) { frontSlot(i, SLOT); gx = SLOT[0]; gz = SLOT[1]; face = -58; }
       else if (mode.route) { gx = lerp(route.x0, route.x1, (i + 1) / (ex.length + 1)) + 0.35; gz = 0.04 - 0.06 * i; face = 6; }        // along the way, in the back row
-      else if (mode.tab) { gx = Math.min(HALF_W - 0.3 - 0.5 * (ex.length - 1), nu ? unitR + 1.05 : 2.3) + i * 0.5; gz = 0.05 + (i % 2) * 0.5; }               // beside the thing, out of its way
+      else if (mode.tab) { gx = Math.max(HALF_W - 0.25 - 0.55 * (ex.length - 1), nu ? unitR + 1.3 : 2.3) + i * 0.55; gz = 0.04 + (i % 2) * 0.12; }               // beside the thing, out of its way
       else { gx = BACK_R[i][0]; gz = BACK_R[i][1]; }
       if (!a) a = S.enter(ex[i], 30 + i, lod, gx, gz, 0, cut ? null : OFF_X + i * 0.6, wearOf(ex[i]));
       if (a.held) { a.ch.release(); a.held = false; }

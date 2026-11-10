@@ -137,7 +137,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     const ct = base.clouds.node.tint, same = isNight === night;        // the painted clouds keep their built colour: tint them toward the other hour's
     ct[0] = same ? 1 : isNight ? 0.5 : 1.25; ct[1] = same ? 1 : isNight ? 0.6 : 1.2; ct[2] = same ? 1 : isNight ? 0.95 : 1.05;
   }
-  const cue = (id) => { noteLean8(id); if (/^ch8\.pro\./.test(id)) { setHour('day'); return true; } if (/^ch8\.(s3|mepi)\./.test(id)) { setHour('night'); return true; } return false; };
+  const cue = (id) => { noteLean8(id); if (/^ch8\.pro\./.test(id)) { setHour('day'); return true; } if (/^ch8\.(s3\.c|mepi\.)/.test(id)) { setHour('night'); return true; } return false; };
   let lampGoal = 1;
   const setLamp = (v) => { lampGoal = Math.max(0, Math.min(1, v)); };
   const P = [0, 0, 0], Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), rnd = rng(5);

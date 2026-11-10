@@ -30,8 +30,9 @@ export const chapter2 = {
       black: { set: 'black', light: 'night' },
     },
     clerk: 'clerk',
-    townsfolk: 'docker',
+    townsfolk: 'miner',
   },
+
 
 
   prologue: [
@@ -89,7 +90,7 @@ export const chapter2 = {
         set: 'picket', light: 'night', mode: 'walk',
         party: ['ren', 'ilse', 'tobb'],
         opposition: { kind: 'force', who: ['picket-line'], name: 'THE PICKET' },
-        extras: ['docker', 'docker', 'hesper'],
+        extras: ['miner', 'miner', 'hesper'],
         setback: { cue: 'tide-on-the-road', show: 'The tide slops across the salt road behind them; the three are driven back a pace and every lamp on the line lifts to look.' },
         beats: [
           { at: 0, cue: 'salt-road', name: 'Four miles of salt', show: 'The gate is chained shut under two fire baskets, the notice nailed to its left leaf. A handful of miners stand the line. Ren, Ilse and Tobb come up the road from stage left.' },
@@ -163,10 +164,10 @@ export const chapter2 = {
         set: 'commons-hall', light: 'night', mode: 'work',
         party: ['ilse', 'ren'],
         opposition: { kind: 'force', who: ['red-notice', 'red-notice', 'red-notice'], name: 'RED SEALS' },
-        extras: ['townsman', 'townswoman', 'hesper'],
-        setback: { cue: 'pot-boils-over', show: 'A pot goes over on the stove and the queue turns to look; Ilse loses her line and Ren is back at the boiler.' },
+        extras: ['miner', 'townswoman', 'hesper'],
+        setback: { cue: 'queue-presses', show: 'The queue presses up against the trestle and the man at its head leans in over the paper; Ilse and Ren are pushed back a step.' },
         beats: [
-          { at: 0, cue: 'table-and-queue', name: 'A table, and a queue', show: 'The hall is full and the stove going. Three notices with red seals lie propped on the trestle; Ilse stands over them, Ren beside her with his sleeves up.' },
+          { at: 0, cue: 'table-and-queue', name: 'A table, and a queue', show: 'The hall is full and the stove going. Three notices with red seals stand propped on a trestle; Ilse and Ren work along it, the head of the queue and Hesper at its far end.' },
           { at: 1, cue: 'show-me-the-order', name: 'Show me the order', show: 'The first notice has a reply pinned over its seal, four words long. The queue has moved up one.' },
           { at: 2, cue: 'second-reply', name: "A clerk's afternoon", show: 'Two replies written. The second in the queue has stepped up to the trestle.' },
           { at: 3, cue: 'thirtieth', name: 'Make them owe a reply', show: 'All three notices are answered, a lit reply on each. The hall is still full behind them, eating.' },
@@ -235,7 +236,6 @@ export const chapter2 = {
         set: 'mine-deep', light: 'interior', mode: 'walk',
         party: ['hesper', 'ren', 'ilse'],
         opposition: { kind: 'force', who: ['gallery-nine'], name: 'ELEVEN HUNDRED FEET' },
-        extras: ['tobb'],
         setback: { cue: 'lamp-gutters', show: 'The hook lamp gutters in a breath of bad air and the gallery goes blue; they stop where they are until it steadies.' },
         beats: [
           { at: 0, cue: 'cage-lands', name: 'The cage lands', show: 'The cage stands at the foot of the shaft, stage left. Hesper leads them out under the first cap beam; the gallery beyond is dark.' },
@@ -560,12 +560,11 @@ export const chapter2 = {
       // STAGE: Not a fight. A town coming in to look at its own accounts, and a woman with the chalk in her hand.
       encounter: {
         set: 'commons-hall', light: 'day', mode: 'talk',
-        party: ['ilse', 'ren', 'tobb'],
+        party: ['hesper', 'ilse', 'ren'],
         opposition: { kind: 'force', who: ['long-board'], name: 'GAVE, AND IS OWED' },
-        extras: ['hesper'],
         setback: { cue: 'door-blows-open', show: 'The gable door blows open and chalk dust lifts off the board; everyone turns from it to shut the weather out.' },
         beats: [
-          { at: 0, cue: 'the-long-board', name: 'Gave, and is owed', show: 'Daylight through the gable, the hall nearly empty. The chalk board runs the length of the back wall; Hesper stands under it, stage right.' },
+          { at: 0, cue: 'the-long-board', name: 'Gave, and is owed', show: 'Daylight through the gable, the hall nearly empty. The chalk board runs the length of the back wall. Hesper has brought Ilse and Ren to stand under it.' },
           { at: 1, cue: 'weeks-coal', name: 'A week of coal', show: 'A fresh tally is chalked and lit under GAVE. A few of the town have come in to look.' },
           { at: 2, cue: 'owed-a-roof', name: 'Old Bram is owed a roof', show: 'A second tally. More have come in behind the tables.' },
           { at: 3, cue: 'never-square', name: 'Nobody is ever square', show: 'Three tallies lit along the board and half the town standing in the hall. The IS OWED column still has room.' },

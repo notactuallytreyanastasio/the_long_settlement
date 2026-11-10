@@ -180,6 +180,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   for (let i = 0; i < (low ? 4 : 7); i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (3.55 + (i % 4) * 0.52 + r() * 0.14), 0, -1.9 + Math.floor(i / 4) * 0.62 + r() * 0.2], face: sx * -62 });
   const folk = crowd({ spots, material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 5, amount: L.crowd });
   scene.root.add(folk.node);
+  // the hearing: the rest of the island stands in the yard behind whoever is at the threshold (a gap is left down the middle,
+  // so the stove and the net stay in view). They come after the benches are full.
+  let gather = null;
+  if (light === 'hearing') {
+    const gs = [], q = rng(77);
+    for (let i = 0; i < 12; i++) { const sx = i % 2 ? 1 : -1, k = Math.floor(i / 2); gs.push({ pos: [sx * (0.95 + k * 0.52 + q() * 0.1), 0, -1.15 - (k % 3) * 0.42 - q() * 0.12], face: sx * -16, s: 0.9 + q() * 0.08 }); }
+    gather = crowd({ spots: gs, material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 12, amount: 0 });
+    scene.root.add(gather.node);
+  }
 
   // the stove's fire, the light out of the doors
   const fire = node('fire', flame({ r: 0.1, h: 0.2 }), M.lantern, { pos: [FIRE[0], FIRE[1] - 0.12, FIRE[2] + 0.02] }); fire.castShadow = false; scene.root.add(fire);
@@ -198,14 +207,14 @@ function build(engine = GL0, { light, low = false } = {}) {
 
   let crowdAmt = L.crowd, mood = L.mood, moodNow = L.mood, lastT = -1, nextPuff = 0, nextEmber = 0, nextGust = 1, cheer = 0;
   const P = [0, 0, 0], V = [0, 0, 0], S3 = [1, 1, 1], Q = GL0.quat.create(), Mx = m4.create(), rnd = rng(55);
-  const setCrowd = (a) => { crowdAmt = Math.max(0, Math.min(1, a)); folk.setAmount(crowdAmt); }, setMood = (v) => { mood = Math.max(0, Math.min(1, v)); };
+  const setCrowd = (a) => { crowdAmt = Math.max(0, Math.min(1, a)); folk.setAmount(Math.min(1, crowdAmt * 1.5)); if (gather) gather.setAmount(Math.max(0, (crowdAmt - 0.3) / 0.7)); }, setMood = (v) => { mood = Math.max(0, Math.min(1, v)); };
   const CUES = { 'ch4.s2.c01': () => { setCrowd(0.12); setMood(0.25); }, 'ch4.s3.c01': () => setCrowd(0), 'ch4.s5.c01': () => { setCrowd(1); setMood(0.25); }, 'ch4.s5.c04': () => setMood(0.6), 'ch4.s5.c05': () => setMood(0.15), 'ch4.s5.c13': () => { setMood(1); cheer = 1; }, 'ch4.s5.c14': () => setMood(0.4) };
   const cue = (id) => { const f = CUES[id]; if (f) f(); return !!f; };
 
   const FOLK = { lit: 0, lively: 0 };
   function update(time, dt, pw) {
     moodNow += (mood - moodNow) * Math.min(1, dt * 2 + (dt === 0 ? 1 : 0));
-    FOLK.lively = moodNow; folk.update(time, dt, FOLK);
+    FOLK.lively = moodNow; folk.update(time, dt, FOLK); if (gather) gather.update(time, dt, FOLK);
     const fk = 0.9 + 0.1 * Math.sin(time * 10.3) * Math.sin(time * 6.1), on = Math.min(1.4, pw);
     fire.setScale(1, 0.8 + 0.5 * on * fk, 1); fire.visible = pw > 0.05;
     fireGlow.alpha = 0.55 * on * fk; doorGlow.alpha = (night ? 0.3 : 0.1) * on * (0.4 + 0.6 * L.hall / 0.72); ventGlow.alpha = 0.5 * on * (night ? 1 : 0.3);

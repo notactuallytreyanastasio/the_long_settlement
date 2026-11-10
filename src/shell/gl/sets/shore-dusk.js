@@ -85,7 +85,7 @@ const CAMERAS = {
 };
 
 function build(engine = null, { light: lightName = 'dusk', low = false } = {}) {
-  const [light, L] = lightOf('shore-dusk', LIGHTS, lightName);
+  const [light, L] = lightOf('shore-dusk', LIGHTS, ALIAS[lightName] || lightName);
   const M = ch2Materials(), r = rng(1301), night = L.night, brand = L.brand;
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir);
@@ -192,7 +192,7 @@ function build(engine = null, { light: lightName = 'dusk', low = false } = {}) {
     switch (id) {
       case 'ch2.epi.01': setFire(1); return true;
       case 'ch2.epi.13': setFire(0.6); return true;
-      case 'ch2.epi.21': case 'ch2.epi.22': setFire(0.3); return true;
+      case 'ch2.epi.21': case 'ch2.epi.22': case 'ch8.mepi.15': setFire(0.3); return true;
       case 'ch4.s2.c15': setHole(1); return true;
       case 'ch4.s6.c01': setHole(0.5); return true;
       default: return false;
@@ -229,5 +229,7 @@ function build(engine = null, { light: lightName = 'dusk', low = false } = {}) {
   });
 }
 
-export const shoreDusk = { id: 'shore-dusk', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+// chapter 4 asks for Little Brand by a core light name (src/core/stage.js LIGHTS has no 'brand'): 'day' builds it
+const ALIAS = { day: 'brand' };
+export const shoreDusk = { id: 'shore-dusk', lights: [...Object.keys(LIGHTS), ...Object.keys(ALIAS)], cameras: Object.keys(CAMERAS), build };
 export default shoreDusk;

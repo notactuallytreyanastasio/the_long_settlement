@@ -15,7 +15,8 @@
 //   setCrowd(0..1)    how much of the city is on the quay
 //   task('quay-lights') -> { pos, stand: null, set(v) }: the scene-6 encounter (the same in both endings). v 0..1 brings
 //                     the city out of its doors onto the quay with whatever lights it owns, while the sea goes on
-//                     standing up. Asking for it starts from the cap just down: a few people, no boats.
+//                     standing up. Asking for it starts from the cap just down: a few people, no boats. Its `stand` is where
+//                     the walk ends: the water, stage right.
 //   cue(lineId)       ch8.s5.c22 lamp out, sea 0.15; c25 sea 0.6; ch8.s6.c01 / ch8.m6.c01 sea 0.85; ch8.s6.c20 boats out, sea 0.5; ch8.m6.c14 sea 1, the quay nearly empty
 // marks: a, b, c, two, party, opposition, plus focus (the dark lamp), chalk { pos, face }, steps { pos, face } (on the Mint steps)
 
@@ -112,7 +113,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   let sea = 0.85, seaNow = 0.85, lampGoal = 0, lampNow = 0, boatGoal = 0, boatNow = 0;
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
   const setSea = (v) => { sea = clamp01(v); }, setLamp = (v) => { lampGoal = clamp01(v); }, setBoats = (v) => { boatGoal = clamp01(v); }, setCrowd = (v) => folk.setAmount(v);
-  const quayTask = unit8([0.4, 1.3, -2.9], null, (v) => { setCrowd(0.2 + 0.8 * v); setSea(0.5 + 0.35 * v); });
+  const quayTask = unit8([2.3, 1.0, 0.2], [2.0, 0.8], (v) => { setCrowd(0.2 + 0.8 * v); setSea(0.5 + 0.35 * v); });
   const task = (type) => { if (String(type) !== 'quay-lights') return null; setLamp(0); lampNow = 0; setBoats(0); boatNow = 0; setCrowd(0.2); sea = seaNow = 0.5; return quayTask.reset(); };
   function cue(id) { noteLean8(id); const c = CUES[id]; if (!c) return false; if (c.sea != null) setSea(c.sea); if (c.lamp != null) setLamp(c.lamp); if (c.boats != null) setBoats(c.boats); if (c.crowd != null) setCrowd(c.crowd); return true; }
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(17);

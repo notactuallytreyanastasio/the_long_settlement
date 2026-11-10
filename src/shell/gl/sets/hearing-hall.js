@@ -292,7 +292,7 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     }
   }
 
-  return setShell({
+  const built = setShell({
     id: 'hearing-hall', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     marks: {
       ...MARKS, edge: { pos: [0.45, 0, -1.02], face: 180 }, table: { pos: [TABLE[0] + 0.1, 0, TABLE[2] + 0.75], face: 172 },
@@ -301,6 +301,10 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     },
     extra: { setCrowd, setStanding, standOne, setGallery, placeShell, task, cue },
   });
+  // who stands where beside the party, by the thing the scene is about (three scenes share this hall)
+  const EXTRAS = { 'silent-house': [{ pos: [1.9, 0, 0.7], face: -58 }], gallery: [null, { pos: [2.5, 0, 0.35], face: -50 }], 'the-record': [{ pos: [1.8, 0, 0.7], face: -58 }] };
+  built.encounter = (st) => { const who = st && st.opposition && st.opposition.who ? st.opposition.who[0] : ''; built.marks.extras = EXTRAS[who] || null; if (who === 'the-record') placeShell(false); };
+  return built;
 }
 
 // the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'

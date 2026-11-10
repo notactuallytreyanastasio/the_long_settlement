@@ -136,6 +136,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   function cue(id) {
     if (id === 'ch2.pro.02') { setTide(0.55); return true; }
     if (id === 'ch2.pro.19') { setTide(0.9); return true; }
+    if (id === 'ch8.epi.08') { setTide(0.1); return true; }   // low water, kelp drying the length of the road
     return false;
   }
   const TASK = { pos: [0, 0.3, -6], set(v) { setTide(0.4 + 0.6 * v); } };

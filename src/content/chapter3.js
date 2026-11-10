@@ -31,8 +31,9 @@ export const chapter3 = {
       black: { set: 'black', light: 'night' },
     },
     clerk: 'clerk',
-    townsfolk: 'townsman',
+    townsfolk: 'cadet',
   },
+
 
 
   // ───────────────────────── prologue ─────────────────────────
@@ -174,7 +175,7 @@ export const chapter3 = {
         extras: ['thorne'],
         setback: { cue: 'a-cough', show: 'Somebody coughs and two thousand heads turn to see who; Ilse waits for the house to settle.' },
         beats: [
-          { at: 0, cue: 'house-filling', name: 'The house is filling', show: 'Ilse at the lip of the stage, Ren and Tobb behind her, Thorne stage right. The back rows of the auditorium are taken; the front is empty velvet.' },
+          { at: 0, cue: 'house-filling', name: 'The house is filling', show: 'Ilse at the lip of the stage, Ren and Tobb behind her, Thorne standing off stage right. The back rows of the auditorium are taken; the front is empty velvet.' },
           { at: 1, cue: 'by-rows', name: 'By rows, in step', show: 'Two thirds of the seats are filled, row upon row.' },
           { at: 2, cue: 'every-seat', name: 'Every seat by ten', show: 'Every seat is taken to the front row. Nobody has a hand raised.' },
           { at: 3, cue: 'all-rise', name: 'All rise', show: 'The whole house is on its feet for the Tribune, and silent.' },
@@ -252,12 +253,11 @@ export const chapter3 = {
       // STAGE: Not a fight. A tally under a bunk, and a dormitory of boys reading their own contracts for the first time.
       encounter: {
         set: 'dormitory', light: 'interior', mode: 'talk',
-        party: ['ren', 'ansel'],
+        party: ['ren', 'ansel', 'ilse'],
         opposition: { kind: 'force', who: ['indentures'], name: 'THE INDENTURES' },
-        extras: ['ilse'],
         setback: { cue: 'step-in-the-passage', show: 'A step goes by in the passage; every boy looks at the door and Ren waits for it to pass.' },
         beats: [
-          { at: 0, cue: 'bed-nineteen', name: 'Bed nineteen', show: 'Iron bunks down both sides, one gas lamp. Ren and Ansel in the lobby arch; Ilse stands by the pegs, stage right, being furniture.' },
+          { at: 0, cue: 'bed-nineteen', name: 'Bed nineteen', show: 'Iron bunks down both sides, one gas lamp. Ren and Ansel in the lobby arch, Ilse a pace behind them, being furniture.' },
           { at: 1, cue: 'two-tallies', name: 'Two tallies', show: 'The scratched tally under the frame of bed nineteen shows lit.' },
           { at: 2, cue: 'own-copy', name: 'Every boy his own copy', show: 'Boys sit on the foot of their bunks down half the room, each holding his contract in both hands.' },
           { at: 3, cue: 'the-back-page', name: 'Turn to the back', show: 'Every bunk has a boy on it and every boy a paper. The tally is bright.' },
@@ -513,12 +513,12 @@ export const chapter3 = {
       // STAGE: Not a fight. The same two thousand, and the children put up in the gallery.
       encounter: {
         set: 'hearing-hall', light: 'interior', mode: 'talk',
-        party: ['ilse', 'ren'],
+        party: ['ilse', 'ansel', 'ren'],
         opposition: { kind: 'force', who: ['gallery'], name: 'THE GALLERY' },
-        extras: ['thorne', 'ansel'],
+        extras: ['underwriter', 'thorne'],
         setback: { cue: 'clause-fourteen', show: 'Company counsel rises with an indenture open at clause fourteen; the cadets shrink back from the rail.' },
         beats: [
-          { at: 0, cue: 'resumed', name: 'The hearing is resumed', show: 'The house full and seated as before; the gallery above it empty. Ilse at the lip of the stage, Ren behind her. Thorne and a small cadet stage right.' },
+          { at: 0, cue: 'resumed', name: 'The hearing is resumed', show: 'The house full and seated as before; the gallery above it empty. Ilse at the lip of the stage with Ansel and Ren behind her. Company counsel and Thorne stand stage right.' },
           { at: 1, cue: 'put-upstairs', name: 'Where children are put', show: 'Cadets have filed in along half the gallery rail.' },
           { at: 2, cue: 'bench-creaks', name: 'A bench creaks', show: 'The gallery rail is lined with cadets from end to end. The house below has not moved.' },
         ],

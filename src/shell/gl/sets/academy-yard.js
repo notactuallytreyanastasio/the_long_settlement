@@ -319,12 +319,15 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   }
 
   update(0, 0);
-  return {
+  const built = {
     id: 'academy-yard', light, scene, env, actors, foreground,
     cameras: CAMERAS, frame: rig.frame, view: rig.view,
     marks: { ...MARKS, quay: { pos: [4.6, 0, WALL_Z + 0.75], face: 150 }, gate: { pos: [TOWER[0], 0, TOWER[2] + 0.9], face: 0 }, banner: BOB, lamp: LAMP, focus: BOB },
     lamps, setPower, setRanks, setEscort, task, cue, update,
   };
+  // ch3.s1: Thorne and two proctors review the parade from the back of the avenue
+  built.encounter = () => { built.marks.extras = [{ pos: [-0.4, 0, 0.0], face: 8 }, { pos: [0.5, 0, -0.05], face: 0 }, { pos: [1.4, 0, 0.0], face: -8 }]; };
+  return built;
 }
 
 // the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'

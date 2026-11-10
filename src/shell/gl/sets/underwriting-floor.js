@@ -253,7 +253,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     if (!low && time > nextMote) { nextMote = time + 0.3; const u = rnd(), w = WINS[Math.floor(rnd() * 3)]; P[0] = w.x + u * 2.2 + (rnd() - 0.5) * 0.8; P[1] = 4.9 - u * 4.5; P[2] = BACK + 0.4 + u * 3.6; V[0] = 0.03; V[1] = -0.02; V[2] = 0.04; sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.05 + rnd() * 0.05, life: 6, color: '#dfe8ff', alpha: 0.7 }); }
   }
 
-  return setShell({
+  const built = setShell({
     id: 'underwriting-floor', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     marks: {
       ...MARKS, drawer: { pos: [DRAWER_TASK.stand[0], 0, DRAWER_TASK.stand[1]], face: 200 }, returns: { pos: [RET_TASK.stand[0], 0, RET_TASK.stand[1]], face: -110 },
@@ -261,6 +261,8 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     },
     extra: { openDrawer, setClerk, send, task, cue },
   });
+  built.encounter = () => { roundV = 0; retOn = 0; setClerk(true); openDrawer(0); };
+  return built;
 }
 
 export const underwritingFloor = { id: 'underwriting-floor', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };

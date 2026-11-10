@@ -189,7 +189,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     });
     return (ropeUnit = u);
   }
-  const setback = () => { surfNow = 1.35; P[0] = (ropeUnit ? ropeUnit.pos[0] : 0) - 1.4; P[1] = 0.05; P[2] = 0.95; sprites.splash(P, { size: 2.6, life: 1.2, spray: 9, color: '#ffffff' }); sprites.puff(P, { count: 6, size: 0.6, rise: 1.8, spread: 1.1, life: 1.1, color: '#f4ecff' }); };
+  const setback = () => { surfNow = 1.35; P[0] = (ropeUnit ? ropeUnit.pos[0] : 0) - 1.4; P[1] = 0.05; P[2] = 0.95; sprites.splash(P, { size: 2.6, life: 1.2, spray: 9, color: '#ffffff' }); sprites.puff(P, { count: 4, size: 0.26, rise: 1.3, spread: 0.8, life: 0.9, color: '#f4ecff' }); };
 
   return c4Shell({
     id: 'wreck-shore', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,

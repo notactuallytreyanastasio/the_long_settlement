@@ -200,7 +200,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   }
   const TASK = { pos: [DOOR[0], 1.0, DOOR[2] + 0.2], stand: [DOOR[0] - 0.5, DOOR[2] + 1.2], set: openDoor };
   // ch2.s1's encounter (the walk up the road): the line fills and closes up as the party comes on; the door stays shut
-  const LINE = { pos: [NOTICE[0], NOTICE[1], NOTICE[2] + 0.3], set(v) { openDoor(0); setCrowd(0.25 + 0.75 * v); setMood(0.18 + 0.42 * v); } };
+  const LINE = { pos: [1.5, 1.0, 0.0], size: 0.8, set(v) { openDoor(0); setCrowd(0.25 + 0.75 * v); setMood(0.18 + 0.42 * v); } };
   const task = (type) => (type === 'side-door' ? TASK : type === 'picket-line' ? LINE : null);
   function tick(time, dt, pw, live) {
     doorNow += (door - doorNow) * Math.min(1, dt * 4);
@@ -219,7 +219,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     if (!low && time > nextGust) { nextGust = time + 3.2 + rnd() * 2; P[0] = -6 + rnd() * 5; P[1] = 2.5 + rnd() * 3; P[2] = -5 + rnd() * 4; V[0] = 1.8; V[1] = 0.1; V[2] = 0.2; sprites.gust(P, { vel: V, size: 1 + rnd() * 0.5, life: 2.2, alpha: 0.7, color: night ? '#c6d6ff' : '#fff6e6' }); }
   }
 
-  return shell({
+  const built = shell({
     id: 'picket', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, fire, tick, house: false,
     marks: {
       ...stageMarks(), focus: fireAt[0], notice: NOTICE,
@@ -228,6 +228,9 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     },
     extra: { openDoor, setCrowd, setMood, cue, task, crowd: folk },
   });
+  // ch2.s1: the two miners and Hesper stand the line in front of the gate; the party walks up to them
+  built.encounter = () => { built.marks.extras = [{ pos: [0.7, 0, 0.12], face: -20 }, { pos: [1.5, 0, 0.02], face: -30 }, { pos: [2.35, 0, 0.3], face: -50 }]; };
+  return built;
 }
 
 export const picket = { id: 'picket', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };

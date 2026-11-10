@@ -214,15 +214,15 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     return false;
   }
   // ---- ch2.s2's encounter: three red-sealed notices propped on a trestle at the back of the strip; each gets its four-word reply
-  const NX = [0.95, 1.7, 2.45], NZ = 0.02, NY = 1.02;
-  scene.root.add(node('notice-trestle', merge(tint(place(box(2.3, 0.07, 0.5), 1.7, 0.74, NZ), SM.timberPale), tint(place(box(0.08, 0.74, 0.42), 0.7, 0.37, NZ), SM.timberDark), tint(place(box(0.08, 0.74, 0.42), 2.7, 0.37, NZ), SM.timberDark), tint(place(box(2.0, 0.06, 0.06), 1.7, 0.3, NZ), SM.timberDark)), M.prop, { visible: night }));
-  const noticeNodes = NX.map((x, i) => { const n = node('red-notice' + i, notice({ s: 0.5 }), M.prop, { pos: [x, NY, NZ + 0.12], rot: [-14, (i - 1) * -6, 0], visible: night }); n.castShadow = false; scene.root.add(n); return n; });
+  const NX = [0.75, 1.5, 2.25], NZ = 0.35, NY = 0.96;
+  scene.root.add(node('notice-trestle', merge(tint(place(box(2.3, 0.07, 0.5), 1.5, 0.7, NZ), SM.timberPale), tint(place(box(0.08, 0.7, 0.42), 0.5, 0.35, NZ), SM.timberDark), tint(place(box(0.08, 0.7, 0.42), 2.5, 0.35, NZ), SM.timberDark), tint(place(box(2.0, 0.06, 0.06), 1.5, 0.28, NZ), SM.timberDark)), M.prop, { visible: night }));
+  const noticeNodes = NX.map((x, i) => { const n = node('red-notice' + i, notice({ s: 0.44 }), M.prop, { pos: [x, NY, NZ + 0.1], rot: [-12, (i - 1) * -6, 0], visible: night }); n.castShadow = false; scene.root.add(n); return n; });
   const replyNodes = NX.map((x, i) => { const n = node('reply' + i, merge(setGlow(tint(place(box(0.34, 0.2, 0.012), 0, 0, 0), '#fff8dc'), 0.5), ...[0, 1].map((k) => setOutline(tint(place(box(0.24 - k * 0.06, 0.022, 0.004), -k * 0.03, 0.035 - k * 0.07, 0.009), '#2a3f8f'), 0))), M.prop, { pos: [x + 0.03, NY - 0.1, NZ + 0.2], rot: [-14, (i - 1) * -6, 6 - i * 5], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
   const replyGlows = NX.map((x) => sprites.add({ kind: 'glow', pos: [x, NY, NZ + 0.3], size: 0.9, color: '#fff2b0', alpha: 0 }));
   const replyV = [0, 0, 0];
-  const NOTICES = NX.map((x, i) => ({ pos: [x, NY, NZ + 0.15], stand: [x - 0.42, NZ + 0.62], set(v) { replyV[i] = v; replyNodes[i].visible = v > 0.97; replyGlows[i].alpha = v > 0.97 ? 0.5 : v * 0.25; } }));
+  const NOTICES = NX.map((x, i) => ({ pos: [x, NY, NZ + 0.15], stand: [x - 0.62, NZ + 0.42], size: 0.4, set(v) { replyV[i] = v; replyNodes[i].visible = v > 0.97; replyGlows[i].alpha = v > 0.97 ? 0.5 : v * 0.25; } }));
   // ---- ch2.s7's encounter: the town comes in to look at its board, and three fresh entries are chalked on it
-  const entries = [['COAL', -3.9, -0.86], ['A ROOF', 0.7, -0.86], ['SALT', -1.9, -0.86]].map(([s, x, y], i) => { const n = node('entry' + i, pixelText(s, { s: 0.22, color: '#fff0a0', glow: 0.75, align: 'left', jitter: 0.1, seed: i + 11 }), M.flat, { pos: [BOARD[0] + x, BOARD[1] + y, BOARD[2] + 0.02], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
+  const entries = [['COAL', -3.3, 0.1], ['A ROOF', 0.9, 0.1], ['SALT', -1.6, -0.35]].map(([s, x, y], i) => { const n = node('entry' + i, pixelText(s, { s: 0.3, color: '#fff0a0', glow: 0.8, align: 'left', jitter: 0.1, seed: i + 11 }), M.flat, { pos: [BOARD[0] + x, BOARD[1] + y, BOARD[2] + 0.02], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
   let boardV = 0;
   const LONG_BOARD = { pos: [BOARD[0] - 1.5, BOARD[1] - 0.3, BOARD[2] + 0.1], set(v) { const c = 0.25 + 0.35 * v; if (Math.abs(c - want) > 0.004) setCrowd(c); for (let i = 0; i < 3; i++) { const on = v * 3 > i + 0.97; if (on && !entries[i].visible) sprites.sparkle(entries[i].position, { count: 5, size: 0.3, spread: 0.6, life: 0.9, color: '#fff6c0' }); entries[i].visible = on; } boardV = v; } };
   const task = (type, i = 0) => (type === 'red-notice' ? NOTICES[i] || null : type === 'long-board' ? LONG_BOARD : null);
@@ -234,7 +234,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   }
 
   const SM_MARKS = stageMarks();
-  return shell({
+  const built = shell({
     id: 'commons-hall', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     motes: low ? null : { box: [-1.6, 1.6, 0.8, 4.6, BACK + 0.6, -0.2], every: 0.35, color: L.mote, size: 0.06, vel: [0.02, -0.03, 0.05], life: 6, alpha: 0.75 },
     marks: {
@@ -245,6 +245,8 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     },
     extra: { setCrowd, setNames, cue, task, crowd: folk },
   });
+  built.encounter = () => { for (let i = 0; i < 3; i++) { replyV[i] = 0; replyNodes[i].visible = false; entries[i].visible = false; } };
+  return built;
 }
 
 export const commonsHall = { id: 'commons-hall', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };

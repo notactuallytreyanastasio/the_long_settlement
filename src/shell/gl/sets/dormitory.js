@@ -254,7 +254,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
     if (time > nextEmber) { nextEmber = time + 0.4; P[0] = lampPos[0] + (rnd() - 0.5) * 2.2; P[1] = 0.4 + rnd() * 2.4; P[2] = lampPos[2] + (rnd() - 0.5) * 2.6; V[0] = 0.03; V[1] = 0.05; V[2] = 0.02; sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.05 + rnd() * 0.04, life: 5, color: '#ffd890', alpha: 0.7 }); }
   }
 
-  return setShell({
+  const built = setShell({
     id: 'dormitory', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     marks: {
       ...MARKS, bed19: { pos: [B19.pos[0] - 0.55, 0, B19.pos[2] + 0.85], face: 30 }, tally: TASK.pos,
@@ -262,6 +262,8 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
     },
     extra: { setCadets, vote, task, cue },
   });
+  built.encounter = () => { tallyOn = 0; vote(0); };
+  return built;
 }
 
 // the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'

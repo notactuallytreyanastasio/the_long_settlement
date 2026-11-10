@@ -186,7 +186,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     }
   }
 
-  return shell({
+  const built = shell({
     id: 'court', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     motes: low ? null : { box: [-3.5, 3.5, 0.8, 4.8, BACK + 0.8, 0.6], every: 0.22, color: '#fff2c0', size: 0.06, vel: [0.05, -0.03, 0.03], life: 6, alpha: 0.8 },
     marks: {
@@ -196,6 +196,9 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     },
     extra: { setMood, setCrowd, cue, task, crowd: folk },
   });
+  // ch2.s4: the Assessor answers from his own side of the floor
+  built.encounter = () => { built.marks.extras = [{ pos: [1.7, 0, 0.75], face: -58 }]; };
+  return built;
 }
 
 export const court = { id: 'court', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };

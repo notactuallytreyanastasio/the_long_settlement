@@ -16,7 +16,7 @@
 //   task('watch-round') -> { pos (his lantern), stand, set(v) }: the scene-3 encounter. A watchman with a lantern stands his
 //                       post mid-floor at v 0 and has gone off down the stair by v 1. Asking for it posts him and hangs the cap.
 //   task('pinned-order') -> { pos, stand, set(v) }: the order pinned to the winch; v 0..1 brings it up out of the dark
-//   passLamp()          the encounter's setback: the watchman turns back with his lantern for a moment
+//   setback() / passLamp()   the encounter's setback: the watchman turns back with his lantern for a moment
 // Light names: 'lit' (the default: the core's 'night' builds it) and 'dark'.
 // marks: a, b, c, two, party, opposition, plus focus (the flame), winch, hopper, door { pos, face }, order (the pinned order)
 
@@ -167,7 +167,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     if (t === 'pinned-order') return orderTask.reset();
     return /cap|lamp|winch|flame/.test(t) ? capTask : null;
   };
-  const cue = (id) => { noteLean8(id); if (id in CUES) { setCap(CUES[id]); watchGoal = 1; return true; } if (/^ch8\.s3\./.test(id)) { setCap(1); watchGoal = 1; orderGoal = 1; return true; } return false; };
+  const cue = (id) => { noteLean8(id); if (id in CUES) { setCap(CUES[id]); watchGoal = 1; return true; } if (/^ch8\.s3\.c/.test(id)) { setCap(1); watchGoal = 1; orderGoal = 1; return true; } return false; };     // .c: cutscene lines only (briefings and barks come through cue too)
   const P = [0, 0, 0], rnd = rng(31);
   function tick(time, dt, pw, live) {
     capNow += (capGoal - capNow) * Math.min(1, dt * 1.6 + (dt === 0 ? 1 : 0));
@@ -208,7 +208,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     id: 'founders-lamp', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, house: 0.6,
     motes: low ? null : { box: [-3.5, 3.5, 0.3, 4.2, -4.5, 1.2], every: 0.35, color: '#dfeaff', size: 0.07, vel: [0.02, 0.08, 0.03], life: 5, alpha: 0.7 },
     marks: { ...marks8(), focus: FOCUS, winch: { pos: [WINCH[0] - 0.95, 0, WINCH[2] + 0.75], face: 120 }, hopper: { pos: [HOP[0] - 0.2, 0, HOP[2] + 1.3], face: 170 }, door: { pos: [DP[0] + 1.3, 0, DP[2] + 0.6], face: 60 }, order: ORDER },
-    extra: { setCap, task, cue, passLamp },
+    extra: { setCap, task, cue, passLamp, setback: passLamp },
   });
 }
 

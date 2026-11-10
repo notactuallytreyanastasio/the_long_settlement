@@ -213,7 +213,7 @@ function build(engine = null, { light: lightName = 'dawn', low = false } = {}) {
     if (time > nextEmber) { nextEmber = time + 0.5; P[0] = fire[0] + (rnd() - 0.5) * 0.2; P[1] = fire[1] + 0.1; P[2] = fire[2] + 0.05; V[0] = (rnd() - 0.5) * 0.1; V[1] = 0.35 + rnd() * 0.3; V[2] = 0.1; sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.05 + rnd() * 0.04, life: 1.4, color: '#ffb050', alpha: 0.9 }); }
   }
 
-  return setShell({
+  const built = setShell({
     id: 'proctor-office', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     marks: {
       ...MARKS, seat: { pos: [SEAT[0], 0, SEAT[2]], face: DESK_YAW }, guest: { pos: GUEST, face: 155 }, desk: { pos: [TASK.stand[0], 0, TASK.stand[1]], face: 160 },
@@ -221,6 +221,9 @@ function build(engine = null, { light: lightName = 'dawn', low = false } = {}) {
     },
     extra: { placeFolder, setLine, lightLamp, task },
   });
+  // ch3.s5: Thorne waits standing at the corner of her desk
+  built.encounter = () => { built.marks.extras = [{ pos: [1.6, 0, 0.6], face: -58 }]; placeFolder(false); setLine(1); };
+  return built;
 }
 
 export const proctorOffice = { id: 'proctor-office', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };

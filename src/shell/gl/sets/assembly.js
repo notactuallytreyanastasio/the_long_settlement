@@ -18,6 +18,11 @@
 //   task('casting-vote') -> { pos (the treaty), stand: null, set(v) }: the scene-7 encounter, in quarters: the house
 //                       finds its seats (half of it after THE SUM: kit-ch8 lean8()), one arm of the horseshoe stands,
 //                       then the other, then all sit and the treaty on its table is lit.
+//   encounter(st)       (the director, at a scene's setup) everyone seated, cloths on, the eye white
+//   setback(cue)        uproar: for a second and a half a scatter of the house is on its feet
+//   marks.extras        where an encounter's delegates stand on the floor (the director pins them there: they are who a
+//                       'talk' is addressed to, and a pinned extra does not come at the party on a drain)
+//   cue(lineId)         also hears briefing and bark ids in play: a scene-7 briefing tells it which ending this is
 // Light names: 'noon' (the default: the core's 'day' builds it) and 'grey'.
 //   cue(lineId)         ch8.s5.c21 the eye goes grey; ch8.s7.c13 on, the drapes come off; ch8.m7.* half the house
 // marks: a, b, c, two, party, opposition, plus focus (the treaty), lectern { pos, face }, bar { pos, face },
@@ -146,7 +151,10 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     const full = lean8() === 'mint' ? 0.5 : 1, sat = ss(0.8, 0.98, v);
     setHouse(full * (0.4 + 0.6 * ss(0, 0.24, v))); arms[0] = ss(0.3, 0.5, v) * (1 - sat); arms[1] = ss(0.56, 0.75, v) * (1 - sat); treaty = sat;
   });
-  const fresh = () => { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; treaty = 0; setSky(1); skyNow = 1; setDraped(12); };
+  const fresh = () => { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; treaty = 0; uproar = 0; setSky(1); skyNow = 1; setDraped(12); };
+  let uproar = 0;
+  const encounter = () => { fresh(); setHouse(1); };
+  const setback = () => { uproar = 1.5; };
   const task = (type, i = 0) => {
     const t = String(type);
     if (t === 'seat-block' && blockTasks[i]) { if (i === 0) { fresh(); setHouse(1); houseNow = 1; for (const u of blockTasks) u.reset(); } return blockTasks[i]; }
@@ -155,7 +163,11 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   };
   function cue(id) {
     noteLean8(id);
-    if (/^ch8\.(s5|s7|m7)\./.test(id)) { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; treaty = /^ch8\.(s7|m7)\./.test(id) ? 1 : 0; }
+    if (!/^ch8\.[a-z0-9]+\.c\d+$/.test(id)) {        // a briefing or a bark, spoken in play: only the scene-7 briefing matters (it says which ending)
+      if (/^ch8\.[sm]7\.b/.test(id)) voteTask.reset();
+      return false;
+    }
+    if (/^ch8\.(s5|s7|m7)\./.test(id)) { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; uproar = 0; treaty = /^ch8\.(s7|m7)\./.test(id) ? 1 : 0; }
     if (id === 'ch8.s5.c21') { setSky(0); return true; }
     let m = /^ch8\.s7\.c(\d+)/.exec(id); if (m) { setSky(1); setHouse(1); setDraped(Number(m[1]) >= 13 ? 0 : 12); return true; }
     m = /^ch8\.m7\./.exec(id); if (m) { setSky(1); setHouse(0.5); setDraped(12); return true; }
@@ -173,9 +185,10 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     for (let i = 0; i < 12; i++) { const want = i < draped ? 1 : 0; cloth[i] += (want - cloth[i]) * Math.min(1, dt * 3 + e); if (cloth[i] < 0.03) continue; const s = dead[i]; putInst(drapes.instances, nd++, s.pos[0], s.pos[1], s.pos[2], 0, s.face, 0, 1, 0.15 + 0.85 * cloth[i], 1, 0.7, 0.73, 0.92); }
     drapes.instances.count = nd; drapes.visible = nd > 0;
     let np = 0;
+    uproar = Math.max(0, uproar - dt);
     treatyNow += (treaty - treatyNow) * Math.min(1, dt * 2.5 + e); treatyGlow.alpha = 0.85 * treatyNow * (0.9 + 0.1 * Math.sin(time * 4));
     for (let i = 0; i < people.length; i++) {
-      const p = people[i], want = Math.max(rise[p.block], arms[p.arm]);
+      const p = people[i], want = Math.max(rise[p.block], arms[p.arm], uproar > 0 && ((i * 7 + Math.floor(time * 3)) % 5 === 0) ? 1 : 0);
       p.up += (want - p.up) * Math.min(1, dt * (2.2 + p.k * 2) + e);
       if (p.order > houseNow + 0.001 && houseNow < 0.999) continue;
       // on his feet he is taller, turned to the floor of the house, and out of the shade of his seat
@@ -192,8 +205,9 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     marks: {
       ...marks8(), focus: FOCUS, lectern: { pos: [LEC[0], 0, LEC[2] + 0.95], face: 180 }, bar: { pos: [4.2, 0, 0.8], face: -70 }, gallery: { pos: [Math.sin(34 * DEG) * (RW - 0.95), GAL_Y, CZ - Math.cos(34 * DEG) * (RW - 0.95)], face: -34 },
       draped: dead.map((s) => [s.pos[0], s.pos[1], s.pos[2]]),
+      extras: [{ pos: [0.62, 0, 0.8], face: -58 }, { pos: [1.9, 0, 0.72], face: -62 }, { pos: [1.28, 0, 0.12], face: -50 }],
     },
-    extra: { setSky, setDraped, setHouse, cue, task },
+    extra: { setSky, setDraped, setHouse, cue, task, encounter, setback },
   });
 }
 

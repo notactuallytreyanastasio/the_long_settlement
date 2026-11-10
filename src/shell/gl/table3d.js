@@ -408,7 +408,8 @@ function paintFunctional(kit, layout, at = {}) {
   }
   for (const r of table.rollovers) {
     socket(r.pos[0], r.pos[1], Math.min(r.r, 11) * 0.82);
-    const lab = table.labels[r.id]; if (lab) plate(r.id, lab, r.pos[0], r.pos[1] + Math.min(r.r, 11) + 10, 7.5);
+    // an inlane's guide stands in front of anything below its lamp: its plate goes above
+    const lab = table.labels[r.id]; if (lab) plate(r.id, lab, r.pos[0], r.pos[1] + (/^in[LR]$/.test(r.id) ? -19 : Math.min(r.r, 11) + 10), 7.5);
   }
   for (const sc of table.saucers) {
     g.fillStyle = P.ink; g.beginPath(); g.arc(sc.pos[0], sc.pos[1], sc.r + 3, 0, 7); g.fill();
@@ -1376,6 +1377,7 @@ registerTableArt('vessery', {
   palette: { sea: ['#2b86dc', '#35b0e6', '#5fdad4'] },
   groups: { lanterns: '#ff9a3d', seals: '#5b8cf0' },
   glints: [[70, 350, 300, 560], [130, 560, 245, 700]],
+  labelAt: { dockOrbit: [256, 470] },   // the pier ramp's wire comes down over where this plate would sit
   paint(k) {
     const { g, P } = k;
     k.sea(P.sea);
