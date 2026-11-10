@@ -195,7 +195,7 @@ async function boot() {
     sfx(e) { audio.sfx(e.name, e.vol === undefined ? 1 : e.vol); },
     music(e) { audio.music(e.mood); },
     shake(e) { fx.shake = Math.min(1, Math.max(fx.shake, e.power)); },
-    flash(e) { fx.flash = { color: e.color, a: 0.7 }; },
+    flash(e) { fx.flash = { color: e.color, a: 0.45 }; },
     save(e) { writeSave(e.save); },
   };
 

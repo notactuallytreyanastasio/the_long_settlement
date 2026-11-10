@@ -58,6 +58,9 @@ const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 
 const REEL_SPEED = 16; // symbols per second
 const REEL_DECEL = 0.3;
 
+const PLATE_MS = 2400;
+const PLATE_KINDS = new Set(['payout', 'jackpot', 'bust']);
+
 /** Symbols still to pass under the payline for a cell with `spin` seconds left to turn. */
 export function reelRemaining(spin) {
   if (!(spin > 0)) return 0;
@@ -444,6 +447,7 @@ export function createRenderer(canvas) {
     eased: { marks: null, score: null, trust: null, debt: null, lean: null },
     touch: false, // true on a touch device: say "tap" and "hold", not key names
     toastSeen: new Map(), // kind|text -> timeMs first seen
+    plate: { result: null, since: 0 }, // the last paid line, kept up long enough to read
     elems: new Map(), // table id -> Map(element id -> [x,y])
     rails: new Map(), // table id|shot id -> {left, right}
     locked: [null, null, null], // per reel: timeMs it was seen to stop
@@ -2359,11 +2363,41 @@ export function createRenderer(canvas) {
     }
   }
 
-  // Toasts, newest last, as pills centred on cx from y downward.
+  // The button sits over the foot of the plunger lane. A ball waiting there is drawn again
+  // on top of the button's rim, where it really is, so it is never hidden.
+  function drawWaitingBall(g, b, T, table, game) {
+    if (!game.phys) return;
+    const r = table.ballRadius * T.scale;
+    for (const ball of game.phys.balls) {
+      if (ball.state !== 'plunger') continue;
+      const x = T.x + ball.pos[0] * T.scale;
+      const y = T.y + ball.pos[1] * T.scale;
+      if (Math.hypot(x - b.x, y - b.y) > b.r + r + 8) continue;
+      glow(g, x, y, r * 2.6, LANTERN, 0.5);
+      const sprite = layer(`waitingBall:${r.toFixed(2)}`, r * 2 + 2, r * 2 + 2, view.ds, (c) => {
+        const m = r + 1;
+        const gr = c.createRadialGradient(m - r * 0.35, m - r * 0.4, r * 0.1, m, m, r);
+        gr.addColorStop(0, '#ffffff');
+        gr.addColorStop(0.35, '#c9d0d8');
+        gr.addColorStop(1, '#4b5560');
+        c.fillStyle = gr;
+        c.beginPath();
+        c.arc(m, m, r, 0, TAU);
+        c.fill();
+        c.strokeStyle = 'rgba(0,0,0,0.6)';
+        c.lineWidth = 1;
+        c.stroke();
+      });
+      g.drawImage(sprite, x - r - 1, y - r - 1, r * 2 + 2, r * 2 + 2);
+    }
+  }
+
+  // Toasts, newest last, as pills centred on cx from y downward. The kinds the pay plate
+  // already names are left to it.
   function drawToasts(g, game, cx, y, maxW, maxN, threadCol, now) {
     const toasts = game.toasts || [];
     const live = new Set();
-    toasts.slice(-maxN).forEach((t, i) => {
+    toasts.filter((t) => !PLATE_KINDS.has(t.kind)).slice(-maxN).forEach((t, i) => {
       const key = `${t.kind}|${t.text}`;
       live.add(key);
       if (!view.toastSeen.has(key) || view.toastSeen.get(key) > now) view.toastSeen.set(key, now);
@@ -2390,9 +2424,16 @@ export function createRenderer(canvas) {
   }
 
   // The payout, named over the foot of the reel window while the line pays.
+  // The core shows a paid line for PAY_SECONDS and then clears the cells; the plate stays
+  // up for PLATE_MS so the name can be read, and returns whether it was drawn.
   function drawPayPlate(g, reels, cx, y, w, now) {
-    if (reels.phase !== 'paying') return;
-    const payout = reels.result.payout;
+    if (reels.phase === 'paying') {
+      if (view.plate.result !== reels.result) view.plate = { result: reels.result, since: now };
+    } else if (view.plate.result && (now - view.plate.since > PLATE_MS || now < view.plate.since || reels.source !== null)) {
+      view.plate = { result: null, since: 0 };       // read, or the reels are busy with a new line
+    }
+    if (!view.plate.result) return false;
+    const payout = view.plate.result.payout;
     const win = pays(payout);
     const flash = 0.5 + 0.5 * Math.sin(now / 90);
     const col = win ? BRASS_HI : A(PAPER, 0.8);
@@ -2411,6 +2452,7 @@ export function createRenderer(canvas) {
     g.fillStyle = win ? LANTERN : A(PAPER, 0.5);
     g.fillText(gains.length ? gains.join(' · ').toUpperCase() : 'NOTHING ALLOTTED', cx, y + 36, w - 16);
     g.textAlign = 'left';
+    return true;
   }
 
   function drawPlayP(g, L, content, game, fx, dt) {
@@ -2459,10 +2501,10 @@ export function createRenderer(canvas) {
     drawHudP(g, L, dy, game, chapter, table, now, dt, marquee);
     drawStoryP(g, L, dy, content, game, fx, table, scene, threadCol, now);
     // on the glass under the head: what the line paid, then the callouts
-    const paying = reelsOf(game).phase === 'paying';
-    drawPayPlate(g, reelsOf(game), L.W / 2, L.table.y + dy + 8, 310, now);
+    const paying = drawPayPlate(g, reelsOf(game), L.W / 2, L.table.y + dy + 8, 310, now);
     drawToasts(g, game, L.W / 2, L.table.y + dy + (paying ? 58 : 8), L.W - 80, 2, threadCol, now);
     drawLaunch(g, L.launch, state, now);
+    drawWaitingBall(g, L.launch, T, table, game);
     drawMute(g, L.mute, Boolean(fx.muted));
   }
 

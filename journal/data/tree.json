@@ -7296,13 +7296,13 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 15552,
+  "bytes": 15553,
   "lines": 359
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 135082,
-  "lines": 3539
+  "bytes": 137110,
+  "lines": 3581
  },
  {
   "path": "src/shell/voice.js",
