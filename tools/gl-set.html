@@ -52,7 +52,7 @@ try {
   const placeDummies = () => {
     while (dummies.children.length) dummies.remove(dummies.children[0]);
     if (q.get('dummies') === '0') return;
-    const spots = camName === 'stage' ? [...set.marks.party, ...set.marks.opposition] : [set.marks.a, set.marks.b, set.marks.c];
+    const spots = camName === 'stage' ? [...set.marks.party, ...set.marks.opposition] : camName === 'two' ? set.marks.two : camName === 'close' ? [set.marks.b] : [set.marks.a, set.marks.b, set.marks.c];
     spots.forEach((m, i) => dummies.add(GL.node('dummy' + i, mannequin({ coat: coats[i], h: 1.0 + (i % 3) * 0.08 }), figMat, { pos: m.pos, rot: [0, m.face, 0] })));
   };
   placeDummies();

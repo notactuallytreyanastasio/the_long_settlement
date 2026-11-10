@@ -182,8 +182,7 @@ export const HAIR = {
         parts.push(tint(place(cylinder(s.width * 0.6, s.width * 0.6, L * 0.2, ctx.S(10)), 0, -L * 1.08, 0), s.tie || ctx.color));
         parts.push(place(cone(s.width * 0.68, L * 0.62, ctx.S(10)), 0, -L * 1.05, 0, 180, 0, 0));
       }
-      const m = merge(parts.map((p) => (p.__tinted ? p : p)));
-      const piece = { name: `braid${i}`, mesh: xform(m, [0, 0, 0], q), pos: i === 0 ? root : [dir[0] * L, dir[1] * L, dir[2] * L], parent: i === 0 ? null : `braid${i - 1}`, keepTint: i === links - 1,
+      const piece = { name: `braid${i}`, mesh: xform(merge(parts), [0, 0, 0], q), pos: i === 0 ? root : [dir[0] * L, dir[1] * L, dir[2] * L], parent: i === 0 ? null : `braid${i - 1}`,
         spring: { axis: dir, length: L, stiffness: 46 - i * 6, damping: 5.5, gravity: 2.2, limit: i === 0 ? 30 : 42 } };
       swing.push(piece);
     }
@@ -199,7 +198,7 @@ export const HAIR = {
       tint(place(cylinder(r, r, L * 0.09, 6), 0, L * 0.43, 0), '#ff8fa0'),
       tint(place(cone(r, L * 0.12, 6), 0, -L * 0.36, 0, 180, 0, 0), '#f2d9b0'),
       tint(place(cone(r * 0.45, L * 0.05, 6), 0, -L * 0.435, 0, 180, 0, 0), '#3a3040'));
-    return { fixed: [xform(m, c, quat.fromTo(quat.create(), [0, 1, 0], norm(s.dir || [0.5, 0.8, -0.3])))], keepTint: true };
+    return { fixed: [xform(m, c, quat.fromTo(quat.create(), [0, 1, 0], norm(s.dir || [0.5, 0.8, -0.3])))] };
   },
 
   /** A peaked cap: { color, band, peak }. Sits on top of whatever hair there is. */
@@ -209,7 +208,7 @@ export const HAIR = {
       tint(place(scaleMesh(cylinder(R[0] * 0.95, R[0] * 0.95, R[1] * 0.16, ctx.S(18), { crease: 50 }), 1, 1, R[2] / R[0]), 0, R[1] * 0.4, -0.005), s.band || '#ffd24a'),
       tint(place(scaleMesh(cylinder(R[0] * 0.78, R[0] * 0.78, R[1] * 0.07, ctx.S(14), { crease: 50 }), 1, 1, 0.8), 0, R[1] * 0.42, R[2] * 0.62, 12, 0, 0), s.peak || '#2a2540'),
       tint(place(sphere(R[0] * 0.1, 8, 6), 0, R[1] * 0.74, R[2] * 0.8), s.band || '#ffd24a'));
-    return { fixed: [m], keepTint: true };
+    return { fixed: [m] };
   },
 };
 
@@ -450,6 +449,8 @@ let seedCounter = 1;
  *   camera    the camera, needed only for look: 'camera'
  *   wind      [x, y, z] pushed into every spring (hair, braid, tassels)
  *   energy    0..1 scales idle motion (default 1)
+ *   eyes      'shut' | 'open' overrides blinking
+ *   snap      true on a cut: every blend (emote, pose, look, facing) lands at once and nothing blinks
  */
 export function createCharacter(def, { faces = null, material: mat = null, detail = 1 } = {}) {
   if (!def || !def.id) throw new Error('createCharacter: a def needs an id');
@@ -544,8 +545,9 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     for (const piece of def.hair?.pieces || []) {
       const f = HAIR[piece.kind]; if (!f) throw new Error(`createCharacter(${def.id}): unknown hair piece "${piece.kind}" (have ${Object.keys(HAIR).join(', ')})`);
       const r = f(hd, piece, ctx), col = piece.color || hairCol;
-      for (const m of r.fixed || []) head.push(r.keepTint ? m : tint(m, col));
-      for (const sw of r.swing || []) b.swing.push({ ...sw, mesh: sw.keepTint || r.keepTint ? tintWhite(sw.mesh, col) : tint(sw.mesh, col), on: sw.parent || 'head', headSpace: !sw.parent });
+      // pieces arrive white where they are hair and coloured where they are not (ties, pins, pencils)
+      for (const m of r.fixed || []) head.push(tintWhite(m, col));
+      for (const sw of r.swing || []) b.swing.push({ ...sw, mesh: tintWhite(sw.mesh, col), on: sw.parent || 'head', headSpace: !sw.parent });
     }
     parts.head.push(place(merge(head), 0, dim.headC, 0));
   }
@@ -696,21 +698,23 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       const want = s.emote || 'neutral';
       if (want !== emote) { if (!EMOTE[want]) throw new Error(`character ${def.id}: unknown emote "${want}" (have ${EMOTES.join(', ')})`); prevEmote = emote; emote = want; emoteT = 0; blinkHold = 0.09; }
       emoteT = Math.min(1, emoteT + dt * 6); blinkHold -= dt;
+      const snap = !!s.snap; // a cut: land every blend at once
+      if (snap) { emoteT = 1; blinkHold = 0; }
       const eT = smooth(emoteT);
       // held pose
       const wantPose = s.pose || 'stand';
       if (wantPose !== poseName) { poseA = poseB; poseB = wantPose === 'stand' ? null : poseOf(wantPose); poseName = wantPose; poseT = 0; }
-      poseT = Math.min(1, poseT + dt * 3.6);
+      poseT = snap ? 1 : Math.min(1, poseT + dt * 3.6);
       // talking
       const speaking = s.talk != null ? s.talk > 0.02 : !!s.speaking;
       const level = s.talk != null ? s.talk : speaking ? Math.max(0, Math.sin(time * 13.5 + seed) * 0.55 + Math.sin(time * 5.3 + seed * 2) * 0.45 + 0.2) : 0;
-      mouthLevel = approach(mouthLevel, level, dt * 28);
-      talkW = approach(talkW, speaking ? 1 : 0, dt * 5);
+      mouthLevel = snap ? level : approach(mouthLevel, level, dt * 28);
+      talkW = snap ? (speaking ? 1 : 0) : approach(talkW, speaking ? 1 : 0, dt * 5);
 
       rig.reset(); rig.apply(stand, 1);
-      if (poseA && poseT < 1) rig.apply(poseA, 1);
-      if (poseB) rig.apply(poseB, poseA ? smooth(poseT) : smooth(poseT));
-      else if (poseA && poseT < 1) rig.apply(stand, smooth(poseT));
+      const pT = smooth(poseT);
+      if (poseA && pT < 1) rig.apply(poseA, 1 - pT);
+      if (poseB) rig.apply(poseB, pT);
       const clipW = clip ? 0.35 : 1;
       if (eT < 1) rig.apply(EMOTE_BODY[prevEmote], (1 - eT) * clipW);
       rig.apply(EMOTE_BODY[emote], eT * clipW);
@@ -754,7 +758,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       if (typeof s.face === 'number') targetYaw = s.face;
       else if (s.face) { root.updateWorld(pw); targetYaw = Math.atan2(s.face[0] - root.world[12], s.face[2] - root.world[14]) / DEG - rootYaw(root); }
       else if (!yawInit) targetYaw = 0;
-      if (!yawInit) { yawNow = targetYaw; yawInit = true; }
+      if (!yawInit || snap) { yawNow = targetYaw; yawInit = true; }
       let dy = targetYaw - yawNow; dy -= Math.round(dy / 360) * 360;
       yawNow += dy * Math.min(1, dt * 7);
       body.setRot(0, yawNow, 0);
@@ -767,9 +771,9 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       let ly = 0, lp = 0, ex = 0, ey = 0;
       const target = s.look === 'camera' ? (s.camera ? s.camera.position : null) : s.look;
       if (target) {
-        m4.invert(inv, J.chest.world);
+        m4.invert(inv, J.head.world); // the head as posed, before the look is added
         v3.transformPoint(tmp, target, inv);
-        tmp[1] -= dim.neckY + dim.headC;
+        tmp[1] -= dim.headC;
         const yaw = Math.atan2(tmp[0], tmp[2]) / DEG, pitch = Math.atan2(tmp[1], Math.hypot(tmp[0], tmp[2])) / DEG;
         const cyaw = Math.max(-75, Math.min(75, yaw)), cp = Math.max(-35, Math.min(35, pitch));
         ly = cyaw * 0.72; lp = cp * 0.6;
@@ -778,11 +782,9 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
         const g = Math.floor(time / 2.9 + seed), r1 = Math.sin(g * 12.9898) * 43758.5453, r2 = Math.sin(g * 78.233) * 12543.123;
         ex = ((r1 - Math.floor(r1)) - 0.5) * 0.9; ey = ((r2 - Math.floor(r2)) - 0.5) * 0.4;
       }
-      const lk = Math.min(1, dt * 9);
-      lookYaw += (ly - lookYaw) * lk; lookPitch += (lp - lookPitch) * lk; eyeX += (ex - eyeX) * Math.min(1, dt * 16); eyeY += (ey - eyeY) * Math.min(1, dt * 16);
-      if (target) { // replace the pose's head turn with the look, keeping its tilt
-        addRot(J.head, -lookPitch, lookYaw, 0);
-      }
+      const lk = snap ? 1 : Math.min(1, dt * 9), ek = snap ? 1 : Math.min(1, dt * 16);
+      lookYaw += (ly - lookYaw) * lk; lookPitch += (lp - lookPitch) * lk; eyeX += (ex - eyeX) * ek; eyeY += (ey - eyeY) * ek;
+      if (lookYaw !== 0 || lookPitch !== 0) addRot(J.head, -lookPitch, lookYaw, 0);
 
       // springs
       for (let i = 0; i < springs.length; i++) {
@@ -804,7 +806,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       // the face
       if (face) {
         const T = face.table[emote];
-        const shut = blinkHold > 0 || blink(time, seed) > 0.45 || (s.eyes === 'shut');
+        const shut = s.eyes === 'shut' || (!snap && s.eyes !== 'open' && (blinkHold > 0 || blink(time, seed) > 0.45));
         face.lids.uvRect.set(shut ? T.shut : T.open);
         setEyes(T.eye, eyeX * 0.105, eyeY * 0.08);
         face.mouth.uvRect.set(T.mouth[mouthLevel < 0.12 ? 0 : mouthLevel < 0.42 ? 1 : mouthLevel < 0.72 ? 2 : 3]);

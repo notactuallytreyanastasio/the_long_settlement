@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cel characters</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10183a; overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: fixed; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); font: 10px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.55); padding: 4px 6px; border-radius: 6px; white-space: pre; pointer-events: none; }
+  #bar { position: fixed; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
+  #bar button { font: 12px ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 6px; padding: 6px 9px; }
+  .tag { position: fixed; font: 600 9px/1 ui-monospace, Menlo, monospace; color: #fff; text-shadow: 0 1px 0 #1d2146, 0 0 3px #1d2146; pointer-events: none; }
+  [hidden] { display: none !important; }
+  #fatal { position: fixed; inset: 0; margin: 0; padding: 16px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: #ffd9d0; background: #2a1020; white-space: pre-wrap; overflow: auto; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="tags"></div>
+<div id="hud"></div>
+<div id="bar"><button id="bLight">light</button><button id="bView">view</button><button id="bWho">who</button></div>
+<pre id="fatal" hidden></pre>
+<script type="module">
+// The cast on a quay. Query string:
+//   ?view=sheet (default: everything on one page) | row | emotes | turn | close | icon | stage | act
+//   ?light=sunset | night | day      ?who=ren | ilse | nan | bailiff (for emotes / turn / act)
+//   ?emote=smile  ?pose=signature  ?speak=1  ?look=camera      state for the row, close and stage views
+//   ?act=strike&at=0.27                                          hold a clip at a time (seconds)
+//   ?yaw=30                                                      camera yaw for row / act
+//   ?t=6 (freeze at that time, for screenshots)   ?hud=0   ?dpr=1
+const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glDemo = { error: f.textContent }; };
+window.addEventListener('error', (e) => fatal(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
+try {
+  const GL = await import('../src/shell/gl/index.js');
+  const { createFaces } = await import('../src/shell/gl/faces.js');
+  const { createCharacter, CAST, CLIPS, EMOTES, figureMaterial, teamMove } = await import('../src/shell/gl/characters.js');
+  const { createRenderer, createCamera, createScene, makeEnv, material, node, group, mergeStatic, createSprites, createClouds, merge, tint, place, roundedBox, cylinder, lathe, sphere, blob, setGlow, rng, DEG } = GL;
+
+  const q = new URLSearchParams(location.search);
+  const LIGHTS = ['sunset', 'night', 'day'], VIEWS = ['sheet', 'row', 'emotes', 'turn', 'close', 'icon', 'stage', 'act'];
+  const light = q.get('light') || 'sunset', view = q.get('view') || 'sheet', who = q.get('who') || 'ilse';
+  if (!LIGHTS.includes(light)) throw new Error(`unknown light "${light}" (have ${LIGHTS.join(', ')})`);
+  if (!VIEWS.includes(view)) throw new Error(`unknown view "${view}" (have ${VIEWS.join(', ')})`);
+  const fixedT = q.has('t') ? Number(q.get('t')) : null;
+  const canvas = document.getElementById('c');
+  const renderer = createRenderer(canvas, { dprCap: Number(q.get('dpr') || 2) });
+
+  // ---- the set: a quay of warm stone, the sea behind, one harbour lamp
+  const LAMP = [1.55, 1.62, -0.9], night = light === 'night', lamps = night ? 1.2 : light === 'sunset' ? 0.7 : 0;
+  const env = makeEnv(light, {
+    water: { level: -0.55, shores: [] },
+    points: [{ pos: LAMP, color: '#ffb050', radius: 5.2, intensity: lamps }],
+    ...(light === 'sunset' ? { key: { dir: [-0.62, 0.36, 0.62] } } : {}),
+  });
+  env.shadow.radius = 3.2; env.shadow.center = [0, 0.4, 0];
+  const scene = createScene(env);
+  const mat = material({ name: 'set' }), ground = material({ name: 'ground', rim: 0 });
+  const set = group('set');
+  set.add(node('quay', tint(place(roundedBox(14, 1.2, 5.2, 0.08, 2), 0, -0.6, -0.3), '#f6e4b8'), ground));
+  const r = rng(7);
+  for (let i = 0; i < 26; i++) { const x = (r() - 0.5) * 9, z = -2.2 + r() * 3.6, s = 0.22 + r() * 0.3; set.add(node('slab', tint(place(roundedBox(s * 1.6, 0.02, s, 0.008, 1), x, 0.004, z, 0, (r() - 0.5) * 16, 0), r() > 0.5 ? '#fff0cc' : '#ecd29c'), ground)); }
+  // a low sea wall, a bollard, crates and the lamp post
+  set.add(node('wall', tint(place(roundedBox(14, 0.34, 0.3, 0.06, 2), 0, 0.17, -2.6), '#ffeecb'), mat));
+  set.add(node('bollard', merge(tint(lathe([[0.16, 0], [0.14, 0.3], [0.2, 0.36], [0.2, 0.44], [0, 0.5]], 14), '#4a5a9a'), tint(place(cylinder(0.205, 0.205, 0.05, 14), 0, 0.3, 0), '#ffd24a')), mat, { pos: [-1.75, 0, -1.5] }));
+  set.add(node('crate', merge(tint(roundedBox(0.5, 0.5, 0.5, 0.03, 2), '#d9964e'), tint(roundedBox(0.54, 0.09, 0.54, 0.02, 1), '#b06f34')), mat, { pos: [2.25, 0.25, -1.7], rot: [0, 22, 0] }));
+  set.add(node('post', merge(
+    tint(lathe([[0.1, 0], [0.07, 0.12], [0.045, 0.2], [0.04, 1.45], [0.07, 1.5], [0, 1.5]], 10), '#3d4a8a'),
+    tint(place(lathe([[0.05, 0], [0.13, 0.03], [0.15, 0.24], [0.06, 0.3], [0, 0.34]], 10, { crease: 40 }), 0, 1.72, 0), '#3d4a8a'),
+    setGlow(tint(place(cylinder(0.1, 0.12, 0.22, 10, { caps: false }), 0, 1.5, 0), lamps > 0 ? '#ffe9a0' : '#fff6dc'), lamps > 0 ? 1 : 0)), mat, { pos: [LAMP[0], 0, LAMP[2]] }));
+  scene.root.add(mergeStatic(set, 'set'));
+  const clouds = createClouds({ count: 8, seed: 3, arc: [120, 240], height: [12, 90], speed: 0.1, shadowTint: light === 'day' ? '#b9c8f6' : light === 'sunset' ? '#c77fb0' : '#3b4fa8', color: night ? '#8fa4e6' : light === 'sunset' ? '#ffd9b8' : '#ffffff' });
+  scene.root.add(clouds.node);
+  const sprites = scene.sprites = createSprites(128);
+  if (lamps > 0) sprites.add({ kind: 'glow', pos: [LAMP[0], LAMP[1], LAMP[2]], size: 2.0, color: '#ffa63f', alpha: 0.75 });
+
+  // ---- the cast
+  const figMat = figureMaterial();
+  const faces = createFaces({ figure: figMat });
+  const ids = ['ren', 'ilse', 'nan', 'bailiff'];
+  const cast = {}; const place3 = { ren: [-0.66, 0, 0.05], ilse: [0.02, 0, 0.32], nan: [0.72, 0, 0.1], bailiff: [1.9, 0, 0.3] }, heading = { ren: 16, ilse: -6, nan: -24, bailiff: -70 };
+  for (const id of ids) { const ch = cast[id] = createCharacter(CAST[id], { faces, material: figMat }); ch.root.setPos(...place3[id]); scene.root.add(ch.root); ch.glow = ch.lampPos ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.8, color: '#ffa63f', alpha: lamps > 0 ? 0.8 : 0.35 }) : null; }
+
+  // ---- views: a list of cells, each a rectangle of the canvas with its own camera and its own state for the cast
+  const cam = createCamera({ fov: 24, near: 0.2, far: 1200 });
+  const tags = document.getElementById('tags');
+  const tag = (x, y, text) => { const d = document.createElement('div'); d.className = 'tag'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.textContent = text; tags.appendChild(d); };
+  const base = { emote: q.get('emote') || 'neutral', pose: q.get('pose') || 'stand', speaking: q.get('speak') === '1', look: q.get('look') === 'camera' ? 'camera' : null };
+  const camYaw = Number(q.get('yaw') || 0);
+  /** cell: { x, y, w, h, show: [ids], shot: 'body' | 'head' | 'bust' | 'group', of: id, yaw, pitch, margin, state: { id: {...} }, label } */
+  function layout(W, H) {
+    tags.textContent = ''; const cells = [];
+    const emoteGrid = (x0, y0, w, h, id, cols) => {
+      const all = [...EMOTES, 'talk'], rows = Math.ceil(all.length / cols), cw = w / cols, chh = h / rows;
+      all.forEach((e, i) => { const x = x0 + (i % cols) * cw, y = y0 + Math.floor(i / cols) * chh;
+        cells.push({ x, y, w: cw, h: chh, show: [id], shot: 'head', of: id, yaw: (i % 2 ? -1 : 1) * 24, pitch: 3, margin: 1.5, state: { [id]: e === 'talk' ? { emote: 'smile', talk: 0.8, look: 'camera' } : { emote: e, look: 'camera' } } }); tag(x + 3, y + 3, e); });
+    };
+    const turn = (x0, y0, w, h, id, yaws) => yaws.forEach((yw, i) => { cells.push({ x: x0 + i * w / yaws.length, y: y0, w: w / yaws.length, h, show: [id], shot: 'body', of: id, yaw: yw, pitch: 6, margin: 1.22, state: { [id]: { face: 0 } } }); });
+    if (view === 'row') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'group', yaw: camYaw - 8, pitch: 7, margin: 1.12, state: {} });
+    else if (view === 'emotes') emoteGrid(0, 0, W, H, who, 2);
+    else if (view === 'turn') { turn(0, 0, W, H / 2, who, [0, 35]); turn(0, H / 2, W, H / 2, who, [90, 150]); }
+    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'bust', of: who, yaw: camYaw + (who === 'ren' ? -26 : 24), pitch: 4, margin: 1.0, state: { ren: { look: cast.ilse.headPos, face: cast.ilse.root.position }, ilse: { look: who === 'ilse' ? 'camera' : cast.ren.headPos, face: [-0.3, 0, 2] }, nan: { look: cast.ilse.headPos } } });
+    else if (view === 'icon') {
+      ids.forEach((id, i) => { cells.push({ x: 20 + i * 62, y: 24, w: 46, h: 46, show: [id], shot: 'head', of: id, yaw: 22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera' } } }); tag(20 + i * 62, 74, id + ' 46'); });
+      ids.forEach((id, i) => { cells.push({ x: 20 + i * 92, y: 110, w: 80, h: 80, show: [id], shot: 'head', of: id, yaw: -22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera', emote: 'smile' } } }); });
+      tag(20, 194, 'stage size: 430 x 220 band, figures about 70 px tall');
+      cells.push({ x: 0, y: 210, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: -14, pitch: 8, state: { bailiff: { emote: 'grim' }, ren: { emote: 'grim' }, ilse: { emote: 'smile' } } });
+      emoteGrid(0, 230 + Math.round(W * 220 / 430), W, H - 240 - Math.round(W * 220 / 430), who, 4);
+    } else if (view === 'stage') cells.push({ x: 0, y: 0, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: -14, pitch: 8, state: {} });
+    else if (view === 'act') cells.push({ x: 0, y: 0, w: W, h: H, show: [who], shot: 'body', of: who, yaw: camYaw + 55, pitch: 6, margin: 1.9, state: { [who]: { face: 0 } } });
+    else { // the contact sheet
+      const rowH = Math.round(H * 0.25);
+      cells.push({ x: 0, y: 0, w: W, h: rowH, show: ['ren', 'ilse', 'nan'], shot: 'group', yaw: -8, pitch: 7, margin: 1.1, state: {} });
+      const eh = Math.round(H * 0.105);
+      ['ren', 'ilse', 'nan'].forEach((id, k) => { const y = rowH + k * eh; EMOTES.forEach((e, i) => { const cw = W / 7; cells.push({ x: i * cw, y, w: cw, h: eh, show: [id], shot: 'head', of: id, yaw: (k + i) % 2 ? -22 : 22, pitch: 3, margin: 1.42, state: { [id]: { emote: e, look: 'camera', talk: e === 'smile' || e === 'shock' || e === 'anger' ? 0.8 : 0 } } }); if (k === 0) tag(i * cw + 2, y + 2, e); }); });
+      const ty = rowH + 3 * eh, th = Math.round(H * 0.15);
+      ['ren', 'ilse', 'nan'].forEach((id, k) => turn(k * W / 3, ty, W / 3, th, id, [0, 40, 90]));
+      tag(2, ty + 2, 'front / three-quarter / side');
+      const cy = ty + th, chh = H - cy;
+      cells.push({ x: 0, y: cy, w: Math.round(W * 0.6), h: chh, show: ['ren', 'ilse', 'nan'], shot: 'bust', of: 'ilse', yaw: 24, pitch: 4, margin: 1.0, state: { ilse: { look: 'camera', emote: 'smile', talk: 0.6 }, ren: { look: cast.ilse.headPos }, nan: { look: cast.ilse.headPos, emote: 'soft' } } });
+      tag(2, cy + 2, 'cutscene close-up');
+      const ix = Math.round(W * 0.6) + 10;
+      ['ren', 'ilse', 'nan', 'bailiff'].forEach((id, i) => { cells.push({ x: ix + (i % 2) * 60, y: cy + 16 + Math.floor(i / 2) * 60, w: 46, h: 46, show: [id], shot: 'head', of: id, yaw: 22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera' } } }); });
+      tag(ix, cy + 4, '46 px icons');
+      cells.push({ x: Math.round(W * 0.6), y: cy + 140, w: W - Math.round(W * 0.6), h: chh - 140, show: ['nan'], shot: 'body', of: 'nan', yaw: -30, pitch: 6, margin: 1.3, state: { nan: { pose: 'signature', emote: 'smile', face: 0 } } });
+      tag(ix, cy + 144, 'signature pose');
+    }
+    return cells;
+  }
+  let cells = [], lw = 0, lh = 0;
+  const C3 = [0, 0, 0], LOOKTMP = [0, 0, 0];
+  function aim(cell) {
+    const aspect = cell.w / cell.h, tv = Math.tan(cam.fov * DEG / 2), fit = (hgt, wid) => Math.max(hgt / 2 / tv, wid / 2 / (tv * aspect));
+    if (cell.shot === 'group') { C3[0] = 0.02; C3[1] = 0.56; C3[2] = 0.15; cam.fov = 24; cam.orbit(C3, fit(1.32 * cell.margin, 2.15 * cell.margin), cell.yaw, cell.pitch); return 2.6; }
+    if (cell.shot === 'stage') { C3[0] = 0.7; C3[1] = 0.62; C3[2] = 0.2; cam.fov = 22; cam.orbit(C3, fit(1.5, 4.6), cell.yaw, cell.pitch); return 3.4; }
+    const ch = cast[cell.of], p = ch.root.position;
+    if (cell.shot === 'body') { C3[0] = p[0]; C3[1] = ch.height * 0.52; C3[2] = p[2]; cam.fov = 24; cam.orbit(C3, fit(ch.height * cell.margin, ch.height * 0.72 * cell.margin), cell.yaw, cell.pitch); return 1.5; }
+    const hp = ch.headPos, hs = ch.height * 0.46;
+    if (cell.shot === 'head') { C3[0] = hp[0]; C3[1] = hp[1] + hs * 0.06; C3[2] = hp[2]; cam.fov = 20; cam.orbit(C3, fit(hs * cell.margin, hs * 1.12 * cell.margin), cell.yaw, cell.pitch); return 1.2; }
+    // bust: head and shoulders with room below for subtitles, as a portrait phone cutscene frames a speaker
+    C3[0] = hp[0]; C3[1] = hp[1] - hs * 0.42; C3[2] = hp[2]; cam.fov = 26; cam.orbit(C3, fit(hs * 3.3 * cell.margin, hs * 1.7 * cell.margin), cell.yaw, cell.pitch); return 1.6;
+  }
+
+  // ---- time
+  const actName = q.get('act'), actAt = q.has('at') ? Number(q.get('at')) : null;
+  const windOf = (t) => { WIND[0] = 0.5 + Math.sin(t * 0.9) * 0.9; WIND[2] = Math.sin(t * 1.3) * 0.5; return WIND; }, WIND = [0, 0, 0];
+  const live = {}; for (const id of ids) live[id] = { ...base };
+  let cycle = -1;
+  function tick(t, dt) { // advance everyone once with the view's default state
+    clouds.update(t); sprites.update(dt);
+    if (view !== 'sheet' && view !== 'icon' && !q.has('emote') && fixedT === null) { const c = Math.floor(t / 2.6) % EMOTES.length; if (c !== cycle) { cycle = c; for (const id of ids) { live[id].emote = EMOTES[(c + ids.indexOf(id)) % EMOTES.length]; live[id].speaking = (c + ids.indexOf(id)) % 3 === 0; } } }
+    for (const id of ids) { const s = live[id]; s.wind = windOf(t + ids.indexOf(id)); s.camera = cam; if (s.face == null) s.face = heading[id]; cast[id].update(dt, s); }
+  }
+  const cellState = {};
+  function applyCell(cell) { // re-pose the cast for one cell without advancing time
+    for (const id of ids) {
+      const ch = cast[id]; ch.root.visible = cell.show.includes(id);
+      if (!ch.root.visible) continue;
+      const o = cell.state[id], s = cellState[id] || (cellState[id] = {});
+      Object.assign(s, live[id]); s.talk = undefined; if (o) Object.assign(s, o); s.camera = cam; s.snap = true;
+      ch.update(0, s);
+      if (ch.glow) { ch.glow.pos[0] = ch.lampPos[0]; ch.glow.pos[1] = ch.lampPos[1]; ch.glow.pos[2] = ch.lampPos[2]; ch.glow.visible = true; }
+    }
+    for (const id of ids) if (!cast[id].root.visible && cast[id].glow) cast[id].glow.visible = false;
+  }
+
+  const hud = document.getElementById('hud');
+  if (q.get('hud') === '0') { hud.hidden = true; document.getElementById('bar').hidden = true; }
+  const go = (k, list, cur) => () => { q.set(k, list[(list.indexOf(cur) + 1) % list.length]); location.search = q.toString(); };
+  document.getElementById('bLight').onclick = go('light', LIGHTS, light);
+  document.getElementById('bView').onclick = go('view', VIEWS, view);
+  document.getElementById('bWho').onclick = go('who', ids, who);
+
+  if (fixedT !== null) for (let t = Math.max(0, fixedT - 3); t < fixedT; t += 1 / 60) tick(t, 1 / 60);
+  if (actName) { if (actName === 'team') teamMove(cast.ren, cast.ilse); else cast[who].act(actName); if (actAt !== null) for (let t = 0; t < actAt; t += 1 / 120) for (const id of ids) cast[id].update(1 / 120, live[id]); }
+  let last = performance.now(), t = fixedT ?? 0, avg = 0, upd = 0, frames = 0, draws = 0, tris = 0, nextAct = 3;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    if (W !== lw || H !== lh) { lw = W; lh = H; cells = layout(W, H); }
+    const u0 = performance.now();
+    if (fixedT === null && actAt === null) { t += dt; tick(t, dt); if (view === 'act' && !actName && t > nextAct) { const names = Object.keys(CLIPS); cast[who].release(); cast[who].act(names[Math.floor(t / 2.2) % names.length]); nextAct = t + 2.2; } }
+    upd += (performance.now() - u0 - upd) * 0.05;
+    let cost = 0; draws = 0; tris = 0;
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      const rad = aim(cell); cam.update(cell.w / cell.h);
+      applyCell(cell);
+      const s = renderer.render(scene, cam, t, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, shadowCenter: cam.target, shadowRadius: rad });
+      cost += s.cpuMs; draws += s.drawCalls; tris += s.triangles;
+    }
+    avg += (cost - avg) * 0.05; frames++;
+    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${light} / ${view}${view === 'sheet' || view === 'row' ? '' : ' / ' + who}  ${cells.length} views\n${draws} draws  ${(tris / 1000).toFixed(1)}k tris\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms`;
+    window.glDemo.frames = frames;
+    requestAnimationFrame(frame);
+  }
+  window.glDemo = {
+    renderer, cast, scene, faces, frames: 0,
+    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), draws, tris, views: cells.length, cast: Object.fromEntries(ids.map((id) => [id, cast[id].stats])) }; },
+    /** Time n frames of animating all four characters, and of drawing the current view. */
+    bench(n = 300, finish = false) {
+      const gl = renderer.gl; let tu = 0, tr = 0, tt = t; const st = { emote: 'smile', speaking: true, look: 'camera', camera: cam, wind: WIND };
+      for (let i = 0; i < n; i++) {
+        tt += 1 / 60; const a = performance.now(); for (const id of ids) cast[id].update(1 / 60, st); const b2 = performance.now();
+        for (const cell of cells) { aim(cell); cam.update(cell.w / cell.h); renderer.render(scene, cam, tt, { x: cell.x, y: cell.y, w: cell.w, h: cell.h }); }
+        if (finish) gl.finish(); tu += b2 - a; tr += performance.now() - b2;
+      }
+      return { frames: n, updateMsPerCharacter: tu / n / ids.length, renderMs: tr / n, finish, views: cells.length };
+    },
+  };
+  requestAnimationFrame(frame);
+} catch (e) { fatal(e); }
+</script>
+</body>
+</html>

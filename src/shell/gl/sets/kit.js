@@ -486,11 +486,15 @@ export const rock = ({ seed = 1, s = 1, low = PAL.rock2, high = PAL.rock } = {})
  * A far headland: a long lumpy hump, green on top with pale cliffs, sitting in the sea at y = 0.
  * w along X, d along Z, h tall. Colours blend softly (it is far away).
  */
-export function headland({ w = 60, d = 26, h = 14, seed = 1, grass = PAL.leaf, cliff = PAL.cliff, foot = '#e8b98a' } = {}) {
-  const m = blob({ rx: w / 2, ry: h, rz: d / 2, lumps: 0.55, seed, flatBottom: 0.92, seg: 40, rings: 16 });
+export function headland({ w = 60, d = 26, h = 14, seed = 1, grass = PAL.leaf, cliff = PAL.cliff, foot = '#e8b98a', capAt = 0.5 } = {}) {
+  const shape = () => blob({ rx: w / 2, ry: h, rz: d / 2, lumps: 0.55, seed, flatBottom: 0.92, seg: 40, rings: 16 });
   // higher toward +X (the seaward tip), with a second lower hump behind it
-  deform(m, (p) => { const t = (p[0] / (w / 2) + 1) / 2; p[1] *= 0.5 + 0.5 * t + 0.22 * Math.sin(t * 9 + seed); });
-  return paint(m, (x, y, z, nx, ny) => (ny > 0.5 && y > h * 0.2 ? grass : y < h * 0.1 ? foot : cliff));
+  const hump = (p) => { const t = (p[0] / (w / 2) + 1) / 2; p[1] *= 0.5 + 0.5 * t + 0.22 * Math.sin(t * 9 + seed); };
+  const base = gradientY(deform(shape(), hump), foot, cliff, 0, h * 0.3);
+  // the grass is the same surface sliced off above capAt and laid over the rock a hair proud of it:
+  // two parts, so the green edge is a crisp line and not a blend across a big far triangle
+  const cap = deform(shape(), (p) => { if (p[1] < h * capAt) { p[1] = h * capAt; p[0] *= 0.6; p[2] *= 0.6; } else { p[0] *= 1.012; p[2] *= 1.02; } p[1] += h * 0.012; hump(p); });
+  return merge(base, tint(cap, grass));
 }
 
 // ------------------------------------------------------------------------------------ sky

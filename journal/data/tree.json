@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 71280,
-  "lines": 1003
+  "bytes": 71491,
+  "lines": 1005
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12536,13 +12536,13 @@
  },
  {
   "path": "src/shell/gl/sets/kit.js",
-  "bytes": 41569,
-  "lines": 590
+  "bytes": 41976,
+  "lines": 594
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
-  "bytes": 30612,
-  "lines": 393
+  "bytes": 30917,
+  "lines": 390
  },
  {
   "path": "src/shell/gl/shaders.js",
@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 76662,
-  "lines": 1101
+  "bytes": 77097,
+  "lines": 1108
  },
  {
   "path": "src/shell/input.js",
@@ -12650,18 +12650,23 @@
   "lines": 522
  },
  {
+  "path": "tools/gl-characters.html",
+  "bytes": 18834,
+  "lines": 217
+ },
+ {
   "path": "tools/gl-demo.html",
   "bytes": 5820,
   "lines": 83
  },
  {
   "path": "tools/gl-set.html",
-  "bytes": 6615,
+  "bytes": 6689,
   "lines": 100
  },
  {
   "path": "tools/gl-table.html",
-  "bytes": 12406,
+  "bytes": 12433,
   "lines": 178
  },
  {

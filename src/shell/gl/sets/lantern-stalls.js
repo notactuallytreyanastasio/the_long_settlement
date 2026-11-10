@@ -22,7 +22,8 @@
 //                         stage for the 430x220 live band (aspect 1.95), landscape for 16:10
 //   frame(camera, name, time = 0)   place a camera on a mark (time adds a slow drift) and fit the shadow map to it
 //   view(name)            { shadowCenter, shadowRadius } to spread into a renderer view rectangle
-//   marks                 a, b, c: cutscene spots left to right { pos, face };  party[3], opposition[3]: stage band spots;
+//   marks                 a, b, c: cutscene spots left to right { pos, face } (b is where 'close' looks);  two[2]: the pair 'two' frames;
+//                         party[3], opposition[3]: stage band spots;
 //                         focus: the big lantern;  nanLanterns: indices of the three lanterns over Nan's stall
 //   lamps                 [{ name, pos, radius, color }] the six fixed point lights (0 is the big lantern)
 //   setPower(p)           0..1.5 scales every lamp, glow and lit lantern (1 = as designed)
@@ -34,7 +35,7 @@ import {
   m4, quat, rng, DEG,
   merge, tint, place, plane, cylinder, box, tube, curve, setGlow, roundedBox, scale as scaleMesh,
   Node, node, group, makeEnv, createScene, mergeStatic, makeInstances, setInstance,
-  createSprites, rayMesh, rayMaterial, aimAxis,
+  createSprites, rayMesh, rayMaterial,
 } from '../index.js';
 import {
   PAL, kitMaterials, anchorAt, scatter, stall, paperLantern, lanternString, bunting, crate, barrel, sack, bollard, ropeCoil,
@@ -49,7 +50,7 @@ const dirFrom = (azDeg, elDeg) => [Math.sin(azDeg * DEG) * Math.cos(elDeg * DEG)
 
 const LIGHTS = {
   dusk: {
-    preset: 'sunset', power: 1, unlit: 0.5, glow: 0.42,
+    preset: 'sunset', power: 1, unlit: 0.5, paper: 0, glow: 0.42,
     env: {
       key: { dir: dirFrom(-15, 19), color: '#ffd296' },
       shadow: { tint: '#7f78e0', lift: 0.1, saturate: 1.4 },
@@ -59,10 +60,10 @@ const LIGHTS = {
       sky: { zenith: '#3a4cc8', mid: '#9d86ee', midAt: 0.5, horizon: '#ffcf70', below: '#f6a878', glow: '#ffe890', glowAmount: 0.55, sunDir: dirFrom(0.8, 4.6), sun: { color: '#fffbe0', size: 2.3, halo: '#ffd070', haloAmount: 0.42 } },
       water: { deep: '#2a56c0', mid: '#3f8fe0', shallow: '#74e0d6', foam: '#fff6e4', glint: '#ffe7a0', glintDensity: 0.3 },
     },
-    cloud: { color: '#ffd9b4', shadowTint: '#c878b8' }, smoke: '#ffe6d2', ray: 0.34, sunShaft: 0.16,
+    cloud: { color: '#ffd9b4', shadowTint: '#c878b8' }, smoke: '#ffe6d2', ray: 0.34, sunShaft: 0.24,
   },
   night: {
-    preset: 'night', power: 1.25, unlit: 0.42, glow: 0.7,
+    preset: 'night', power: 1.25, unlit: 0.42, paper: 0, glow: 0.7,
     env: {
       key: { dir: dirFrom(-28, 38), color: '#7f9ef0' },
       shadow: { tint: '#2f44a8', lift: 0.12, saturate: 1.25 },
@@ -74,7 +75,7 @@ const LIGHTS = {
     cloud: { color: '#8fa6ea', shadowTint: '#3a50aa' }, smoke: '#b9c6f2', ray: 0.46, sunShaft: 0,
   },
   day: {
-    preset: 'day', power: 0, unlit: 0.9, glow: 0,
+    preset: 'day', power: 0, unlit: 1, paper: 0.42, glow: 0,
     env: {
       key: { dir: norm([-0.5, 0.74, 0.42]), color: '#fff6dc' },
       shadow: { tint: '#8f9be6', lift: 0.07, saturate: 1.3 },
@@ -90,7 +91,7 @@ const LIGHTS = {
 
 const CAMERAS = {
   wide: { target: [0.15, 2.6, -1.0], dist: 10.8, yaw: 2, pitch: 4, fov: 48, aspect: 0.46, shadowCenter: [0, 0, -1.5], shadowRadius: 9.5 },
-  two: { target: [0, 0.9, 0.6], dist: 6.3, yaw: -15, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
+  two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -15, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 21, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
   low: { target: [0.1, 1.75, 0.2], dist: 6.4, yaw: -7, pitch: -11, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1], shadowRadius: 8 },
   stage: { target: [0, 1.02, 0.5], dist: 9.4, yaw: -15, pitch: 7, fov: 24, aspect: 1.95, shadowCenter: [0, 0, -0.5], shadowRadius: 7.5, outline: 0.7 },
@@ -99,6 +100,7 @@ const CAMERAS = {
 
 const MARKS = {
   a: { pos: [-0.8, 0, 0.55], face: 14 }, b: { pos: [0.02, 0, 0.8], face: 0 }, c: { pos: [0.82, 0, 0.55], face: -14 },
+  two: [{ pos: [-0.42, 0, 0.62], face: 24 }, { pos: [0.42, 0, 0.62], face: -24 }],
   party: [{ pos: [-1.05, 0, 0.75], face: 78 }, { pos: [-1.85, 0, 1.15], face: 72 }, { pos: [-2.5, 0, 0.5], face: 80 }],
   opposition: [{ pos: [1.05, 0, 0.75], face: -78 }, { pos: [1.85, 0, 1.15], face: -72 }, { pos: [2.55, 0, 0.5], face: -80 }],
 };
@@ -162,15 +164,17 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
   const topL = anchorAt(poleL, 'top', POLE_L), topR = anchorAt(poleR, 'top', POLE_R);
   const addString = (a, b, opts, cols, big = -1) => { const s = lanternString(a, b, opts); wires.push(s.wire); strings.push({ ...s, cols, big }); return s; };
   const BIG = 2;
-  const front = addString(topL, topR, { sag: 1.3, count: 8 }, [0, 2, 1, 0, 3, 2, 0, 5], BIG);   // the big lantern hangs from the third hook, left of centre
+  const front = addString(topL, topR, { sag: 1.3, count: 7 }, [0, 2, 1, 0, 3, 2, 5], BIG);   // the big lantern hangs from the third hook, left of centre
   addString(eave(houses[0], 'ridge'), eave(houses[1], 'ridge'), { sag: 1.0, count: 9, ends: 0.1 }, [2, 0, 5, 1, 0, 2, 3, 0, 1]);
   addString(topL, eave(houses[1], 'eaveL'), { sag: 0.9, count: 6, ends: 0.2 }, [1, 4, 2, 0, 5, 1]);
   const nanTop = anchorAt(stalls[0].mesh, 'top', stalls[0].pos, stalls[0].yaw), nanHook = anchorAt(stalls[0].mesh, 'hookR', stalls[0].pos, stalls[0].yaw);
-  set.add(node('wires', merge(wires), M.flat));
-  set.add(node('bunting1', bunting(eave(houses[2], 'eaveR'), topL, { sag: 0.7, count: 11, seed: 3 }), M.lantern));
-  set.add(node('bunting2', bunting(topR, eave(houses[3], 'eaveL'), { sag: 0.7, count: 11, seed: 5 }), M.lantern));
-  set.add(node('bunting3', bunting(eave(houses[1], 'eaveR'), eave(houses[3], 'ridge'), { sag: 0.4, count: 8, seed: 7 }), M.lantern));
-  set.add(node('bunting4', bunting(eave(houses[2], 'ridge'), eave(houses[0], 'eaveL'), { sag: 0.4, count: 8, seed: 9 }), M.lantern));
+  // three more hang off the front corner of Nan's stall on a short line of their own
+  const nanLine = lanternString(nanTop, [nanHook[0] + 0.5, nanHook[1] + 0.25, nanHook[2] + 0.2], { sag: 0.25, count: 3, ends: 0.2 });
+  set.add(node('wires', merge(wires, nanLine.wire), M.flat));
+  set.add(node('bunting1', bunting(eave(houses[2], 'eaveR'), topL, { sag: 0.7, count: 11, seed: 3 }), M.prop));
+  set.add(node('bunting2', bunting(topR, eave(houses[3], 'eaveL'), { sag: 0.7, count: 11, seed: 5 }), M.prop));
+  set.add(node('bunting3', bunting(eave(houses[1], 'eaveR'), eave(houses[3], 'ridge'), { sag: 0.4, count: 8, seed: 7 }), M.prop));
+  set.add(node('bunting4', bunting(eave(houses[2], 'ridge'), eave(houses[0], 'eaveL'), { sag: 0.4, count: 8, seed: 9 }), M.prop));
 
   // far things: a headland with the lighthouse, a second shore with a huddle of houses, rocks
   const far = group('far');
@@ -183,8 +187,8 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
   far.add(node('lighthouse', lh, M.far, { pos: LH }));
   far.add(node('shore2', headland({ w: 80, d: 30, h: 15, seed: 8, grass: PAL.leafDark }), M.far, { pos: [78, -0.6, -150], rot: [0, 172, 0] }));
   for (let i = 0; i < 7; i++) { const s = 2.2 + r() * 1.6; far.add(node('town' + i, merge(tint(place(roundedBox(s, s * 1.2, s, 0.2, 1), 0, s * 0.6, 0), i % 2 ? PAL.cream : '#ffe6c4'), tint(place(cylinder(s * 0.85, 0, s * 0.9, 4), 0, s * 1.2, 0, 0, 45, 0), PAL.roofs[i % 5])), M.far, { pos: [48 + i * 5.2 + r() * 2, 3.5 + Math.sin(i * 1.3) * 2.2 + i * 0.5, -137 + r() * 5], rot: [0, r() * 40, 0] })); }
-  for (const [x, z, s, seed] of [[-7.5, -19, 1.5, 3], [-9.2, -18.2, 0.9, 5], [9.5, -24, 1.9, 8], [19, -40, 2.6, 2]]) far.add(node('rock', rock({ seed, s }), M.prop, { pos: [x, WATER - 0.05, z] }));
-  far.add(node('sailboat', boat({ len: 3.4, hull: PAL.cream, keel: PAL.teal, pennant: PAL.red, seed: 3 }), M.prop, { pos: [-5.5, WATER, -30], rot: [0, 115, 0] }));
+  for (const [x, z, s, seed] of [[-7.5, -19, 1.5, 3], [-9.2, -18.2, 0.9, 5], [9.5, -24, 1.9, 8], [19, -40, 2.6, 2]]) set.add(node('rock', rock({ seed, s }), M.prop, { pos: [x, WATER - 0.05, z] }));
+  set.add(node('sailboat', boat({ len: 3.4, hull: PAL.cream, keel: PAL.teal, pennant: PAL.red, seed: 3 }), M.prop, { pos: [-5.5, WATER, -30], rot: [0, 115, 0] }));
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   if (env.sky.sunDir) env.sky.sunDir = norm(env.sky.sunDir);
@@ -222,11 +226,8 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
     const shape = (i + si) % 3 === 1 ? 1 : 0;
     lanterns.push({ hook: h, col: GL0.rgb(PAL.lanterns[s.cols[i]]), s: 0.72 + r() * 0.24 + (si === 1 ? 0.12 : 0), ph: r() * 6.283, lit: 1, shape, inst: null, idx: 0, glow: null });
   }));
-  // three more hang off the front corner of Nan's stall on a short line
-  const nanLine = lanternString(nanTop, [nanHook[0] + 0.5, nanHook[1] + 0.25, nanHook[2] + 0.2], { sag: 0.25, count: 3, ends: 0.2 });
   const nanLanterns = [];
   nanLine.hooks.forEach((h, i) => { nanLanterns.push(lanterns.length); lanterns.push({ hook: h, col: GL0.rgb(PAL.lanterns[[1, 2, 5][i]]), s: 0.9, ph: r() * 6.283, lit: 1, shape: i === 1 ? 1 : 0, inst: null, idx: 0, glow: null }); });
-  scene.root.add(node('nan-line', nanLine.wire, M.flat));
   const lanternNodes = shapeMesh.map((m, k) => { const n = node('lanterns' + k, m, M.lantern); n.castShadow = false; n.instances = makeInstances(lanterns.filter((l) => l.shape === k).length); scene.root.add(n); return n; });
   { const count = [0, 0]; for (const l of lanterns) { l.inst = lanternNodes[l.shape].instances; l.idx = count[l.shape]++; } lanternNodes.forEach((n, k) => { n.instances.count = count[k]; }); }
 
@@ -272,22 +273,18 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
 
   // ---- light shafts: under the big lantern and the quay lamp, the lighthouse beam, two slants of low sun
   const shafts = [];
-  if (L.ray > 0) {
-    const rm = rayMaterial({ power: 1.5, near: L.ray, far: 0 });
-    const s1 = node('shaft-big', tint(rayMesh(2.3, 0.3, 1.9, 18), '#ffb050'), rm, { pos: [FOCUS[0], FOCUS[1] - 0.25, FOCUS[2]] });
-    const s2 = node('shaft-post', tint(rayMesh(2.3, 0.1, 1.35, 14), '#ffc060'), rm, { pos: [postLamp[0], postLamp[1], postLamp[2]] });
-    scene.root.add(s1, s2); shafts.push(s1, s2);
+  if (L.ray > 0) { // both lamp cones are one mesh, one draw
+    const cones = merge(tint(place(rayMesh(2.3, 0.3, 1.9, 18), FOCUS[0], FOCUS[1] - 0.25, FOCUS[2]), '#ffb050'), tint(place(rayMesh(2.3, 0.1, 1.35, 14), postLamp[0], postLamp[1], postLamp[2]), '#ffc060'));
+    const s1 = node('lamp-shafts', cones, rayMaterial({ power: 1.5, near: L.ray, far: 0 }));
+    scene.root.add(s1); shafts.push(s1);
   }
   const beam = group('lh-beam', { pos: lhLamp });
-  if (L.power > 0) { const bm = rayMaterial({ power: 1.3, near: light === 'night' ? 0.34 : 0.22, far: 0 }), bmesh = tint(rayMesh(70, 0.6, 7, 14), '#ffe9a0'); beam.add(node('b1', bmesh, bm, { rot: [0, 0, 84] }), node('b2', bmesh, bm, { rot: [0, 0, -84] })); }
+  if (L.power > 0) { const one = () => tint(rayMesh(70, 0.6, 7, 14), '#ffe9a0'); beam.add(node('beams', merge(place(one(), 0, 0, 0, 0, 0, 84), place(one(), 0, 0, 0, 0, 0, -84)), rayMaterial({ power: 1.3, near: light === 'night' ? 0.24 : 0.22, far: 0 }))); }
   scene.root.add(beam);
-  if (L.sunShaft > 0) {
-    const sm = rayMaterial({ power: 1.1, near: L.sunShaft, far: 0.0 }), holder = group('sun-shafts'); scene.root.add(holder); holder.updateWorld(null);
-    const kd = env.key.dir, down = [-kd[0], -kd[1], -kd[2]];
-    for (const [x, z, len, w] of [[0.5, -0.2, 15, 1.5], [-0.4, 3.2, 17, 1.2]]) {
-      const n = node('sun-shaft', tint(rayMesh(len, 0.5, w, 10), '#ffd890'), sm, { pos: [x + kd[0] * len, kd[1] * len - 0.2, z + kd[2] * len], parent: holder });
-      aimAxis(n, [0, -1, 0], down);
-    }
+  if (L.sunShaft > 0) { // two slants of low sun through the lane, along the key light, one mesh
+    const kd = env.key.dir, yaw = Math.atan2(kd[0], kd[2]) / DEG, tilt = Math.acos(kd[1]) / DEG, parts = [];
+    for (const [x, z, len, w] of [[0.55, 0.9, 9.5, 1.25], [-0.7, 2.9, 10.5, 0.95]]) parts.push(place(rayMesh(len, 0.5, w, 10), x + kd[0] * len, kd[1] * len - 0.2, z + kd[2] * len, tilt, yaw, 0));
+    scene.root.add(node('sun-shafts', tint(merge(parts), '#ffd890'), rayMaterial({ power: 1.3, near: L.sunShaft, far: L.sunShaft * 0.35 })));
   }
 
   // ---- sky: clouds, gulls
@@ -317,7 +314,7 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
       m4.fromTRS(Mx, l.hook, Q, S3);
       const d = l.inst.data, o = l.idx * 20, k = l.lit * on, fl = 0.94 + 0.06 * Math.sin(time * 9.0 + l.ph * 5);
       d.set(Mx, o);
-      const u0 = l.col[0] * L.unlit * (1 - cool), u1 = l.col[1] * L.unlit, u2 = l.col[2] * L.unlit + cool * 2;
+      const u0 = (l.col[0] + (1 - l.col[0]) * L.paper) * L.unlit * (1 - cool), u1 = (l.col[1] + (1 - l.col[1]) * L.paper) * L.unlit, u2 = (l.col[2] + (1 - l.col[2]) * L.paper) * L.unlit + cool * 2;
       d[o + 16] = u0 + (l.col[0] * 1.06 * fl - u0) * k; d[o + 17] = u1 + (l.col[1] * fl - u1) * k; d[o + 18] = u2 + (l.col[2] * fl - u2) * k;
       l.inst.dirty = true;
       const len = shapeLen[l.shape] * l.s, g = l.glow;
@@ -329,7 +326,7 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
     quat.fromEuler(big.rotation, bx, 0, bz);
     const bp = lamps[0].pos; bp[0] = bigHook[0] + Math.sin(bz) * bigLen; bp[1] = bigHook[1] - Math.cos(bz) * bigLen; bp[2] = bigHook[2] - Math.sin(bx) * bigLen;
     bigGlow.pos[0] = bp[0]; bigGlow.pos[1] = bp[1]; bigGlow.pos[2] = bp[2]; bigGlow.alpha = L.glow * Math.min(1.2, pw) * flick; bigGlow.size[0] = bigGlow.size[1] = 2.5 * (0.96 + 0.04 * flick);
-    big.tint[0] = L.unlit * 0.98 + (1 - L.unlit * 0.98) * on; big.tint[1] = L.unlit * 0.72 * (1 - on) + 0.72 * on; big.tint[2] = (L.unlit * 0.34 + cool * 2) * (1 - on) + 0.3 * on;
+    big.tint[0] = L.unlit * 0.98 + (1 - L.unlit * 0.98) * on; big.tint[1] = L.unlit * (0.72 + 0.28 * L.paper * 0.6) * (1 - on) + 0.72 * on; big.tint[2] = (L.unlit * (0.34 + 0.66 * L.paper * 0.6) + cool * 2) * (1 - on) + 0.3 * on;
     for (let i = 0; i < lamps.length; i++) env.points[i].intensity = lamps[i].base * pw * (i === 0 ? flick : 0.95 + 0.05 * Math.sin(time * 8.3 + i * 2.1));
     for (let i = 0; i < lampGlows.length; i++) lampGlows[i].alpha = 0.55 * Math.min(1.2, pw);
     for (let i = 0; i < winGlows.length; i++) winGlows[i].alpha = (light === 'day' ? 0 : 0.42);

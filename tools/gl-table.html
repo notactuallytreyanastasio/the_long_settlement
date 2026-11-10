@@ -52,7 +52,7 @@ try {
   { const save = toSave(game); save.chapter = chapterN; save.scene = sceneN; save.econ = { ...save.econ, writs: 3 }; game = update(content, game, { type: 'load', save }).game; }
   const table = () => content.tables[content.chapters[game.chapter].tableId];
   const tableId = content.chapters[game.chapter].tableId;
-  const view = createTableView(content, tableId, { pitch: q.has('pitch') ? num('pitch', 0) : undefined, shadowSize: num('shadow', 1024) });
+  const view = createTableView(content, tableId, { pitch: q.has('pitch') ? num('pitch', 0) : undefined, shadowSize: q.has('shadow') ? num('shadow', 0) : undefined });
 
   // ---- layout: the game's logical 430 x 932 scaled to this window, as the shell does
   function fit() {
