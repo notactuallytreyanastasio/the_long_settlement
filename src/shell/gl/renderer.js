@@ -401,30 +401,46 @@ export function createRenderer(canvas, opts = {}) {
   const DECAL_VERTS = 200, MAX_BATCH = 24, IDENT4 = m4.create(), IDENT3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
   const batches = []; let nBatch = 0, decalCap = 0, decalIdxCap = 0, decalBuf = null, decalF = null, decalB = null, decalIdx = null, decalGpu = null;
   // (the tint is part of the key and stays a uniform: a textured material tints its picture, which a vertex colour cannot)
-  const sameDecal = (a, b) => a._rank === b._rank && a.material === b.material && a.tint[0] === b.tint[0] && a.tint[1] === b.tint[1] && a.tint[2] === b.tint[2] && a.tint[3] === b.tint[3] && a.flash[0] === b.flash[0] && a.flash[1] === b.flash[1] && a.flash[2] === b.flash[2] && a.flash[3] === b.flash[3];
+  const sameDecal = (a, b) => a.material === b.material && a.tint[0] === b.tint[0] && a.tint[1] === b.tint[1] && a.tint[2] === b.tint[2] && a.tint[3] === b.tint[3] && a.flash[0] === b.flash[0] && a.flash[1] === b.flash[1] && a.flash[2] === b.flash[2] && a.flash[3] === b.flash[3];
   function batchDecals(list) {
     nBatch = 0;
-    // Decals on one head are painted over each other in their order (lids, then eyes, then the mouth), so only decals in
-    // the same place in their own head's order are drawn together: the first of each, then the second of each, and so on.
+    // Decals on one head are painted over each other in their order (eyes, lids, marks, mouth), and that order must hold.
+    // So within each stretch of small decals the list is re-sorted, stably, by a decal's place among its own siblings
+    // (every head's first, then every head's second, ...): each head still gets its own in order, and now the ones that
+    // can share a draw are neighbours. A neighbouring run with one material, tint and flash becomes one batch.
     let parent = null, rank = 0;
     for (let i = 0; i < list.length; i++) {
-      const n = list[i], m = n.mesh; n._b = -1;
+      const n = list[i]; n._b = -1;
       if (n.parent === parent) rank++; else { parent = n.parent; rank = 0; }
       n._rank = rank;
-      if (n.instances || n.bones || n.material.kind !== 'toon' || m.positions.length > DECAL_VERTS * 3) continue;
-      let k = 0; while (k < nBatch && !sameDecal(batches[k].ref, n)) k++;
-      if (k === nBatch) { if (nBatch === MAX_BATCH) continue; if (!batches[k]) batches[k] = { ref: null, nodes: 0, verts: 0, idx: 0, v0: 0, i0: 0, drawn: false }; const b = batches[k]; b.ref = n; b.nodes = 0; b.verts = 0; b.idx = 0; b.drawn = false; nBatch++; }
-      const b = batches[k]; b.nodes++; b.verts += m.positions.length / 3; b.idx += m.indices.length; n._b = k;
+      n._small = !n.instances && !n.bones && n.material.kind === 'toon' && n.mesh.positions.length <= DECAL_VERTS * 3;
+    }
+    for (let i = 0; i < list.length; i++) {
+      if (!list[i]._small) continue;
+      let j = i + 1; while (j < list.length && list[j]._small) j++;
+      for (let a = i + 1; a < j; a++) { const x = list[a]; let k = a - 1; while (k >= i && list[k]._rank > x._rank) { list[k + 1] = list[k]; k--; } list[k + 1] = x; }
+      i = j;
     }
     let V = 0, X = 0, any = false;
-    for (let k = 0; k < nBatch; k++) { const b = batches[k]; if (b.nodes < 2) { b.nodes = 0; continue; } b.v0 = V; b.i0 = X; V += b.verts; X += b.idx; b.verts = 0; b.idx = 0; any = true; }
+    for (let i = 0; i < list.length; i++) {
+      const n = list[i]; if (!n._small) continue;
+      let j = i + 1, v = n.mesh.positions.length / 3, x = n.mesh.indices.length;
+      while (j < list.length && list[j]._small && sameDecal(n, list[j])) { v += list[j].mesh.positions.length / 3; x += list[j].mesh.indices.length; j++; }
+      if (j - i >= 2 && nBatch < MAX_BATCH) {
+        if (!batches[nBatch]) batches[nBatch] = { ref: null, nodes: 0, verts: 0, idx: 0, v0: 0, i0: 0, drawn: false };
+        const b = batches[nBatch]; b.ref = n; b.nodes = j - i; b.v0 = V; b.i0 = X; b.verts = 0; b.idx = 0; b.drawn = false; V += v; X += x; any = true;
+        for (let k = i; k < j; k++) list[k]._b = nBatch;
+        nBatch++;
+      }
+      i = j - 1;
+    }
     if (!any || V > 65535) { for (let i = 0; i < list.length; i++) list[i]._b = -1; nBatch = 0; return; }
     if (V > decalCap) { decalCap = Math.max(V, 256, decalCap * 2); decalBuf = new ArrayBuffer(decalCap * 48); decalF = new Float32Array(decalBuf); decalB = new Uint8Array(decalBuf); }
     if (X > decalIdxCap) { decalIdxCap = Math.max(X, 512, decalIdxCap * 2); decalIdx = new Uint16Array(decalIdxCap); }
     const q = (v) => (v <= 0 ? 0 : v >= 1 ? 255 : (v * 255 + 0.5) | 0);
     for (let i = 0; i < list.length; i++) {
       const n = list[i]; if (n._b < 0) continue;
-      const b = batches[n._b]; if (b.nodes < 2) { n._b = -1; continue; }
+      const b = batches[n._b];
       const m = n.mesh, P = m.positions, N = m.normals, U = m.uvs, C = m.colors, G = m.glow, I = m.indices, w = n.world, r = n.uvRect, nv = P.length / 3, base = b.v0 + b.verts;
       m4.normalMat3(nm3, w);
       for (let v = 0; v < nv; v++) {

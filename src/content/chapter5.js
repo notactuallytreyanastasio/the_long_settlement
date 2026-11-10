@@ -31,6 +31,8 @@ export const chapter5 = {
     },
     clerk: 'clerk',
     townsfolk: 'townswoman',
+    // the Magistrate in his cell has no gavel and no bands
+    wearAt: { 'ch5.epi.08': { maravel: 'maravel-plain' } },
   },
 
   // ───────────────────────── prologue ─────────────────────────

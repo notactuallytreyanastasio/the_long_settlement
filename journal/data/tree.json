@@ -12371,8 +12371,8 @@
  },
  {
   "path": "src/content/chapter5.js",
-  "bytes": 62265,
-  "lines": 778
+  "bytes": 62385,
+  "lines": 780
  },
  {
   "path": "src/content/chapter6.js",
@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 61485,
-  "lines": 871
+  "bytes": 62096,
+  "lines": 887
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12661,7 +12661,7 @@
  },
  {
   "path": "src/shell/gl/sets/exchange-floor.js",
-  "bytes": 19936,
+  "bytes": 19935,
   "lines": 238
  },
  {
