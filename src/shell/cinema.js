@@ -24,16 +24,22 @@
 // outside.
 //
 // Speed: no shadowBlur anywhere. The parts of a backdrop that do not move are
-// painted once into offscreen canvases (see S() and A() below) and only what
-// moves is drawn each frame; glows and the vignette are cached sprites.
+// painted once into offscreen canvases (see S() and A() in cinema/kit.js) and only
+// what moves is drawn each frame; glows and the vignette are cached sprites.
+//
+// This file is the engine: the frame, the camera, who stands where, the sprites of
+// people standing still, the words, the earpiece inset. The paintings are in:
+//   cinema/kit.js           constants, maths, colour, primitives, the still-layer cache, shared scenery pieces
+//   cinema/figures.js       the cast: faces, bodies, the crowd, drawPortrait
+//   cinema/backdrops-a.js   black, ledger, line and the backdrops of chapters 1 and 2
+//   cinema/backdrops-b.js   the backdrops of chapters 3, 4 and 5
 
 import {
   W, H, TAU, clamp, lerp, ease, mod, rgba, fade, vgrad, circ, seg, poly, rr, wrapText, FONT_UI, FONT_SERIF, FONT_MONO, HAS_DOM, newCanvas,
   freeCanvas, NULL_CTX, cinemaCache, stillsFor, S, buildStills, paintBackdrop, _baked, baked, vignette, waveform, P, LINE_LIGHT, LINE_ID,
   revealCount,
 } from './cinema/kit.js';
-import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures } from './cinema/figures.js';
-import { spriteBounds } from './cinema/figures.js';
+import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures, spriteBounds } from './cinema/figures.js';
 import { BACKDROPS_A } from './cinema/backdrops-a.js';
 import { BACKDROPS_B } from './cinema/backdrops-b.js';
 export { cinemaCache } from './cinema/kit.js';

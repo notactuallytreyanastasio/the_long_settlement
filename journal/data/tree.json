@@ -7281,8 +7281,8 @@
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 39767,
-  "lines": 743
+  "bytes": 40249,
+  "lines": 749
  },
  {
   "path": "src/shell/cinema/backdrops-a.js",
@@ -7301,8 +7301,8 @@
  },
  {
   "path": "src/shell/cinema/kit.js",
-  "bytes": 33426,
-  "lines": 633
+  "bytes": 33595,
+  "lines": 634
  },
  {
   "path": "src/shell/input.js",
@@ -7326,8 +7326,8 @@
  },
  {
   "path": "src/shell/style.js",
-  "bytes": 28523,
-  "lines": 508
+  "bytes": 28338,
+  "lines": 505
  },
  {
   "path": "src/shell/voice.js",

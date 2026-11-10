@@ -22,7 +22,7 @@
 // light
 //   light(col, angle, opts) -> Light      angle points FROM the subject TOWARD the lamp, canvas radians (0 right, -PI/2 up).
 //                                         opts { depth 0..1 (0.8), tint, rim, amb }. Light is plain frozen data:
-//                                         { id, col, angle, dx, dy, key, depth, shadowTint, mul, rim, core, amb }
+//                                         { id, col, angle, dx, dy, key, depth, shadowTint, rim, core, amb }
 //   LIGHTS                                a few named Lights to start from: lantern, dawn, moon, storm, cold, hearth
 //   shadowOf(base, L) -> css              the one shadow tone of base under L (tinted with L's complement); memoised
 //   hiOf(base, L) -> css                  the one highlight tone of base under L; memoised
@@ -149,21 +149,18 @@ export function light(col, angle, opts = {}) {
   const depth = opts.depth === undefined ? 0.8 : opts.depth;
   // the complement, deep and saturated: what the far side of every form is tinted with
   const shadowTint = opts.tint || hex(hsl2rgb(h + 180, Math.max(0.5, Math.min(0.85, s * 0.9 + 0.2)), 0.2));
-  const t = rgbOf(shadowTint), tm = Math.max(t[0], t[1], t[2], 1);
-  // per-channel multiplier that takes a base colour to its shadow tone
-  const mul = [0, 1, 2].map((i) => 1 - depth * (1 - (0.26 + 0.5 * (t[i] / tm))));
   const dx = Math.cos(angle), dy = Math.sin(angle);
   return Object.freeze({
-    id: `L${++_lightN}`, col, angle, dx, dy, depth, shadowTint, mul: Object.freeze(mul),
+    id: `L${++_lightN}`, col, angle, dx, dy, depth, shadowTint,
     rim: opts.rim || blend(col, '#ffffff', 0.62),
     core: blend(col, '#ffffff', 0.9),
     amb: opts.amb || blend(shadowTint, col, 0.12),
     key: dx >= 0 ? 1 : -1,
   });
 }
-/** the one shadow tone of base under L */
+/** the one shadow tone of base under L: base darkened, then pulled toward the complement of the light */
 export function shadowOf(base, L) {
-  return memo(`s|${base}|${L.id}`, () => { const v = rgbOf(base), m = L.mul; return blend(hex([v[0] * m[0], v[1] * m[1], v[2] * m[2]]), L.shadowTint, 0.22 * L.depth); });
+  return memo(`s|${base}|${L.id}`, () => { const v = rgbOf(base), d = 1 - 0.6 * L.depth; return blend(hex([v[0] * d, v[1] * d, v[2] * d]), L.shadowTint, 0.42 * L.depth); });
 }
 /** the one highlight tone of base under L */
 export function hiOf(base, L) {
@@ -428,7 +425,7 @@ function lobesEdge(w, h, seed) {
   const n = 3 + Math.floor(rnd(seed) * 3), step = w / (n + 0.6), cs = [];
   for (let i = 0; i < n; i++) {
     const u = (i + 0.5) / n, dome = Math.pow(Math.sin(u * Math.PI), 0.8);
-    const r = Math.min(step * (0.78 + 0.3 * rnd(seed + i * 3.1)), h * 0.6), top = h * (0.5 + 0.5 * dome) * (0.86 + 0.14 * rnd(seed + i * 7.7));
+    const r = Math.min(step * (0.6 + 0.24 * rnd(seed + i * 3.1)), h * 0.5), top = h * (0.42 + 0.58 * dome) * (0.8 + 0.2 * rnd(seed + i * 7.7));
     cs.push([-w / 2 + step * 0.8 + (w - step * 1.6) * (n === 1 ? 0.5 : i / (n - 1)), -top + r, r]);
   }
   e = [];

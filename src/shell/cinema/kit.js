@@ -3,7 +3,8 @@
 // Part of the cinematic renderer: see ../cinema.js for the whole picture. No DOM is needed to import this.
 //
 // The painter table P is filled by ../cinema.js from the two backdrop files; paintBackdrop() and buildStills()
-// read it when a frame is drawn, never at import time.
+// read it when a frame is drawn, never at import time. Every helper here is exported; names that begin with an
+// underscore are this module's own state.
 
 export const W = 1280;
 export const H = 800;
@@ -28,7 +29,7 @@ export const flick = (t, seed) => 0.82 + 0.12 * Math.sin(t * 7.3 + seed * 11) + 
 
 // ───────────────────────── colour ─────────────────────────
 const _rgb = new Map();
-function hsl2rgb(h, s, l) {
+export function hsl2rgb(h, s, l) {
   h = mod(h, 360) / 360;
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
   const p = 2 * l - q;
@@ -167,7 +168,7 @@ export function newCanvas(w, h) {
 }
 export function freeCanvas(c) { if (c) { c.width = 0; c.height = 0; } }   // Safari holds the backing store until the size goes to zero
 
-const NULL_GRAD = { addColorStop() {} };
+export const NULL_GRAD = { addColorStop() {} };
 /** a context that draws nothing: what the statements of the other kind are run against */
 export const NULL_CTX = (() => {
   const o = { globalAlpha: 1, canvas: null };
@@ -198,8 +199,8 @@ export const cinemaCache = {
 const _stills = new Map();   // backdrop key -> { id, back: { layers, built }, front: { layers, built } }, least recently used first
 let _pass = null;            // the painter pass in progress: { mode: 'off'|'build'|'live', key, real, part, cfg, cur, i, px }
 
-function dropLayer(l) { freeCanvas(l.canvas); if (l.rest) freeCanvas(l.rest.canvas); l.rest = null; }
-function dropStills(rec) { for (const part of [rec.back, rec.front]) { for (const l of part.layers) dropLayer(l); part.layers = []; part.built = false; } }
+export function dropLayer(l) { freeCanvas(l.canvas); if (l.rest) freeCanvas(l.rest.canvas); l.rest = null; }
+export function dropStills(rec) { for (const part of [rec.back, rec.front]) { for (const l of part.layers) dropLayer(l); part.layers = []; part.built = false; } }
 export function stillsFor(key, cfg) {
   let rec = _stills.get(key);
   if (rec && rec.id !== cfg.id) { dropStills(rec); rec = null; }     // the canvas changed size
@@ -209,7 +210,7 @@ export function stillsFor(key, cfg) {
   return rec;
 }
 /** finish the layer being built: find what was actually painted, keep only that rectangle */
-function sealLayer(p) {
+export function sealLayer(p) {
   const cur = p.cur;
   if (!cur) return;
   p.cur = null;
@@ -233,9 +234,9 @@ function sealLayer(p) {
   freeCanvas(c);
   p.part.layers.push({ canvas: out, depth: cur.depth, opaque, x: p.cfg.x + x0 / k, y: p.cfg.y + y0 / k, w: bw / k, h: bh / k, rest: null, seen: null });
 }
-const sameAt = (r, a, d, e, f) => Math.abs(r.a - a) < 1e-6 && Math.abs(r.d - d) < 1e-6 && Math.abs(r.e - e) < 0.02 && Math.abs(r.f - f) < 0.02;
+export const sameAt = (r, a, d, e, f) => Math.abs(r.a - a) < 1e-6 && Math.abs(r.d - d) < 1e-6 && Math.abs(r.e - e) < 0.02 && Math.abs(r.f - f) < 0.02;
 /** resample a layer into device pixels for the place it now lies: (a, d) scale and (e, f) origin of stage space on the canvas */
-function restLayer(l, a, d, e, f, clip) {
+export function restLayer(l, a, d, e, f, clip) {
   if (l.rest) freeCanvas(l.rest.canvas);
   const x0 = Math.max(clip.x, Math.floor(a * l.x + e)), y0 = Math.max(clip.y, Math.floor(d * l.y + f));
   const x1 = Math.min(clip.x + clip.w, Math.ceil(a * (l.x + l.w) + e)), y1 = Math.min(clip.y + clip.h, Math.ceil(d * (l.y + l.h) + f));
@@ -248,7 +249,7 @@ function restLayer(l, a, d, e, f, clip) {
   l.rest.canvas = c;
 }
 /** show one still layer on the real context */
-function showLayer(p, l, alpha) {
+export function showLayer(p, l, alpha) {
   if (!l.canvas || !(alpha > 0.003)) return;
   const ctx = p.real, shift = p.px * l.depth, ga = ctx.globalAlpha;
   if (alpha < 1) ctx.globalAlpha = ga * alpha;
@@ -345,9 +346,9 @@ export function paintBackdrop(ctx, key, which, T, px, info, cfg, rest) {
 
 // Glows are the commonest thing in these paintings. One radial sprite per colour, drawn scaled with the alpha
 // wanted: the same picture as a fresh radial gradient (its stops were a, 0.35a, 0), without making a gradient.
-const GLOW_PX = 128;
+export const GLOW_PX = 128;
 const _glowSprites = new Map();
-function glowSprite(v) {
+export function glowSprite(v) {
   const key = ((v[0] & 255) << 16) | ((v[1] & 255) << 8) | (v[2] & 255);
   let s = _glowSprites.get(key);
   if (!s) {
