@@ -482,6 +482,20 @@
     "src/shell/gl/"
    ],
    "commit": null
+  },
+  {
+   "id": "96fa9c47-8f50-42c1-a146-1983ddb26d47",
+   "type": "goal",
+   "status": "pending",
+   "title": "Story scenes play out live in the 3D engine like a game, not as static talking-head panels",
+   "description": null,
+   "created": "2026-11-10T15:41:02.319731Z",
+   "updated": "2026-11-10T15:41:02.319731Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "and it should play out live like a game",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -708,6 +722,13 @@
    "type": "leads_to",
    "rationale": "Implementation",
    "created": "2026-11-10T15:37:15.622250Z"
+  },
+  {
+   "from": "3f252c16-c69b-43d9-9700-c56e56b0b1e2",
+   "to": "96fa9c47-8f50-42c1-a146-1983ddb26d47",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T15:41:02.322406Z"
   }
  ]
 }
