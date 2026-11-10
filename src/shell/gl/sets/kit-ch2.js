@@ -12,6 +12,7 @@
 //   roomWall(opts)              a wall run with square or arched openings;  splay(side, ...) where a side flat goes
 //   paneWindow(opts)            frame, bars and a glowing pane to stand in an opening
 //   shafts(opts), floorPatch(opts)   additive light cards from a window; the window thrown on the floor
+//   gableWall(opts), runner(opts)
 //   boardFloor(opts), flagFloor(opts)
 //   openRoof(opts)              two sloped planes seen from below, trusses with king posts and braces
 //   hangLamp(opts)              an enamel shade on a cord; anchors: lamp
@@ -133,6 +134,32 @@ export function roomWall({ w = 10, h = 5, t = 0.3, color = SM.plaster, openings 
   }
   solid(cur, w / 2);
   return tint(merge(parts), color);
+}
+
+/**
+ * The gable over a back wall: the triangle between the eaves (y = 0 here: put the node at the wall height) and the ridge
+ * `rise` above, `w` across, with an arched window cut in it. window: { w, sill (may be below 0: only the part above the
+ * eaves is cut here; notch the wall under it yourself), top } or null. Faces +Z, goes back `t`.
+ */
+export function gableWall({ w = 12, rise = 2.6, t = 0.3, color = SM.plaster, window = null } = {}) {
+  const hw = w / 2, roof = (x) => rise * (1 - Math.abs(x) / hw), parts = [];
+  if (!window) parts.push(extrude([[-hw, 0], [hw, 0], [0, rise]], t, { crease: 30 }));
+  else {
+    const ww = window.w / 2, r = Math.min(ww, window.top - Math.max(0, window.sill) - 0.02), spring = window.top - r;
+    for (const sx of [-1, 1]) parts.push(extrude([[sx * hw, 0], [sx * ww, 0], [sx * ww, roof(ww)]], t, { crease: 30 }));
+    parts.push(extrude([...archPts(0, spring, ww, r, 10), [ww, roof(ww)], [0, rise], [-ww, roof(ww)]], t, { crease: 30 }));
+    if (window.sill > 0) parts.push(place(box(window.w, window.sill, t), 0, window.sill / 2, 0));
+  }
+  return tint(place(merge(parts), 0, 0, -t / 2), color);
+}
+
+/** A cloth runner on the floor along Z: a field, two border stripes, fringed ends. Centred, a few millimetres thick. */
+export function runner({ w = 1.5, len = 6, field = SM.wine, border = SM.mustard, line = SM.salt } = {}) {
+  const parts = [bx(w, 0.012, len, 0, 0.006, 0, border), bx(w - 0.24, 0.012, len - 0.2, 0, 0.01, 0, field)];
+  for (const sx of [-1, 1]) parts.push(bx(0.05, 0.012, len - 0.5, sx * (w / 2 - 0.3), 0.014, 0, line));
+  const n = Math.round(len / 1.1);
+  for (let i = 0; i < n; i++) parts.push(tint(place(cylinder(w * 0.16, w * 0.16, 0.012, 4), 0, 0.012, -len / 2 + (len * (i + 0.5)) / n), i % 2 ? border : line));
+  return setOutline(merge(parts), 0.6);
 }
 
 /**
@@ -307,7 +334,7 @@ export function stove({ w = 2.6, h = 0.95, d = 0.95, flue = 4.4, color = SM.iron
  * rows of names (a long stroke and a few ticks) under each, a ledge with chalk ends and a rag. Faces +Z; origin bottom centre.
  * anchors: credit [2] (where the next two names go, left ends of two free rows in the IS OWED column), row (row height), col (width of a name)
  */
-export function chalkboard({ w = 9, h = 2.0, rows = 8, seed = 1, frame = SM.timberRed, slate = SM.slate, slate2 = SM.slateDark, chalk = SM.chalk, free = 2 } = {}) {
+export function chalkboard({ w = 9, h = 2.0, rows = 8, seed = 1, frame = SM.timberRed, slate = SM.slate, slate2 = SM.slateDark, chalk = SM.chalk, free = 2, headX = null, headS = 0.3 } = {}) {
   const r = R(seed), parts = [], t = 0.14;
   parts.push(rb(w + t * 2, h + t * 2, 0.1, 0.03, 0, h / 2, -0.05, frame));
   parts.push(setOutline(bx(w, h, 0.02, 0, h / 2, 0.012, slate), 0));
@@ -315,12 +342,13 @@ export function chalkboard({ w = 9, h = 2.0, rows = 8, seed = 1, frame = SM.timb
   for (let i = 0; i < 7; i++) parts.push(setOutline(tint(place(quad(0.9 + r() * 1.2, 0.2 + r() * 0.3), -w / 2 + 0.8 + r() * (w - 1.6), 0.3 + r() * (h - 0.6), 0.024, 0, 0, (r() - 0.5) * 30), slate2), 0));
   parts.push(setOutline(setGlow(bx(0.035, h - 0.16, 0.004, 0, h / 2, 0.028, chalk), 0.25), 0));
   const head = h - 0.3, rowH = (head - 0.34) / rows, credit = [];
-  parts.push(place(pixelText('GAVE', { s: 0.24, color: chalk, glow: 0.35 }), -w / 4, head, 0.03), place(pixelText('IS OWED', { s: 0.24, color: chalk, glow: 0.35 }), w / 4, head, 0.03));
+  const hx = headX ?? w / 4;
+  parts.push(place(pixelText('GAVE', { s: headS, color: chalk, glow: 0.4 }), -hx, head, 0.03), place(pixelText('IS OWED', { s: headS, color: chalk, glow: 0.4 }), hx, head, 0.03));
   for (const sx of [-1, 1]) parts.push(setOutline(setGlow(bx(w / 2 - 0.5, 0.03, 0.004, sx * w / 4, head - 0.2, 0.028, chalk), 0.25), 0));
   const cols = 3, cw = (w / 2 - 0.4) / cols;
   for (const side of [-1, 1]) for (let c = 0; c < cols; c++) for (let k = 0; k < rows; k++) {
     const x = (side < 0 ? -w / 2 + 0.22 : 0.2) + c * cw, y = head - 0.36 - rowH * (k + 0.5) + (r() - 0.5) * 0.03;
-    if (side > 0 && c === cols - 1 && k >= rows - free) { credit.push([x, y, 0.03]); continue; }
+    if (side > 0 && c === 0 && k >= rows - free) { credit.push([x, y, 0.03]); continue; }
     if (r() < 0.12) continue;
     const nl = cw * (0.36 + r() * 0.26), col = r() < 0.16 ? '#ffe9a0' : r() < 0.1 ? '#ffc8d8' : chalk;
     // a name: two or three strokes of different lengths, then tally ticks

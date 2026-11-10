@@ -12565,9 +12565,19 @@
   "lines": 269
  },
  {
+  "path": "src/shell/gl/sets/exchange-steps.js",
+  "bytes": 23744,
+  "lines": 284
+ },
+ {
   "path": "src/shell/gl/sets/ferry-dawn.js",
   "bytes": 20771,
   "lines": 257
+ },
+ {
+  "path": "src/shell/gl/sets/founders-lamp.js",
+  "bytes": 16498,
+  "lines": 182
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
@@ -12575,9 +12585,24 @@
   "lines": 349
  },
  {
+  "path": "src/shell/gl/sets/hearing-hall.js",
+  "bytes": 24441,
+  "lines": 269
+ },
+ {
+  "path": "src/shell/gl/sets/hidden-lamp.js",
+  "bytes": 23866,
+  "lines": 245
+ },
+ {
   "path": "src/shell/gl/sets/index.js",
   "bytes": 1482,
   "lines": 33
+ },
+ {
+  "path": "src/shell/gl/sets/kedge-roads.js",
+  "bytes": 24365,
+  "lines": 299
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
@@ -12586,8 +12611,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch2.js",
-  "bytes": 74519,
-  "lines": 914
+  "bytes": 76424,
+  "lines": 942
  },
  {
   "path": "src/shell/gl/sets/kit-ch3.js",
@@ -12596,7 +12621,7 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
-  "bytes": 35083,
+  "bytes": 35189,
   "lines": 458
  },
  {
@@ -12606,12 +12631,12 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch6.js",
-  "bytes": 53769,
-  "lines": 656
+  "bytes": 54124,
+  "lines": 658
  },
  {
   "path": "src/shell/gl/sets/kit-ch8.js",
-  "bytes": 52832,
+  "bytes": 52826,
   "lines": 584
  },
  {

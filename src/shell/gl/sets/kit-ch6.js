@@ -88,7 +88,9 @@ export function ch6Materials() {
 
 /** A stillsalt cask: pale staves, teal hoops, a coral brand on the head. Stands on y = 0. */
 export function cask({ r = 0.3, h = 0.72, hoop = K6.teal, brand = K6.coral, stave = K6.salt } = {}) {
-  return merge(barrel({ r, h, color: stave, hoop }), cyl(r * 0.42, r * 0.42, 0.02, 8, 0, h - 0.03, 0, brand));
+  const body = tint(lathe([[0, 0], [r * 0.8, 0], [r * 1.0, h * 0.28], [r * 1.04, h * 0.5], [r * 1.0, h * 0.72], [r * 0.8, h], [r * 0.72, h - 0.035], [0, h - 0.035]], 10, { crease: 50 }), stave);
+  const band = (y, rr) => tint(lathe([[rr * 1.03, y - h * 0.035], [rr * 1.05, y], [rr * 1.03, y + h * 0.035]], 10, { crease: 180 }), hoop);
+  return merge(body, band(h * 0.22, r * 0.96), band(h * 0.78, r * 0.96), cyl(r * 0.42, r * 0.42, 0.02, 8, 0, h - 0.03, 0, brand));
 }
 
 /**

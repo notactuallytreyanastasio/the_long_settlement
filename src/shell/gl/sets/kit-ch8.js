@@ -178,8 +178,8 @@ export function mole({ len = 60, w = 3.2, drop = 2.2, parapet = 1.0, seed = 1, b
   const r = R(seed), parts = [bx(len, drop + 0.3, w, 0, -(drop + 0.3) / 2, 0, color), bx(len + 0.3, 0.22, w + 0.3, 0, -0.02, 0, C8.marble)];
   parts.push(bx(len, parapet * 0.6, 0.6, 0, parapet * 0.3, -w / 2 + 0.3, color));
   const n = Math.floor(len / block);
-  for (let i = 0; i < n; i++) if (i % 2 === 0) parts.push(rb(block * 0.92, parapet * 0.5, 0.7, 0.08, -len / 2 + (i + 0.5) * block, parapet * 0.6 + parapet * 0.22 + r() * 0.05, -w / 2 + 0.3, i % 4 ? C8.marble : '#ffe6c8', 0, 0, (r() - 0.5) * 3));
-  if (arches) for (let x = -len / 2 + 3; x < len / 2 - 2; x += 6) parts.push(tint(place(roundedBox(2.4, drop * 1.3, 0.3, 1.1, 2), x, -drop * 0.75, w / 2 - 0.05), C8.slate));
+  for (let i = 0; i < n; i++) if (i % 2 === 0) parts.push(bx(block * 0.92, parapet * 0.5, 0.7, -len / 2 + (i + 0.5) * block, parapet * 0.6 + parapet * 0.22 + r() * 0.05, -w / 2 + 0.3, i % 4 ? C8.marble : '#ffe6c8', 0, 0, (r() - 0.5) * 3));
+  if (arches) for (let x = -len / 2 + 3; x < len / 2 - 2; x += 6) parts.push(tint(place(roundedBox(2.4, drop * 1.3, 0.3, 1.1, 1), x, -drop * 0.75, w / 2 - 0.05), C8.slate));
   return merge(parts);
 }
 

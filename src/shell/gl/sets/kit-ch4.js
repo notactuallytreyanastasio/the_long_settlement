@@ -433,7 +433,7 @@ export const MARKS4 = {
  *   spec { id, light, low, scene, actors, foreground, cameras, marks, lamps [{ name, pos, color, radius, base }], lampPower (the light state's),
  *          update(time, dt, pw, power), extra {} }
  * env.points is made from `lamps`; update() is called with pw = lampPower * power after the lamps' intensities are set
- * (each lamp flickers a little unless it has `steady`). Returns the set.
+ * (each lamp flickers a little unless it has `steady`; `own` lamps ignore the table's power; set a lamp's `k` to scale it from update). Returns the set.
  */
 export function c4Shell({ id, light, low, scene, actors, foreground, cameras, marks, lamps, lampPower = 1, update, extra = {} }) {
   const env = scene.env;
@@ -447,7 +447,7 @@ export function c4Shell({ id, light, low, scene, actors, foreground, cameras, ma
     task: () => null, cue: () => false,
     update(time, dt = 0) {
       const pw = lampPower * power;
-      for (let i = 0; i < lamps.length; i++) { const l = lamps[i]; env.points[i].intensity = l.base * (l.own ? 1 : pw) * (l.steady ? 1 : 0.94 + 0.06 * Math.sin(time * (7.3 + i * 1.7) + i * 2.1) * Math.sin(time * 4.1 + i)); }
+      for (let i = 0; i < lamps.length; i++) { const l = lamps[i]; env.points[i].intensity = l.base * (l.k == null ? 1 : l.k) * (l.own ? 1 : pw) * (l.steady ? 1 : 0.94 + 0.06 * Math.sin(time * (7.3 + i * 1.7) + i * 2.1) * Math.sin(time * 4.1 + i)); }
       update(time, dt, pw, power);
     },
     ...extra,
