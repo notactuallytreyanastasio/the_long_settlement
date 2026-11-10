@@ -161,12 +161,16 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.retry.outputs.page_url || steps.first.outputs.page_url }}
     steps:
-      - id: deployment
+      # The site carries ~78 MB of voice audio. Most deploys take 2-3 minutes, but Pages
+      # sometimes sits in syncing_files past deploy-pages' hard cap of 10 minutes (runs
+      # 42801318570 and 42815193291; a larger `timeout` is clamped to 600000 with a warning).
+      # A timed-out deploy is cancelled and the previous one stays live, so the answer is to
+      # try the same artifact once more rather than wait longer.
+      - id: first
         uses: actions/deploy-pages@v4
-        # The site carries ~78 MB of voice audio, and Pages has spent more than the default
-        # 10 minutes in syncing_files on it (run 42801318570 timed out there). A timed-out
-        # deploy is cancelled and the previous one stays live, so a longer wait costs nothing.
-        with:
-          timeout: 1200000
+        continue-on-error: true
+      - id: retry
+        if: steps.first.outcome == 'failure'
+        uses: actions/deploy-pages@v4
