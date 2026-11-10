@@ -12630,6 +12630,11 @@
   "lines": 150
  },
  {
+  "path": "src/shell/gl/sets/cutter-brig.js",
+  "bytes": 19387,
+  "lines": 212
+ },
+ {
   "path": "src/shell/gl/sets/cutter-deck.js",
   "bytes": 17543,
   "lines": 202

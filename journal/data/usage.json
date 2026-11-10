@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T19:03:24.733Z",
+ "generated": "2026-11-10T19:06:42.467Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -51,63 +51,63 @@
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T19:03:14.282Z",
+ "last": "2026-11-10T19:06:28.300Z",
  "total": {
-  "responses": 3483,
-  "input": 7280,
-  "write5m": 24084866,
-  "write1h": 1550903,
-  "read": 816665965,
-  "output": 7845050,
-  "thinking": 2819276,
+  "responses": 3497,
+  "input": 7308,
+  "write5m": 24125965,
+  "write1h": 1558323,
+  "read": 820152942,
+  "output": 7871577,
+  "thinking": 2827541,
   "cost": {
-   "input": 0.0533,
-   "write5m": 240.8487,
-   "write1h": 18.8282,
-   "read": 163.3332,
-   "output": 307.732,
-   "total": 730.7953
+   "input": 0.0535,
+   "write5m": 241.2597,
+   "write1h": 18.9469,
+   "read": 164.0306,
+   "output": 308.7931,
+   "total": 733.0838
   },
-  "uncachedCost": 6384.0473,
+  "uncachedCost": 6413.3925,
   "unpriced": 0
  },
  "byGroup": {
   "lead": {
-   "responses": 92,
-   "input": 248,
+   "responses": 95,
+   "input": 254,
    "write5m": 0,
-   "write1h": 784245,
-   "read": 13037613,
-   "output": 170319,
-   "thinking": 42342,
+   "write1h": 791665,
+   "read": 13691831,
+   "output": 171704,
+   "thinking": 42391,
    "cost": {
     "input": 0.002,
     "write5m": 0,
-    "write1h": 12.5479,
-    "read": 2.6075,
-    "output": 6.8128,
-    "total": 21.9702
+    "write1h": 12.6666,
+    "read": 2.7384,
+    "output": 6.8682,
+    "total": 22.2752
    },
-   "uncachedCost": 117.3896,
+   "uncachedCost": 122.7382,
    "unpriced": 0
   },
   "helpers": {
-   "responses": 2872,
-   "input": 5798,
-   "write5m": 24084866,
+   "responses": 2883,
+   "input": 5820,
+   "write5m": 24125965,
    "write1h": 0,
-   "read": 638807572,
-   "output": 7370720,
-   "thinking": 2722863,
+   "read": 641640331,
+   "output": 7395862,
+   "thinking": 2731079,
    "cost": {
-    "input": 0.0464,
-    "write5m": 240.8487,
+    "input": 0.0466,
+    "write5m": 241.2597,
     "write1h": 0,
-    "read": 127.7615,
-    "output": 294.8288,
-    "total": 663.4854
+    "read": 128.3281,
+    "output": 295.8345,
+    "total": 665.4688
    },
-   "uncachedCost": 5598.0147,
+   "uncachedCost": 5622.0114,
    "unpriced": 0
   },
   "journal": {
@@ -132,22 +132,22 @@
  },
  "byModel": {
   "claude-fable-5-2": {
-   "responses": 2965,
-   "input": 6048,
-   "write5m": 24084866,
-   "write1h": 802622,
-   "read": 651876273,
-   "output": 7541549,
-   "thinking": 2765311,
+   "responses": 2979,
+   "input": 6076,
+   "write5m": 24125965,
+   "write1h": 810042,
+   "read": 655363250,
+   "output": 7568076,
+   "thinking": 2773576,
    "cost": {
-    "input": 0.0484,
-    "write5m": 240.8487,
-    "write1h": 12.842,
-    "read": 130.3753,
-    "output": 301.662,
-    "total": 685.7762
+    "input": 0.0486,
+    "write5m": 241.2597,
+    "write1h": 12.9607,
+    "read": 131.0726,
+    "output": 302.723,
+    "total": 688.0646
    },
-   "uncachedCost": 5715.8204,
+   "uncachedCost": 5745.1657,
    "unpriced": 0
   },
   "claude-opus-5-5": {
@@ -1283,8 +1283,14 @@
   },
   {
    "at": "2026-11-10T19:05:00.000Z",
-   "lead": 21.9702,
-   "helpers": 663.4854,
+   "lead": 22.2752,
+   "helpers": 664.6481,
+   "journal": 45.3398
+  },
+  {
+   "at": "2026-11-10T19:10:00.000Z",
+   "lead": 22.2752,
+   "helpers": 665.4688,
    "journal": 45.3398
   }
  ],
@@ -1310,14 +1316,14 @@
    "Skill": 2
   },
   "helpers": {
-   "Read": 1525,
+   "Read": 1528,
    "Write": 133,
-   "Bash": 2191,
+   "Bash": 2198,
    "Edit": 23,
    "ToolSearch": 51,
    "mcp__deciduous__read_messages": 112,
    "TaskStop": 2,
-   "mcp__deciduous__post_message": 64,
+   "mcp__deciduous__post_message": 65,
    "mcp__deciduous__query_nodes": 6
   },
   "lead": {
@@ -1326,10 +1332,10 @@
    "Skill": 1,
    "mcp__deciduous__capture_conversation_turn": 6,
    "Write": 8,
-   "mcp__deciduous__add_node": 16,
+   "mcp__deciduous__add_node": 17,
    "Workflow": 10,
    "Agent": 6,
-   "Read": 10,
+   "Read": 12,
    "AskUserQuestion": 1,
    "Edit": 3,
    "mcp__deciduous__query_nodes": 1,
