@@ -555,10 +555,10 @@ export function createRenderer(canvas) {
 
   /** A sticker: a flat pill with an ink line and inked-on lettering, centred on (cx, cy). Returns its width. */
   function sticker(g, text, cx, cy, o) {
-    const { size = 12, fill = PAPER, col = INK, face = MONO, weight = '700', padX = 9, h = size + 10, maxW = 1e9, gap = 0, lineW = 2 } = o || {};
+    const { size = 12, fill = PAPER, col = INK, face = MONO, weight = '700', padX = 9, h = size + 10, maxW = 1e9, gap = 0, lineW = 2, minW = 0 } = o || {};
     g.font = `${weight} ${size}px ${face}`;
     const tw = Math.min(maxW - padX * 2, g.measureText(text).width + gap * (String(text).length - 1));
-    const w = tw + padX * 2;
+    const w = Math.max(minW, tw + padX * 2);
     rr(g, cx - w / 2, cy - h / 2 + 2.5, w, h, h / 2);
     g.fillStyle = INK;
     g.fill();
@@ -985,11 +985,13 @@ export function createRenderer(canvas) {
     g.textBaseline = 'alphabetic';
   }
   // A lit insert's name: a sticker in the light's colour with ink lettering.
-  function tag(g, tf, text, spot, fill, col = INK) {
+  // `over` is the unlit name painted into the table at the same spot: a sticker with shorter lettering
+  // (SPIN over BREAKWATER) is cut as wide as that name, so its ends never show at either side.
+  function tag(g, tf, text, spot, fill, col = INK, over = '') {
     if (!text) return;
     g.font = `700 ${tf}px ${MONO}`;
-    const half = g.measureText(text).width / 2 + 7;
-    sticker(g, text, clamp(spot[0], LABEL_X0 + half, LABEL_X1 - half), spot[1], { size: tf, fill, col, padX: 6, h: tf + 6, lineW: 1.8 });
+    const half = Math.max(g.measureText(text).width, over ? g.measureText(over).width - 6 : 0) / 2 + 7;
+    sticker(g, text, clamp(spot[0], LABEL_X0 + half, LABEL_X1 - half), spot[1], { size: tf, fill, col, padX: 6, h: tf + 6, lineW: 1.8, minW: half * 2 });
   }
 
   // The tag under the three fill lanes: what they are for, with a pointer up into each.
@@ -1450,7 +1452,7 @@ export function createRenderer(canvas) {
           if (k === lead) bloom(g, cx, cy, 15, col, 0.9);
           chevron(g, cx, cy, ang, k === lead ? 8.5 : 7, k === lead ? WHITE : col, 1.6);
         }
-        tag(g, tf, gold && blink ? 'SPIN' : name(s), labelSpot(table, 'shot', s), gold && blink ? WHITE : hot(col, on));
+        tag(g, tf, gold && blink ? 'SPIN' : name(s), labelSpot(table, 'shot', s), gold && blink ? WHITE : hot(col, on), INK, name(s));
       }
       if (spins) spinBadge(m[0] + d[0] * 16, m[1] + d[1] * 16);
     }
@@ -1533,7 +1535,7 @@ export function createRenderer(canvas) {
         g.stroke();
         tag(g, tf, name(s), labelSpot(table, 'saucer', s), hot(threadCol, on));
       } else if (spins && armed) {
-        tag(g, tf, blink ? 'SPIN' : name(s), labelSpot(table, 'saucer', s), blink ? WHITE : LANTERN);
+        tag(g, tf, blink ? 'SPIN' : name(s), labelSpot(table, 'saucer', s), blink ? WHITE : LANTERN, INK, name(s));
       }
     }
 
@@ -2158,10 +2160,9 @@ export function createRenderer(canvas) {
 
   // What shows round the glass: night, with the cabinet's edge as one hard band.
   function paintFrameP(g, w, h) {
-    g.fillStyle = '#07051c';
+    // one tone: a second tone over the left half showed as a seam under the notch
+    g.fillStyle = '#0a0824';
     g.fillRect(0, 0, w, h);
-    g.fillStyle = '#0d0a2c';
-    g.fillRect(0, 0, w * 0.5, h);
   }
 
   // The plate behind the hud and the story strip, in its own coordinates (0,0 = hud's corner).
@@ -3807,8 +3808,9 @@ export function createRenderer(canvas) {
     } else throw new Error(`render: unknown game mode '${game.mode}'`);
     ctx.restore();
 
-    if (fx.flash && fx.flash.a > 0) {
-      ctx.fillStyle = A(fx.flash.color, clamp(fx.flash.a, 0, 1));
+    // A flash is two hard steps, not a fade: a soft wash of gold over flat colour turned the whole frame to mud.
+    if (fx.flash && fx.flash.a > 0.12) {
+      ctx.fillStyle = A(fx.flash.color, fx.flash.a > 0.3 ? 0.3 : 0.12);
       ctx.fillRect(0, 0, L.W, L.H);
     }
   }

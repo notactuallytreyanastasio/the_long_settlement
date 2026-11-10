@@ -132,8 +132,8 @@ export const chapter5 = {
       id: 'ch5.s2',
       title: "The Chancellor's Arithmetic",
       thread: 'duty',
-      hint: 'Answer the summons: sink the Plumb in the STRONGROOM',
-      objective: { kind: 'all', ids: ['strongroom'] },
+      hint: 'Answer the summons: sink the Plumb in the STRONGROOM twice',
+      objective: { kind: 'count', ids: ['strongroom'], n: 2 },
       reward: { points: 20000 },
       briefing: [
         { id: 'ch5.s2.b01', who: 'crowd', text: "The Chancellor's carriage, Tribune. Alone, he asks." },
@@ -209,8 +209,8 @@ export const chapter5 = {
       id: 'ch5.s3',
       title: 'Short',
       thread: 'covert',
-      hint: 'Trace the sellers: 15 hits on the PIT bumpers',
-      objective: { kind: 'count', ids: ['pit1', 'pit2', 'pit3'], n: 15 },
+      hint: 'Trace the sellers: 20 hits on the PIT bumpers',
+      objective: { kind: 'count', ids: ['pit1', 'pit2', 'pit3'], n: 20 },
       reward: { points: 20000 },
       briefing: [
         { id: 'ch5.s3.b01', who: 'sable', text: "Don't turn round, Ren. Keep reading the slips." },
@@ -344,8 +344,8 @@ export const chapter5 = {
       id: 'ch5.s5',
       title: 'Clearing House',
       thread: 'covert',
-      hint: 'Break in with Sable: two shots round the CLEARING orbit',
-      objective: { kind: 'count', ids: ['clearingOrbit'], n: 2 },
+      hint: 'Break in with Sable: 3 shots round the CLEARING orbit',
+      objective: { kind: 'count', ids: ['clearingOrbit'], n: 3 },
       reward: { points: 25000 },
       briefing: [
         { id: 'ch5.s5.b01', who: 'sable', text: "Coal chute. You first. I have the lamp." },
@@ -416,8 +416,8 @@ export const chapter5 = {
       id: 'ch5.s6',
       title: 'The Steps',
       thread: 'duty',
-      hint: 'Hold the steps: shoot the STEPS ramp twice',
-      objective: { kind: 'count', ids: ['stepsRamp'], n: 2 },
+      hint: 'Hold the steps: shoot the STEPS ramp 3 times',
+      objective: { kind: 'count', ids: ['stepsRamp'], n: 3 },
       reward: { points: 30000, trust: 15 },
       briefing: [
         { id: 'ch5.s6.b01', who: 'crowd', text: "The sheet's open! The salt is gone! Sell!" },

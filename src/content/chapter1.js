@@ -137,8 +137,8 @@ export const chapter1 = {
       id: 'ch1.s2',
       title: 'The Listener',
       thread: 'covert',
-      hint: "Get into the magistrate's chamber: sink the bench saucer",
-      objective: { kind: 'all', ids: ['bench'] },
+      hint: "Reach the magistrate's chamber: sink the bench saucer twice",
+      objective: { kind: 'count', ids: ['bench'], n: 2 },
       reward: { points: 5000 },
       briefing: [
         { id: 'ch1.s2.b01', who: 'thorne', fx: 'radio', text: "Maravel's chamber. The shell goes under his desk." },
@@ -210,8 +210,8 @@ export const chapter1 = {
       id: 'ch1.s3',
       title: 'Weighted Drums',
       thread: 'covert',
-      hint: 'Work the crowd: 12 hits on the drum bumpers',
-      objective: { kind: 'count', ids: ['drum1', 'drum2', 'drum3'], n: 12 },
+      hint: 'Work the crowd: 20 hits on the drum bumpers',
+      objective: { kind: 'count', ids: ['drum1', 'drum2', 'drum3'], n: 20 },
       reward: { points: 6000 },
       briefing: [
         { id: 'ch1.s3.b01', who: 'tobb', text: "Evens the Hill! Sevens the docks! Ask me why!" },
@@ -344,8 +344,8 @@ export const chapter1 = {
       id: 'ch1.s5',
       title: 'The Pier',
       thread: 'duty',
-      hint: 'Get her out along the pier: 2 pier ramp shots',
-      objective: { kind: 'count', ids: ['pierRamp'], n: 2 },
+      hint: 'Get her out along the pier: 3 pier ramp shots',
+      objective: { kind: 'count', ids: ['pierRamp'], n: 3 },
       reward: { points: 8000 },
       briefing: [
         { id: 'ch1.s5.b01', who: 'thorne', fx: 'radio', text: "Shot fired. Get the Tribune off those steps." },

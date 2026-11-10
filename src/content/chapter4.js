@@ -64,8 +64,8 @@ export const chapter4 = {
       id: 'ch4.s1',
       title: 'Breakwater',
       thread: 'commons',
-      hint: 'Get ashore: shoot the BREAKWATER ramp twice',
-      objective: { kind: 'count', ids: ['breakwaterRamp'], n: 2 },
+      hint: 'Get ashore: shoot the BREAKWATER ramp 3 times',
+      objective: { kind: 'count', ids: ['breakwaterRamp'], n: 3 },
       reward: { points: 8000, trust: 25 },
       briefing: [
         { id: 'ch4.s1.b01', who: 'crowd', text: "Three in the surf! Bring the long rope!" },
@@ -407,8 +407,8 @@ export const chapter4 = {
       id: 'ch4.s6',
       title: 'True Account',
       thread: 'commons',
-      hint: 'Finish the net: 15 hits on the REEF bumpers',
-      objective: { kind: 'count', ids: ['reef1', 'reef2', 'reef3'], n: 15 },
+      hint: 'Finish the net: 20 hits on the REEF bumpers',
+      objective: { kind: 'count', ids: ['reef1', 'reef2', 'reef3'], n: 20 },
       reward: { points: 20000, trust: 25 },
       briefing: [
         { id: 'ch4.s6.b01', who: 'wyn', text: "Thursday. That net wants its middle." },

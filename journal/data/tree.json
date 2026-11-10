@@ -7206,27 +7206,27 @@
  },
  {
   "path": "src/content/chapter1.js",
-  "bytes": 46995,
+  "bytes": 47006,
   "lines": 664
  },
  {
   "path": "src/content/chapter2.js",
-  "bytes": 46013,
+  "bytes": 46029,
   "lines": 632
  },
  {
   "path": "src/content/chapter3.js",
-  "bytes": 55384,
+  "bytes": 55398,
   "lines": 674
  },
  {
   "path": "src/content/chapter4.js",
-  "bytes": 53384,
+  "bytes": 53386,
   "lines": 666
  },
  {
   "path": "src/content/chapter5.js",
-  "bytes": 53203,
+  "bytes": 53217,
   "lines": 669
  },
  {
@@ -7321,8 +7321,8 @@
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 157462,
-  "lines": 3818
+  "bytes": 157938,
+  "lines": 3820
  },
  {
   "path": "src/shell/style.js",

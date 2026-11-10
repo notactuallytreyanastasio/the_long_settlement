@@ -59,8 +59,8 @@ export const chapter2 = {
       id: 'ch2.s1',
       title: 'The Toll',
       thread: 'duty',
-      hint: 'Cross to Saltmere: shoot the CAUSEWAY ramp twice',
-      objective: { kind: 'count', ids: ['causewayRamp'], n: 2 },
+      hint: 'Cross to Saltmere: shoot the CAUSEWAY ramp 3 times',
+      objective: { kind: 'count', ids: ['causewayRamp'], n: 3 },
       reward: { points: 6000 },
       briefing: [
         { id: 'ch2.s1.b01', who: 'thorne', fx: 'radio', text: "Saltmere's gate is shut. Get your principal through it." },
@@ -177,8 +177,8 @@ export const chapter2 = {
       id: 'ch2.s3',
       title: 'Down the Shafts',
       thread: 'covert',
-      hint: 'Go down the mine: 15 hits on the SHAFT bumpers',
-      objective: { kind: 'count', ids: ['shaft1', 'shaft2', 'shaft3'], n: 15 },
+      hint: 'Go down the mine: 24 hits on the SHAFT bumpers',
+      objective: { kind: 'count', ids: ['shaft1', 'shaft2', 'shaft3'], n: 24 },
       reward: { points: 10000 },
       briefing: [
         { id: 'ch2.s3.b01', who: 'thorne', fx: 'radio', text: "Exam task. The mine's assay book. Photograph every page." },
@@ -381,8 +381,8 @@ export const chapter2 = {
       id: 'ch2.s6',
       title: 'The Orrery',
       thread: 'duty',
-      hint: 'Hold the lamp-house: sink the Plumb in the ORRERY',
-      objective: { kind: 'all', ids: ['orrery'] },
+      hint: 'Hold the lamp-house: sink the Plumb in the ORRERY twice',
+      objective: { kind: 'count', ids: ['orrery'], n: 2 },
       reward: { points: 20000, trust: 15 },
       briefing: [
         { id: 'ch2.s6.b01', who: 'crowd', text: "Stewards on the causeway! They've come a night early!" },

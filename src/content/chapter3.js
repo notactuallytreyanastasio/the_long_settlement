@@ -275,8 +275,8 @@ export const chapter3 = {
       id: 'ch3.s4',
       title: 'The Underwriting Floor',
       thread: 'covert',
-      hint: 'Search the night floor: 15 hits on the DRILL bumpers',
-      objective: { kind: 'count', ids: ['drill1', 'drill2', 'drill3'], n: 15 },
+      hint: 'Search the night floor: 20 hits on the DRILL bumpers',
+      objective: { kind: 'count', ids: ['drill1', 'drill2', 'drill3'], n: 20 },
       reward: { points: 14000 },
       briefing: [
         { id: 'ch3.s4.b01', who: 'ren', text: 'No Line tonight. This one is on my own account.' },
@@ -343,8 +343,8 @@ export const chapter3 = {
       id: 'ch3.s5',
       title: 'Proctor',
       thread: 'duty',
-      hint: 'Climb the east stair: sink the Plumb in the VAULT',
-      objective: { kind: 'all', ids: ['vault'] },
+      hint: 'Climb the east stair: sink the Plumb in the VAULT twice',
+      objective: { kind: 'count', ids: ['vault'], n: 2 },
       reward: { points: 18000 },
       briefing: [
         { id: 'ch3.s5.b01', who: 'ren', text: 'Her lamp is on. It always was.' },
