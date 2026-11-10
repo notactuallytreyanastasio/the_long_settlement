@@ -524,6 +524,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "d549a0c4-c424-4949-a708-4592835ffa0e",
+   "type": "action",
+   "status": "pending",
+   "title": "Workflow 7: chapter 1 of the real game in the 3D engine (core stage/combos, GL shell with 2D fallback, HUD, cutscene director, cast, 7 sets, perf tiers)",
+   "description": null,
+   "created": "2026-11-10T17:15:41.252228Z",
+   "updated": "2026-11-10T17:15:41.252228Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -771,6 +785,13 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T17:13:40.201367Z"
+  },
+  {
+   "from": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "to": "d549a0c4-c424-4949-a708-4592835ffa0e",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T17:15:41.254571Z"
   }
  ]
 }
