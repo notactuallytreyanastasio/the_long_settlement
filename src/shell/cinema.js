@@ -173,6 +173,16 @@ function stars(ctx, seed, n, yMax, t) {
 function lantern(ctx, x, y, s, col, t, seed) {
   const sway = Math.sin(t * 1.1 + seed * 7) * 0.1 + Math.sin(t * 0.37 + seed * 3) * 0.05;
   const fl = flick(t, seed);
+  if (s < 10) { // far away: a glow and a body, no ribs
+    const lx = x - Math.sin(sway) * s * 1.3, ly = y + s * 1.3;
+    glow(ctx, lx, ly, s * 4.2, col, 0.34 * fl);
+    seg(ctx, x, y, lx, y + s * 0.4, 'rgba(12,8,10,.85)', 1);
+    ctx.fillStyle = css(mix(col, '#fff6d8', 0.45 * fl));
+    ctx.beginPath(); ctx.ellipse(lx, ly, s * 0.72, s * 0.9, 0, 0, TAU); ctx.fill();
+    rect(ctx, lx - s * 0.3, ly - s * 0.98, s * 0.6, s * 0.16, '#1a0e0a');
+    rect(ctx, lx - s * 0.26, ly + s * 0.84, s * 0.52, s * 0.14, '#1a0e0a');
+    return;
+  }
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(sway);
@@ -240,8 +250,9 @@ function skyline(ctx, seed, x0, x1, base, hMin, hMax, wMin, wMax, col, win, t) {
     else if (r < 0.36) { ctx.beginPath(); ctx.arc(x + w / 2, base - h, w * 0.42, Math.PI, 0); ctx.fill(); }
     else if (r < 0.42) ctx.fillRect(x + w * 0.42, base - h - 22, 3, 22);
     if (win) {
-      for (let wy = base - h + 6; wy < base - 5; wy += 9) {
-        for (let wx = x + 4; wx < x + w - 4; wx += 8) {
+      const stepY = h > 160 ? 14 : 9, stepX = h > 160 ? 12 : 8;
+      for (let wy = base - h + 6; wy < base - 5; wy += stepY) {
+        for (let wx = x + 4; wx < x + w - 4; wx += stepX) {
           if (rnd(i * 31 + wx * 0.71 + wy * 1.31) < 0.3) rect(ctx, wx, wy, 3, 4, rgba(win, 0.45 + 0.35 * Math.sin(t * 0.6 + wx * 0.3 + wy)));
         }
       }
@@ -513,7 +524,7 @@ function hairFront(ctx, k, cy, f, col, colHi, tone) {
   };
   switch (k.style) {
     case 'crop':
-      capPath(ctx, hw, cy, 9, -35, -f * 6); ctx.fill(); hi(9);
+      capPath(ctx, hw, cy, k.lines >= 2 ? 5 : 9, k.lines >= 2 ? -42 : -35, -f * 6); ctx.fill(); hi(k.lines >= 2 ? 5 : 9);
       break;
     case 'swept':
       capPath(ctx, hw, cy, 16, -33, -f * 22); ctx.fill();
@@ -848,7 +859,7 @@ function drawFigure(ctx, member, o) {
 
   const fx0 = f * 5; // features sit a little toward the way the head is turned
   if (k.has(/beard/)) {
-    ctx.fillStyle = hairC;
+    ctx.fillStyle = tone(mix(k.hair, '#000', 0.14));
     ctx.beginPath();
     ctx.moveTo(-hw + 1, cy + 6);
     ctx.bezierCurveTo(-hw + 2, cy + 50, -hw * k.jaw - 4, cy + 80, 0, cy + 90);
@@ -1168,20 +1179,21 @@ def('ledger', { amb: '#2a1a0c', rim: '#ffcf8a', key: -1 }, (ctx, t, px, info) =>
   // the entries
   ctx.font = `25px ${FONT_SCRIPT}`; ctx.textAlign = 'left';
   const colW = half - mL - mR - 22;
-  const entries = ledgerEntries(ctx, info, colW, rows * 2);
+  const R = rows - 1; // rows of writing per page: the last ruled row sits under the subtitle
+  const entries = ledgerEntries(ctx, info, colW, R * 2);
   const shown = revealCount(info.lines[info.index], info.lineT);
   let row = 0, pen = null;
-  const at = (r) => ({ x: bx + (r >= rows ? half : 0) + mL + 12, y: top + (r % rows) * lh + 2, x0: bx + (r >= rows ? half : 0) });
+  const at = (r) => ({ x: bx + (r >= R ? half : 0) + mL + 12, y: top + (r % R) * lh + 2, x0: bx + (r >= R ? half : 0) });
   for (const e of entries) {
     let left = e.cur ? shown : Infinity;
     const p0 = at(row);
-    if (row < rows * 2) {
+    if (row < R * 2) {
       ctx.fillStyle = 'rgba(130,34,30,.85)'; ctx.font = `20px ${FONT_SCRIPT}`; ctx.textAlign = 'center';
       ctx.fillText(String(e.n) + '.', p0.x0 + mL / 2 + 10, p0.y);
       ctx.font = `25px ${FONT_SCRIPT}`; ctx.textAlign = 'left';
     }
     for (const rtxt of e.rows) {
-      if (row >= rows * 2) break;
+      if (row >= R * 2) break;
       const p = at(row);
       const part = left >= rtxt.length ? rtxt : rtxt.slice(0, Math.max(0, left));
       ctx.fillStyle = e.cur ? 'rgba(24,18,40,.94)' : 'rgba(40,30,52,.72)';
@@ -1192,7 +1204,7 @@ def('ledger', { amb: '#2a1a0c', rim: '#ffcf8a', key: -1 }, (ctx, t, px, info) =>
     }
     if (!e.cur || shown >= e.text.length) {
       // a finished entry is ticked off in the money column
-      const p = at(Math.min(row - 1, rows * 2 - 1));
+      const p = at(Math.min(row - 1, R * 2 - 1));
       ctx.strokeStyle = 'rgba(130,34,30,.7)'; ctx.lineWidth = 1.8;
       const tx = p.x0 + half - mR / 2 - 8;
       ctx.beginPath(); ctx.moveTo(tx - 16, p.y - 8); ctx.lineTo(tx - 8, p.y); ctx.lineTo(tx + 12, p.y - 18); ctx.stroke();
@@ -1278,7 +1290,7 @@ def('line', LINE_LIGHT, (ctx, t, px, info) => {
   ctx.fillText(`${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}  CARRIER ${(412.5 + Math.sin(t * 0.7) * 0.2).toFixed(2)}`, 1196 + px * 0.3, 118);
   if (mod(t, 1.2) < 0.7) circ(ctx, 80 + px * 0.3, 113, 5, '#ff5a4a');
   ctx.textAlign = 'left';
-  for (let y = -180; y < 980; y += 3) rect(ctx, X0, y, XW, 1, 'rgba(0,0,0,.14)');
+  for (let y = -40; y < 860; y += 4) rect(ctx, X0, y, XW, 1, 'rgba(0,0,0,.16)');
 });
 
 // ── harbor-night: Vessery harbour, ten thousand paper lanterns ──
@@ -1952,10 +1964,7 @@ def('mine-deep', { amb: '#061430', rim: '#6fd8ff', key: 1 }, (ctx, t, px) => {
       ctx.closePath();
     };
     // the rock face around this opening, lit from within
-    const g = ctx.createRadialGradient(x, vy, w * 0.7, x, vy, w * 2.6);
-    g.addColorStop(0, css(mix('#17427c', '#081428', u)));
-    g.addColorStop(1, css(mix('#081a38', '#02050c', u)));
-    ctx.fillStyle = g;
+    ctx.fillStyle = css(mix('#123768', '#040a18', u));
     ctx.beginPath(); ctx.rect(X0, -180, XW, 1160); arch(); ctx.fill('evenodd');
     ctx.strokeStyle = rgba('#6fc0ff', 0.26 - u * 0.12); ctx.lineWidth = 2 + s * 3;
     ctx.beginPath(); arch(); ctx.stroke();
