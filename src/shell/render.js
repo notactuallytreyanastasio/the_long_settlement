@@ -25,7 +25,8 @@
 
 import { REEL_STRIPS } from '../core/slot.js';
 import { currentScene, objectiveProgress, litIds, lineSeconds } from '../core/story.js';
-import { SPIN_COST, LOAN, TRUST_PER_LOAN, canSpin, aidAvailable } from '../core/economy.js';
+import { SPIN_COST, LOAN, TRUST_PER_LOAN } from '../core/economy.js';
+import { leverStatus, AID_WAIT } from '../core/game.js';
 import { drawCinema, drawPortrait } from './cinema.js';
 
 const TW = 400; // table space
@@ -64,25 +65,31 @@ export function reelRemaining(spin) {
 }
 
 /**
- * What the one button is right now. Pure in (chapter, game).
+ * What the one button is right now. Pure in (content, game); the lever's half of it is the
+ * core's own leverStatus, so the button never promises what a press will not do.
  *   launch  a ball is at the plunger: hold to charge (charge 0..1), release to launch
- *   idle    a ball is in play, or a writ is about to put one on the plunger
- *   busy    the lever has been pulled and the reels are still turning or paying
- *   aid     no ball and no writ, and the town will cover one
+ *   idle    a ball is in play, a writ is about to put one on the plunger, or the table
+ *           emptied a moment ago and the button is not yet the lever
+ *   busy    the lever has been pulled and the reels are still turning
+ *   credit  no ball and no writ, and the town is passing the hat: a ball arrives by itself
+ *           (hat 0..1 is how near it is). A press now does not wait: it borrows and pulls
  *   free    the chapter's scripted first pull, which costs nothing
  *   lever   a pull costs SPIN_COST and the player has it
  *   loan    the player cannot pay: this press borrows
  */
-export function launchState(chapter, game) {
+export function launchState(content, game) {
   const reels = game.reels;
   if (!reels || !Array.isArray(reels.cells)) throw new Error(`render: game.reels is missing or has no cells: ${JSON.stringify(reels)}`);
   const balls = game.phys ? game.phys.balls : [];
   if (balls.some((b) => b.state === 'plunger')) return { kind: 'launch', charge: clamp(game.phys.charge, 0, 1) };
-  if (balls.length > 0 || game.econ.writs > 0) return { kind: 'idle', charge: 0 };
-  if (reels.phase === 'paying' || reels.cells.some((c) => c.spin > 0)) return { kind: 'busy', charge: 0 };
-  if (aidAvailable(game.econ)) return { kind: 'aid', charge: 0 };
-  if (chapter.riggedSpin && game.spunThisChapter === false) return { kind: 'free', charge: 0 };
-  return { kind: canSpin(game.econ) ? 'lever' : 'loan', charge: 0 };
+  const status = leverStatus(content, game);
+  if (status === null) return { kind: 'idle', charge: 0 };
+  if (status === 'wait') return { kind: reels.cells.some((c) => c.spin > 0) ? 'busy' : 'idle', charge: 0 };
+  if (status === 'credit') return { kind: 'credit', charge: 0, hat: clamp((game.emptyT || 0) / AID_WAIT, 0, 1) };
+  if (status === 'free') return { kind: 'free', charge: 0 };
+  if (status === 'pull') return { kind: 'lever', charge: 0 };
+  if (status === 'loan') return { kind: 'loan', charge: 0 };
+  throw new Error(`render: the core's leverStatus gave a value this renderer does not know: ${JSON.stringify(status)}`);
 }
 
 // ───────────────────────── small pure helpers ─────────────────────────
@@ -1614,7 +1621,7 @@ export function createRenderer(canvas) {
     if (state.kind === 'lever') return [`No writ. ${press}: ${fmtInt(SPIN_COST)} marks a pull`, BRASS_HI];
     if (state.kind === 'free') return [`No writ. ${press}: this pull is yours`, BRASS_HI];
     if (state.kind === 'loan') return [`No marks. ${press}: the Mint lends ${fmtInt(LOAN.marks)}`, RED];
-    if (state.kind === 'aid') return [`${press}: the town covers this ball`, THREADS.commons.color];
+    if (state.kind === 'credit') return ['The town is passing the hat. Wait for it.', THREADS.commons.color];
     if (state.kind === 'busy') return ['The reels turn. By lot, and by law.', PAPER];
     if (state.kind === 'idle') return null;
     throw new Error(`render: no prompt for launch state '${state.kind}'`);
@@ -1820,7 +1827,7 @@ export function createRenderer(canvas) {
     lever: ['#ffc0b0', '#d2452f', '#56140b'],
     loan: ['#ffc0b0', '#b8321f', '#3d0d07'],
     free: ['#fff3c4', '#e3b548', '#6e4f12'],
-    aid: ['#ffd9b0', '#f28c4e', '#6e3210'],
+    credit: ['#ffc0b0', '#b8321f', '#3d0d07'],
     idle: ['#9a8a68', '#4a3d28', '#1c150c'],
     busy: ['#9a8a68', '#4a3d28', '#1c150c'],
   };
@@ -1832,7 +1839,7 @@ export function createRenderer(canvas) {
     const live = state.kind !== 'idle' && state.kind !== 'busy';
     const pulse = 0.5 + 0.5 * Math.sin(now / 300);
     const box = r * 2 + 16;
-    if (live) glow(g, x, y, r * 1.7, state.kind === 'launch' || state.kind === 'free' ? LANTERN : state.kind === 'aid' ? THREADS.commons.color : RED, 0.25 + 0.25 * pulse);
+    if (live) glow(g, x, y, r * 1.7, state.kind === 'launch' || state.kind === 'free' ? LANTERN : RED, 0.25 + 0.25 * pulse);
     g.drawImage(layer(`button:${r}`, box, box, view.ds, (c) => {
       const m = box / 2;
       c.fillStyle = 'rgba(0,0,0,0.55)';
@@ -1899,6 +1906,16 @@ export function createRenderer(canvas) {
       g.stroke();
     }
 
+    if (state.kind === 'credit') {
+      // the hat coming round: when the ring closes the town's ball arrives
+      g.lineCap = 'butt';
+      g.strokeStyle = THREADS.commons.color;
+      g.lineWidth = 5;
+      g.beginPath();
+      g.arc(x, y, r - 3.5, -Math.PI / 2, -Math.PI / 2 + TAU * state.hat);
+      g.stroke();
+    }
+
     let main;
     let sub;
     if (state.kind === 'launch') [main, sub] = ['LAUNCH', state.charge > 0 ? `${Math.round(state.charge * 100)}%` : 'HOLD'];
@@ -1907,9 +1924,9 @@ export function createRenderer(canvas) {
     else if (state.kind === 'lever') [main, sub] = ['LEVER', `−${fmtInt(SPIN_COST)}`];
     else if (state.kind === 'free') [main, sub] = ['LEVER', 'FREE'];
     else if (state.kind === 'loan') [main, sub] = ['LOAN', `+${fmtInt(LOAN.marks)}`];
-    else if (state.kind === 'aid') [main, sub] = ['AID', '+1 BALL'];
+    else if (state.kind === 'credit') [main, sub] = ['BORROW', '+ PULL'];
     else throw new Error(`render: no button lettering for launch state '${state.kind}'`);
-    const dark = live && state.kind !== 'lever' && state.kind !== 'loan';
+    const dark = live && state.kind !== 'lever' && state.kind !== 'loan' && state.kind !== 'credit';
     const ink = dark ? '#2a1606' : live ? '#fff3e6' : A(PAPER, 0.5);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
@@ -2429,7 +2446,7 @@ export function createRenderer(canvas) {
     }
     drawTableAt(g, L, T, content, game, fx, table, scene, lit, threadCol, dt);
 
-    const state = launchState(chapter, game);
+    const state = launchState(content, game);
     const prompt = promptFor(state, true);
     if (prompt) {
       g.save();
@@ -3204,7 +3221,7 @@ export function createRenderer(canvas) {
     const threadCol = scene ? (THREADS[scene.thread] || {}).color : BRASS;
     if (!threadCol) throw new Error(`render: scene '${scene.id}' has unknown thread '${scene.thread}'`);
     const now = fx.timeMs;
-    const state = launchState(chapter, game);
+    const state = launchState(content, game);
 
     // the frame either side of the glass; the table paints its own rectangle
     {
