@@ -556,14 +556,14 @@ export function reelHouse({ w = 3.6, h = 2.6, d = 1.1, color = KB.royal, trim = 
   for (const sx of [-1, 1]) { parts.push(rb(0.26, h - 0.2, d * 0.7, 0.05, sx * (hw + 0.02), 0.3 + (h - 0.3) / 2, 0.08, trim)); for (let k = 0; k < 4; k++) parts.push(tint(place(sphere(0.045, 6, 4), sx * (hw + 0.02), 0.6 + k * ((h - 0.9) / 3), d * 0.45), dark)); }
   // the slip tray under the middle reel
   parts.push(rb(0.7, 0.07, 0.3, 0.02, 0, 0.52, d * 0.5 + 0.14, trim), bx(0.5, 0.05, 0.02, 0, 0.6, d * 0.5 + 0.01, dark));
-  return keep(merge(parts), { reels: [-1, 0, 1].map((i) => [i * gap, cy, d * 0.5 - r * Math.cos(Math.PI / 8) + 0.02]), lever: [hw + 0.3, cy - 0.5, 0.25], slip: [0, 0.58, d * 0.5 + 0.16], crest: [0, h + h * 0.13, d * 0.5], lamps: [[-gap, cy + oh / 2 + 0.2, d * 0.5 + 0.1], [gap, cy + oh / 2 + 0.2, d * 0.5 + 0.1]] });
+  return keep(merge(parts), { reels: [-1, 0, 1].map((i) => [i * gap, cy, d * 0.5 - r * Math.cos(Math.PI / 8) + 0.02]), lever: [hw + 0.36, cy - 0.75, d * 0.5 + 0.12], slip: [0, 0.58, d * 0.5 + 0.16], crest: [0, h + h * 0.13, d * 0.5], lamps: [[-gap, cy + oh / 2 + 0.2, d * 0.5 + 0.1], [gap, cy + oh / 2 + 0.2, d * 0.5 + 0.1]] });
 }
 
 /** The lever of the Reels: { base (fixed boss), arm (pivots at its own origin about X; rest = up) }. */
 export function lever({ len = 1.25, metal = KB.brass, knob = '#f4573f' } = {}) {
   return {
-    base: merge(cyl(0.16, 0.16, 0.16, 10, -0.08, 0, 0, metal, 0, 0, -90), cyl(0.09, 0.09, 0.3, 8, -0.2, 0, 0, KB.navy, 0, 0, -90)),
-    arm: merge(cyl(0.045, 0.035, len, 6, 0.06, 0, 0, metal), tint(place(sphere(0.15, 10, 7), 0.06, len + 0.08, 0), knob), tint(place(torus(0.05, 0.02, 8, 4), 0.06, len - 0.06, 0), metal)),
+    base: merge(cyl(0.2, 0.2, 0.2, 10, -0.1, 0, 0, metal, 0, 0, -90), cyl(0.11, 0.11, 0.5, 8, -0.4, 0, 0, KB.navy, 0, 0, -90), rb(0.3, 0.5, 0.4, 0.04, -0.3, -0.1, -0.1, metal)),
+    arm: merge(cyl(0.065, 0.05, len, 6, 0.06, 0, 0, metal), tint(place(sphere(0.2, 10, 7), 0.06, len + 0.1, 0), knob), tint(place(torus(0.07, 0.03, 8, 4), 0.06, len - 0.1, 0), metal)),
   };
 }
 

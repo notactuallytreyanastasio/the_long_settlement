@@ -1296,4 +1296,586 @@ export const CAST = {
     },
     gestures: ['talkPoint', 'talkSmall'], anim: { gesture: 0.9 }, idle: { speed: 0.8, sway: 0.5 },
   },
+  // Tobb Quill, 30s: bookmaker, struck-off actuary. Fast, wry. All elbows and arithmetic; talks with both hands.
+  tobb: {
+    id: 'tobb', seed: 5, skin: '#a06a48',
+    build: { height: 1.07, legs: 1.26, torso: 0.94, head: 0.97, width: 0.84, arms: 1.16, hands: 1.05 },
+    hair: {
+      color: '#3a2218', brow: '#2a1810',
+      pieces: [
+        { kind: 'cap', front: 0.56, side: 0.02, back: -0.6, grow: [1.06, 1.08, 1.07] },
+        { kind: 'curls', n: 22, size: 0.078, out: 0.34, low: -4, seed: 4, clear: 44, brow: 46 },
+        { kind: 'spikes', sweep: [0.25, 0.5, 0.1], thick: 0.8, spikes: [[30, 62, 0.13, 0.06, 1], [-64, 40, 0.12, 0.055, 1, [-0.6, 0.3, 0]], [-10, 74, 0.11, 0.055, 1, [-0.2, 0.6, 0.2]]] },
+        { kind: 'pencil', at: [96, 24], dir: [0.2, 0.75, 0.6], length: 0.1, r: 1.1, out: 0.3, chalk: true },
+      ],
+    },
+    face: { set: 'round', iris: '#7a5a2a', eyeScale: 0.94, brow: { w: 0.02, len: 24, raiseL: 5 }, marks: { blush: 0.3 }, mouths: { neutral: 'wry', soft: 'wry' } },
+    costume: {
+      top: { color: '#7fae3c', hem: -0.02, flare: 1.14, trim: '#f08a3f', lining: '#4a6a22' },
+      sleeves: { color: '#fff1d6', cuff: '#f08a3f', flare: 1.1 },
+      legs: { color: '#5d4a78' }, shoes: { color: '#7a4630', sole: '#f2e2c0' },
+      collar: { kind: 'flat', color: '#fff8e6' }, buttons: { color: '#ffd24a', count: 3 },
+      extras: [{ kind: 'checks', color: '#4f8228', cols: 6, rows: 5 }, { kind: 'bowtie', color: '#f08a3f' }, { kind: 'glasses', color: '#d9a94a', size: 1.04 }],
+    },
+    poses: {
+      // one hip out, a finger already up to make the next point
+      stand: {
+        hips: { r: [2, 12, -6], p: [-0.016, 0, 0] }, chest: [6, -10, 7], head: [-6, -8, -9],
+        legL: [-6, 12, 9], shinL: [10, 0, 0], legR: [2, -4, -3],
+        armR: [-34, 0, -22], foreR: [-104, 16, 0], handR: [0, -40, 0], armL: [10, 0, 30], foreL: [-30, 0, -84],
+      },
+      // counting it off on his fingers
+      signature: { chest: [10, 6, 0], head: [10, 10, 4], armR: [-40, 0, -10], foreR: [-96, 40, 0], handR: [0, -70, 0], armL: [-44, 0, 6], foreL: [-88, -30, 0], handL: [-20, 0, 0] },
+    },
+    gestures: ['talkPoint', 'talkBoth', 'talkShrug', 'talkOpen'], anim: { gesture: 1.2, gesturePeriod: 1.45 }, idle: { speed: 1.35, bob: 1.2, sway: 1.3 },
+  },
+
+  // Chancellor Benedikt Corvane, 60s: the Mint. Courtly, amused, never raises his voice. A great soft bell of a man.
+  corvane: {
+    id: 'corvane', seed: 6, skin: '#f2cfb4',
+    build: { height: 1.12, legs: 0.92, torso: 1.2, head: 1.0, width: 1.32, belly: 0.32, hands: 1.1, arms: 1.05 },
+    hair: {
+      color: '#fbf6ea', brow: '#f4eee0',
+      pieces: [
+        { kind: 'cap', front: 0.66, side: 0.12, back: -0.5, grow: [1.06, 1.085, 1.09], shift: [0, 0.008, -0.02] },
+        // swept straight back off a high forehead, and down to the collar
+        { kind: 'locks', locks: [
+          { pts: [[0, 50, 1.04], [0, 72, 1.12], [0, 96, 1.12], [0, 128, 1.06]], w: 0.085, thick: 0.55 },
+          { pts: [[32, 44, 1.04], [44, 62, 1.11], [70, 78, 1.1], [120, 66, 1.05]], w: 0.07, thick: 0.5 },
+          { pts: [[-32, 44, 1.04], [-44, 62, 1.11], [-70, 78, 1.1], [-120, 66, 1.05]], w: 0.07, thick: 0.5 },
+          { pts: [[62, 24, 1.04], [84, 22, 1.09], [112, 8, 1.09], [130, -10, 1.05]], w: 0.06 },
+          { pts: [[-62, 24, 1.04], [-84, 22, 1.09], [-112, 8, 1.09], [-130, -10, 1.05]], w: 0.06 },
+        ] },
+        { kind: 'drape', n: 5, from: 104, to: 256, top: -10, length: 0.17, flare: 0.05, tuck: 0.22, jag: 0.16 },
+      ],
+    },
+    face: { set: 'heavy', iris: '#7d93b8', eyeScale: 0.92, eyePitch: -7, brow: { w: 0.024, len: 25, at: [25, 13] }, marks: { blush: 0.42, laugh: true }, mouths: { neutral: 'smirk', soft: 'smirk', grim: 'flat' }, nose: 1.25 },
+    costume: {
+      top: { color: '#9a2238', hem: -0.2, flare: 1.2, trim: '#ffcf3f', lining: '#5a1020', placket: '#74172a' },
+      sleeves: { color: '#9a2238', cuff: '#ffcf3f', flare: 1.5 },
+      legs: { color: '#3a1420' }, shoes: { color: '#2a1420', sole: '#ffcf3f' },
+      extras: [{ kind: 'cape', color: '#fff3dc', trim: '#ffcf3f', length: 0.105, lining: '#d9c49a' }, { kind: 'chain', color: '#ffcf3f', seal: '#ffb020', drop: 0.17 }],
+    },
+    poses: {
+      // hands folded on his stomach, chin up, entirely at home
+      stand: {
+        hips: { r: [-3, 6, 0] }, chest: [-5, -4, 0], head: [2, -6, 5],
+        legL: [0, 8, 5], legR: [0, -8, -5],
+        armL: [-12, 0, 10], foreL: [-74, 0, -64], armR: [-12, 0, -10], foreR: [-70, 0, 64],
+      },
+      // "allow me": one open hand offered, the other still on his stomach
+      signature: { chest: [2, 8, 0], head: [6, 4, 8], armR: [-44, 0, -26], foreR: [-62, 24, 0], handR: [0, -70, 0] },
+    },
+    gestures: ['talkOpen', 'talkSmall', 'talkPat'], anim: { gesture: 0.7, gesturePeriod: 3.3 }, idle: { speed: 0.65, breath: 1.4, bob: 0.6, sway: 0.5 },
+  },
+
+  // Magistrate Aldous Maravel, 60s: Ilse's father, a widower. Grave, tired. Tall, thin and bent like a question mark.
+  maravel: {
+    id: 'maravel', seed: 7, skin: '#ecccb0',
+    build: { height: 1.1, legs: 1.08, torso: 1.12, head: 0.95, width: 0.88, arms: 1.1 },
+    hair: {
+      color: '#b4b4c0', brow: '#8a8a98',
+      pieces: [
+        { kind: 'cap', front: 0.7, side: 0.04, back: -0.5, grow: [1.045, 1.06, 1.07] },
+        { kind: 'spikes', sweep: [0, 0.1, -0.4], thick: 0.8, spikes: [[92, 12, 0.11, 0.07, 0, [0.7, 0.0, -0.3]], [-92, 12, 0.11, 0.07, 0, [-0.7, 0.0, -0.3]], [112, -8, 0.09, 0.06, 0, [0.6, -0.2, -0.4]], [-112, -8, 0.09, 0.06, 0, [-0.6, -0.2, -0.4]]] },
+      ],
+    },
+    face: { set: 'old', iris: '#3fae6a', eyeScale: 0.84, eyePitch: -6.5, brow: { w: 0.03, len: 27, at: [25, 12], tilt: -5 }, marks: { blush: 0.25, laugh: true }, mouths: { neutral: 'flat', soft: 'softsmile' } },
+    costume: {
+      top: { color: '#34304c', hem: -0.21, flare: 1.26, trim: '#a99bc4', lining: '#1d1a30' },
+      sleeves: { color: '#34304c', cuff: '#a99bc4', flare: 1.55 },
+      legs: { color: '#23202f' }, shoes: { color: '#23202f' },
+      collar: { kind: 'flat', color: '#a99bc4' },
+      extras: [{ kind: 'tabs' }, { kind: 'beard', shape: 'square', color: '#b4b4c0', size: 1.0 }, { kind: 'moustache', color: '#b4b4c0' }],
+    },
+    props: [{ kind: 'gavel', hand: 'R' }],
+    poses: {
+      // stooped over a bench that is not there, looking up over it
+      stand: {
+        hips: { r: [8, 4, 0], p: [0, -0.008, -0.01] }, chest: [16, -4, 0], head: [-12, -6, 3],
+        legL: [-6, 6, 3], legR: [-6, -6, -3],
+        armL: [2, 0, 8], foreL: [-30, 0, -20], armR: [-14, 0, -12], foreR: [-66, 0, 0],
+      },
+      // the gavel up
+      signature: { chest: [8, -8, 0], head: [-8, 6, 0], armR: [-96, 0, -14], foreR: [-58, 0, 0] },
+    },
+    gestures: ['talkSmall', 'talkPat', 'talkChin'], anim: { gesture: 0.6, gesturePeriod: 3.4 }, idle: { speed: 0.7, breath: 1.2, bob: 0.6, sway: 0.6 },
+  },
+
+  // Proctor Odalys Thorne, 50s: Ren's instructor and his handler. Clipped, calm. A ruled line in a high collar.
+  thorne: {
+    id: 'thorne', seed: 8, skin: '#ecc8aa',
+    build: { height: 1.12, legs: 1.24, torso: 1.1, head: 0.92, width: 0.84, arms: 1.08 },
+    hair: {
+      color: '#bcc0cf', brow: '#8e93a6',
+      pieces: [
+        { kind: 'cap', front: 0.6, side: 0.0, back: -0.58, grow: [1.04, 1.055, 1.06] },
+        { kind: 'locks', locks: [
+          { pts: [[-18, 52, 1.03], [-40, 46, 1.075], [-60, 30, 1.075], [-70, 12, 1.05]], w: 0.06, thick: 0.4 },
+          { pts: [[-12, 54, 1.03], [22, 50, 1.075], [50, 34, 1.075], [66, 14, 1.05]], w: 0.07, thick: 0.4 },
+        ] },
+        { kind: 'bun', at: [180, 8], size: 0.082, out: 0.5, pin: '#26383a', pinKnob: '#9fb4a8', pinDir: [0.9, 0.42, 0.1] },
+      ],
+    },
+    face: { set: 'sharp', iris: '#5f9a84', eyeScale: 0.9, eyePitch: -5, brow: { w: 0.013, len: 24, at: [25, 17], tilt: 3 }, marks: { blush: 0.18, beauty: 'L' }, mouths: { neutral: 'flat', smile: 'softsmile', soft: 'wry' } },
+    costume: {
+      top: { color: '#2c4f52', hem: -0.18, flare: 1.1, trim: '#9fb4a8', placket: '#1c3538', lining: '#162a2c' },
+      sleeves: { color: '#2c4f52', cuff: '#9fb4a8', flare: 1.06 },
+      legs: { color: '#1a2628' }, shoes: { color: '#1a2628', sole: '#9fb4a8', tall: true },
+      collar: { kind: 'high', color: '#1c3033' }, belt: { color: '#1a2628', buckle: '#c9d2de' }, buttons: { color: '#c9d2de', count: 3 },
+      gloves: { L: '#8d949e' },
+      extras: [{ kind: 'glasses', half: true, color: '#c9d2de' }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }],
+    },
+    poses: {
+      // hands behind her back, weight even, chin a degree too high
+      stand: {
+        hips: { r: [-2, 0, 0] }, chest: [-5, 0, 0], head: [3, 6, 0],
+        legL: [0, 4, 3], legR: [0, -4, -3],
+        armL: [22, 0, 6], foreL: [12, 0, -62], armR: [22, 0, -6], foreR: [12, 0, 62],
+      },
+      // one gloved finger: "Cadet."
+      signature: { chest: [0, 8, 0], head: [6, -6, 0], armL: [-42, 0, 8], foreL: [-112, -14, 0], handL: [0, 20, 0] },
+    },
+    gestures: ['talkSmall', 'talkChin'], anim: { gesture: 0.5, gesturePeriod: 3.6 }, idle: { speed: 0.6, breath: 0.8, bob: 0.4, sway: 0.3 },
+  },
+
+  // The Ledger: whoever kept this account. A hood, a book too big for the arm that holds it, ink to the knuckles.
+  narrator: {
+    id: 'narrator', seed: 9, skin: '#c4957a',
+    build: { height: 0.97, legs: 0.88, torso: 1.06, head: 1.0, width: 1.02, arms: 1.0 },
+    hair: {
+      color: '#c4c4cc', brow: '#a0a0aa',
+      pieces: [
+        { kind: 'hood', color: '#5a4c36', lining: '#2a2030', front: 0.4 },
+        { kind: 'locks', locks: [{ pts: [[44, 30, 1.03], [50, 14, 1.09], [50, -6, 1.1], [44, -24, 1.1]], w: 0.034, thick: 0.8, ink: 1 }] },
+      ],
+    },
+    face: { set: 'old', iris: '#d9a94a', eyeScale: 0.88, eyePitch: -7, shade: 0.3, ears: 0, brow: { w: 0.015, len: 21, at: [25, 10] }, marks: { blush: 0.3 }, mouths: { neutral: 'softsmile' } },
+    costume: {
+      top: { color: '#5a4c36', hem: -0.2, flare: 1.3, trim: '#c9b78a', lining: '#2a2030' },
+      sleeves: { color: '#5a4c36', cuff: '#c9b78a', flare: 1.5 },
+      legs: { color: '#2a2030' }, shoes: { color: '#3a2c20' },
+      gloves: { L: '#5a5a9a', R: '#5a5a9a' },
+      extras: [{ kind: 'cape', color: '#5a4c36', trim: '#c9b78a', length: 0.12, clasp: '#c9b78a' }],
+    },
+    props: [{ kind: 'ledger', hand: 'L', color: '#8a3a2a', trim: '#e6cf8a' }],
+    poses: {
+      // the book hugged to the chest, head a little down over it
+      stand: {
+        hips: { r: [4, 6, 0] }, chest: [8, -4, 0], head: [4, -4, 4],
+        legL: [-3, 6, 3], legR: [-3, -6, -3],
+        armL: [-16, 0, 8], foreL: [-100, 0, -34], armR: [2, 0, -10], foreR: [-28, 0, 0],
+      },
+      // a finger on the line being read
+      signature: { chest: [12, 6, 0], head: [14, 8, 0], armR: [-30, 0, -4], foreR: [-108, 0, 40] },
+    },
+    gestures: ['talkSmall', 'talkPat'], anim: { gesture: 0.6, gesturePeriod: 3.4 }, idle: { speed: 0.6, breath: 1.3, bob: 0.5, sway: 0.6 },
+  },
+
+  // A docker of the Compact: the voice in the crowd. Wide as a door, cap down, collar up, forearms out.
+  docker: {
+    id: 'docker', seed: 10, skin: '#d2a07c',
+    build: { height: 1.05, legs: 0.98, torso: 1.12, head: 0.96, width: 1.3, belly: 0.14, hands: 1.22, feet: 1.12, arms: 1.06 },
+    hair: { color: '#4a3a30', brow: '#33261f', pieces: [{ kind: 'cap', front: 0.52, side: 0.0, back: -0.52 }, { kind: 'flatcap', color: '#7c8094', peak: '#565a70' }] },
+    face: { set: 'round', iris: '#4a3a2a', eyeScale: 0.8, eyePitch: -7.5, brow: { w: 0.027, len: 24, at: [24, 9.5] }, marks: { blush: 0.38, stubble: true }, mouths: { neutral: 'flat' } },
+    costume: {
+      top: { color: '#3f6fa8', hem: -0.04, flare: 1.12, trim: '#2c4f80', lining: '#22395e' },
+      sleeves: { color: '#3f6fa8', rolled: true },
+      legs: { color: '#6a5444' }, shoes: { color: '#3a2c24', sole: '#1f1814', tall: true },
+      collar: { kind: 'turned', color: '#2c4f80' }, belt: { color: '#3a2c24', buckle: '#c9a25a' },
+    },
+    poses: {
+      stand: {
+        hips: { r: [0, 8, -2] }, chest: [4, -6, 2], head: [6, -6, -3], legL: [0, 10, 9], legR: [0, -10, -9],
+        armL: [4, 0, 24], foreL: [-34, 0, -20], armR: [4, 0, -24], foreR: [-34, 0, 20],
+      },
+      // a fist up
+      signature: { chest: [-6, 0, 0], head: [-8, 0, 0], armR: [-150, 0, -18], foreR: [-40, 0, 0] },
+    },
+    gestures: ['talkPoint', 'talkBoth'], anim: { gesture: 1.0, gesturePeriod: 2.2 }, idle: { speed: 0.85, sway: 0.7 },
+  },
+
+  // A Mint steward: clears the route, moves you along. Cream and oxblood, a pillbox hat, a striped wand.
+  steward: {
+    id: 'steward', seed: 11, skin: '#f0c6a0',
+    build: { height: 0.98, legs: 1.0, torso: 1.04, head: 1.0, width: 1.06, belly: 0.08 },
+    hair: { color: '#8a5a34', brow: '#6a4226', pieces: [{ kind: 'cap', front: 0.5, side: 0.0, back: -0.5 }, { kind: 'fringe', n: 3, from: -34, to: 34, top: 56, tip: 26, jag: 3, w: 0.05 }, { kind: 'kepi', color: '#a3283f', band: '#ffd24a', peak: false, tall: 0.62 }] },
+    face: { set: 'round', iris: '#5a6a3a', eyeScale: 0.86, eyePitch: -6.5, brow: { w: 0.02, len: 22, at: [24, 12], tilt: 4 }, marks: { blush: 0.45, freckles: true }, mouths: { neutral: 'pursed' } },
+    costume: {
+      top: { color: '#fbe9c4', hem: -0.06, flare: 1.2, trim: '#a3283f', placket: '#d9c08a', lining: '#a3283f' },
+      sleeves: { color: '#fbe9c4', cuff: '#a3283f', flare: 1.1 },
+      legs: { color: '#7a1c30' }, shoes: { color: '#2a2030', sole: '#4a4560' },
+      collar: { kind: 'stand', color: '#a3283f' }, belt: { color: '#a3283f', buckle: '#ffd24a' }, buttons: { color: '#ffd24a', count: 3 },
+      gloves: { L: '#ffffff', R: '#ffffff' },
+    },
+    props: [{ kind: 'baton', hand: 'L', color: '#fff6dc', tip: '#e6323a' }], handed: 'L',
+    poses: {
+      stand: {
+        hips: { r: [0, -6, 2] }, chest: [-4, 4, -2], head: [-4, 6, 2], legL: [0, 6, 5], legR: [0, -6, -5],
+        armR: [12, 0, -30], foreR: [-20, 0, 90], armL: [-10, 0, 14], foreL: [-70, 0, 0],
+      },
+      // "move along": the wand out level, the other palm up
+      signature: { armL: [-84, 0, 30], foreL: [-10, 0, 0], chest: [4, -12, 0], head: [0, 10, 0] },
+    },
+    gestures: ['talkPoint', 'talkSmall'], anim: { gesture: 1.0 }, idle: { speed: 1.0, sway: 0.6 },
+  },
+
+  // A Mint clerk: hands you the writ and the pen. Small, exact, an eyeshade and sleeve garters.
+  clerk: {
+    id: 'clerk', seed: 12, skin: '#f4d2b6',
+    build: { height: 0.9, legs: 0.96, torso: 0.98, head: 1.03, width: 0.88 },
+    hair: { color: '#3d2c33', brow: '#2c2026', pieces: [{ kind: 'cap', front: 0.5, side: -0.04, back: -0.56, grow: [1.05, 1.07, 1.07] }, { kind: 'fringe', n: 4, from: 30, to: -44, part: 30, top: 60, tips: [26, 22, 20, 14], sweep: -6, gather: 0.2, r: 1.09 }, { kind: 'visor', color: '#4fb07a' }, { kind: 'pencil', at: [-98, 22], dir: [-0.15, 0.4, 0.9], length: 0.2, r: 1.1, out: 0.1 }] },
+    face: { set: 'round', iris: '#6a5a8a', eyeScale: 0.96, brow: { w: 0.014, len: 21, at: [25, 12.5] }, marks: { blush: 0.4 }, mouths: { neutral: 'pursed' } },
+    costume: {
+      top: { color: '#a3283f', hem: -0.02, flare: 1.12, trim: '#ffd24a', lining: '#6a1426' },
+      sleeves: { color: '#fff4dc', cuff: '#2a2540', flare: 1.14, ink: 'R' },
+      legs: { color: '#3a3050' }, shoes: { color: '#2a2030', sole: '#4a4560' },
+      collar: { kind: 'flat', color: '#fffaf0' }, buttons: { color: '#ffd24a', count: 3 },
+      extras: [{ kind: 'bowtie', color: '#ffd24a' }, { kind: 'glasses', color: '#3a3050', size: 0.96 }],
+    },
+    props: [{ kind: 'writ', hand: 'R' }],
+    poses: {
+      stand: {
+        hips: { r: [2, -6, 0] }, chest: [4, 4, 0], head: [-4, 6, -4], legL: [0, 4, 3], legR: [0, -4, -3],
+        armR: [-22, 0, -10], foreR: [-84, 10, 0], armL: [6, 0, 8], foreL: [-40, 0, -40],
+      },
+      // the writ held out at arm's length: sign here
+      signature: { chest: [8, 10, 0], head: [-6, -8, -6], armR: [-78, 0, -4], foreR: [-16, 0, 0], hips: { r: [6, 0, 0] } },
+    },
+    gestures: ['talkSmall', 'talkPoint'], anim: { gesture: 0.8, gesturePeriod: 2.2 }, idle: { speed: 1.1, sway: 0.5 },
+  },
+
+  // A Halcyon proctor: invigilates. Teal gown, cape, a mortarboard whose tassel is the only loose thing about them.
+  proctor: {
+    id: 'proctor', seed: 13, skin: '#e8c09c',
+    build: { height: 1.06, legs: 1.12, torso: 1.08, head: 0.94, width: 1.0 },
+    hair: { color: '#5a5a6a', brow: '#3c3c4a', pieces: [{ kind: 'cap', front: 0.5, side: 0.0, back: -0.55 }, { kind: 'mortarboard', color: '#2c4f52', tassel: '#ffd24a' }] },
+    face: { set: 'sharp', iris: '#5a7a8a', eyeScale: 0.84, eyePitch: -6.5, brow: { w: 0.022, len: 24, at: [24, 11.5], tilt: 5 }, marks: { blush: 0.2 }, mouths: { neutral: 'down' } },
+    costume: {
+      top: { color: '#3d7a7e', hem: -0.17, flare: 1.24, trim: '#c9d2de', lining: '#1c3538', placket: '#2c5c60' },
+      sleeves: { color: '#3d7a7e', cuff: '#c9d2de', flare: 1.3 },
+      legs: { color: '#1a2628' }, shoes: { color: '#1a2628', sole: '#9fb4a8' },
+      collar: { kind: 'stand', color: '#c9d2de' },
+      extras: [{ kind: 'cape', color: '#2c4f52', trim: '#c9d2de', length: 0.1, clasp: '#ffd24a' }],
+    },
+    props: [{ kind: 'pointer', hand: 'L' }], handed: 'L',
+    poses: {
+      stand: {
+        hips: { r: [-2, -6, 0] }, chest: [-4, 4, 0], head: [6, 6, 0], legL: [0, 5, 4], legR: [0, -5, -4],
+        armR: [20, 0, -6], foreR: [12, 0, 60], armL: [-4, 0, 12], foreL: [-52, 0, 0],
+      },
+      signature: { armL: [-76, 0, 12], foreL: [-30, 0, 0], chest: [4, -10, 0], head: [2, 8, 0] },
+    },
+    gestures: ['talkPoint', 'talkSmall'], anim: { gesture: 0.8 }, idle: { speed: 0.7, sway: 0.4 },
+  },
+
+  // Townsfolk of Vessery. Not anybody in particular, which is the point of them.
+  townsman: {
+    id: 'townsman', seed: 14, skin: '#e2b490',
+    build: { height: 1.0, legs: 1.0, torso: 1.06, head: 1.0, width: 1.12, belly: 0.24 },
+    hair: { color: '#7a4a2a', brow: '#5a361e', pieces: [{ kind: 'cap', front: 0.52, side: 0.0, back: -0.52 }, { kind: 'flatcap', color: '#b8743a', peak: '#8a5226' }] },
+    face: { set: 'round', iris: '#5a4a2a', eyeScale: 0.86, eyePitch: -7, brow: { w: 0.022, len: 23, at: [24, 11] }, marks: { blush: 0.5 } },
+    costume: {
+      top: { color: '#c9803f', hem: -0.05, flare: 1.18, trim: '#8a5226', placket: '#a8642c' },
+      sleeves: { color: '#c9803f', flare: 1.1 }, legs: { color: '#4a5a7a' }, shoes: { color: '#5a3a2a', sole: '#3a2418' },
+      collar: { kind: 'scarf', color: '#f2c14e' }, buttons: { color: '#5a361e', count: 3 },
+      extras: [{ kind: 'moustache', color: '#7a4a2a' }],
+    },
+    poses: { stand: { hips: { r: [0, 6, 2] }, chest: [2, -4, -2], head: [-2, -6, 3], legL: [0, 8, 6], legR: [0, -8, -6], armL: [4, 0, 16], foreL: [-24, 0, 0], armR: [4, 0, -16], foreR: [-30, 0, 0] } },
+    gestures: ['talkOpen', 'talkShrug', 'talkSmall'], idle: { speed: 0.9 },
+  },
+  townswoman: {
+    id: 'townswoman', seed: 15, skin: '#d9a07a',
+    build: { height: 0.92, legs: 0.92, torso: 1.0, head: 1.02, width: 1.0, belly: 0.1 },
+    hair: { color: '#5a2c22', brow: '#44201a', pieces: [{ kind: 'cap', front: 0.5, side: -0.1, back: -0.6 }, { kind: 'fringe', n: 4, from: -40, to: 40, top: 58, tip: 20, jag: 5, part: 0, gather: 0.5 }, { kind: 'kerchief', color: '#3f9ad0', front: 0.66 }] },
+    face: { set: 'lash', iris: '#5a3a2a', eyeScale: 0.96, brow: { w: 0.015, len: 22 }, marks: { blush: 0.55 } },
+    costume: {
+      top: { color: '#3f7fc8', hem: -0.14, flare: 1.4, trim: '#2a5a9a', lining: '#1f3f70' },
+      sleeves: { color: '#3f7fc8', flare: 1.16, cuff: '#fff4dc' }, legs: { color: '#5a3a2a' }, shoes: { color: '#7a4a2a', sole: '#4a2a1a' },
+      collar: { kind: 'flat', color: '#fff8e6' },
+      extras: [{ kind: 'apron', color: '#fff3d8', pocket: '#ffd98a', spread: 1.6 }],
+    },
+    props: [{ kind: 'hat', hand: 'R', color: '#7c8094' }],
+    poses: {
+      stand: { hips: { r: [0, -6, -2] }, chest: [2, 4, 2], head: [-4, 6, -4], legL: [0, 5, 3], legR: [0, -5, -3], armL: [4, 0, 14], foreL: [-26, 0, 0], armR: [-26, 0, -8], foreR: [-70, 0, 0] },
+      // the hat held out
+      signature: { chest: [6, 8, 0], armR: [-62, 0, -4], foreR: [-36, 0, 0], head: [-8, -6, 4] },
+    },
+    gestures: ['talkPat', 'talkSmall', 'talkShrug'], idle: { speed: 1.0 },
+  },
+  fishwife: {
+    id: 'fishwife', seed: 16, skin: '#c98e6e',
+    build: { height: 0.98, legs: 0.9, torso: 1.1, head: 1.0, width: 1.28, belly: 0.3, hands: 1.15 },
+    hair: { color: '#2e2630', brow: '#221c24', pieces: [{ kind: 'cap', front: 0.54, side: 0.0, back: -0.6 }, { kind: 'kerchief', color: '#f2c14e', front: 0.62, side: -0.3 }] },
+    face: { set: 'round', iris: '#4a3020', eyeScale: 0.86, eyePitch: -7, brow: { w: 0.022, len: 23, at: [24, 11], tilt: 3 }, marks: { blush: 0.6 }, mouths: { neutral: 'wry' } },
+    costume: {
+      top: { color: '#2f9a86', hem: -0.13, flare: 1.34, trim: '#1f6f62', lining: '#134a44' },
+      sleeves: { color: '#2f9a86', rolled: true }, legs: { color: '#3a2c24' }, shoes: { color: '#3a2c24', sole: '#1f1814', tall: true },
+      collar: { kind: 'scarf', color: '#e8483f' },
+      extras: [{ kind: 'apron', color: '#e9eef2', pocket: '#b9c6da', spread: 1.9 }, { kind: 'earring', side: 'R', color: '#ffd24a' }],
+    },
+    poses: { stand: { hips: { r: [0, 8, 3] }, chest: [0, -6, -3], head: [-4, -6, 5], legL: [0, 10, 8], legR: [0, -10, -8], armL: [14, 0, 46], foreL: [-24, 0, -96], handL: [0, 0, -20], armR: [12, 0, -44], foreR: [-24, 0, 96], handR: [0, 0, 20] } },
+    gestures: ['talkPoint', 'talkBoth', 'talkShrug'], anim: { gesture: 1.1 }, idle: { speed: 0.9 },
+  },
+  // children: three heads tall, never still
+  child: {
+    id: 'child', seed: 17, skin: '#e9b78e',
+    build: { height: 0.66, legs: 0.9, torso: 0.9, head: 1.16, width: 0.86, hands: 1.05, feet: 1.05 },
+    hair: { color: '#c97a2a', brow: '#a05e1c', pieces: [{ kind: 'cap', front: 0.5, side: -0.02, back: -0.56 }, { kind: 'fringe', n: 4, from: -44, to: 44, top: 60, tips: [18, 26, 22, 16], part: -10, gather: 0.5 }, { kind: 'flatcap', color: '#4f8a5a', peak: '#3a6a44', tilt: 2 }] },
+    face: { set: 'round', iris: '#5a8a3a', eyeScale: 1.08, brow: { w: 0.016, len: 21 }, marks: { blush: 0.65, freckles: true }, mouths: { neutral: 'grin' } },
+    costume: {
+      top: { color: '#e8603f', hem: -0.03, flare: 1.26, trim: '#b8402a' }, sleeves: { color: '#fff1d6', flare: 1.15 },
+      legs: { color: '#5a4a3a' }, shoes: { color: '#4a3020', sole: '#2a1a10' }, collar: { kind: 'scarf', color: '#3f9ad0' },
+    },
+    poses: { stand: { hips: { r: [0, 8, -3] }, chest: [-4, -6, 4], head: [-10, -4, -6], legL: [0, 10, 8], legR: [0, -8, -6], armL: [8, 0, 26], foreL: [-20, 0, 0], armR: [8, 0, -26], foreR: [-20, 0, 0] } },
+    gestures: ['talkBoth', 'talkPoint'], anim: { gesture: 1.2, gesturePeriod: 1.5 }, idle: { speed: 1.5, bob: 1.6, sway: 1.4 },
+  },
+  child2: {
+    id: 'child2', seed: 18, skin: '#b9856e',
+    build: { height: 0.6, legs: 0.86, torso: 0.9, head: 1.18, width: 0.84 },
+    hair: { color: '#2e2226', brow: '#221a1c', pieces: [{ kind: 'cap', front: 0.5, side: -0.1, back: -0.6, grow: [1.07, 1.09, 1.08] }, { kind: 'fringe', n: 5, from: -46, to: 46, top: 60, tip: 22, jag: 3, part: 0, gather: 0.6 },
+      { kind: 'tail', at: [100, 24], dir: [0.75, -0.6, -0.1], length: 0.17, width: 0.05, links: 2, tie: '#ffd24a' }, { kind: 'tail', at: [-100, 24], dir: [-0.75, -0.6, -0.1], length: 0.17, width: 0.05, links: 2, tie: '#ffd24a' }] },
+    face: { set: 'lash', iris: '#7a4a26', eyeScale: 1.1, brow: { w: 0.014, len: 20 }, marks: { blush: 0.6, blushColor: '#e0625a' } },
+    costume: {
+      top: { color: '#f2c14e', hem: -0.1, flare: 1.5, trim: '#e8603f' }, sleeves: { color: '#f2c14e', flare: 1.2, cuff: '#e8603f' },
+      legs: { color: '#fff1d6' }, shoes: { color: '#a3283f', sole: '#5a1020' }, collar: { kind: 'flat', color: '#fff8e6' },
+    },
+    poses: { stand: { hips: { r: [0, -8, 3] }, chest: [-4, 6, -4], head: [-12, 6, 6], legL: [0, 6, 5], legR: [0, -8, -6], armL: [10, 0, 20], foreL: [-30, 0, -30], armR: [10, 0, -20], foreR: [-30, 0, 30] } },
+    gestures: ['talkBoth', 'talkOpen'], anim: { gesture: 1.2, gesturePeriod: 1.5 }, idle: { speed: 1.6, bob: 1.7, sway: 1.4 },
+  },
+
+  // ---- the rest of the company (chapters 2 to 8)
+
+  // Sable Vasker, 22: Ren's foster-brother, assessor of the Audit. Smooth, cold, hurt underneath. Never quite meets the eye.
+  sable: {
+    id: 'sable', seed: 19, skin: '#f6e2d0',
+    build: { height: 1.07, legs: 1.24, torso: 1.04, head: 0.95, width: 0.88, arms: 1.08 },
+    hair: {
+      color: '#efe6c8', brow: '#cfc4a0',
+      pieces: [
+        { kind: 'cap', front: 0.56, side: -0.06, back: -0.6, grow: [1.06, 1.085, 1.08] },
+        // parted in the middle, two long curtains to the cheekbones
+        { kind: 'fringe', n: 3, from: 12, to: 56, part: 2, top: 66, tips: [22, 4, -10], gather: 0.25, r: 1.11, w: 0.062 },
+        { kind: 'fringe', n: 3, from: -12, to: -56, part: -2, top: 66, tips: [24, 6, -8], gather: 0.25, r: 1.11, w: 0.062 },
+        { kind: 'tail', at: [180, -20], dir: [0, -1, -0.5], length: 0.24, width: 0.046, links: 2, tie: '#22242e' },
+      ],
+    },
+    face: { set: 'sharp', iris: '#9aa8cc', eyeScale: 0.94, brow: { w: 0.014, len: 23, at: [25, 14] }, marks: { blush: 0.15 }, mouths: { neutral: 'flat', smile: 'wry' } },
+    costume: {
+      top: { color: '#343848', hem: -0.2, flare: 1.14, trim: '#c0c6d6', placket: '#22242e', lining: '#1a1c26' },
+      sleeves: { color: '#343848', cuff: '#c0c6d6', flare: 1.06 },
+      legs: { color: '#22242e' }, shoes: { color: '#1c1e28', sole: '#8d949e', tall: true },
+      collar: { kind: 'high', color: '#22242e' }, belt: { color: '#22242e', buckle: '#c0c6d6' },
+      gloves: { L: '#8d949e', R: '#8d949e' },
+      extras: [{ kind: 'brooch', shape: 'bar', color: '#e6ebf5', size: 0.02 }],
+    },
+    poses: {
+      // one glove holding the other wrist, eyes on the middle distance to your left
+      stand: {
+        hips: { r: [0, -10, 2] }, chest: [0, 6, -2], head: [8, -22, 0],
+        legL: [0, 8, 6], shinL: [2, 0, 0], legR: [0, -4, -2],
+        armL: [-8, 0, 6], foreL: [-52, 0, -52], armR: [-8, 0, -6], foreR: [-58, 0, 48],
+      },
+      signature: { head: [0, 20, 0], chest: [0, -6, 0], armR: [-36, 0, -12], foreR: [-70, 10, 0], handR: [0, -50, 0] },
+    },
+    gestures: ['talkSmall', 'talkOpen'], anim: { gesture: 0.6, gesturePeriod: 3.2 }, idle: { speed: 0.6, bob: 0.5, sway: 0.4 },
+  },
+
+  // Hesper Dunmore, 40s: shift-captain at Saltmere. Blunt, exhausted, kind in practical ways. Built to carry things.
+  hesper: {
+    id: 'hesper', seed: 20, skin: '#8f5e44',
+    build: { height: 1.06, legs: 1.0, torso: 1.14, head: 0.97, width: 1.3, belly: 0.06, hands: 1.2, feet: 1.12, arms: 1.06 },
+    hair: {
+      color: '#33282a', brow: '#e4e0d4',
+      pieces: [
+        { kind: 'cap', front: 0.56, side: 0.06, back: -0.5, zig: 0.08, zigN: 3, grow: [1.06, 1.085, 1.07] },
+        { kind: 'fringe', n: 4, from: -40, to: 40, top: 62, tips: [34, 30, 36, 32], sweep: 8, part: -20, gather: 0.5 },
+        { kind: 'curls', n: 26, size: 0.019, out: 5.4, low: 20, seed: 9, clear: 0, color: '#f4f0e6' },
+      ],
+    },
+    face: { set: 'round', iris: '#5a3a22', eyeScale: 0.86, eyePitch: -7, brow: { w: 0.025, len: 24, at: [24, 11] }, marks: { blush: 0.3, blushColor: '#c0503a', dust: true }, mouths: { neutral: 'flat', soft: 'softsmile' } },
+    costume: {
+      top: { color: '#a89e7c', hem: -0.05, flare: 1.14, trim: '#7fb5b0', placket: '#8a8062', lining: '#5a5440' },
+      sleeves: { color: '#a89e7c', rolled: true },
+      legs: { color: '#4d4a52' }, shoes: { color: '#33282a', sole: '#1f181a', tall: true, cuff: '#7fb5b0' },
+      collar: { kind: 'turned', color: '#8a8062' }, belt: { color: '#33282a', buckle: '#ffcf3f' },
+      extras: [{ kind: 'brooch', shape: 'bar', color: '#ffcf3f', size: 0.022 }],
+    },
+    poses: {
+      // arms folded, weight back on her heels
+      stand: {
+        hips: { r: [-4, 6, 0] }, chest: [-4, -4, 0], head: [4, -4, 3], legL: [0, 8, 7], legR: [0, -8, -7],
+        armL: [-26, 0, -2], foreL: [-96, 0, -66], armR: [-20, 0, 2], foreR: [-104, 0, 62],
+      },
+      signature: { armL: [14, 0, 44], foreL: [-24, 0, -96], armR: [-64, 0, -10], foreR: [-40, 0, 0], chest: [4, 8, 0] },
+    },
+    gestures: ['talkSmall', 'talkPoint', 'talkShrug'], anim: { gesture: 0.8, gesturePeriod: 2.8 }, idle: { speed: 0.7, breath: 1.3, sway: 0.5 },
+  },
+
+  // Ansel Pryce, 12: scholarship cadet, bed nineteen. In Ren's coat, a size too large. Stands at attention when spoken to.
+  ansel: {
+    id: 'ansel', seed: 21, skin: '#f2cdb0',
+    build: { height: 0.7, legs: 0.96, torso: 0.92, head: 1.13, width: 0.88, hands: 1.0 },
+    hair: {
+      color: '#dcb264', brow: '#b08d57',
+      pieces: [
+        { kind: 'cap', front: 0.54, side: 0.04, back: -0.56, zig: 0.08, zigN: 3 },
+        { kind: 'fringe', n: 4, from: -42, to: 40, top: 62, tips: [30, 34, 28, 32], part: 14, gather: 0.5 },
+        { kind: 'spikes', sweep: [0.3, 0.6, 0.3], thick: 0.8, spikes: [[28, 76, 0.14, 0.05, 1]] },
+      ],
+    },
+    face: { set: 'round', iris: '#6aaee6', eyeScale: 1.1, brow: { w: 0.015, len: 21, at: [25, 16] }, marks: { blush: 0.65, freckles: true } },
+    costume: {
+      top: { color: '#2f5fb8', hem: -0.085, flare: 1.34, trim: '#b9c6da', placket: '#24478f' },
+      sleeves: { color: '#2f5fb8', cuff: '#c3cfe0', flare: 1.5 },
+      legs: { color: '#44539c' }, shoes: { color: '#2c2b52', sole: '#b9c6da', tall: true },
+      collar: { kind: 'stand', color: '#c3cfe0' }, belt: { color: '#2c2b52', buckle: '#ffd24a' }, buttons: { color: '#ffd24a', rows: 2, count: 3 },
+      gloves: { L: '#d9c0c8' },
+      extras: [{ kind: 'epaulettes', color: '#c3cfe0' }],
+    },
+    poses: {
+      // attention: heels together, thumbs on the seams, chin up at whoever is taller
+      stand: { hips: { r: [-2, 0, 0] }, chest: [-6, 0, 0], head: [-12, 0, 0], legL: [0, 4, 1], legR: [0, -4, -1], armL: [2, 0, 5], foreL: [-4, 0, 0], armR: [2, 0, -5], foreR: [-4, 0, 0] },
+      // the salute
+      signature: { armR: [-20, 0, -100], foreR: [0, 0, -128], handR: [0, 0, -10], head: [-14, 0, 0] },
+    },
+    gestures: ['talkSmall', 'talkBoth'], anim: { gesture: 0.9, gesturePeriod: 1.9 }, idle: { speed: 1.3, bob: 0.9, sway: 0.5 },
+  },
+
+  // Wyn Okerby, 70s: Nan's sister, lamp-keeper on Little Brand. Nan's face weathered harder; one eyebrow always up.
+  wyn: {
+    id: 'wyn', seed: 22, skin: '#b07a62',
+    build: { height: 0.95, legs: 0.92, torso: 1.02, head: 1.0, width: 0.98, arms: 1.0 },
+    hair: {
+      color: '#f1ede4', brow: '#e6e0d4',
+      pieces: [
+        { kind: 'cap', front: 0.58, side: 0.04, back: -0.58, grow: [1.05, 1.07, 1.07] },
+        { kind: 'locks', locks: [
+          { pts: [[4, 66, 1.02], [26, 52, 1.08], [48, 32, 1.08], [58, 12, 1.05]], w: 0.066 },
+          { pts: [[-4, 66, 1.02], [-26, 52, 1.08], [-48, 32, 1.08], [-58, 12, 1.05]], w: 0.066 },
+        ] },
+        { kind: 'braid', at: [180, -22], dir: [0, -1, -0.34], length: 0.44, width: 0.046, links: 4, tie: '#8a7a5a' },
+      ],
+    },
+    face: { set: 'old', iris: '#7a4a26', eyeScale: 0.86, eyePitch: -8, mouthPitch: -32.5, brow: { w: 0.015, len: 21, at: [25, 9.5], raiseL: 7 }, marks: { blush: 0.4, laugh: true, blushColor: '#d0584a' }, mouths: { neutral: 'wry' } },
+    costume: {
+      top: { color: '#4fae96', hem: -0.12, flare: 1.26, trim: '#d9c27a', lining: '#2f4a44', placket: '#3a8a76' },
+      sleeves: { color: '#4fae96', cuff: '#d9c27a', flare: 1.2 },
+      legs: { color: '#3a3a44' }, shoes: { color: '#33333c', sole: '#1c1c22', tall: true },
+      collar: { kind: 'scarf', color: '#f2ead4' }, buttons: { color: '#d9c27a', count: 3, size: 0.02 },
+      gloves: { L: '#8a8a90', R: '#8a8a90' },
+      extras: [{ kind: 'brooch', shape: 'bar', color: '#e8a04a', x: -0.07, y: 0.06, size: 0.028 }],
+    },
+    props: [{ kind: 'lantern', hand: 'L', color: '#eaf6c8', rib: '#7fae5a', light: '#d9f0a0' }],
+    poses: {
+      // straight where her sister is bent; a fist on one hip
+      stand: {
+        hips: { r: [-2, -8, 0] }, chest: [-3, 6, -2], head: [2, 8, -5], legL: [0, 6, 5], legR: [0, -6, -5],
+        armR: [12, 0, -40], foreR: [-24, 0, 96], handR: [0, 0, 20], armL: [-18, 0, 16], foreL: [-50, -8, 0],
+      },
+      signature: { chest: [2, -8, 0], head: [-14, 4, -6], armL: [-82, 0, 18], foreL: [-60, 0, 0] },
+    },
+    gestures: ['talkPoint', 'talkSmall', 'talkShrug'], anim: { gesture: 0.9, gesturePeriod: 2.4 }, idle: { speed: 0.85, breath: 1.2, bob: 0.7, sway: 0.7 },
+  },
+
+  // Linnet Foss, 21: Surety of Halcyon, contract 418. Level and exact. Stands at ease as if measured for it.
+  foss: {
+    id: 'foss', seed: 23, skin: '#e2b894',
+    build: { height: 1.0, legs: 1.16, torso: 1.04, head: 0.96, width: 0.9 },
+    hair: {
+      color: '#2c2836', brow: '#221e2a',
+      pieces: [
+        { kind: 'cap', front: 0.52, side: 0.0, back: -0.48, grow: [1.06, 1.085, 1.075] },
+        // a regulation crop: a straight fringe, cut with a ruler
+        { kind: 'fringe', n: 6, from: -50, to: 50, top: 64, tip: 24, jag: 1.5, part: 0, gather: 0.75, w: 0.05 },
+        { kind: 'locks', locks: [{ pts: [[66, 40, 1.04], [72, 20, 1.08], [72, 0, 1.07], [66, -14, 1.05]], w: 0.05 }, { pts: [[-66, 40, 1.04], [-72, 20, 1.08], [-72, 0, 1.07], [-66, -14, 1.05]], w: 0.05 }] },
+      ],
+    },
+    face: { set: 'lash', iris: '#6a7fa0', eyeScale: 0.96, brow: { w: 0.016, len: 23, at: [25, 13.5] }, marks: { blush: 0.25 }, mouths: { neutral: 'flat' } },
+    costume: {
+      top: { color: '#8794a8', hem: -0.1, flare: 1.16, trim: '#d9b04e', placket: '#6a768a', lining: '#3a4252' },
+      sleeves: { color: '#8794a8', cuff: '#d9b04e', flare: 1.08 },
+      legs: { color: '#4a5266' }, shoes: { color: '#2a2c3a', sole: '#d9b04e', tall: true },
+      collar: { kind: 'high', color: '#6a768a' }, belt: { color: '#2a2c3a', buckle: '#d9b04e' }, buttons: { color: '#d9b04e', count: 4 },
+      extras: [{ kind: 'brooch', shape: 'bar', color: '#ffcf3f', x: 0.05, y: 0.165, size: 0.013 }, { kind: 'brooch', shape: 'bar', color: '#ffcf3f', x: 0.075, y: 0.158, size: 0.013 }, { kind: 'brooch', shape: 'bar', color: '#ffcf3f', x: 0.098, y: 0.146, size: 0.013 }],
+    },
+    poses: {
+      // at ease: feet apart, hands behind, everything square
+      stand: { hips: { r: [-2, 0, 0] }, chest: [-4, 0, 0], head: [0, 0, 0], legL: [0, 4, 9], legR: [0, -4, -9], armL: [22, 0, 6], foreL: [12, 0, -62], armR: [22, 0, -6], foreR: [12, 0, 62] },
+      signature: { armR: [-66, 0, -8], foreR: [-30, 0, 0], handR: [0, -80, 0], chest: [4, 8, 0] },
+    },
+    gestures: ['talkSmall', 'talkOpen'], anim: { gesture: 0.6, gesturePeriod: 2.8 }, idle: { speed: 0.7, bob: 0.4, sway: 0.3 },
+  },
+
+  // Tamsin Lowrie, 40s: lamp-keeper on Carrow, Ren's mother. His brow and jaw; says little; is usually holding a bowl out to somebody.
+  tamsin: {
+    id: 'tamsin', seed: 24, skin: '#e9b184',
+    build: { height: 0.98, legs: 1.12, torso: 1.02, head: 0.97, width: 0.93, arms: 1.04 },
+    hair: {
+      color: '#8a8a94', brow: '#232846',
+      pieces: [
+        { kind: 'cap', front: 0.52, side: -0.04, back: -0.6, grow: [1.06, 1.09, 1.08] },
+        { kind: 'fringe', n: 4, from: 40, to: -50, part: 30, top: 64, tips: [22, 14, 18, 6], sweep: -6, gather: 0.3 },
+        { kind: 'bun', at: [180, 50], size: 0.095, out: 0.5, band: '#8fae7a' },
+        { kind: 'sidelocks', side: 'L', yaw: 64, top: 4, length: 0.13, w: 0.032 },
+      ],
+    },
+    face: { set: 'round', iris: '#3f8fe0', eyeScale: 0.92, brow: { w: 0.022, len: 25 }, marks: { blush: 0.36, laugh: true }, mouths: { neutral: 'softsmile' } },
+    costume: {
+      top: { color: '#8fae7a', hem: -0.16, flare: 1.34, trim: '#6a8a5a', lining: '#3f5a3a' },
+      sleeves: { color: '#8fae7a', rolled: true },
+      legs: { color: '#5a4a3a' }, shoes: { color: '#6a4a32', sole: '#3a2818' },
+      gloves: { R: '#4a4450' },
+      extras: [{ kind: 'shawl', color: '#f0e6d0', color2: '#d9cdb2', trim: '#c4b698', toggle: '#8a6a44', length: 0.1 }, { kind: 'brooch', shape: 'bar', color: '#c9803f', x: 0.05, y: 0.02, size: 0.026 }],
+    },
+    props: [{ kind: 'bowl', hand: 'L' }],
+    poses: {
+      stand: {
+        hips: { r: [0, -8, 2] }, chest: [2, 6, -2], head: [4, 10, 4], legL: [0, 12, 10], shinL: [3, 0, 0], legR: [0, -6, -2],
+        armL: [-30, 0, 10], foreL: [-66, 0, 0], armR: [4, 0, -12], foreR: [-20, 0, 0],
+      },
+      // the bowl held out
+      signature: { chest: [6, 8, 0], head: [-6, -6, 6], armL: [-64, 0, 6], foreL: [-30, 0, 0] },
+    },
+    gestures: ['talkSmall', 'talkPat'], anim: { gesture: 0.5, gesturePeriod: 3.6 }, idle: { speed: 0.7, breath: 1.2, bob: 0.6, sway: 0.6 },
+  },
 };
+
+// the speaker id 'crowd' is a docker; 'docker-lantern' carries one for the walk to the ferry (setLit(false) until the cue)
+CAST.crowd = { ...CAST.docker, id: 'crowd' };
+CAST['docker-lantern'] = { ...CAST.docker, id: 'docker-lantern', props: [{ kind: 'lantern', hand: 'R', size: 0.07 }], poses: { ...CAST.docker.poses, stand: { ...CAST.docker.poses.stand, armR: [-24, 0, -18], foreR: [-56, 0, 0] }, signature: { armR: [-120, 0, -16], foreR: [-30, 0, 0], head: [-10, 0, 0] } } };
+
+/**
+ * The k-th variant of a rank-and-file cast member (docker, steward, bailiff, proctor, townsman, townswoman, fishwife,
+ * child, child2, clerk): the same person-shape in other colours and sizes, so three dockers in a row are three men.
+ * k = 0 is the def itself. Deterministic. Returns a def for createCharacter / troupe.spawn.
+ */
+export function castVariant(id, k = 0) {
+  const base = CAST[id];
+  if (!base) throw new Error(`castVariant: no cast member "${id}" (have ${Object.keys(CAST).join(', ')})`);
+  if (!k) return base;
+  const r = rng(k * 7919 + base.seed * 131), pick = (list) => list[Math.floor(r() * list.length) % list.length];
+  const skins = ['#f0c6a0', '#e2b490', '#d2a07c', '#c98e6e', '#b07a62', '#9a6a4c', '#f4d2b6'];
+  const hairs = ['#4a3a30', '#7a4a2a', '#2e2630', '#c97a2a', '#8a8a94', '#5a2c22', '#d9b264'];
+  const uniform = id === 'steward' || id === 'bailiff' || id === 'proctor' || id === 'clerk';
+  const cloth = ['#3f6fa8', '#c9803f', '#2f9a86', '#8a5aa8', '#b8504a', '#5a8a4a', '#d9a03a', '#4a5a7a', '#a86a8a'];
+  const hats = ['#7c8094', '#b8743a', '#4f8a5a', '#5a4a6a', '#a3683a', '#3f7a8a'];
+  const d = JSON.parse(JSON.stringify(base));
+  d.id = `${id}#${k}`; d.seed = base.seed * 10 + k;
+  d.skin = pick(skins); d.hair.color = pick(hairs); d.hair.brow = mixc(d.hair.color, '#1a1040', 0.3);
+  d.build = { ...d.build, height: (d.build.height ?? 1) * (0.94 + r() * 0.12), width: (d.build.width ?? 1) * (0.92 + r() * 0.16), belly: Math.max(0, (d.build.belly ?? 0) + (r() - 0.4) * 0.2), head: (d.build.head ?? 1) * (0.97 + r() * 0.06) };
+  d.face.eyeScale = (d.face.eyeScale ?? 1) * (0.94 + r() * 0.12); d.face.iris = pick(['#4a3a2a', '#5a6a3a', '#5a4a8a', '#3f6f9a', '#7a4a26']);
+  d.face.marks = { ...(d.face.marks || {}), blush: 0.3 + r() * 0.3, stubble: !!(d.face.marks && d.face.marks.stubble) && r() > 0.4, freckles: r() > 0.7 };
+  if (!uniform) {
+    const c = pick(cloth), c2 = mixc(c, '#1a1040', 0.3);
+    d.costume.top = { ...d.costume.top, color: c, trim: c2, lining: mixc(c, '#1a1040', 0.5) }; if (d.costume.top.placket) d.costume.top.placket = mixc(c, '#1a1040', 0.18);
+    d.costume.sleeves = { ...d.costume.sleeves, color: d.costume.sleeves?.rolled || r() > 0.5 ? c : '#fff1d6' };
+    if (d.costume.collar) d.costume.collar.color = d.costume.collar.kind === 'scarf' ? pick(['#f2c14e', '#e8483f', '#3f9ad0', '#fff1d6']) : c2;
+    d.costume.legs = { color: pick(['#6a5444', '#4a5a7a', '#3a3a44', '#5a4a3a']) };
+    for (const p of d.hair.pieces) if (p.kind === 'flatcap' || p.kind === 'kerchief') { p.color = pick(hats); delete p.peak; }
+    const ex = (d.costume.extras || []).filter((e) => e.kind !== 'moustache' && e.kind !== 'beard');
+    const roll = r(); if ((id === 'docker' || id === 'townsman') && roll < 0.35) ex.push({ kind: 'moustache', color: d.hair.color }); else if ((id === 'docker' || id === 'townsman') && roll < 0.55) ex.push({ kind: 'beard', shape: 'full', color: d.hair.color, size: 0.95 });
+    d.costume.extras = ex;
+  }
+  return d;
+}

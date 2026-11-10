@@ -115,7 +115,7 @@ function tableOf(content, game) {
  */
 const note = (game, type, detail) => ({
   ...game,
-  recent: pushRecent(game.recent, { n: game.logged, t: game.t, type, ...detail }),
+  recent: pushRecent(game.recent, { ...detail, n: game.logged, t: game.t, type }),   // n, t and type are the log's own: no detail may replace them
   logged: game.logged + 1,
 });
 
@@ -761,7 +761,7 @@ function completeScene(content, game, scene) {
   );
   const ending = game.ending === null && readsLeaning(content, game.chapter, game.scene) ? leaning(rewarded) : game.ending;
   const trust = rewarded.trust - game.econ.trust;
-  const trusted = trust > 0 ? note(game, 'trust', { n: trust, trust: rewarded.trust }) : game;
+  const trusted = trust > 0 ? note(game, 'trust', { gained: trust, trust: rewarded.trust }) : game;
   const cleared = toast(note({ ...trusted, econ: rewarded, ending }, 'sceneClear', { scene: scene.id }), 'scene', scene.title);
   const effects = [sfx('sceneClear'), { type: 'flash', color: '#ffffff' }];
   return then(ok(cleared, effects), (g) => startCine(content, g, 'scene', scene.cutscene));

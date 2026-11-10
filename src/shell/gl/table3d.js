@@ -14,9 +14,18 @@
 // and without one it still draws, on a plain sea. See registerTableArt() at the bottom.
 //
 // Draw calls are spent like this: one textured playfield, one merged static set, one skinned batch
-// for every moving part (flippers, bumpers, slings, targets, plunger, reel drums), one instanced
-// call each for balls and for lit lamps, beams, sprites. Each opaque one costs an outline and a
-// shadow draw as well.
+// for every moving part (flippers, bumpers, slings, targets, plunger, reel drums, the lever), one
+// instanced call each for balls and for lit lamps, beams, sprites. Each opaque one costs an outline
+// draw; the static set's shadow is drawn once and kept (see renderer.js), so a frame's shadow pass
+// is the moving parts and the balls only.
+//
+// THE TABLE IS THE POWER SOURCE. A line of lamps runs up each side rail into a collector on the roof
+// of the reel board. update(game, events, dt, { power }) fills the lines to `power` (0..1, the
+// stage's stageState().power; without it the table keeps its own from what is being hit), every
+// scoring hit throws a bolt from where it happened to the collector, and when the bolt lands
+// view.onEnergy({ x, y, type, id, strength }) is called with the collector's place on screen (CSS
+// px), which is where a stage above continues the line. view.hits lists this update's hits with
+// their screen positions; view.port(out) is the collector; view.screenOf(event, out) any event.
 
 import {
   m4, rgb, rng, DEG,
@@ -27,12 +36,17 @@ import {
 } from './index.js';
 import { stepPhysics } from '../../core/physics.js';
 import { litIds, spinIds, currentScene } from '../../core/story.js';
+import { leverStatus, AID_WAIT } from '../../core/game.js';
+import { lerpEnv } from './scene.js';
 
 const S = 0.01;
 const WX = (x) => (x - 200) * S, WZ = (y) => (y - 400) * S;
-const BALLS = 8, LAMPS = 64, POINTS = 8;
+const BALLS = 8, LAMPS = 96, POINTS = 8, BOLTS = 12, RAIL_LAMPS = 9;
 const SYM_FACES = ['coin', 'scale', 'gavel', 'crown', null, 'tide', 'orb', null]; // the eight faces of a reel drum
 const TAU = Math.PI * 2;
+// How finely round things are cut: set while a view is being built (createTableView's opts.detail).
+let DETAIL = 1;
+const sg = (n, min = 5) => Math.max(min, Math.round(n * DETAIL));
 
 // ------------------------------------------------------------------------------------ mesh helpers
 
@@ -58,6 +72,7 @@ function stadium(ax, az, bx, bz, r0, r1 = r0, n = 4) {
   return pts;
 }
 const rectPts = (x0, z0, x1, z1) => [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
+const NO_SHORES = [];
 /** Colour the faces that look up with `top` and the rest with `side`: a crisp cap on a creased solid. */
 const capped = (mesh, side, top, at = 0.35) => paint(mesh, (x, y, z, nx, ny) => (ny > at ? top : side));
 /** Send every uv of a mesh to one point of the atlas (the blank cell), so a decal material leaves it alone. */
@@ -90,25 +105,25 @@ const yawOf = (dx, dz) => (Math.atan2(-dz, dx) / DEG) * YAW_SIGN;
 // ------------------------------------------------------------------------------------ parts
 
 function wallMesh(w, P, H) {
-  const m = prism(stadium(WX(w.a[0]), WZ(w.a[1]), WX(w.b[0]), WZ(w.b[1]), 0.026), -0.02, H, 0.016);
+  const m = prism(stadium(WX(w.a[0]), WZ(w.a[1]), WX(w.b[0]), WZ(w.b[1]), 0.026, 0.026, DETAIL < 0.8 ? 2 : 4), -0.02, H, 0.016);
   return capped(m, P.wall, P.wallCap);
 }
 function bollard(P, s = 1) {
   return scaleMesh(merge(
-    tint(lathe([[0, 0], [0.04, 0], [0.036, 0.19], [0.044, 0.2], [0.044, 0.225], [0, 0.225]], 10), P.wood),
-    tint(place(ellipsoid(0.047, 0.036, 0.047, 10, 6), 0, 0.243, 0), P.coral),
+    tint(lathe([[0, 0], [0.04, 0], [0.036, 0.19], [0.044, 0.2], [0.044, 0.225], [0, 0.225]], sg(10, 6)), P.wood),
+    tint(place(ellipsoid(0.047, 0.036, 0.047, sg(10, 6), sg(6, 4)), 0, 0.243, 0), P.coral),
   ), s);
 }
 
 function bumperMesh(r, P, emblem) {
-  const seg = 22;
+  const seg = sg(22, 12);
   return merge(
     tint(lathe([[0, 0], [r * 0.98, 0], [r * 1.02, 0.03], [r * 0.9, 0.06], [r * 0.74, 0.06]], seg), P.ink2),
     tint(lathe([[r * 0.74, 0.05], [r * 0.82, 0.11], [r * 0.8, 0.15]], seg, { crease: 180 }), P.coral),
     tint(lathe([[r * 0.8, 0.15], [r * 0.79, 0.2]], seg, { crease: 180 }), P.cream),
     setGlow(tint(lathe([[r * 0.7, 0.2], [r * 0.7, 0.26]], seg, { crease: 180 }), P.glass), 0.9),
     tint(lathe([[r * 0.6, 0.26], [r * 1.04, 0.26], [r * 1.1, 0.295], [r * 1.0, 0.345], [r * 0.66, 0.38], [0, 0.385]], seg, { crease: 50 }), P.coral),
-    tint(place(torus(r * 1.07, 0.017, seg, 6), 0, 0.293, 0), P.gold),
+    tint(place(torus(r * 1.07, 0.017, seg, sg(6, 4)), 0, 0.293, 0), P.gold),
     emblem ? decalDisc(r * 0.68, 0.389, emblem) : null,
   );
 }
@@ -117,7 +132,7 @@ function flipperMesh(len, r, P) {
   return merge(
     tint(prism(stadium(0, 0, len, 0, r * 1.3 + 0.014, r * 0.95 + 0.014, 6), 0.015, 0.1, 0.022), P.coral),
     tint(prism(stadium(0, 0, len, 0, r * 1.3 - 0.004, r * 0.95 - 0.004, 6), 0.07, 0.152, 0.022), P.white),
-    tint(place(ellipsoid(r * 0.62, r * 0.4, r * 0.62, 12, 6), 0, 0.152, 0), P.gold),
+    tint(place(ellipsoid(r * 0.62, r * 0.4, r * 0.62, sg(12, 7), sg(6, 4)), 0, 0.152, 0), P.gold),
     tint(prism(stadium(len * 0.38, 0, len * 0.86, 0, r * 0.3, r * 0.22, 3), 0.15, 0.158, 0.004), P.coral),
   );
 }
@@ -134,15 +149,30 @@ function targetMesh(len, colour, P) {
   return merge(
     tint(prism(stadium(-len / 2 + 0.03, 0, len / 2 - 0.03, 0, 0.034), 0, 0.15, 0.02), colour),
     tint(prism(stadium(-len / 2 + 0.03, 0, len / 2 - 0.03, 0, 0.038), 0.045, 0.075, 0.006), P.cream),
-    tint(place(torus(0.045, 0.014, 12, 5), 0, 0.165, 0), P.gold),
-    tint(place(ellipsoid(0.062, 0.058, 0.062, 12, 8), 0, 0.225, 0), knob),
+    tint(place(torus(0.045, 0.014, sg(12, 7), sg(5, 4)), 0, 0.165, 0), P.gold),
+    tint(place(ellipsoid(0.062, 0.058, 0.062, sg(12, 8), sg(8, 5)), 0, 0.225, 0), knob),
   );
 }
 
 function plungerMesh(P) {
   const parts = [tint(alongZ(cylinder(0.052, 0.058, 0.05, 12)), P.cream), tint(place(alongZ(cylinder(0.02, 0.02, 0.5, 8)), 0, 0, 0.04), P.steel)];
-  for (let i = 0; i < 5; i++) parts.push(tint(place(remap(torus(0.045, 0.011, 10, 5), (x, y, z) => [x, z, -y]), 0, 0, 0.12 + i * 0.05), P.gold));
+  for (let i = 0; i < 5; i++) parts.push(tint(place(remap(torus(0.045, 0.011, sg(10, 6), sg(5, 4)), (x, y, z) => [x, z, -y]), 0, 0, 0.12 + i * 0.05), P.gold));
   return place(merge(parts), 0, 0.08, 0.085);
+}
+
+/** The lever: a hub on the rail, and (its own part, so it can be pulled) an arm with a ball on the end. Origin at the pivot. */
+function leverHubMesh(P) {
+  return merge(
+    tint(lathe([[0, 0], [0.13, 0], [0.13, 0.03], [0.1, 0.05], [0.075, 0.12], [0, 0.13]], sg(14, 8)), P.ink2),
+    tint(place(torus(0.105, 0.016, sg(14, 8), sg(5, 4)), 0, 0.05, 0), P.gold),
+  );
+}
+function leverArmMesh(P) {
+  return merge(
+    tint(place(cylinder(0.026, 0.02, 0.46, sg(8, 6)), 0, 0.02, 0), P.steel),
+    tint(place(torus(0.03, 0.012, sg(10, 6), sg(5, 4)), 0, 0.44, 0), P.gold),
+    setGlow(tint(place(sphere(0.085, sg(14, 9), sg(10, 6)), 0, 0.54, 0), P.coral), 0.25),
+  );
 }
 
 /** An eight-sided reel drum lying along X. Face k looks along (0, sin(k*45), cos(k*45)) and carries SYM_FACES[k]. */
@@ -176,9 +206,9 @@ function railMesh(path, P) {
     const a = path[Math.max(0, i - 1)], b = path[Math.min(path.length - 1, i + 1)];
     const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, p = path[i];
     L.push([p[0] + nx * 0.088, p[1] + 0.05, p[2] + nz * 0.088]); R.push([p[0] - nx * 0.088, p[1] + 0.05, p[2] - nz * 0.088]);
-    if (i % 3 === 1) parts.push(tint(tube([L[i], [p[0] + nx * 0.07, p[1] - 0.035, p[2] + nz * 0.07], [p[0] - nx * 0.07, p[1] - 0.035, p[2] - nz * 0.07], R[i]], 0.008, 5, { crease: 180 }), P.steel));
+    if (i % 3 === 1) parts.push(tint(tube([L[i], [p[0] + nx * 0.07, p[1] - 0.035, p[2] + nz * 0.07], [p[0] - nx * 0.07, p[1] - 0.035, p[2] - nz * 0.07], R[i]], 0.008, sg(5, 4), { crease: 180 }), P.steel));
   }
-  parts.push(tint(tube(L, 0.0115, 6, { crease: 180 }), P.gold), tint(tube(R, 0.0115, 6, { crease: 180 }), P.gold));
+  parts.push(tint(tube(L, 0.0115, sg(6, 4), { crease: 180 }), P.gold), tint(tube(R, 0.0115, sg(6, 4), { crease: 180 }), P.gold));
   return merge(parts);
 }
 
@@ -187,8 +217,11 @@ function railMesh(path, P) {
 function symbolArt(P) {
   const ink = P.ink, card = (g, w, h, bg, edge) => {
     g.fillStyle = edge; g.beginPath(); rrect(g, 0, 0, w, h, w * 0.14); g.fill();
-    g.fillStyle = bg; g.beginPath(); rrect(g, w * 0.06, h * 0.07, w * 0.88, h * 0.86, w * 0.1); g.fill();
-    g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = ink; g.lineWidth = w * 0.045;
+    g.fillStyle = bg; g.beginPath(); rrect(g, w * 0.045, h * 0.055, w * 0.91, h * 0.89, w * 0.1); g.fill();
+    // the picture is drawn a fifth larger than its card was first laid out for: at phone size a reel face is
+    // about fifty pixels across, and the symbol has to carry on its silhouette alone
+    g.translate(w * 0.5, h * 0.5); g.scale(1.2, 1.2); g.translate(-w * 0.5, -h * 0.5);
+    g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = ink; g.lineWidth = w * 0.055;
   };
   return {
     coin: (g, w, h) => {
@@ -237,8 +270,8 @@ function symbolArt(P) {
       g.closePath(); g.fill();
     },
     blank: (g, w, h) => {
-      card(g, w, h, '#f3e6c8', '#d9c49a');
-      g.strokeStyle = '#d9c49a'; g.lineWidth = w * 0.07; g.beginPath(); g.moveTo(w * 0.34, h * 0.5); g.lineTo(w * 0.66, h * 0.5); g.stroke();
+      card(g, w, h, '#efe2c6', '#cdb68a');
+      g.strokeStyle = '#cdb68a'; g.lineWidth = w * 0.035; g.setLineDash([w * 0.06, w * 0.05]); g.beginPath(); rrect(g, w * 0.22, h * 0.24, w * 0.56, h * 0.52, w * 0.08); g.stroke(); g.setLineDash([]);
     },
   };
 }
@@ -446,21 +479,35 @@ const BASE_PALETTE = {
   wall: '#fff6e0', wallCap: '#4a63c0', wood: '#c98448', woodDark: '#96592f', steel: '#aab8dc', reel: '#fff0cc',
   plank: '#dba160', plankDark: '#b97a42', shallow: '#8ff0e0', socket: '#24406e',
   want: '#ffd04a', spin: '#ff7ad1', done: '#ffab3d', lot: '#ffe27a', hull: '#a8683a', rail: '#d08a4c',
+  power: '#7df2ff', powerHot: '#ffffff', save: '#6dffb0', loan: '#ff4a3a', credit: '#58e0c0',
   groups: ['#ff9a3d', '#5b8cf0', '#33c9a4', '#f06aa8', '#b08cf5'],
   sea: ['#2d8fe0', '#37b4e6', '#62dcd6'],
 };
 
 /**
- * createTableView(content, tableId, { art, pitch, fov, shadowSize }) -> view
+ * createTableView(content, tableId, { art, pitch, fov, shadowSize, detail = 1, light = 'dusk' }) -> view
  *   view.scene, view.camera, view.env          the engine scene, for anything this file does not do
  *   view.rect                                  { x, y, w, h } CSS px the table is drawn into (set by fit)
  *   view.fit(layout)                           layout from src/shell/layout.js; returns view.rect
- *   view.update(game, events, dt)              pose everything from a Game; events from tableEvents()
+ *   view.update(game, events, dt, stage)       pose everything from a Game; events from tableEvents();
+ *                                              stage (optional) = { power 0..1, combo: { level } } from stageState()
  *   view.render(renderer, time)                -> renderer.stats
  *   view.project(x, y, h = 0, out = [0, 0])    table units (h in table units above the field) -> CSS px
  *   view.unproject(px, py, out = [0, 0])       CSS px -> table units on the playfield
  *   view.where(id)                             table [x, y] of an element by id, or null
  *   view.reelPos(i, out)                       CSS px of reel i (where a paying line throws its boon from)
+ *   view.setLight('dusk' | 'night' | 'day', seconds = 0)   the table's own time of day, cross-faded over `seconds`
+ *   view.light                                 the light it is in (or heading to)
+ *   view.power                                 0..1, what the rail lamps show
+ *   view.hits                                  this update's scoring hits: [{ type, id, x, y, strength }] (x, y CSS px). Reused: copy what you keep
+ *   view.onEnergy                              set to fn({ x, y, type, id, strength }): called as each hit's bolt reaches the collector
+ *   view.energyTime                            seconds a bolt takes from hit to collector (0.34)
+ *   view.port(out)                             CSS px of the collector on the reel board's roof: where energy leaves the table
+ *   view.screenOf(event, out)                  CSS px of where a tableEvents() event happened, or null if it has no place
+ *   view.reelState(i)                          'empty' | 'spin' | 'held' | 'paying' for reel i; view.armed, view.lever
+ *   view.lever                                 'launch' | 'idle' | 'busy' | 'credit' | 'free' | 'lever' | 'loan': what the arm on the rail shows
+ *
+ * detail scales how finely round parts are cut (0.6 is about 60% of the triangles; the look holds at phone size).
  */
 export function createTableView(content, tableId, opts = {}) {
   const table = content.tables[tableId];
@@ -470,22 +517,65 @@ export function createTableView(content, tableId, opts = {}) {
   const lay = layoutOf(table);
   const H = 0.15, R = table.ballRadius * S;
 
-  // ---- environment: a low warm sun from the far left, long blue-violet shadows, lamps doing the rest
+  DETAIL = opts.detail ?? 1;
+  // ---- environment: three times of day. Dusk is the table as designed: a low warm sun from the far left, long
+  // blue-violet shadows, lamps doing the rest. Night is the same harbour under a high moon, with the paint gone
+  // blue and every lamp on the field doing real work. The live env is cross-faded between them (setLight).
   const seedPoints = []; for (let i = 0; i < POINTS; i++) seedPoints.push({ pos: [0, 0, 0], color: '#ffb347', radius: 1, intensity: 0 });
-  const env = makeEnv('sunset', {
-    key: { dir: [-0.44, 0.64, -0.6], color: '#ffecc4' },
-    shadow: { tint: '#8a84e4', lift: 0.07, saturate: 1.4, radius: 5.5, center: [0, 0, -0.45], size: opts.shadowSize || 2048 },
-    ambient: { sky: '#ffc9a0', ground: '#8f7ae0', amount: 0.09 },
-    rim: { color: '#ffe9b0', amount: 0.7, edge: 0.72 },
-    fog: { density: 0, max: 0 },
-    water: { level: -0.13, deep: '#1f86d8', mid: '#2fb2e4', shallow: '#7fe8dc', foam: '#ffffff', glint: '#fff4c8', glintDensity: 0.22, drift: [0.25, 0.1], shores: [] },
-    points: seedPoints,
-    ...(art.env || {}),
-  });
-  const points = env.points;
-  for (let z = -4.7; z <= 3.71; z += 1.05) env.water.shores.push([0, z, 2.44, 0.2]);
+  const shadowBox = { radius: 5.5, center: [0, 0, -0.45], size: opts.shadowSize || 2048 };
+  const LIGHTS = {
+    dusk: makeEnv('sunset', {
+      key: { dir: [-0.44, 0.64, -0.6], color: '#ffecc4' },
+      shadow: { tint: '#8a84e4', lift: 0.07, saturate: 1.4, ...shadowBox },
+      ambient: { sky: '#ffc9a0', ground: '#8f7ae0', amount: 0.09 },
+      rim: { color: '#ffe9b0', amount: 0.7, edge: 0.72 },
+      fog: { density: 0, max: 0 },
+      water: { level: -0.13, deep: '#1f86d8', mid: '#2fb2e4', shallow: '#7fe8dc', foam: '#ffffff', glint: '#fff4c8', glintDensity: 0.22, drift: [0.25, 0.1], shores: [] },
+      ...(art.env || {}),
+    }),
+    night: makeEnv('night', {
+      key: { dir: [-0.38, 0.72, -0.58], color: '#8fa6f4' },
+      shadow: { tint: '#3140a8', lift: 0.1, saturate: 1.25, ...shadowBox },
+      ambient: { sky: '#4a63d8', ground: '#3a2f96', amount: 0.16 },
+      rim: { color: '#c4d8ff', amount: 0.75, edge: 0.72 },
+      fog: { density: 0, max: 0 },
+      sky: { horizon: '#27408f' },
+      water: { level: -0.13, deep: '#101f6e', mid: '#1b3a9a', shallow: '#3f7fd6', foam: '#cfe0ff', glint: '#bcd4ff', glintDensity: 0.16, drift: [0.25, 0.1], shores: [] },
+      ...(art.envNight || {}),
+    }),
+    day: makeEnv('day', {
+      key: { dir: [-0.36, 0.8, -0.48], color: '#fffaf0' },
+      shadow: { tint: '#93a4f0', lift: 0.07, saturate: 1.35, ...shadowBox },
+      ambient: { sky: '#cfeaff', ground: '#ffe9b0', amount: 0.1 },
+      rim: { color: '#ffffff', amount: 0.6, edge: 0.74 },
+      fog: { density: 0, max: 0 },
+      water: { level: -0.13, deep: '#1f8ee0', mid: '#34bdea', shallow: '#8ff0e0', foam: '#ffffff', glint: '#ffffff', glintDensity: 0.24, drift: [0.25, 0.1], shores: [] },
+      ...(art.envDay || {}),
+    }),
+  };
+  if (!LIGHTS[opts.light || 'dusk']) throw new Error(`table3d: unknown light ${JSON.stringify(opts.light)} (have ${Object.keys(LIGHTS).join(', ')})`);
+  let lightName = opts.light || 'dusk', lightFrom = LIGHTS[lightName], lightTo = lightFrom, lightT = 1, lightDur = 0, nightAmount = lightName === 'night' ? 1 : 0;
+  const env = makeEnv(LIGHTS[lightName]);
+  const points = env.points = seedPoints.map((q) => ({ ...q, color: rgb(q.color) }));
+  // the sea laps the cabinet: one rounded box of shore (it was nine circles, each a loop iteration per water fragment)
+  const shoreBox = [0, -0.52, 2.2, 4.7, 0.34, 0.2];
+  env.water.box = shoreBox; env.water.shores = [];
+  env.shadow.center = shadowBox.center;
+  function applyLight() {
+    lerpEnv(env, lightFrom, lightTo, lightT);
+    env.points = points; env.water.box = shoreBox; env.water.shores = NO_SHORES; env.shadow.center = shadowBox.center; env.shadow.on = true; env.sky.moon = lightTo.sky.moon; env.sky.stars = lightFrom.sky.stars + (lightTo.sky.stars - lightFrom.sky.stars) * lightT;
+    const n0 = lightFrom === LIGHTS.night ? 1 : 0, n1 = lightTo === LIGHTS.night ? 1 : 0; nightAmount = n0 + (n1 - n0) * lightT;
+  }
+  function setLight(name, seconds = 0) {
+    if (!LIGHTS[name]) throw new Error(`table3d: unknown light ${JSON.stringify(name)} (have ${Object.keys(LIGHTS).join(', ')})`);
+    if (name === lightName && lightT >= 1) return view;
+    // start from wherever the fade is now, so a change of mind does not jump
+    lightFrom = makeEnv(env); lightFrom.points = []; lightTo = LIGHTS[name]; lightName = name; lightDur = seconds; lightT = seconds > 0 ? 0 : 1;
+    applyLight();
+    return view;
+  }
   const scene = createScene(env);
-  const sprites = scene.sprites = createSprites(448);
+  const sprites = scene.sprites = createSprites(640);
 
   // ---- textures
   const atlas = buildAtlas(P, art);
@@ -525,21 +615,29 @@ export function createTableView(content, tableId, opts = {}) {
   set.add(node('railL', rail(-2.2, -4.06, -2.0, 4.16, 0.24, P.rail, P.wood), setMat), node('railR', rail(2.0, -4.06, 2.2, 4.16, 0.24, P.rail, P.wood), setMat));
   set.add(node('railF', rail(-2.2, 4.0, 2.2, 4.18, 0.2, P.rail, P.wood), setMat));
   set.add(node('hull', tint(place(box(4.36, 0.5, 9.34), 0, -0.3, -0.52), P.hull), setMat));
-  for (const z of [-3.2, -1.6, 0, 1.6, 3.2]) for (const x of [-2.1, 2.1]) set.add(node('stud', tint(place(ellipsoid(0.05, 0.03, 0.05, 8, 5), x, 0.245, z), P.gold), setMat));
+  // the power lines: a row of sockets up each rail (their lamps are slots below), into the collector on the roof
+  const RAIL_Z = []; for (let i = 0; i < RAIL_LAMPS; i++) RAIL_Z.push(3.45 - i * (7.2 / (RAIL_LAMPS - 1)));
+  for (const z of RAIL_Z) for (const x of [-2.1, 2.1]) set.add(node('socket', tint(place(lathe([[0.064, 0], [0.07, 0.016], [0.05, 0.028]], sg(10, 6)), x, 0.238, z), P.ink2), setMat));
+  for (const x of [-2.1, 2.1]) set.add(node('wire', tint(place(box(0.03, 0.012, 7.3), x, 0.243, -0.15), P.gold), setMat));
 
-  const DR = 0.46, DW = 0.6, DX = [-0.72, 0, 0.72], DY = 0.3, DZ = -4.6, HEAD_TOP = 1.0;
+  const DR = 0.5, DW = 0.66, DX = [-0.76, 0, 0.76], DY = 0.3, DZ = -4.6, HEAD_TOP = 1.0;
+  const PORT = [0, HEAD_TOP + 0.32, -4.86], LEVER = [2.1, 0.24, 3.42];
+  set.add(node('lever-hub', place(leverHubMesh(P), LEVER[0], LEVER[1], LEVER[2]), setMat));
   {
     const head = [];
     head.push(capped(prism(rectPts(-2.2, -5.2, 2.2, -4.02), -0.05, 0.22, 0.03), P.rail, P.wood));
     head.push(capped(prism(rectPts(-1.24, -5.1, 1.24, -4.1), 0.2, 0.34, 0.03), P.ink2, P.ink2));
-    for (const x of [-1.08, -0.36, 0.36, 1.08]) head.push(capped(prism(stadium(x, -4.95, x, -4.3, 0.05), 0.3, 0.8, 0.04), P.coral, P.cream));
+    for (const x of [-1.14, -0.38, 0.38, 1.14]) head.push(capped(prism(stadium(x, -4.95, x, -4.3, 0.045), 0.3, 0.8, 0.04), P.coral, P.cream));
+    // the collector: a brass cradle on the roof holding the glass every line of power runs into
+    head.push(tint(place(lathe([[0, 0], [0.2, 0], [0.2, 0.04], [0.11, 0.07], [0.09, 0.2], [0.15, 0.24], [0.15, 0.27], [0, 0.27]], sg(14, 8)), PORT[0], HEAD_TOP - 0.03, PORT[2]), P.gold));
+    for (let i = 0; i < 3; i++) { const a = (i / 3) * TAU + 0.5; head.push(tint(place(tube([[Math.cos(a) * 0.14, 0, Math.sin(a) * 0.14], [Math.cos(a) * 0.19, 0.14, Math.sin(a) * 0.19], [Math.cos(a) * 0.1, 0.3, Math.sin(a) * 0.1]], 0.014, sg(5, 4), { crease: 180 }), PORT[0], HEAD_TOP + 0.22, PORT[2]), P.gold)); }
     // a fascia in front and an awning above, so each drum shows one face and a sliver of its neighbours
     head.push(capped(prism(rectPts(-1.24, -4.2, 1.24, -4.07), 0.2, 0.55, 0.03), P.cream, P.coral));
     for (let i = 0; i < 7; i++) head.push(tint(prism(rectPts(-1.26 + i * 0.36, -5.1, -1.26 + (i + 1) * 0.36, -4.62), 0.9, 0.97, 0.012), i % 2 ? P.cream : P.coral));
     head.push(capped(prism(rectPts(-1.3, -5.16, 1.3, -5.08), 0.2, 0.98, 0.03), P.ink2, P.ink2));
-    for (let i = 0; i < 7; i++) head.push(tint(place(sphere(i % 2 ? 0.075 : 0.055, 10, 6), -1.08 + i * 0.36, 0.9, -4.62), i % 2 ? '#a79fd0' : P.gold));
+    for (let i = 0; i < 7; i++) head.push(tint(place(sphere(i % 2 ? 0.075 : 0.055, sg(10, 6), sg(6, 4)), -1.08 + i * 0.36, 0.9, -4.62), i % 2 ? '#a79fd0' : P.gold));
     for (const x of [-1.86, 1.86]) head.push(merge(tint(place(cylinder(0.11, 0.09, 0.5, 12), x, 0.2, -4.66), P.cream), tint(place(lathe([[0.13, 0], [0.15, 0.04], [0.1, 0.08], [0, 0.1]], 12), x, 0.7, -4.66), P.coral)));
-    for (let i = 0; i < 9; i++) head.push(tint(place(lathe([[0.05, 0], [0.056, 0.02], [0.04, 0.035]], 10), (i - 4) * 0.2, 0.55, -4.135), P.ink2));
+    for (let i = 0; i < 9; i++) head.push(tint(place(lathe([[0.05, 0], [0.056, 0.02], [0.04, 0.035]], sg(10, 6)), (i - 4) * 0.2, 0.55, -4.135), P.ink2));
     set.add(node('head', merge(head), setMat));
   }
 
@@ -579,7 +677,7 @@ export function createTableView(content, tableId, opts = {}) {
   const groupColour = new Map();
   const targets = lay.targets.map((t, i) => {
     if (!groupColour.has(t.group)) groupColour.set(t.group, (art.groups && art.groups[t.group]) || P.groups[groupColour.size % P.groups.length]);
-    const live = table.flippers.length + 3 + table.bumpers.length + table.slings.length + 1 + i < 32; // the skinned batch holds 32 bones; later targets stand still
+    const live = table.flippers.length + 3 + table.bumpers.length + table.slings.length + 2 + i < 32; // the skinned batch holds 32 bones; later targets stand still
     const yaw = yawOf(t.dir[0], t.dir[1]);
     const n = node(t.id, plainUv(targetMesh(t.len * S, groupColour.get(t.group), P), blank), live ? mechMat : setMat, { pos: [WX(t.mid[0]), 0, WZ(t.mid[1])], rot: [0, yaw, 0], parent: live ? mech : set });
     return { t, node: n, yaw, wob: 0, vel: 0, live, colour: rgb(groupColour.get(t.group)) };
@@ -604,16 +702,17 @@ export function createTableView(content, tableId, opts = {}) {
     return { s, kick: 0, base: [WX(mx), WZ(my)], n: [nx, ny], mid: [mx, my], node: node(s.id, plainUv(slingMesh(l * S, P), blank), mechMat, { pos: [WX(mx), 0, WZ(my)], rot: [0, yawOf(dx, dy), 0], parent: mech }) };
   });
   const plunger = { node: node('plunger', plainUv(plungerMesh(P), blank), mechMat, { pos: [WX(table.plunger.pos[0]), 0, WZ(table.plunger.pos[1])], parent: mech }), z: WZ(table.plunger.pos[1]) };
+  const lever = { node: node('lever', plainUv(leverArmMesh(P), blank), mechMat, { pos: [LEVER[0], LEVER[1] + 0.08, LEVER[2]], parent: mech }), pull: 0, state: 'idle', wob: 0 };
   scene.root.add(mech);
   batchFigure(mech);
 
   // ---- balls
-  const ballNode = node('balls', tint(sphere(R, 20, 14), '#fbfaff'), ballMat);
+  const ballNode = node('balls', tint(sphere(R, sg(20, 12), sg(14, 8)), '#fbfaff'), ballMat);
   ballNode.instances = makeInstances(BALLS);
   scene.root.add(ballNode);
 
   // ---- lamps: everything that can light is a slot; the lit ones are drawn as one instanced call
-  const lampNode = node('lamps', setOutline(setGlow(sphere(1, 14, 9), 1), 0), lampMat);
+  const lampNode = node('lamps', setOutline(setGlow(sphere(1, sg(12, 8), sg(8, 5)), 1), 0), lampMat);
   lampNode.castShadow = false; lampNode.instances = makeInstances(LAMPS);
   scene.root.add(lampNode);
   const lamps = [], lampById = new Map();
@@ -629,6 +728,18 @@ export function createTableView(content, tableId, opts = {}) {
   for (const s of lay.shots) addLamp(s.id, 'shot', WX(s.lamp[0]), 0.004, WZ(s.lamp[1]), 0.09, 0.012, 0.09, P.want, 0.5, 1.1);
   for (const sc of table.saucers) addLamp(sc.id, 'saucer', WX(sc.pos[0]), 0.004, WZ(sc.pos[1]), sc.r * S - 0.012, 0.01, sc.r * S - 0.012, P.want, 0.55, 1.1);
   const reelLamps = DX.map((x, i) => addLamp('', 'reel', x, 0.9, -4.62, 0.085, 0.085, 0.085, P.lot, 0.5, 0));
+  // a glow in front of each drum's showing face (no body: the halo is the lamp), for a locked symbol and a paying line
+  const faceLamps = DX.map((x) => addLamp('', 'face', x, DY + 0.34, DZ + 0.42, 0.001, 0.001, 0.001, P.lot, 1.25, 0));
+  const railLamps = [[], []];
+  for (let i = 0; i < RAIL_LAMPS; i++) for (let k = 0; k < 2; k++) railLamps[k].push(addLamp('', 'rail', k ? 2.1 : -2.1, 0.262, RAIL_Z[i], 0.05, 0.034, 0.05, P.power, 0.34, 0));
+  const portLamp = addLamp('', 'port', PORT[0], PORT[1], PORT[2], 0.13, 0.15, 0.13, P.power, 1.5, 2.2);
+  const leverLamp = addLamp('', 'lever', LEVER[0], LEVER[1] + 0.62, LEVER[2], 0.092, 0.092, 0.092, P.spin, 0.7, 1.2);
+  const leverBase = leverLamp.base.slice();
+  // ball save: a hammock of lamps slung across the drain between the flipper pivots
+  const saveLamps = [];
+  { const fl = table.flippers.find((f) => f.id === 'fl'), fr = table.flippers.find((f) => f.id === 'fr');
+    if (fl && fr) for (let i = 0; i < 7; i++) { const u = i / 6, x = fl.pivot[0] + (fr.pivot[0] - fl.pivot[0]) * (0.14 + 0.72 * u), y = Math.min(table.drainY - 8, Math.max(fl.pivot[1], fr.pivot[1]) + 38 + 16 * Math.sin(u * Math.PI)); saveLamps.push(addLamp('', 'save', WX(x), 0.03, WZ(y), 0.05, 0.03, 0.05, P.save, 0.4, 0)); } }
+  const ballGlow = []; for (let i = 0; i < BALLS; i++) { const g = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: R * 7, color: '#ffffff', alpha: 0 }); g.visible = false; ballGlow.push(g); }
   const armLamps = [-1.86, 1.86].map((x) => addLamp('', 'arm', x, 0.76, -4.66, 0.1, 0.07, 0.1, P.spin, 0.7, 1.4));
   const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.582, -4.135, 0.04, 0.02, 0.04, P.spin, 0, 0));
   if (lamps.length > LAMPS) throw new Error(`table3d: table ${tableId} has ${lamps.length} lamps; the instanced call holds ${LAMPS}`);

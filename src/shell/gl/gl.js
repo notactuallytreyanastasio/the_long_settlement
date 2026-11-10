@@ -126,12 +126,16 @@ export function uploadInstances(gl, geo, data, count) {
   gl.bindVertexArray(null);
 }
 
-/** A texture from a canvas or image. v = 0 is the top row. Mipmapped when the size allows. */
+/**
+ * A texture from a canvas or image. v = 0 is the top row. Mipmapped when the size allows.
+ * Colour is stored premultiplied by alpha (what a canvas already holds), so filtering and mipmaps do
+ * not drag the black of transparent texels into the edges; the shaders divide it back out.
+ */
 export function createTexture(gl, source, { filter = 'linear', mips = true, clamp = true } = {}) {
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
   const lin = filter === 'linear';
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, lin ? gl.LINEAR : gl.NEAREST);

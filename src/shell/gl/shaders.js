@@ -144,8 +144,9 @@ uniform sampler2D uMap; uniform int uTexMode; uniform float uAlphaCut;
 ${FOG}${SHADOW}${POINTS}
 void main() {
   vec3 base = vColor.rgb * vTint.rgb; float alpha = vTint.a;
-  if (uTexMode == 1) { vec4 t = texture(uMap, vUv); base = mix(base, t.rgb * vTint.rgb, t.a); }
-  else if (uTexMode == 2) { vec4 t = texture(uMap, vUv); base = t.rgb * vTint.rgb; alpha *= t.a; if (alpha < uAlphaCut) discard; }
+  // textures hold premultiplied colour (see createTexture)
+  if (uTexMode == 1) { vec4 t = texture(uMap, vUv); base = base * (1.0 - t.a) + t.rgb * vTint.rgb; }
+  else if (uTexMode == 2) { vec4 t = texture(uMap, vUv); base = t.rgb / max(t.a, 0.002) * vTint.rgb; alpha *= t.a; if (alpha < uAlphaCut) discard; }
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
   vec3 toCam = uCamPos - vWorld; float dist = length(toCam); vec3 V = toCam / dist;
@@ -504,14 +505,14 @@ void main() {
     float a = 1.0 - smoothstep(0.9 - e, 0.9 + e, r);
     o = vec4(vColor.rgb, 1.0) * a * vColor.a;
   } else if (vKind < 6.5) {     // 6 tex: a picture from the sprite sheet, alpha blended
-    vec4 t = texture(uSpriteMap, vUv);
-    o = vec4(t.rgb * vColor.rgb, 1.0) * t.a * vColor.a;
+    vec4 t = texture(uSpriteMap, vUv);                 // premultiplied in the texture already
+    o = vec4(t.rgb * vColor.rgb, t.a) * vColor.a;
   } else if (vKind < 7.5) {     // 7 shade: a flat blob of shadow on the ground, for figures with no shadow map
     float a = 1.0 - smoothstep(0.82 - e * 2.0, 0.9, r);
     o = vec4(vColor.rgb * uShadowTint * 0.55, 1.0) * a * vColor.a;
   } else if (vKind < 8.5) {     // 8 texadd: a picture from the sprite sheet, added (energy, light)
     vec4 t = texture(uSpriteMap, vUv);
-    o = vec4(t.rgb * vColor.rgb * t.a * vColor.a, 0.0);
+    o = vec4(t.rgb * vColor.rgb * vColor.a, 0.0);
   } else {                      // 9 bolt: a streak of energy along the quad's x, hot core and soft edge, added; phase = how far its head has run
     float along = p.x * 0.5 + 0.5; float headAt = vPhase * 1.3; float u = (along - (headAt - 0.55)) / 0.55;
     float uc = clamp(u, 0.0, 1.0); float w = pow(uc, 1.6) * step(0.0, u) * step(u, 1.0);

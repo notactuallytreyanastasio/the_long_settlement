@@ -126,6 +126,8 @@ export function kitMaterials() {
     flat: material({ name: 'kit-flat', rim: 0, outline: false, castShadow: false }),
     /** far backdrop: headlands, distant town; thin outline, less fog so it keeps its colour */
     far: material({ name: 'kit-far', rim: 0, lightUp: 0.45, fog: 0.55, outline: { width: 1.4, self: 0.8 }, castShadow: false, receiveShadow: false }),
+    /** the same far backdrop without its outline: one draw instead of two, for a set's `low` build */
+    farFlat: material({ name: 'kit-far-flat', rim: 0, lightUp: 0.45, fog: 0.55, outline: false, castShadow: false, receiveShadow: false }),
     /** paper lanterns and other small bright hanging things: no shadow either way */
     lantern: material({ name: 'kit-lantern', rim: 0, outline: { width: 2.0, self: 0.75 }, castShadow: false, receiveShadow: false }),
     /** tiny far things (gulls, floating lights): no outline at all */
@@ -803,21 +805,22 @@ export function townsfolk({ seed = 1, hold = 'lantern', coat = '#ffffff', skin =
   const r = R(seed), parts = [], k = h / 1.0, up = r() > 0.5 ? 1 : -1;
   const hairCol = hair || pick(r, ['#7a4630', '#3b3560', '#c8643a', '#f0e6d6', '#59402e']);
   parts.push(tint(lathe([[0, 0], [0.2, 0], [0.225, 0.07], [0.17, 0.34], [0.12, 0.5], [0, 0.55]], detail ? 7 : 5, { crease: 180 }), coat));
-  parts.push(tint(place(sphere(0.2, detail ? 8 : 6, detail ? 6 : 4), 0, 0.72, 0), skin));
+  parts.push(tint(place(sphere(0.2, detail ? 8 : 6, detail ? 5 : 4), 0, 0.72, 0), skin));
   if (detail) {
-    parts.push(tint(place(deform(sphere(1, 8, 5), (p) => { if (p[1] < 0.12 && p[2] > -0.25) p[1] = 0.12 + (p[1] - 0.12) * 0.05; }), 0, 0.735, -0.02, 0, 0, 0, 0.218, 0.2, 0.212), hairCol));
-    if (r() > 0.55) parts.push(tint(place(sphere(0.085, 6, 4), 0, 0.93, -0.06), hairCol)); // a bun
-    else if (r() > 0.5) parts.push(tint(place(cylinder(0.2, 0.13, 0.1, 7), 0, 0.86, 0, -8, 0, 0), pick(r, [PAL.navy, PAL.woodDark, PAL.red]))); // a cap
-    parts.push(tint(place(ellipsoid(0.05, 0.13, 0.05, 5, 3), -up * 0.2, 0.36, 0.02, 0, 0, -up * 14), coat));
+    parts.push(tint(place(deform(sphere(1, 8, 4), (p) => { if (p[1] < 0.12 && p[2] > -0.25) p[1] = 0.12 + (p[1] - 0.12) * 0.05; }), 0, 0.735, -0.02, 0, 0, 0, 0.218, 0.2, 0.212), hairCol));
+    const top = r();
+    if (top > 0.6) parts.push(tint(place(sphere(0.085, 6, 4), 0, 0.93, -0.06), hairCol)); // a bun
+    else if (top > 0.25) parts.push(tint(place(cylinder(0.2, 0.13, 0.1, 7), 0, 0.86, 0, -8, 0, 0), pick(r, [PAL.navy, PAL.woodDark, PAL.red, PAL.teal]))); // a cap
+    for (const sx of [-1, 1]) parts.push(setOutline(tint(place(box(0.036, 0.055, 0.02), sx * 0.075, 0.71, 0.186), '#2a2140'), 0)); // eyes: two ink dots, so a head has a front
   }
-  const hx = up * 0.25, hy = hold === 'torch' ? 0.98 : 0.86, hz = 0.12;
+  const hx = up * 0.3, hy = hold === 'torch' ? 0.98 : 0.6, hz = 0.1; // a lantern is carried at the shoulder, clear of the face; a torch goes up
   if (hold !== 'none') {
-    if (detail) parts.push(tint(place(ellipsoid(0.048, 0.15, 0.048, 5, 3), up * 0.215, 0.56, 0.07, 30, 0, up * -18), coat));
+    if (detail) parts.push(tint(hold === 'torch' ? place(ellipsoid(0.048, 0.15, 0.048, 5, 3), up * 0.215, 0.56, 0.07, 30, 0, up * -18) : place(ellipsoid(0.046, 0.12, 0.046, 5, 3), up * 0.24, 0.44, 0.05, 20, 0, up * 50), coat));
     if (hold === 'torch') {
       parts.push(tint(place(cylinder(0.022, 0.028, 0.34, 5), hx, hy - 0.34, hz), PAL.woodDark));
       parts.push(setGlow(setOutline(gradientY(place(lathe([[0, 0], [0.07, 0.04], [0.075, 0.1], [0.04, 0.2], [0, 0.28]], 6, { crease: 180 }), hx, hy - 0.02, hz), '#ffe9a0', '#ff8a30'), 0.3), 1));
     } else {
-      parts.push(tint(place(cylinder(0.008, 0.008, 0.07, 3, { caps: false }), hx, hy + 0.08, hz), [0.2, 0.2, 0.3]));
+      parts.push(tint(place(cylinder(0.008, 0.008, 0.1, 3, { caps: false }), hx, hy + 0.08, hz), [0.2, 0.2, 0.3]));
       parts.push(setGlow(tint(place(lathe([[0, -0.09], [0.055, -0.07], [0.085, 0], [0.055, 0.07], [0, 0.09]], 6, { crease: 180 }), hx, hy, hz), '#ffd070'), 0.95));
     }
   }
@@ -895,7 +898,7 @@ export function townBank({ w = 44, d = 16, h = 11, rows = 4, seed = 1, lit = 0.7
 
 /** A paper light on a little wooden float, waterline at y = 0. White paper: colour it per instance. `detail: 0` is a bare 12-triangle light for the far hundreds. */
 export function floatLight({ s = 1, detail = 1 } = {}) {
-  if (!detail) return setOutline(setGlow(tint(place(box(0.2 * s, 0.22 * s, 0.2 * s), 0, 0.13 * s, 0), '#ffffff'), 0.95), 0);
+  if (!detail) return setOutline(setGlow(tint(place(box(0.15 * s, 0.2 * s, 0.15 * s), 0, 0.11 * s, 0), '#ffffff'), 0.95), 0);
   return scaleMesh(merge(tint(place(cylinder(0.2, 0.17, 0.05, 7), 0, 0, 0), PAL.wood), setGlow(tint(place(roundedBox(0.2, 0.22, 0.2, 0.04, 1), 0, 0.16, 0), '#ffffff'), 0.95)), s);
 }
 
@@ -1027,7 +1030,8 @@ export function lanternLines({ strings, material, sprites = null, shapes = 2, se
 }
 
 /**
- * A crowd: one townsfolk mesh drawn on every spot, in one instanced call (plus its outline), each holding a light.
+ * A crowd: townsfolk drawn on every spot, one instanced call (plus its outline) per variant, each holding a light.
+ * `variants` (default 3) is how many different figures the crowd is made of; `node` is a group holding them.
  *   spots     [{ pos: [x, y, z], face: degrees, s?: scale }], in the order they should arrive
  *   material  kitMaterials().prop (outlined) or .speck (not);  sprites: for a glow on each light, or null
  *   hold      'lantern' | 'torch' | 'none';  detail 1 | 0;  colors: pale instance colours (COATS)
@@ -1035,18 +1039,23 @@ export function lanternLines({ strings, material, sprites = null, shapes = 2, se
  * crowd has turned up (they pop in and out one by one); lit 0..1.5 scales the lights; lively 0..1 how much they bob and
  * shove (0.25 is a quiet vigil, 1 a march).
  */
-export function crowd({ spots, material, sprites = null, seed = 1, detail = 1, hold = 'lantern', colors = COATS, glow = '#ffc060', glowSize = 0.75, amount = 1 }) {
-  const r = R(seed), mesh = townsfolk({ seed, hold, detail }), A = mesh.anchors.light;
-  const n = new Node('crowd', { mesh, material }); n.castShadow = false; n.instances = makeInstances(Math.max(1, spots.length)); n.instances.count = 0;
-  const people = spots.map((sp, i) => ({ pos: sp.pos, face: sp.face || 0, s: sp.s || 0.88 + r() * 0.24, ph: r() * 6.283, col: rgb(colors[Math.floor(r() * colors.length) % colors.length]), here: i < Math.round(amount * spots.length) ? 1 : 0, glow: sprites && hold !== 'none' ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: glowSize, color: glow, alpha: 0 }) : null }));
+export function crowd({ spots, material, sprites = null, seed = 1, detail = 1, hold = 'lantern', colors = COATS, glow = '#ffc060', glowSize = 0.75, amount = 1, variants = 3 }) {
+  const r = R(seed), n = new Node('crowd'), V = Math.max(1, Math.min(variants, spots.length || 1));
+  const kinds = []; // one mesh per variant (different hair, hat, hand), one instanced node each
+  for (let v = 0; v < V; v++) {
+    const mesh = townsfolk({ seed: seed + v * 3.7, hold, detail }), k = new Node('crowd' + v, { mesh, material });
+    k.castShadow = false; k.instances = makeInstances(Math.max(1, Math.ceil(spots.length / V))); k.instances.count = 0; n.add(k); kinds.push({ node: k, A: mesh.anchors.light, n: 0 });
+  }
+  const people = spots.map((sp, i) => ({ kind: kinds[i % V], pos: sp.pos, face: sp.face || 0, s: sp.s || 0.88 + r() * 0.24, ph: r() * 6.283, col: rgb(colors[Math.floor(r() * colors.length) % colors.length]), here: i < Math.round(amount * spots.length) ? 1 : 0, glow: sprites && hold !== 'none' ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: glowSize, color: glow, alpha: 0 }) : null }));
   const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), P = [0, 0, 0];
   const c = {
     node: n, people, amount,
     setAmount(a) { c.amount = Math.max(0, Math.min(1, a)); },
     update(time, dt = 0, { lit = 1, lively = 0.3 } = {}) {
-      const want = Math.round(c.amount * people.length), d = n.instances.data; let k = 0;
+      const want = Math.round(c.amount * people.length);
+      for (let v = 0; v < V; v++) kinds[v].n = 0;
       for (let i = 0; i < people.length; i++) {
-        const p = people[i], goal = i < want ? 1 : 0;
+        const p = people[i], goal = i < want ? 1 : 0, kind = p.kind, d = kind.node.instances.data, k = kind.n, A = kind.A;
         p.here += (goal - p.here) * Math.min(1, dt * 7 + (dt === 0 ? 1 : 0));
         if (p.here < 0.02) { if (p.glow) p.glow.alpha = 0; continue; }
         const hop = Math.abs(Math.sin(time * (2.2 + lively * 2.6) + p.ph)) * 0.05 * lively, sw = Math.sin(time * 1.1 + p.ph * 1.7) * (2 + 5 * lively) * DEG, yaw = (p.face + Math.sin(time * 0.6 + p.ph) * 8 * lively) * DEG;
@@ -1054,14 +1063,14 @@ export function crowd({ spots, material, sprites = null, seed = 1, detail = 1, h
         P[0] = p.pos[0]; P[1] = p.pos[1] + hop; P[2] = p.pos[2];
         quat.fromEuler(Q, 0, yaw, sw); S3[0] = S3[1] = S3[2] = s;
         m4.fromTRS(Mx, P, Q, S3); d.set(Mx, k * 20);
-        d[k * 20 + 16] = p.col[0]; d[k * 20 + 17] = p.col[1]; d[k * 20 + 18] = p.col[2]; d[k * 20 + 19] = 1; k++;
+        d[k * 20 + 16] = p.col[0]; d[k * 20 + 17] = p.col[1]; d[k * 20 + 18] = p.col[2]; d[k * 20 + 19] = 1; kind.n++;
         if (p.glow) {
           const cy = Math.cos(yaw), sy = Math.sin(yaw), g = p.glow, ax = A[0] - Math.sin(sw) * A[1];
           g.pos[0] = P[0] + (ax * cy + A[2] * sy) * s; g.pos[1] = P[1] + A[1] * s; g.pos[2] = P[2] + (-ax * sy + A[2] * cy) * s;
           g.alpha = 0.6 * Math.min(1.3, lit) * p.here * (0.9 + 0.1 * Math.sin(time * 8 + p.ph * 3));
         }
       }
-      n.instances.count = k; n.instances.dirty = true; n.visible = k > 0;
+      for (let v = 0; v < V; v++) { const kn = kinds[v].node; kn.instances.count = kinds[v].n; kn.instances.dirty = true; kn.visible = kinds[v].n > 0; }
     },
   };
   return c;

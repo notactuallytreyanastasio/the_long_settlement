@@ -165,9 +165,11 @@ function glPortrait(H) {
   const reels = rect(tx + tw * 0.16, ty + th * 0.035, tw * 0.68, th * 0.125);
   const flippers = rect(tx + tw * 0.2, ty + th * 0.84, tw * 0.6, th * 0.105);
   const launch = disc(W - 48, H - 76, 38);
-  const mute = disc(W - 24, bandH - 24, 15);
-  const cineMute = disc(W - 146, 80, 15);
-  const skip = rect(W - 120, 60, 104, 40);
+  // mute sits in the HUD's status strip, the last 30 px of the band. skip and the cinematic's mute are below the
+  // tallest notch (59 pt is 65 logical px), so the HUD never has to move them from where input expects them
+  const mute = disc(W - 19, bandH - 15, 12);
+  const cineMute = disc(W - 160, 92, 15);
+  const skip = rect(W - 120, 72, 104, 40);
   const sub = rect(14, H - 180, W - 28, 132);
   const band = rect(0, 0, W, bandH);
   return Object.freeze({
@@ -188,8 +190,8 @@ function glWide() {
   const reels = rect(tx + tw * 0.16, ty + th * 0.035, tw * 0.68, th * 0.125);
   const flippers = rect(tx + tw * 0.2, ty + th * 0.84, tw * 0.6, th * 0.105);
   const launch = disc(W - 44, H - 78, 38);
-  const mute = disc(split - 28, H - 28, 15);
-  const cineMute = disc(W - 150, 44, 15);
+  const mute = disc(split - 19, H - 15, 12);
+  const cineMute = disc(W - 164, 44, 15);
   const skip = rect(W - 124, 24, 104, 40);
   const sub = rect(200, H - 190, W - 400, 150);
   return Object.freeze({

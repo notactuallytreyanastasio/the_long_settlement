@@ -63,7 +63,7 @@ const LIGHTS = {
 };
 
 const CAMERAS = {
-  wide: { target: [-0.25, 1.75, -0.6], dist: 8.6, yaw: 7, pitch: 4, fov: 46, aspect: 0.46, shadowCenter: [0, 0, -1.2], shadowRadius: 8 },
+  wide: { target: [-0.4, 1.75, -0.6], dist: 8.6, yaw: 9, pitch: 4, fov: 46, aspect: 0.46, shadowCenter: [0, 0, -1.2], shadowRadius: 8 },
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -14, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 18, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
   low: { target: [0.1, 2.0, -0.2], dist: 6.6, yaw: -6, pitch: -12, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1], shadowRadius: 8 },
@@ -88,7 +88,7 @@ function build(engine = null, { light = 'night', low = false } = {}) {
 
   // ---- the room: floor, back wall with five windows, side walls, ceiling
   const room = group('room');
-  room.add(node('floor', place(checker({ w: W, d: FRONT - BACK + 6, nx: 16, nz: 16, colors: ['#ffeccb', '#ffb9a2'], seed: 3 }), 0, 0, (FRONT + BACK) / 2 + 3), M.ground));
+  room.add(node('floor', place(checker({ w: W, d: FRONT - BACK + 6, nx: 16, nz: 16, colors: ['#ffeccb', '#ffb9a2'], seed: 3 }), 0, 0, (FRONT + BACK) / 2 + 3), M.flat));
   const WIN = [{ x: -5.9, w: 1.7, sill: 1.5, top: 5.4, arch: true }, { x: -3.2, w: 1.7, sill: 1.5, top: 5.4, arch: true }, { x: 0, w: 3.0, sill: 4.15, top: 6.55, arch: true }, { x: 3.2, w: 1.7, sill: 1.5, top: 5.4, arch: true }, { x: 5.9, w: 1.7, sill: 1.5, top: 5.4, arch: true }];
   room.add(node('back', wall({ w: W, h: H, t: 0.4, color: '#ffdcb0', openings: WIN }), M.wall, { pos: [0, 0, BACK] }));
   // the lower wall is a deep blue dado so the cream dais and the brass read against it
@@ -100,7 +100,6 @@ function build(engine = null, { light = 'night', low = false } = {}) {
     room.add(node('side-dado', tint(place(box(FRONT - BACK, 1.38, 0.06), 0, 0.69, 0.03), KB.royalDark), M.wall, { pos: [sx * (W / 2 - 0.001), 0, (FRONT + BACK) / 2], rot: [0, -sx * 90, 0], visible: sx < 0 }));
   }
   room.add(node('ceiling', ceiling({ w: W, d: 9, color: '#f4d4ff', beams: 6, beam: KB.plumDark, bw: 0.36, bh: 0.4 }), M.wall, { pos: [0, H, BACK + 4.5] }));
-  scene.root.add(mergeStatic(room, 'room'));
 
   // ---- props baked to one mesh
   const props = group('props');
@@ -111,7 +110,9 @@ function build(engine = null, { light = 'night', low = false } = {}) {
   const HOUSE = [0, DAIS_Y, BACK + 0.95], REEL_R = 0.6;
   const house = reelHouse({ w: 3.5, h: 2.7, d: 1.1, r: REEL_R, color: KB.royal, trim: KB.brass });
   props.add(node('reel-house', house, M.prop, { pos: HOUSE }));
-  const DRUM = [-3.05, DAIS_Y, BACK + 1.55], DRUM_YAW = 16;
+  const lv = lever({ len: 1.2 }), LEVER = anchorAt(house, 'lever', HOUSE, 0);
+  props.add(node('lever-base', lv.base, M.prop, { pos: LEVER }));
+  const DRUM = [-2.85, DAIS_Y, BACK + 1.6], DRUM_YAW = 16;
   const ld = lotDrum({ r: 0.66, len: 1.3 });
   props.add(node('drum-cradle', ld.cradle, M.prop, { pos: DRUM, rot: [0, DRUM_YAW, 0] }));
   const counter = clerkCounter({ w: 2.3, color: KB.teal, seed: 4 });
@@ -123,45 +124,44 @@ function build(engine = null, { light = 'night', low = false } = {}) {
   const BAN = [[-4.55, 5.9, 'tide', KB.teal], [-1.95, 6.3, 'crown', KB.wine], [1.95, 6.3, 'orb', KB.plum], [4.55, 5.9, 'coin', KB.royal]];
   for (const [x, y, dev, col] of BAN) props.add(node('banner', banner({ w: 0.95, h: Math.abs(x) < 3 ? 3.0 : 3.6, color: col, trim: KB.brass, device: dev }), M.prop, { pos: [x, y, BACK + 0.2], rot: [0, 0, (r() - 0.5) * 3] }));
   const chans = [[0, H - 0.4, -1.6, 2.1, 1.05], [-4.3, H - 0.4, -2.6, 1.7, 0.75], [4.3, H - 0.4, -2.6, 1.7, 0.75]];
-  const chanMesh = chans.map(([x, y, z, drop, rad]) => { const c = chandelier({ drop, r: rad, arms: rad > 1 ? 8 : 6 }); props.add(node('chandelier', c, M.lantern, { pos: [x, y, z] })); return c; });
+  const chanMesh = chans.map(([x, y, z, drop, rad]) => { const c = chandelier({ drop, r: rad, arms: rad > 1 ? 8 : 6 }); props.add(node('chandelier', c, M.prop, { pos: [x, y, z], castShadow: false })); return c; });
   const scL = sconce({ s: 1.5 });
   for (const x of [-1.95, 1.95]) props.add(node('sconce', scL, M.prop, { pos: [x, 2.35, BACK + 0.08] }));
   const door = doorway({ w: 1.5, h: 2.5, open: 62, color: KB.teal, frame: '#fff3dc' });
   props.add(node('door', door, M.prop, { pos: [W / 2 - 0.02, 0, DOOR.x + (FRONT + BACK) / 2 - 0], rot: [0, -90, 0] }));
   props.add(node('runner', rug({ w: 1.7, d: 6.6, field: KB.wine, border: KB.brass, medallion: KB.royal }), M.prop, { pos: [0, 0, 1.55] }));
   if (!low) {
-    props.add(node('bunt1', bunting([-7.7, 5.6, -1.0], [7.7, 5.4, -0.6], { sag: 1.1, count: 21, size: 0.34, seed: 3 }), M.prop), node('bunt2', bunting([-7.7, 5.9, -3.6], [7.7, 6.0, -3.2], { sag: 0.8, count: 19, size: 0.3, seed: 8 }), M.prop));
+    props.add(node('bunt1', bunting([-7.7, 5.6, -1.0], [7.7, 5.4, -0.6], { sag: 1.1, count: 21, size: 0.34, seed: 3 }), M.prop, { castShadow: false }), node('bunt2', bunting([-7.7, 5.9, -3.6], [7.7, 6.0, -3.2], { sag: 0.8, count: 19, size: 0.3, seed: 8 }), M.prop, { castShadow: false }));
     for (const sx of [-1, 1]) props.add(node('pew', pew({ w: 2.6, seed: 2 + sx }), M.prop, { pos: [sx * 5.6, 0, 0.9], rot: [0, -sx * 62, 0] }));
   }
   scene.root.add(mergeStatic(props, 'props'));
 
   // ---- outside the windows: the town with its lanterns (one unlit, unshadowed mesh)
   const out = group('outside');
-  out.add(node('town', skyline({ w: 22, h: 3.4, seed: 5 }), M.far, { pos: [0, 0.6, BACK - 3.2] }));
-  out.add(node('town2', skyline({ w: 26, h: 5.2, seed: 9, color: '#2f3fa0', color2: '#3a4cb0', lanterns: false }), M.far, { pos: [1, 0.4, BACK - 6] }));
+  out.add(node('town', skyline({ w: 22, h: 3.4, seed: 5 }), M.speck, { pos: [0, 0.6, BACK - 3.2] }));
+  out.add(node('town2', skyline({ w: 26, h: 5.2, seed: 9, color: '#2f3fa0', color2: '#3a4cb0', lanterns: false }), M.speck, { pos: [1, 0.4, BACK - 6] }));
   scene.root.add(mergeStatic(out, 'outside'));
 
   // ---- window light: shafts and floor patches
   if (!low) {
     const sh = [], dir = [0.16, -1, 0.95];
     for (const i of [0, 1, 3, 4]) { const o = WIN[i]; sh.push(place(shaftCards({ w: o.w * 0.8, h: (o.top - o.sill) * 0.7, dir, len: 5.6, cards: 3, color: L.shaft }), o.x, (o.sill + o.top) / 2, BACK + 0.05)); }
-    sh.push(place(shaftCards({ w: 2.4, h: 1.6, dir: [0, -1, 0.72], len: 6.5, cards: 3, color: '#ffc890', spread: 0.3 }), 0, 5.3, BACK + 0.05));
+    sh.push(place(shaftCards({ w: 2.4, h: 1.6, dir: [0, -1, 0.72], len: 6.5, cards: 2, color: '#c89a60', spread: 0.3 }), 0, 5.3, BACK + 0.05));
     scene.root.add(node('shafts', merge(sh), M.shaft));
   }
   const patches = group('patches');
   for (const i of [0, 1, 3, 4]) { const o = WIN[i]; patches.add(node('patch', lightPatch({ w: 1.5, d: 2.3, panes: 2, shear: -0.16, color: L.patch, glow: 0.5 }), M.flat, { pos: [o.x + 0.45, 0.006, BACK + 3.6] })); }
-  scene.root.add(mergeStatic(patches, 'patches'));
+  room.add(patches);
+  scene.root.add(mergeStatic(room, 'room'));
 
   // ---- the three Reels: one instanced draw
-  const reelNode = node('reels', reelDrum({ r: REEL_R, w: 0.84 }), M.prop); reelNode.instances = makeInstances(3); reelNode.instances.count = 3;
+  const reelNode = node('reels', reelDrum({ r: REEL_R, w: 0.84 }), M.prop); reelNode.instances = makeInstances(3); reelNode.instances.count = 3; reelNode.castShadow = false;
   scene.root.add(reelNode);
   const reelPos = anchorAt(house, 'reels', HOUSE, 0);
   const reels = reelPos.map((pos, i) => ({ pos, angle: reelAngle(i * 3 + 1), speed: 0, spin: false, face: (i * 3 + 1) % 8, pop: 0 }));
 
   // ---- the lever
-  const lv = lever({ len: 1.2 }), LEVER = anchorAt(house, 'lever', HOUSE, 0);
-  scene.root.add(node('lever-base', lv.base, M.prop, { pos: LEVER }));
-  const leverArm = node('lever-arm', lv.arm, M.prop, { pos: LEVER }); scene.root.add(leverArm);
+  const leverArm = node('lever-arm', lv.arm, M.prop, { pos: LEVER }); leverArm.castShadow = false; scene.root.add(leverArm);
   let leverT = -1;
 
   // ---- the lot drum and its hatch
@@ -231,8 +231,8 @@ function build(engine = null, { light = 'night', low = false } = {}) {
     }
     reelNode.instances.dirty = true;
     // lever: down fast, back slow
-    let la = -14;
-    if (leverT >= 0) { leverT += dt; const u = leverT / 1.1; la = u < 0.25 ? -14 + 96 * (u / 0.25) : u < 1 ? 82 - 96 * Math.pow((u - 0.25) / 0.75, 0.6) : -14; if (u >= 1) leverT = -1; }
+    let la = 16;
+    if (leverT >= 0) { leverT += dt; const u = leverT / 1.1; la = u < 0.25 ? 16 + 84 * (u / 0.25) : u < 1 ? 100 - 84 * Math.pow((u - 0.25) / 0.75, 0.6) : 16; if (u >= 1) leverT = -1; }
     leverArm.setRot(la, 0, 0);
     // lot drum: turns; when stopped it eases round so the hatch faces the hall
     if (drum.turn !== 0) drum.angle = (drum.angle + drum.turn * 360 * dt) % 360;

@@ -12406,7 +12406,7 @@
  },
  {
   "path": "src/core/game.js",
-  "bytes": 41742,
+  "bytes": 41812,
   "lines": 865
  },
  {
@@ -12426,7 +12426,7 @@
  },
  {
   "path": "src/core/stage.js",
-  "bytes": 19812,
+  "bytes": 19821,
   "lines": 335
  },
  {
@@ -12436,8 +12436,8 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 24806,
-  "lines": 376
+  "bytes": 31088,
+  "lines": 448
  },
  {
   "path": "src/shell/audio.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 98218,
-  "lines": 1300
+  "bytes": 138239,
+  "lines": 1882
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12506,18 +12506,18 @@
  },
  {
   "path": "src/shell/gl/fx.js",
-  "bytes": 4176,
-  "lines": 67
+  "bytes": 10669,
+  "lines": 148
  },
  {
   "path": "src/shell/gl/gl.js",
-  "bytes": 13674,
-  "lines": 214
+  "bytes": 13871,
+  "lines": 218
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 57998,
-  "lines": 1578
+  "bytes": 61629,
+  "lines": 1657
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12550,14 +12550,19 @@
   "lines": 472
  },
  {
+  "path": "src/shell/gl/sets/bench.js",
+  "bytes": 15280,
+  "lines": 192
+ },
+ {
   "path": "src/shell/gl/sets/drum-hall.js",
-  "bytes": 20050,
+  "bytes": 20133,
   "lines": 264
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
-  "bytes": 24850,
-  "lines": 323
+  "bytes": 25688,
+  "lines": 329
  },
  {
   "path": "src/shell/gl/sets/index.js",
@@ -12566,13 +12571,13 @@
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
-  "bytes": 56845,
+  "bytes": 56899,
   "lines": 738
  },
  {
   "path": "src/shell/gl/sets/kit.js",
-  "bytes": 79276,
-  "lines": 1071
+  "bytes": 80400,
+  "lines": 1080
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12581,8 +12586,8 @@
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 27970,
-  "lines": 554
+  "bytes": 28097,
+  "lines": 555
  },
  {
   "path": "src/shell/gl/sprites.js",
@@ -12591,13 +12596,13 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 23146,
-  "lines": 341
+  "bytes": 74872,
+  "lines": 1067
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 77262,
-  "lines": 1108
+  "bytes": 86847,
+  "lines": 1219
  },
  {
   "path": "src/shell/input.js",
@@ -12606,8 +12611,8 @@
  },
  {
   "path": "src/shell/layout.js",
-  "bytes": 11099,
-  "lines": 221
+  "bytes": 11322,
+  "lines": 223
  },
  {
   "path": "src/shell/main.js",
@@ -12655,6 +12660,11 @@
   "lines": 1225
  },
  {
+  "path": "test/gl-layout.test.js",
+  "bytes": 7230,
+  "lines": 105
+ },
+ {
   "path": "test/physics.test.js",
   "bytes": 16163,
   "lines": 324
@@ -12678,6 +12688,11 @@
   "path": "test/slot.test.js",
   "bytes": 12680,
   "lines": 240
+ },
+ {
+  "path": "test/stage.test.js",
+  "bytes": 38122,
+  "lines": 658
  },
  {
   "path": "test/story.test.js",

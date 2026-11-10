@@ -31,6 +31,7 @@ import {
 } from './kit.js';
 
 const QUAY_Z = -5.2, WATER = -0.5;
+const FLOAT_COLS = ['#ffc860', '#ffb04a', '#ffdf8a', '#ff9458', '#ffd070', '#ff9fc0', '#8fe8d8']; // mostly candle gold; picked with a squared random, so the pink and the teal are rare
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
 const dirFrom = (azDeg, elDeg) => [Math.sin(azDeg * DEG) * Math.cos(elDeg * DEG), Math.sin(elDeg * DEG), -Math.cos(azDeg * DEG) * Math.cos(elDeg * DEG)]; // az 0 = straight out to sea, + = right
 
@@ -44,7 +45,7 @@ const LIGHTS = {
       shadow: { tint: '#2f44a8', lift: 0.12, saturate: 1.25 },
       ambient: { sky: '#3f5fd0', ground: '#2a3a92', amount: 0.17 },
       fog: { density: 0.0036, start: 18, max: 0.86 },
-      sky: { zenith: '#0b176c', mid: '#1c3fb0', midAt: 0.42, horizon: '#4f82e6', below: '#3058c4', sunDir: dirFrom(13, 21), moon: 0.72, stars: 1, sun: { size: 2.3 } },
+      sky: { zenith: '#0b176c', mid: '#1c3fb0', midAt: 0.42, horizon: '#4f82e6', below: '#3058c4', sunDir: dirFrom(3.6, 12.6), moon: 0.72, stars: 1, sun: { size: 2.3 } },
       water: { deep: '#122a88', mid: '#1e45ae', shallow: '#3478d6', glint: '#ffd9a0', glintDensity: 0.2 },
     },
     cloud: { color: '#8fa6ea', shadowTint: '#3a50aa' }, ray: 0.46, beam: 0.24, rings: '#bcd4ff',
@@ -95,7 +96,7 @@ const CUES = {
 
 function build(engine = GL0, { light, low = false } = {}) {
   const picked = pickLight('harbor-night', LIGHTS, light), L = picked.L; light = picked.name;
-  const M = kitMaterials(), r = rng(9191);
+  const M = kitMaterials(), r = rng(9191), FAR = low ? M.farFlat : M.far;
   const PIER_X = -0.9, PIER_W = 2.4, PIER_LEN = 16.5;
   const FERRY = [2.75, WATER, -14.2], FERRY_YAW = 184, BOAT = [-4.3, WATER + 0.02, -8.2];
   const GREAT = [-2.25, 0, -2.3], POLE_R = [2.55, 0, -3.1], POLE_L = [-5.6, 0, -4.2];
@@ -121,9 +122,9 @@ function build(engine = GL0, { light, low = false } = {}) {
     [crate({ s: 0.58, seed: 1 }), [-3.7, 0, -0.5], 14], [crate({ s: 0.46, seed: 2, color: PAL.wood2 }), [-3.68, 0.59, -0.55], -12], [barrel({}), [-4.35, 0, -1.3], 0],
     [barrel({ r: 0.3, h: 0.74 }), [3.75, 0, -0.9], 0], [sack({ seed: 2 }), [3.5, 0, -0.3], 30], [crate({ s: 0.5, seed: 4 }), [4.4, 0, -0.5], 24], [ropeCoil({}), [1.7, 0, QUAY_Z + 0.95], 0],
   ];
-  clutter.forEach(([m, p, yaw], i) => near.add(node('clutter' + i, m, M.prop, { pos: p, rot: [0, yaw, 0] })));
+  clutter.forEach(([m, p, yaw], i) => (low && i % 3 === 1) || near.add(node('clutter' + i, m, M.prop, { pos: p, rot: [0, yaw, 0] })));
   // paper lights waiting on the quay edge to be set afloat
-  for (const [x, z, c] of [[-3.3, QUAY_Z + 0.75, 1], [-3.0, QUAY_Z + 0.5, 3], [3.2, QUAY_Z + 0.7, 5], [1.25, QUAY_Z + 0.5, 0]]) near.add(node('waiting', tint2(floatLight({ s: 1.1 }), PAL.lanterns[c]), M.lantern, { pos: [x, 0.03, z], rot: [0, x * 40, 0] }));
+  for (const [x, z, c] of [[-3.3, QUAY_Z + 0.75, 1], [-3.0, QUAY_Z + 0.5, 3], [3.2, QUAY_Z + 0.7, 5], [1.25, QUAY_Z + 0.5, 0]]) near.add(node('waiting', tint2(floatLight({ s: 1.1 }), PAL.lanterns[c]), M.prop, { pos: [x, 0.03, z], rot: [0, x * 40, 0] }));
 
   // the pier, the ferry alongside it, the way aboard
   const pierMesh = pier({ len: PIER_LEN, w: PIER_W, drop: 0.6, seed: 4 });
@@ -135,6 +136,8 @@ function build(engine = GL0, { light, low = false } = {}) {
   mid.add(node('gangway', gangway({ len: Math.max(0.6, gate[0] - gx), w: 0.85, rise: gate[1] }), M.prop, { pos: [gx, 0, gate[2]], rot: [0, -90, 0] }));
   for (const z of [-9.5, -18.6]) mid.add(node('hawser', tint(tube(curve([[PIER_X + PIER_W / 2 + 0.06, 0.5, z], [PIER_X + PIER_W / 2 + 0.3, 0.1, z - 0.1], [FERRY[0] - 1.5, WATER + 0.8, z - (z < -14 ? -0.8 : 0.8)]], 8), 0.028, 5, { crease: 180 }), PAL.rope), M.prop));
   for (const [x, z, s, seed] of [[-9.5, -17, 1.4, 3], [-11, -16.2, 0.9, 5], [11.5, -22, 1.8, 8]]) mid.add(node('rock', rock({ seed, s }), M.prop, { pos: [x, WATER - 0.05, z] }));
+  const boatMesh = boat({ len: 3.1, hull: PAL.cream, keel: PAL.red, pennant: PAL.yellow, seed: 1 });
+  if (low) mid.add(node('boat', boatMesh, M.prop, { pos: BOAT, rot: [2, 70, 3] })); // low: moored still, inside the mid mesh (saves two draws)
   mid.traverse((n) => { n.castShadow = false; });
 
   // strings: from the great mast across the quay and out to the ferry's masthead, and the ferry dressed overall
@@ -153,15 +156,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   const far = group('far');
   const HEAD = [-50, -0.6, -128], LH = [-9.4, 0, -122];
   const headMesh = headland({ w: 96, d: 34, h: 9, seed: 3, grass: '#3f9a78' });
-  far.add(node('headland', headMesh, M.far, { pos: HEAD }));
+  far.add(node('headland', headMesh, FAR, { pos: HEAD }));
   { let top = 0; const Pm = headMesh.positions; for (let i = 0; i < Pm.length; i += 3) if (Math.hypot(Pm[i] + HEAD[0] - LH[0], Pm[i + 2] + HEAD[2] - LH[2]) < 5 && Pm[i + 1] > top) top = Pm[i + 1]; LH[1] = HEAD[1] + top - 0.8; }
   const lh = lighthouse({ h: 13, r: 2.3 });
-  far.add(node('lighthouse', lh, M.far, { pos: LH }));
+  far.add(node('lighthouse', lh, FAR, { pos: LH }));
   const TOWN = [27, WATER, -78], TOWN_YAW = -14;
   const town = townBank({ w: 46, d: 18, h: 13, rows: 4, seed: 5, lit: 0.8 });
-  far.add(node('town', town, M.far, { pos: TOWN, rot: [0, TOWN_YAW, 0] }));
-  far.add(node('town-foot', tint(place(box(52, 2.4, 3), 0, -0.6, 1.2), PAL.stoneDark), M.far, { pos: TOWN, rot: [0, TOWN_YAW, 0] }));
-  if (!low) far.add(node('sailboat', boat({ len: 3.4, hull: PAL.cream, keel: PAL.teal, pennant: PAL.red, seed: 3 }), M.far, { pos: [-7.5, WATER, -34], rot: [0, 115, 0] }));
+  far.add(node('town', town, FAR, { pos: TOWN, rot: [0, TOWN_YAW, 0] }));
+  far.add(node('town-foot', tint(place(box(52, 2.4, 3), 0, -0.6, 1.2), PAL.stoneDark), FAR, { pos: TOWN, rot: [0, TOWN_YAW, 0] }));
+  if (!low) far.add(node('sailboat', boat({ len: 3.4, hull: PAL.cream, keel: PAL.teal, pennant: PAL.red, seed: 3 }), FAR, { pos: [-7.5, WATER, -34], rot: [0, 115, 0] }));
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   if (env.sky.sunDir) env.sky.sunDir = norm(env.sky.sunDir);
@@ -172,7 +175,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   // ---- cobbles: one instanced draw
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
   const cobCols = ['#f6e4c0', '#dcc698', '#f0d9ae', '#d8c092', '#ecd2a6'];
-  scatter(cob, low ? 260 : 440, (i) => {
+  scatter(cob, low ? 200 : 440, (i) => {
     const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = QUAY_Z + 0.95 + row * (low ? 0.62 : 0.4) + (r() - 0.5) * 0.12;
     if (r() < 0.4) return null;
     const sc = 0.2 + r() * 0.09; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobCols[Math.floor(r() * cobCols.length)] };
@@ -185,15 +188,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   const foreground = mergeStatic(fg, 'foreground');
   scene.root.add(foreground);
 
-  // ---- a small boat on the left of the pier, bobbing
-  const boatNode = node('boat', boat({ len: 3.1, hull: PAL.cream, keel: PAL.red, pennant: PAL.yellow, seed: 1 }), M.prop, { pos: BOAT, rot: [0, 70, 0] });
-  boatNode.castShadow = false; scene.root.add(boatNode);
+  // ---- a small boat on the left of the pier, bobbing (low: it is part of `mid`)
+  const boatNode = low ? null : node('boat', boatMesh, M.prop, { pos: BOAT, rot: [0, 70, 0] });
+  if (boatNode) { boatNode.castShadow = false; scene.root.add(boatNode); }
 
   // ---- sprites first: everything below adds glows to them
   const sprites = scene.sprites = createSprites(512);
 
   // ---- paper lanterns on the strings, and the great lantern
-  const lines = lanternLines({ strings, material: M.lantern, sprites, shapes: low ? 1 : 2, seg: low ? 7 : 8, seed: 7 });
+  const lines = lanternLines({ strings, material: M.lantern, sprites, shapes: low ? 1 : 2, seg: low ? 6 : 8, seed: 7 });
   scene.root.add(...lines.nodes);
   const greatMesh = paperLantern({ r: 0.46, shape: 'round', seg: 16, cord: 0.14 });
   const great = node('great-lantern', greatMesh, M.lantern, { pos: greatHook }); great.castShadow = false; great.tint.set([1.0, 0.72, 0.3, 1]);
@@ -208,7 +211,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     // interleave, so a thin crowd is thin everywhere
     for (let i = 0; i < Math.max(pierSide.length, quaySide.length); i++) { if (i < pierSide.length) spots.push(pierSide[i]); if (i < quaySide.length) spots.push(quaySide[i]); }
   }
-  const folk = crowd({ spots: low ? spots.filter((_, i) => i % 3 !== 2) : spots, material: M.prop, sprites, seed: 11, amount: L.crowd, glow: '#ffc060' });
+  const folk = crowd({ spots: low ? spots.filter((_, i) => i % 5 < 3) : spots, material: M.prop, sprites, seed: 11, amount: L.crowd, glow: '#ffc060', variants: low ? 2 : 3 });
   scene.root.add(folk.node);
 
   // ---- lamps: six fixed point lights
@@ -235,12 +238,12 @@ function build(engine = GL0, { light, low = false } = {}) {
   // ---- the lights on the water: one instanced draw of bare paper boxes, the nearest few with a halo
   const floats = [], floatNode = node('floats', floatLight({ detail: 0 }), M.speck);
   scatter(floatNode, low ? 170 : 360, (i) => {
-    const u = r(), z = QUAY_Z - 1.2 - u * u * 74, x = (r() - 0.5) * (22 + (QUAY_Z - z) * 1.3), col = PAL.lanterns[i % PAL.lanterns.length];
+    const u = r(), z = QUAY_Z - 1.2 - u * u * 74, x = (r() - 0.5) * (22 + (QUAY_Z - z) * 1.3), col = FLOAT_COLS[Math.floor(r() * r() * FLOAT_COLS.length)];
     if (x > PIER_X - PIER_W / 2 - 0.5 && x < PIER_X + PIER_W / 2 + 0.5 && z > QUAY_Z - PIER_LEN - 0.5) return null;
     if (Math.abs(x - FERRY[0]) < 2.5 && Math.abs(z - FERRY[2]) < 6.4) return null;
     if (Math.hypot(x - BOAT[0], z - BOAT[2]) < 2.0) return null;
-    const s = 1 + (QUAY_Z - z) * 0.035; // far ones are drawn larger, or they are less than a pixel
-    if (floats.length < (low ? 26 : 54) && z > -30) floats.push({ glow: sprites.add({ kind: 'glow', pos: [x, WATER + 0.2, z], size: 0.8 * s, color: col, alpha: 0 }), ph: r() * 6.283 });
+    const s = 1 + (QUAY_Z - z) * 0.02; // far ones are drawn larger, or they are less than a pixel
+    if (floats.length < (low ? 26 : 54) && z > -30) floats.push({ glow: sprites.add({ kind: 'glow', pos: [x, WATER + 0.2, z], size: 0.62 * s, color: col, alpha: 0 }), ph: r() * 6.283 });
     return { m: m4.trs(x, WATER, z, 0, r() * 360, 0, s), color: col };
   });
   scene.root.add(floatNode);
@@ -253,8 +256,11 @@ function build(engine = GL0, { light, low = false } = {}) {
   { const one = () => tint(rayMesh(70, 0.6, 7, 14), '#ffe9a0'); beam.add(node('beams', merge(place(one(), 0, 0, 0, 0, 0, 84), place(one(), 0, 0, 0, 0, 0, -84)), rayMaterial({ power: 1.3, near: L.beam, far: 0 }))); }
   scene.root.add(beam);
 
-  const clouds = cloudBank({ count: low ? 6 : 9, seed: 11, arc: [158, 204], radius: [250, 430], height: [18, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
+  const clouds = cloudBank({ count: low ? 4 : 9, seed: 11, arc: [158, 204], radius: [250, 430], height: [18, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
   scene.root.add(clouds.node);
+  // a second, higher bank: the 'low' camera looks up into forty degrees of sky
+  const high = low ? null : cloudBank({ count: 5, seed: 23, arc: [150, 212], radius: [300, 420], height: [170, 300], size: [0.9, 1.6], speed: 0.035, ...L.cloud });
+  if (high) scene.root.add(high.node);
 
   const actors = group('actors'); scene.root.add(actors);
 
@@ -287,9 +293,9 @@ function build(engine = GL0, { light, low = false } = {}) {
     beam.setRot(0, time * 22, 0);
     lhGlow.alpha = 0.3 + 0.3 * Math.pow(Math.abs(Math.cos(time * 22 * DEG)), 6);
     for (let i = 0; i < floats.length; i++) floats[i].glow.alpha = 0.55 + 0.2 * Math.sin(time * 2.1 + floats[i].ph);
-    boatNode.position[1] = BOAT[1] + Math.sin(time * 1.3) * 0.04;
-    boatNode.setRot(Math.sin(time * 1.1) * 2.5, 70 + Math.sin(time * 0.3) * 3, Math.sin(time * 1.6 + 1) * 4);
-    clouds.update(time);
+    if (boatNode) boatNode.position[1] = BOAT[1] + Math.sin(time * 1.3) * 0.04;
+    if (boatNode) boatNode.setRot(Math.sin(time * 1.1) * 2.5, 70 + Math.sin(time * 0.3) * 3, Math.sin(time * 1.6 + 1) * 4);
+    clouds.update(time); if (high) high.update(time);
 
     if (lastT >= 0 && time - lastT < 0.5 && dt > 0) {
       if (pw > 0.05 && time > nextSpark) { nextSpark = time + 0.16; const l = lines.list[Math.floor(rnd() * lines.list.length)]; if (l.lit > 0.5) sprites.sparkle(l.glow.pos, { count: 1, size: 0.16, spread: 0.5, life: 0.9, color: '#fff0b0' }); }

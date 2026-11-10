@@ -19,14 +19,18 @@
 //     reels Rect     screen bounds of the drums            flippers Rect  both flippers and the gap between them
 //     launch Disc    mute Disc    skip Rect    cineMute Disc    sub Rect (the subtitle box in a full-screen cutscene)
 //   stage      core/stage.js stageState(): opposition { name, kind }, progress { done, total },
-//              combo { count, level 0..4, left 0..1, name? }, power 0..1, phase, buffs? [{ id, label?, left? }]
-//              Without stage.buffs the four boons are read from game.boons.
+//              combo { count, level 0..4, left 0..1, name, mult }, power 0..1, phase, beat? { name },
+//              buffs { shield, double, doubleT, kickback, helpers, hat }. Without stage.buffs the same are read
+//              from game.boons.
 //   fx         timeMs, safe { top, bottom }, muted, touch, speaking (the Line being barked in play), voiceLevel, flash
 //              band      Rect: the band as drawn this frame. As it grows past layout.gl.band the play HUD leaves
 //                        and the subtitle box arrives; absent, play shows the HUD and a cinematic shows the box.
 //              anchors   { [castId]: { x, y } }: the top of a head, logical px. A bark hangs its speech tick there;
 //                        with no anchor for the speaker it takes the objective line's place at the foot of the band.
 //              hasSave   { chapter, scene } | null: the title offers Continue
+//              loading   0..1 while the sets build: title and card show a bar where the tap prompt goes
+//              In a cinematic an anchor for the speaker also gets a small speaking marker over their head.
+//              Not drawn here: the energy arcs from the table to the stage (the director's drawOverlay).
 //              sideways  true: only the turn-me-upright card is drawn
 //
 // State: none but caches (when a bark was first seen, so a long one can turn its pages; measured lettering).
@@ -307,22 +311,25 @@ function growOf(rects, fx, layout) {
   return room > 0 ? clamp((b.h - rects.band.h) / room, 0, 1) : 0;
 }
 
+/**
+ * The chips under the opposition bar, as [label, fill, seconds or null]. stage.buffs is core/stage.js buffsOf():
+ * { shield (s), double, doubleT (s), kickback, helpers, hat }. Without it the same four are read from game.boons.
+ */
 function boonsOf(game, stage) {
-  if (Array.isArray(stage.buffs)) {
-    return stage.buffs.map((b) => {
-      if (!b || typeof b.id !== 'string') throw new Error(`hud: a stage buff must be { id, label?, left? }, got ${JSON.stringify(b)}`);
-      const known = BOON_LOOK[b.id];
-      const label = b.label || (known ? known[0] : b.id.toUpperCase());
-      return [label, known ? known[1] : TEAL, b.left > 0 ? Math.ceil(b.left) : null];
-    });
+  let f = stage.buffs;
+  if (f === undefined || f === null) {
+    const b = game.boons || {};
+    const balls = game.phys ? game.phys.balls.length : 0;
+    f = { shield: b.ballSave, double: b.multT > 0 ? b.mult : 1, doubleT: b.multT, kickback: b.kickback, helpers: Math.max(0, balls - 1), hat: false };
+  } else if (typeof f !== 'object' || Array.isArray(f)) {
+    throw new Error(`hud: stage.buffs must be the object core/stage.js makes, got ${JSON.stringify(f)}`);
   }
-  const b = game.boons || {};
-  const balls = game.phys ? game.phys.balls.length : 0;
   const out = [];
-  if (b.ballSave > 0) out.push([BOON_LOOK.ballSave[0], BOON_LOOK.ballSave[1], Math.ceil(b.ballSave)]);
-  if (b.mult > 1 && b.multT > 0) out.push([`×${b.mult} MARKS`, BOON_LOOK.doubleMarks[1], Math.ceil(b.multT)]);
-  if (balls > 1) out.push([BOON_LOOK.multiball[0], BOON_LOOK.multiball[1], null]);
-  if (b.kickback > 0) out.push([b.kickback > 1 ? `KICK ×${b.kickback}` : 'KICK', BOON_LOOK.kickback[1], null]);
+  if (f.hat) out.push(['THE HAT IS OUT', '#ffd9a8', null]);
+  if (f.shield > 0) out.push([BOON_LOOK.ballSave[0], BOON_LOOK.ballSave[1], Math.ceil(f.shield)]);
+  if (f.double > 1) out.push([`×${f.double} MARKS`, BOON_LOOK.doubleMarks[1], f.doubleT > 0 ? Math.ceil(f.doubleT) : null]);
+  if (f.helpers > 0) out.push([BOON_LOOK.multiball[0], BOON_LOOK.multiball[1], null]);
+  if (f.kickback > 0) out.push([f.kickback > 1 ? `KICK ×${f.kickback}` : 'KICK', BOON_LOOK.kickback[1], null]);
   return out;
 }
 const BOON_LOOK = {
@@ -344,7 +351,7 @@ function drawScore(g, x, y, score) {
   return w;
 }
 
-/** The opposition: its name on a pill and, under it, what is left of it. Returns the bottom of the bar. */
+/** The opposition: its name on a pill and, under it, what is left of it. Returns { bottom, left } of the block. */
 function drawOpposition(g, right, y, stage, now, maxW) {
   const opp = stage.opposition;
   if (!opp || typeof opp.name !== 'string') throw new Error(`hud: stage.opposition must have a name, got ${JSON.stringify(opp)}`);
@@ -421,7 +428,7 @@ function drawOpposition(g, right, y, stage, now, maxW) {
     inked(g, 'SETTLED!', bx + bw / 2, by + 11, { fill: on ? GOLD : WHITE, lw: 3, drop: 0 });
   }
   g.textAlign = 'left';
-  return by + bh + 3;
+  return { bottom: by + bh + 3, left: x };
 }
 
 function drawBoons(g, right, y, boons) {
@@ -480,6 +487,12 @@ function drawCombo(g, x, y, combo, now, maxW) {
     inked(g, name, nw + 6, -2, { fill: level >= 3 ? fill : WHITE, lw: 4, drop: 2 });
   }
   g.restore();
+  // what the chain is worth: score only (the core never multiplies marks)
+  if (combo.mult > 1) {
+    g.font = font(MIN_TYPE, 800);
+    g.textAlign = 'left';
+    inked(g, `SCORE ×${combo.mult}`, x + 82, y + 15.5, { fill: fill === WHITE ? GOLD : fill, lw: 3, drop: 1 });
+  }
   // the fuse
   const fw = 74;
   panel(g, x, y + 8, fw, 7, { r: 4, fill: NAVY_HI, drop: 0, lw: 2 });
@@ -491,7 +504,7 @@ function drawCombo(g, x, y, combo, now, maxW) {
 }
 
 /** The foot of the band: writs, marks, what is owed, trust. Its top edge is the line the table's power runs along. */
-function drawStrip(g, S, game, stage, now) {
+function drawStrip(g, S, game, stage, now, mute) {
   const e = game.econ;
   g.fillStyle = NAVY;
   g.fillRect(S.x, S.y, S.w, S.h);
@@ -542,7 +555,8 @@ function drawStrip(g, S, game, stage, now) {
   x += 18 + g.measureText(marks).width + 12;
 
   // trust, from the right; the mute button has the corner
-  const right = S.x + S.w - 34;
+  const muteInStrip = mute.y + mute.r > S.y && mute.y - mute.r < S.y + S.h && mute.x > S.x + S.w * 0.6;
+  const right = muteInStrip ? mute.x - mute.r - 9 : S.x + S.w - 12;
   const tw = 58;
   const tx = right - tw;
   const trust = clamp(e.trust / 100, 0, 1);
@@ -967,7 +981,7 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   let barked = false;
   if (fx.speaking) barked = drawBark(g, content, fx.speaking, fx, B, S.y - 4, now);
   if (!barked && scene) drawHint(g, B.x + B.w / 2, footBase, scene.hint, B.w - 28);
-  drawStrip(g, S, game, stage, now);
+  drawStrip(g, S, game, stage, now, rects.mute);
   drawMute(g, rects.mute, Boolean(fx.muted));
   g.restore();
 
@@ -976,8 +990,8 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   g.translate(0, -out * (HUD_BAND_HEAD + top + 30));
   g.globalAlpha = 1 - out;
   const sw = drawScore(g, B.x + 10, top, game.econ.score);
-  const oppBottom = drawOpposition(g, B.x + B.w - 10, top, stage, now, B.w - sw - 34);
-  drawBoons(g, B.x + B.w - 10, oppBottom + 5, boonsOf(game, stage));
+  const opp = drawOpposition(g, B.x + B.w - 10, top, stage, now, B.w - sw - 34);
+  drawBoons(g, B.x + B.w - 10, opp.bottom + 5, boonsOf(game, stage));
   // a short band (or a deep notch) has no room for both the scene's name and a combo: the combo wins
   const comboOn = Boolean(stage.combo && stage.combo.count > 0);
   const comboY = Math.min(top + 88, S.y - 42);
@@ -985,10 +999,22 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   if (scene && !(comboOn && comboY < top + 80)) {
     const col = THREADS[scene.thread];
     if (!col) throw new Error(`hud: scene '${scene.id}' has unknown thread '${scene.thread}'`);
+    // the scene's name in its thread's colour and, after it, what the stage has just come to (stage.beat.name)
     const title = scene.title.toUpperCase();
+    const room = opp.left - 10 - (B.x + 12);
     g.textAlign = 'left';
-    fit(g, title, B.w - 170, 12, MIN_TYPE, 800);
-    inked(g, ellipsize(g, title, B.w - 170), B.x + 12, top + 46, { fill: col, lw: 3.5, drop: 1.5 });
+    fit(g, title, room, 12, MIN_TYPE, 800);
+    const shownTitle = ellipsize(g, title, room);
+    inked(g, shownTitle, B.x + 12, top + 46, { fill: col, lw: 3.5, drop: 1.5 });
+    const tw = g.measureText(shownTitle).width;
+    const beat = stage.beat && typeof stage.beat.name === 'string' ? stage.beat.name : '';
+    if (beat && !comboOn) {
+      g.font = font(12, 700);
+      inked(g, ellipsize(g, beat, B.w - 24), B.x + 12, top + 63, { fill: CREAM, lw: 3.5, drop: 1.5 });
+    } else if (beat && room - tw > 70) {
+      g.font = font(MIN_TYPE, 700);
+      inked(g, ellipsize(g, beat, room - tw - 8), B.x + 12 + tw + 8, top + 46, { fill: CREAM, lw: 3.5, drop: 1.5 });
+    }
   }
   g.restore();
 }
@@ -1127,6 +1153,33 @@ function drawSubtitle(g, content, cine, fx, box, alpha) {
   g.restore();
 }
 
+/** Over the head of whoever is speaking: a small bubble with three beads that jump with the voice. */
+function drawSpeaking(g, x, y, fx) {
+  const now = fx.timeMs;
+  const level = clamp(fx.voiceLevel || 0, 0, 1);
+  const cy = y - 22 - (Math.floor(now / 380) % 2 ? 2 : 0);
+  panel(g, x - 19, cy - 10, 38, 20, { r: 10, drop: 2.5 });
+  g.beginPath();
+  g.moveTo(x - 5, cy + 9);
+  g.lineTo(x, cy + 16);
+  g.lineTo(x + 5, cy + 9);
+  g.fillStyle = CREAM;
+  g.fill();
+  g.strokeStyle = NAVY;
+  g.lineWidth = 2.5;
+  g.lineJoin = 'round';
+  g.stroke();
+  g.fillStyle = CREAM;
+  g.fillRect(x - 4, cy + 6.5, 8, 3);
+  for (let i = 0; i < 3; i++) {
+    const up = Math.max(0, Math.sin(now / 110 - i * 1.1)) * (1.5 + level * 4);
+    g.beginPath();
+    g.arc(x - 9 + i * 9, cy - up + 1.5, 2.6, 0, TAU);
+    g.fillStyle = i === 1 ? CORAL : NAVY;
+    g.fill();
+  }
+}
+
 function drawCine(g, content, game, fx, layout, rects, grow) {
   const cine = game.cine;
   if (!cine || !Array.isArray(cine.lines)) throw new Error(`hud: game.mode is 'cine' but game.cine is ${JSON.stringify(cine)}`);
@@ -1135,6 +1188,9 @@ function drawCine(g, content, game, fx, layout, rects, grow) {
   drawSubtitle(g, content, cine, fx, rects.sub, alpha);
   g.save();
   g.globalAlpha = alpha;
+  const line = cine.lines[cine.index];
+  const at = line && fx.anchors && fx.anchors[line.who];
+  if (at && line.fx !== 'radio') drawSpeaking(g, at.x, at.y, fx);
   drawSkip(g, rects.skip, Boolean(fx.touch));
   drawMute(g, rects.cineMute, Boolean(fx.muted));
   g.restore();
@@ -1212,6 +1268,27 @@ function bigButton(g, r, label, sub, fill, col, now, pulse) {
   g.textAlign = 'left';
 }
 
+/** While the sets build (fx.loading 0..1): a bar on a navy pill where the tap prompt will be. Returns whether it drew. */
+function drawLoading(g, fx, cx, y) {
+  const v = fx.loading;
+  if (!(v >= 0) || v >= 1) return false;
+  const w = 250;
+  panel(g, cx - w / 2, y, w, 30, { fill: NAVY, ink: NAVY_DEEP });
+  g.font = font(MIN_TYPE, 800);
+  g.fillStyle = CREAM;
+  g.textAlign = 'left';
+  g.fillText('SETTING THE STAGE', cx - w / 2 + 14, y + 19);
+  const bx = cx - w / 2 + 14 + g.measureText('SETTING THE STAGE').width + 8;
+  const bw = cx + w / 2 - 14 - bx;
+  rr(g, bx, y + 11, bw, 8, 4);
+  g.fillStyle = NAVY_DEEP;
+  g.fill();
+  rr(g, bx, y + 11, Math.max(8, bw * v), 8, 4);
+  g.fillStyle = GOLD;
+  g.fill();
+  return true;
+}
+
 /** What a tap does next, on a navy pill whose lettering blinks between cream and gold. */
 function chip(g, text, cx, y, now) {
   g.font = font(13, 800);
@@ -1284,6 +1361,7 @@ export function drawTitle(g, content, game, fx, layout) {
     if (!ch || !sc) throw new Error(`hud: fx.hasSave names chapter ${save.chapter} scene ${save.scene}, which the content does not have`);
     bigButton(g, rects.menuContinue, 'CONTINUE', `Chapter ${ROMAN[ch.number] || ch.number}: ${sc.title}`, CREAM, NAVY, now, false);
   }
+  drawLoading(g, fx, cx, begin.y - 46);
   g.font = font(12, 700);
   g.textAlign = 'center';
   const foot = fx.touch ? 'Sound on. Hold the phone upright.' : 'Sound on.  Enter begins.  M mutes.';
@@ -1379,7 +1457,8 @@ export function drawCard(g, content, game, fx, layout) {
   }
   g.restore();
   if (t > 1.5) {
-    chip(g, fx.touch ? 'TAP TO GO ON' : 'ENTER TO GO ON', cx, H - Math.max(88, safe.bottom + 62), now);
+    const y = H - Math.max(88, safe.bottom + 62);
+    if (!drawLoading(g, fx, cx, y)) chip(g, fx.touch ? 'TAP TO GO ON' : 'ENTER TO GO ON', cx, y, now);
   }
   g.textAlign = 'left';
   g.restore();

@@ -17,7 +17,7 @@
 //   shot    { id, via: 'ramp' | 'orbit' }    ramp when the table carries the ball (shot.exit), else orbit
 //   objective { id, done, total }            the scene's objective moved on (id: the element it counted for)
 //   sceneClear { scene }                     the objective is complete; the cutscene follows
-//   trust   { n, trust }                     the town's trust rose by n, to trust (scene rewards)
+//   trust   { gained, trust }                the town's trust rose by `gained`, to `trust` (scene rewards)
 //   payout  { kind: 'payout' | 'jackpot' | 'bust', boon, source, writs }
 //   lit                                      the spin shots lit again
 //   drain   { saved, balls }                 saved: a ball save covered it. balls: balls left on the table

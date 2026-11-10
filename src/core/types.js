@@ -161,6 +161,7 @@
  * export function needsLoan(econ: Econ): boolean           no writs and cannot afford a pull
  * export function takeLoan(econ: Econ, refusedHat?: boolean): Econ
  * export function spendWrit(econ: Econ): Econ
+ * export function awardBonus(econ: Econ, points: number): Econ   score only: no marks (the combo's bonus)
  * export function addTrust(econ: Econ, n: number): Econ     clamped 0..100
  * export function ledger(econ: Econ): { trust: number, loans: number }
  *        the two pans: trustEarned, and hatsRefused * TRUST_PER_LOAN + the other loans * TRUST_PER_FORCED_LOAN
@@ -209,6 +210,25 @@
  * @property {Line[]} briefing   1-3 short lines spoken over live play when the scene begins (non-blocking)
  * @property {Line[]} cutscene   full cinematic played when the objective completes (blocking)
  * @property {{points:number, trust?:number}} reward
+ * @property {Encounter} [encounter]   how the scene is played on the 3D stage. A scene without one is drawn by the 2D renderer
+ *
+ * @typedef {Object} Encounter       the scene as something watched while it is played (src/core/stage.js)
+ * @property {string} set            set id: the backdrop key of the place. Must equal the first `bg` of the scene's cutscene
+ * @property {'dusk'|'night'|'dawn'|'day'|'interior'} light
+ * @property {'fight'|'work'|'stealth'|'hold'|'talk'|'walk'} mode
+ *        the family of actions table events become. Only 'fight' strikes people; in the others a bumper is a small
+ *        act of the task, a lit shot the big one
+ * @property {string[]} party        one to three cast ids, the first leading: only people the story has there
+ * @property {{kind:'people'|'force', who:string[], name:string}} opposition
+ *        people: one to three figure type names or cast ids, stage right. force: the task itself, as one to three prop
+ *        type names (dark lanterns, a locked chamber, a bond to be sealed). name: over the bar, 22 characters at most.
+ *        The bar is the objective: total - done
+ * @property {string[]} [extras]     up to three more figures present who are neither (bystanders, a seated Chancellor)
+ * @property {{cue:string, show:string}} setback    what a drained ball looks like here
+ * @property {{at:number, cue:string, name:string, show:string}[]} beats
+ *        what objective progress shows. at: the done-count a beat begins at, rising; the first is 0 and the last is the
+ *        objective's total (the resolve). cue: kebab-case key the director stages. name: a caption, 28 characters at
+ *        most. show: what is seen, for whoever builds it
  *
  * @typedef {Object} Chapter
  * @property {string} id         'ch1'
@@ -227,6 +247,10 @@
  * @property {{play:string, cine:string}} music
  *        play: the table.  cine: the quieter mood a prologue or epilogue falls back to when its
  *        first line names none
+ * @property {{sets:Object<string,{set:string, light:string}>, clerk:string, townsfolk:string}} [stage]
+ *        present when the chapter can be played on the 3D stage. sets: every backdrop key its lines name -> the set
+ *        and its light for a cinematic there (a scene's own cutscene keeps its encounter's light). clerk: the figure
+ *        type who hands over a writ on a loan. townsfolk: who brings the hat and gathers as trust rises
  * @property {Object<string,string>} [roles]
  *        cast id -> what stands under that speaker's name in this chapter, where cast.role is no longer true
  *        (a cadet who has defaulted). Drawing only.
@@ -299,6 +323,42 @@
  * @property {boolean} spunThisChapter      false until the lever has paid once this chapter (the rigged pull, if any)
  * @property {{kind:string,text:string,t:number}[]} toasts   short HUD callouts, shell only reads
  *        kinds: scene, payout, jackpot, bust, loan, aid, save, hint
+ * @property {LogEntry[]} recent            what has just happened, oldest first, at most stage.RECENT_MAX entries: the
+ *        log the stage is drawn from and the combo is computed over. Not saved. Shell only reads
+ * @property {number} logged                entries ever given to `recent`: the n the next one will get. A shell keeps a
+ *        cursor on n to act on each entry once (and resets it when logged falls, which is a load)
+ *
+ * @typedef {Object} LogEntry
+ * @property {number} n                     0, 1, 2, ... for the life of the Game value
+ * @property {number} t                     game.t when it happened
+ * @property {'launch'|'bumper'|'sling'|'target'|'lane'|'shot'|'saucer'|'objective'|'sceneClear'|'trust'|'payout'|'lit'|'drain'|'save'|'hat'|'aid'|'loan'|'chain'} type
+ *        with, by type: id (the element) on bumper sling target lane shot saucer objective; via 'ramp'|'orbit' on shot;
+ *        done, total on objective; scene on sceneClear; gained, trust on trust; kind, boon, source, writs on
+ *        payout; saved, balls on drain; kind 'ballSave'|'kickback' on save; refused on loan. 'chain' is not an event:
+ *        { count, last } is the combo as it stood after older entries that were folded away (stage.pushRecent)
+ *
+ * @typedef {Object} StageState             stage.stageState(content, game): what the live stage shows now
+ * @property {'fight'|'resolve'|'dialogue'|'idle'} phase
+ *        fight: play.  resolve: the first stage.RESOLVE_SECONDS of a scene's cutscene, still the encounter, complete.
+ *        dialogue: a cinematic.  idle: title, card, end
+ * @property {string|null} set              set id; null when idle or the scene has no encounter
+ * @property {string|null} light
+ * @property {string|null} mode             the encounter's mode (fight and resolve)
+ * @property {string[]} party               the encounter's party; in dialogue, who is on stage (cine.on)
+ * @property {{kind:string, who:string[], name:string}|null} opposition    null in dialogue
+ * @property {string[]} extras
+ * @property {{done:number, total:number}} progress     the objective; the opposition's bar is total - done
+ * @property {{index:number, of:number, at:number, cue:string, name:string, show:string}|null} beat
+ * @property {{cue:string, show:string}|null} setback
+ * @property {{count:number, level:number, left:number, last:number, name:string, mult:number}} combo
+ * @property {number} power                 0..1: how much the table is sending up. Unsmoothed
+ * @property {{shield:number, double:number, doubleT:number, kickback:number, helpers:number, hat:boolean, supporters:number, trust:number, debt:number}} buffs
+ * @property {'scene'|'prologue'|'epilogue'|null} kind
+ * @property {Line|null} line               dialogue: the line being spoken, with speaker (line.who), radio, cam, emote
+ * @property {string|null} speaker
+ * @property {boolean} radio
+ * @property {string|null} cam
+ * @property {string|null} emote
  *
  * @typedef {Object} Msg
  *   {type:'tick', dt:number, input:Input}     dt is physics.STEP; the shell calls this in a fixed loop
@@ -370,6 +430,18 @@
  * export function preloadIds(content, game, ahead?): string[]
  * export function resolveStage(lines: Line[], index: number): { bg:string, on:string[] }
  * export function lineSeconds(line: Line): number      fallback duration if the shell never reports lineDone
+ *
+ * stage.js  (pure; the model of the live 3D stage)
+ * export const COMBO_WEIGHT, COMBO_WINDOW, COMBO_LEVELS, COMBO_NAMES, COMBO_MULT, RECENT_MAX, RESOLVE_SECONDS,
+ *              TRUST_PER_SUPPORTER, ENCOUNTER_KINDS, ENCOUNTER_MODES, LIGHTS
+ * export function comboOf(log: LogEntry[], now: number, opts?: {window?, levels?}): StageState['combo']
+ *        a drain no save covered ends the chain; so does COMBO_WINDOW seconds without a counting event
+ * export function comboBonus(log, now, points): number   extra SCORE for a table hit at this chain. Never marks
+ * export function pushRecent(log, entry): LogEntry[]     bounded append that keeps comboOf's answer
+ * export function stageState(content, game): StageState
+ * export function beatAt(encounter, done): number        index of the beat in force, -1 with no beats
+ * export function encounterProblems(content, chapter, scene): string[]   [] when the encounter is well formed
+ * export function setsNeeded(chapter): string[]          every set id the chapter needs; [] when it is not staged
  */
 
 export {};
