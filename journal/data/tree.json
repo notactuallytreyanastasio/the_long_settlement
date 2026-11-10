@@ -7291,13 +7291,13 @@
  },
  {
   "path": "src/shell/cinema/backdrops-b.js",
-  "bytes": 108764,
-  "lines": 1330
+  "bytes": 91331,
+  "lines": 1149
  },
  {
   "path": "src/shell/cinema/figures.js",
-  "bytes": 45120,
-  "lines": 848
+  "bytes": 67630,
+  "lines": 1110
  },
  {
   "path": "src/shell/cinema/kit.js",
@@ -7336,8 +7336,8 @@
  },
  {
   "path": "story/BIBLE.md",
-  "bytes": 41341,
-  "lines": 658
+  "bytes": 108548,
+  "lines": 1710
  },
  {
   "path": "test/content.test.js",
