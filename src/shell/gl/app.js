@@ -137,7 +137,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const hud = hudCanvas.getContext('2d');
   if (!hud) throw new Error('gl/app: the HUD canvas gave no 2D context');
 
-  const app = { ok: true, reason: '', stats: { tier: tierName, pinned: !!pinned, lowSets: false, draws: 0, tris: 0, frameMs: 0, built: 0, urgent: 0, queued: 0, steps: [] } };
+  const app = { ok: true, reason: '', stats: { tier: tierName, pinned: !!pinned, lowSets: false, draws: 0, tris: 0, frameMs: 0, built: 0, freed: 0, urgent: 0, queued: 0, steps: [] } };
   app.stats.lowSets = lowSets;
   let disposed = false;
   renderer.ctx.onLost = () => { if (!disposed) console.warn('gl/app: the WebGL context was lost; the 2D renderer takes over'); app.ok = false; app.reason = 'context lost'; };
@@ -168,7 +168,8 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     const lt = lightFor(d.def, light), low = lowFor(use), place = `${d.def.id}|${lt}`, k = `${place}|${low ? 'low' : 'full'}`;
     let set = built.get(k);
     if (set) return set;
-    set = d.def.build(GL, { light: lt, low });
+    // a phone's build is also cut coarser: round shapes get 0.7 of their segments (mesh.js withDetail; chapter 1's sets do it themselves, nesting is harmless)
+    set = low ? GL.withDetail(0.7, () => d.def.build(GL, { light: lt, low })) : d.def.build(GL, { light: lt, low });
     if (!set || !set.scene || !set.actors || !set.cameras || typeof set.frame !== 'function') throw new Error(`gl/app: set "${key}" (${lt}) did not build a set (need scene, actors, cameras, frame)`);
     set.place = place;
     built.set(k, set);
@@ -187,11 +188,42 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     return set;
   }
 
+  /**
+   * Another chapter: everything the last one built is given back, on the GPU (renderer.release; about 5 MB a set) and in
+   * JS (the registry's references are dropped). Places the next chapter shares are built again rather than kept: a set
+   * carries what its chapter's cues did to it (lamps put out, a crowd gone home), and the next chapter starts clean.
+   * The set the director is still showing goes when the director has left it (dropStale, every frame).
+   */
+  let stale = null;
+  function freeFor(chapter) {
+    for (const set of built.values()) {
+      if (set === director.set) { if (stale && stale !== set) renderer.release(stale.scene, { skip: [stale.actors] }); stale = set; continue; }
+      renderer.release(set.scene, { skip: [set.actors] });
+      app.stats.freed++;
+    }
+    built.clear(); asked.clear(); titleSet = null;
+    for (const [id, view] of [...tables]) {
+      if (chapter && id === chapter.tableId) continue;
+      renderer.release(view.scene);
+      tables.delete(id);
+      if (tview === view) tview = null;
+      if (lastLit === view) lastLit = null;
+    }
+  }
+  function dropStale() {
+    if (!stale || director.set === stale) return;
+    renderer.release(stale.scene, { skip: [stale.actors] });
+    app.stats.freed++;
+    stale = null;
+  }
+
   function plan(content, chapterIndex) {
     if (chapterIndex === planned) return;
+    const first = planned < 0;
     planned = chapterIndex;
     queue.length = 0;
     const chapter = content.chapters[chapterIndex];
+    if (!first) freeFor(chapter);
     if (!chapter || !chapter.stage || !chapter.stage.sets) { total = 0; return; }
     const pairs = chapterPairs(chapter), seen = new Set();
     cueLog.clear();
@@ -514,6 +546,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       drawScreen(content, game, layout, time, dt, cssW, cssH);
     }
     frameEvents.length = 0;
+    dropStale();
     app.stats.cineW = cineW; app.stats.phase = stage ? stage.phase : 'idle';
     drawHudPass(content, game, fx, layout, cssW, cssH, k, stage, isStage);
     measure(real * 1000, mode, builtNow);
