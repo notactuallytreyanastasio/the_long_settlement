@@ -184,6 +184,20 @@ export function createSpring(node, { axis = [0, -1, 0], length = 0.3, stiffness 
 }
 const IDENTITY = quat.create();
 
+/**
+ * Turn a node so that its own `axis` points along a world-space direction, whatever its parents are
+ * doing: a lantern that hangs straight down from a raised hand, a head that looks at a point.
+ * `worldDir` need not be normalised. Uses the parent's world matrix from the last updateWorld().
+ */
+export function aimAxis(node, axis, worldDir) {
+  if (!node.parent) throw new Error(`aimAxis: node "${node.name}" has no parent`);
+  m4.invert(inv, node.parent.world);
+  v3.transformDir(va, worldDir, inv); v3.normalize(va, va);
+  v3.normalize(vb, axis);
+  quat.fromTo(node.rotation, vb, va);
+  return node;
+}
+
 /** Update several springs at once: springs(list).update(dt). */
 export function springs(list) {
   return { list, update(dt) { for (let i = 0; i < list.length; i++) list[i].update(dt); }, reset() { for (const s of list) s.reset(); } };

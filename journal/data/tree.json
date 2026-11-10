@@ -12480,9 +12480,19 @@
   "lines": 43
  },
  {
+  "path": "src/shell/gl/fx.js",
+  "bytes": 3709,
+  "lines": 61
+ },
+ {
   "path": "src/shell/gl/gl.js",
   "bytes": 9672,
   "lines": 159
+ },
+ {
+  "path": "src/shell/gl/index.js",
+  "bytes": 424,
+  "lines": 11
  },
  {
   "path": "src/shell/gl/math.js",
@@ -12501,8 +12511,8 @@
  },
  {
   "path": "src/shell/gl/rig.js",
-  "bytes": 9932,
-  "lines": 191
+  "bytes": 10544,
+  "lines": 205
  },
  {
   "path": "src/shell/gl/scene.js",
