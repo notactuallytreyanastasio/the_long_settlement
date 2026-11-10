@@ -62,9 +62,12 @@ export const FACE = {
 };
 
 const LW = 128, LH = 144;   // lid cell
-const BS = 160;             // eyeball cell
+// Sizes are what lets a whole cast share one 2048 atlas: 45 lid cells and some 25 mouths are shared, and each
+// distinct face then costs three eyeballs (one per iris colour) and one marks cell (one per skin). At these sizes
+// there is room for about 27 distinct faces; the 25 of CAST fit together (tools/gl-characters.html?view=lineup).
+const BS = 144;             // eyeball cell
 const MW = 128, MH = 88;    // mouth cell
-const WW = 288, WH = 190;   // marks / fx cell
+const WW = 176, WH = 116;   // marks / fx cell: soft things (blush, freckles, tears), drawn small
 const INK = '#3d2a4c';      // lash and mouth ink (the lash is multiplied by the skin tint, so it lands near plum-black)
 const MOUTH_INK = '#3a2038';
 

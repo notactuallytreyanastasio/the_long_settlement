@@ -54,10 +54,15 @@ const BUDGET_MS = 21;           // mean frame interval above which the tier step
 const MEASURE = 120;            // frames per measurement
 const SETTLE = 45;              // frames ignored after a tier change, a build or a mode change
 
+// engine: the renderer's own quality object of that name (renderer.js QUALITY: pixel ratio cap, anti-aliasing, shadow
+// size and rate, lamps per fragment, water). band: what the live band's view asks for on top of that while it is at
+// rest above the table (it is 220 px tall; in a cinematic it gets the lot).
+// Whether sets are built `low` (without their distant detail) is NOT a tier: a set is built once and the director
+// keeps its figures on it, so it cannot be swapped when the tier steps. It is decided at the start: see lowSets.
 export const TIERS = Object.freeze({
-  high: Object.freeze({ engine: 'high', dpr: 2, shadow: 2048, low: false }),
-  mid: Object.freeze({ engine: 'medium', dpr: 1.5, shadow: 1024, low: false }),
-  low: Object.freeze({ engine: 'low', dpr: 1, shadow: 512, low: true }),
+  high: Object.freeze({ engine: 'high', band: Object.freeze({}) }),
+  mid: Object.freeze({ engine: 'medium', band: Object.freeze({ shadowSize: 512 }) }),
+  low: Object.freeze({ engine: 'low', band: Object.freeze({ shadow: 'off' }) }),
 });
 const TIER_ORDER = ['high', 'mid', 'low'];
 
@@ -125,11 +130,13 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const pinned = opts.quality && TIERS[opts.quality] ? opts.quality : null;
   if (opts.quality && !pinned) throw new Error(`gl/app: unknown quality ${JSON.stringify(opts.quality)} (have ${Object.keys(TIERS).join(', ')})`);
   let tierName = pinned || 'high';
+  // a finger means a phone or a tablet: its sets are the light ones, unless ?q=high asks for everything
+  const win = glCanvas.ownerDocument.defaultView;
+  const lowSets = pinned ? pinned !== 'high' : !!(win.matchMedia && win.matchMedia('(pointer: coarse)').matches);
 
   let renderer;
   try {
-    // MSAA is a property of the context: it cannot be dropped later, so the low tier is made without it
-    renderer = GL.createRenderer(glCanvas, { dprCap: TIERS[tierName].dpr, antialias: tierName !== 'low', quality: TIERS[tierName].engine });
+    renderer = GL.createRenderer(glCanvas, { quality: TIERS[tierName].engine });
   } catch (e) {
     console.warn(`gl/app: no 3D renderer (${e && e.message}); the 2D renderer draws`);
     return { ok: false, reason: String(e && e.message), canDraw: () => false, observe() {}, draw() {}, dispose() {} };
@@ -138,15 +145,14 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const hud = hudCanvas.getContext('2d');
   if (!hud) throw new Error('gl/app: the HUD canvas gave no 2D context');
 
-  const app = { ok: true, reason: '', stats: { tier: tierName, pinned: !!pinned, draws: 0, tris: 0, frameMs: 0, built: 0, urgent: 0, queued: 0, steps: [] } };
+  const app = { ok: true, reason: '', stats: { tier: tierName, pinned: !!pinned, lowSets: false, draws: 0, tris: 0, frameMs: 0, built: 0, urgent: 0, queued: 0, steps: [] } };
+  app.stats.lowSets = lowSets;
   let disposed = false;
   renderer.ctx.onLost = () => { if (!disposed) console.warn('gl/app: the WebGL context was lost; the 2D renderer takes over'); app.ok = false; app.reason = 'context lost'; };
 
   function applyTier() {
-    const t = TIERS[tierName];
     app.stats.tier = tierName;
-    if (typeof renderer.setQuality === 'function') renderer.setQuality(t.engine);
-    else renderer.ctx.dprCap = t.dpr;
+    renderer.setQuality(TIERS[tierName].engine);
   }
   applyTier();
 
@@ -167,7 +173,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     const lt = lightFor(d.def, light), k = `${d.def.id}|${lt}`;
     let set = built.get(k);
     if (set) return set;
-    set = d.def.build(GL, { light: lt, low: TIERS[tierName].low });
+    set = d.def.build(GL, { light: lt, low: lowSets });
     built.set(k, set);
     app.stats.built++;
     // once, into a corner the next draw paints over: geometry and textures go to the GPU now, not on the frame that cuts to it
@@ -175,7 +181,6 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     const name = cams.wide ? 'wide' : Object.keys(cams)[0];
     if (name) {
       set.frame(warmCam, name, 0);
-      set.env.shadow.size = TIERS[tierName].shadow;
       renderer.render(set.scene, warmCam, 0, { x: 0, y: 0, w: 8, h: 8, ...set.view(name) });
     }
     settle = SETTLE;
@@ -240,7 +245,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   }
 
   function tableNow(content, id) {
-    const view = GL.createTableView(content, id, { shadowSize: TIERS[tierName].shadow });
+    const view = GL.createTableView(content, id);
     view.fitKey = null;
     tables.set(id, view);
     app.stats.built++;
@@ -286,7 +291,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     gl.clearColor(c[0], c[1], c[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  function count(s) { app.stats.draws += s.drawCalls; app.stats.tris += s.triangles; }
+  function count(s, what) { app.stats.draws += s.drawCalls; app.stats.tris += s.triangles; app.stats[what] = `${s.drawCalls} draws, ${s.triangles} triangles`; }
 
   function measure(realMs, mode, builtNow) {
     ema += (realMs - ema) * 0.05;
@@ -341,9 +346,8 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     set.frame(titleCam, name, time);
     titleCam.fov = c.fov;
     titleCam.orbit(c.target, c.dist * Math.max(1, c.aspect / (cssW / cssH)), c.yaw + Math.sin(time * 0.11) * 13, c.pitch + Math.sin(time * 0.07) * 1.5);
-    set.env.shadow.size = TIERS[tierName].shadow;
     troupe.aim(titleCam);
-    count(renderer.render(set.scene, titleCam, time, { x: 0, y: 0, w: cssW, h: cssH, ...set.view(name) }));
+    count(renderer.render(set.scene, titleCam, time, { x: 0, y: 0, w: cssW, h: cssH, ...set.view(name) }), 'screen');
   }
 
   function drawStage(content, game, fx, layout, time, dt, cssW, cssH, k, stage) {
@@ -358,7 +362,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       lastLight = stage.light; lastLit = tview;
       const name = TABLE_LIGHT[stage.light];
       if (!name) throw new Error(`gl/app: no table light for the stage light "${stage.light}" (have ${Object.keys(TABLE_LIGHT).join(', ')})`);
-      if (typeof tview.setLight === 'function') tview.setLight(name);
+      tview.setLight(name, cineW > 0.9 ? 0 : 1.5);       // at once while the table is away, else a slow turn of the light
     }
 
     if (fx.speaking) { voice.who = fx.speaking.who; voice.level = fx.voiceLevel; voice.line = fx.speaking; F.voice = voice; } else F.voice = null;
@@ -371,13 +375,12 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       // the table slides off the foot of the canvas as the band grows over it
       tview.update(game, frameEvents, dt);
       tview.rect.y = tview.baseY + e * (cssH - tview.baseY + 4);
-      tview.env.shadow.size = TIERS[tierName].shadow;
-      count(tview.render(renderer, time));
+      count(tview.render(renderer, time), 'table');
     }
     const set = director.set;
     if (set) {
-      set.env.shadow.size = TIERS[tierName].shadow;
-      count(renderer.render(set.scene, stageCam, time, { x: bandCss.x, y: bandCss.y, w: bandCss.w, h: bandCss.h, ...director.view }));
+      const extra = cineW === 0 ? TIERS[tierName].band : null;
+      count(renderer.render(set.scene, stageCam, time, { x: bandCss.x, y: bandCss.y, w: bandCss.w, h: bandCss.h, ...director.view, ...extra }), 'stage');
     }
   }
 

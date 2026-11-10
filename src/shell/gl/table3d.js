@@ -496,14 +496,17 @@ const BASE_PALETTE = {
  *   view.unproject(px, py, out = [0, 0])       CSS px -> table units on the playfield
  *   view.where(id)                             table [x, y] of an element by id, or null
  *   view.reelPos(i, out)                       CSS px of reel i (where a paying line throws its boon from)
- *   view.setLight('dusk' | 'night' | 'day', seconds = 0)   the table's own time of day, cross-faded over `seconds`
+ *   view.setLight('dusk' | 'night' | 'day' | 'dawn', seconds = 0)   the table's own time of day, cross-faded over `seconds`.
+ *                                              A stage's other names are accepted (predawn, riot, dark, hush, lamp -> night; interior, sunset -> dusk);
+ *                                              a name nobody knows is dusk and a console warning, never a throw: it is called with content data
  *   view.light                                 the light it is in (or heading to)
  *   view.power                                 0..1, what the rail lamps show
  *   view.hits                                  this update's scoring hits: [{ type, id, x, y, strength }] (x, y CSS px). Reused: copy what you keep
  *   view.onEnergy                              set to fn({ x, y, type, id, strength }): called as each hit's bolt reaches the collector
  *   view.energyTime                            seconds a bolt takes from hit to collector (0.34)
  *   view.port(out)                             CSS px of the collector on the reel board's roof: where energy leaves the table
- *   view.screenOf(event, out)                  CSS px of where a tableEvents() event happened, or null if it has no place
+ *   view.screenOf(event, out)                  CSS px of where an event happened (a tableEvents() event or a Game.recent entry), or null if it has no place
+ *   view.hitScreen(event, out) -> bool         the same, as a yes/no that fills out
  *   view.reelState(i)                          'empty' | 'spin' | 'held' | 'paying' for reel i; view.armed, view.lever
  *   view.lever                                 'launch' | 'idle' | 'busy' | 'credit' | 'free' | 'lever' | 'loan': what the arm on the rail shows
  *
@@ -553,8 +556,20 @@ export function createTableView(content, tableId, opts = {}) {
       ...(art.envDay || {}),
     }),
   };
-  if (!LIGHTS[opts.light || 'dusk']) throw new Error(`table3d: unknown light ${JSON.stringify(opts.light)} (have ${Object.keys(LIGHTS).join(', ')})`);
-  let lightName = opts.light || 'dusk', lightFrom = LIGHTS[lightName], lightTo = lightFrom, lightT = 1, lightDur = 0, nightAmount = lightName === 'night' ? 1 : 0;
+  LIGHTS.dawn = makeEnv(LIGHTS.dusk, { // the same low sun come round to the other side, cooler and pinker
+    key: { dir: [0.5, 0.56, -0.62], color: '#ffe4d6' }, shadow: { tint: '#8e90ea', ...shadowBox }, ambient: { sky: '#ffd0d8', ground: '#8fa0ea', amount: 0.1 },
+    water: { deep: '#3a86d6', mid: '#5fb6e6', shallow: '#a8ecdf', glint: '#ffe9e0' }, ...(art.envDawn || {}),
+  });
+  // A stage names its light for its own set; the table has four. Anything it does not know is dusk, said once.
+  const LIGHT_ALIAS = { sunset: 'dusk', interior: 'dusk', predawn: 'night', riot: 'night', dark: 'night', hush: 'night', lamp: 'night' };
+  const warned = new Set();
+  const lightKey = (name) => {
+    if (LIGHTS[name]) return name;
+    if (LIGHT_ALIAS[name]) return LIGHT_ALIAS[name];
+    if (!warned.has(name)) { warned.add(name); console.warn(`table3d: no light called ${JSON.stringify(name)} (have ${Object.keys(LIGHTS).join(', ')}, and ${Object.keys(LIGHT_ALIAS).join(', ')} as other names); using dusk`); }
+    return 'dusk';
+  };
+  let lightName = lightKey(opts.light || 'dusk'), lightFrom = LIGHTS[lightName], lightTo = lightFrom, lightT = 1, lightDur = 0, nightAmount = lightName === 'night' ? 1 : 0;
   const env = makeEnv(LIGHTS[lightName]);
   const points = env.points = seedPoints.map((q) => ({ ...q, color: rgb(q.color) }));
   // the sea laps the cabinet: one rounded box of shore (it was nine circles, each a loop iteration per water fragment)
@@ -566,9 +581,9 @@ export function createTableView(content, tableId, opts = {}) {
     env.points = points; env.water.box = shoreBox; env.water.shores = NO_SHORES; env.shadow.center = shadowBox.center; env.shadow.on = true; env.sky.moon = lightTo.sky.moon; env.sky.stars = lightFrom.sky.stars + (lightTo.sky.stars - lightFrom.sky.stars) * lightT;
     const n0 = lightFrom === LIGHTS.night ? 1 : 0, n1 = lightTo === LIGHTS.night ? 1 : 0; nightAmount = n0 + (n1 - n0) * lightT;
   }
-  function setLight(name, seconds = 0) {
-    if (!LIGHTS[name]) throw new Error(`table3d: unknown light ${JSON.stringify(name)} (have ${Object.keys(LIGHTS).join(', ')})`);
-    if (name === lightName && lightT >= 1) return view;
+  function setLight(asked, seconds = 0) {
+    const name = lightKey(asked);
+    if (name === lightName) return view;
     // start from wherever the fade is now, so a change of mind does not jump
     lightFrom = makeEnv(env); lightFrom.points = []; lightTo = LIGHTS[name]; lightName = name; lightDur = seconds; lightT = seconds > 0 ? 0 : 1;
     applyLight();
@@ -617,7 +632,7 @@ export function createTableView(content, tableId, opts = {}) {
   set.add(node('hull', tint(place(box(4.36, 0.5, 9.34), 0, -0.3, -0.52), P.hull), setMat));
   // the power lines: a row of sockets up each rail (their lamps are slots below), into the collector on the roof
   const RAIL_Z = []; for (let i = 0; i < RAIL_LAMPS; i++) RAIL_Z.push(3.45 - i * (7.2 / (RAIL_LAMPS - 1)));
-  for (const z of RAIL_Z) for (const x of [-2.1, 2.1]) set.add(node('socket', tint(place(lathe([[0.064, 0], [0.07, 0.016], [0.05, 0.028]], sg(10, 6)), x, 0.238, z), P.ink2), setMat));
+  for (const z of RAIL_Z) for (const x of [-2.1, 2.1]) set.add(node('socket', tint(place(lathe([[0.064, 0], [0.07, 0.016], [0.05, 0.028]], sg(10, 8)), x, 0.238, z), P.ink2), setMat));
   for (const x of [-2.1, 2.1]) set.add(node('wire', tint(place(box(0.03, 0.012, 7.3), x, 0.243, -0.15), P.gold), setMat));
 
   const DR = 0.5, DW = 0.66, DX = [-0.76, 0, 0.76], DY = 0.3, DZ = -4.6, HEAD_TOP = 1.0;
@@ -714,7 +729,8 @@ export function createTableView(content, tableId, opts = {}) {
   scene.root.add(ballNode);
 
   // ---- lamps: everything that can light is a slot; the lit ones are drawn as one instanced call
-  const lampNode = node('lamps', setOutline(setGlow(sphere(1, sg(12, 8), sg(8, 5)), 1), 0), lampMat);
+  // a lamp is a low dome (its underside is never seen): 40 to 70 triangles, and up to 96 of them are lit at once
+  const lampNode = node('lamps', setOutline(setGlow(lathe([[1, -0.15], [0.96, 0.25], [0.74, 0.68], [0.4, 0.93], [0, 1]], sg(12, 9), { crease: 180 }), 1), 0), lampMat);
   lampNode.castShadow = false; lampNode.instances = makeInstances(LAMPS);
   scene.root.add(lampNode);
   const lamps = [], lampById = new Map();
@@ -1177,14 +1193,16 @@ export function createTableView(content, tableId, opts = {}) {
   function screenOf(e, out = [0, 0]) {
     if (e.id !== undefined && where.has(e.id)) { const p = where.get(e.id); return project(p[0], p[1], 12, out); }
     if (e.type === 'reelStart' || e.type === 'reelStop') return projectWorld(DX[e.reel], DY + DR, DZ, out);
-    if (e.type === 'payout' || e.type === 'armed') return projectWorld(DX[1], DY + DR, DZ, out);
+    if (e.type === 'payout' || e.type === 'armed' || e.type === 'lit') return projectWorld(DX[1], DY + DR, DZ, out);
     if (e.type === 'launch') return project(table.plunger.pos[0], table.plunger.pos[1], 8, out);
     if (e.type === 'drain' || e.type === 'save') { let x = 187; for (let i = 0; i < prevN; i++) if (prevId[i] === e.ballId) x = prevX[i]; return project(x, table.drainY - 6, 0, out); }
-    if (e.type === 'loan' || e.type === 'aid' || e.type === 'multiball') return projectWorld(LEVER[0], LEVER[1] + 0.6, LEVER[2], out);
+    if (e.type === 'loan' || e.type === 'aid' || e.type === 'hat' || e.type === 'multiball') return projectWorld(LEVER[0], LEVER[1] + 0.6, LEVER[2], out);
+    if (e.type === 'trust' || e.type === 'sceneClear') return projectWorld(PORT[0], PORT[1], PORT[2], out);
     return null;
   }
   const view = {
     table, scene, camera, env, rect, pitch, fit, update, render, project, unproject, setLight, screenOf, hits,
+    hitScreen: (e, out = [0, 0]) => screenOf(e, out) !== null,
     energyTime: 0.34,
     where: (id) => where.get(id) || null,
     reelPos: (i, out = [0, 0]) => projectWorld(DX[i], DY + DR, DZ, out),

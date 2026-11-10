@@ -192,7 +192,7 @@ function makeStage(set, troupe) {
     let a = null;
     for (let i = 0; i < actors.length; i++) if (actors[i].id === id && actors[i].n === n) a = actors[i];   // on the way out: turn round
     if (!a) {
-      const ch = troupe.take(id, n, lod); ch.release(); ch.home();
+      const ch = troupe.take(id, n, lod); ch.release(); ch.home(); ch.id = id;
       set.actors.add(ch.root);
       a = {
         id, n, ch, lod, x: 0, z: 0, gx: 0, gz: 0, face: 0, moving: false, leaving: false, gait: Math.random(), speed: WALK,
@@ -320,13 +320,18 @@ function linesOn(S) {
       const on = s.on || [], cut = !!s.cut, line = s.line || null;
       dtLast = dt; lineT += dt;
       let key = ''; for (let i = 0; i < on.length; i++) key += on[i] + ',';
-      if (key !== onKey || cut) { onKey = key; L.arrange(on, cut); }
       camName = s.cam || (line && line.cam) || camName;
+      if (key !== onKey || cut) {
+        // an empty stage and a close-up: that is a cut to a face, not somebody trotting into their own close-up
+        let empty = true; for (const a of S.actors) if (a.role === 'cast' && !a.leaving) empty = false;
+        onKey = key; L.arrange(on, cut || (empty && camName === 'close'));
+      }
       const who = line ? line.who : s.speaker || '';
       if (line !== lineRef || (!line && who !== lastSpeakerId)) {
         // a new line: the last listener may nod, the new speaker gets a face and, on a line that wants one, a gesture
         const before = speaker;
         lineRef = line; lineT = 0; lineN++;
+        if (line && line.id && set.cue) set.cue(line.id);      // a set's own stage business, keyed to the script
         speaker = who ? S.find(who) : null; if (speaker && speaker.role !== 'cast') speaker = null;
         if (speaker !== before && before && before.role === 'cast') addressee = before;
         if (addressee === speaker || (addressee && addressee.role !== 'cast')) addressee = null;
@@ -754,7 +759,10 @@ function fightOn(S, opts = {}) {
       const sx = mode === MODES.hold ? s[0] - 0.35 : mode === MODES.walk ? -0.9 + i * 1.5 : S.units.length ? 2.85 + i * 0.5 : s[0];   // beside a prop they keep to the edge, out of its way
       if (!a) a = S.enter(ex[i], 30 + i, lod, sx, s[1], 0, cut ? null : OFF_X + i * 0.6);
       if (a.held) { a.ch.release(); a.held = false; }
-      a.role = 'extra'; a.side = -1; a.slot = i; a.pose = 'stand'; a.emote = mode === MODES.hold ? 'anger' : 'neutral'; a.gx = sx; a.gz = S.units.length && mode !== MODES.hold && mode !== MODES.walk ? 1.05 - i * 0.55 : s[1]; a.face = mode === MODES.walk ? 10 : -42; extras.push(a); if (cut) snapTo(a);
+      const seat = ex[i] === 'corvane' && set.marks && set.marks.seat ? set.marks.seat : null;
+      a.role = 'extra'; a.side = -1; a.slot = i; a.pose = 'stand'; a.emote = mode === MODES.hold ? 'anger' : 'neutral'; a.gx = sx; a.gz = S.units.length && mode !== MODES.hold && mode !== MODES.walk ? 1.05 - i * 0.55 : s[1]; a.face = mode === MODES.walk ? 10 : -42;
+      if (seat) { a.gx = seat.pos[0]; a.gz = seat.pos[2]; a.face = seat.face; }
+      extras.push(a); if (cut) snapTo(a);
     }
     for (let i = S.actors.length - 1; i >= 0; i--) if (S.actors[i].role === 'old') S.leave(S.actors[i], cut);
     // supporters already earned stand behind the party from the start
@@ -798,6 +806,7 @@ function fightOn(S, opts = {}) {
       for (const p of party) { if (p.held) { p.ch.release(); p.held = false; } p.dash.on = false; if (!p.moving) p.ch.act('hit'); knock(p, -0.55 - 0.1 * p.slot, 0.5); feel(p, p.slot === 0 ? 'shock' : 'tears', 1.5); p.busyT = 1.1; }
       for (const f of folk) feel(f, 'shock', 1.2);
       punch = Math.max(punch, 0.7); focus.t = 9;
+      if (set.passLamp) set.passLamp(); if (set.pourTea) set.pourTea();      // the set's own tell for this encounter's setback, where it has one
       cue('break');
     } else if (act === 'saved') { for (const p of party) feel(p, 'smile', 0.8); }
     else if (act === 'loan') {
@@ -965,6 +974,19 @@ export function createEncounter(set, troupe, def) {
       F.update(dt, time, input); S.tick(dt, time, S.camera);
     },
     frame(camera, aspect, time, viewHeight = 220, rect = null) { F.frame(camera, aspect, viewHeight, time, rect); return camera; },
+    /** First-round call: the lines are spoken on the fight's stage, framed on the speaker (a character) and whoever stands nearest. */
+    dialogue(camera, aspect, time, speaker, viewHeight = 400) {
+      let sp = null, other = null;
+      for (const a of S.actors) if (a.ch === speaker) sp = a;
+      if (!sp) { F.frame(camera, aspect, viewHeight, time, null); return camera; }   // nobody of that name yet (the first frame): the stage camera
+      for (const a of S.actors) { a.talk = a === sp ? -2 : -1; if (a !== sp && !a.leaving && (!other || Math.abs(a.x - sp.x) < Math.abs(other.x - sp.x))) other = a; }
+      if (sp.held) { sp.ch.release(); sp.held = false; }
+      HEADS.length = 0; HEADS.push(sp.hp); if (other) HEADS.push(other.hp);
+      frameHeads(PROBE, HEADS, { aspect, fov: 26, yaw: (sp.side || 1) * -8 + Math.sin(time * 0.2) * 1.2, pitch: 5, pad: 0.4, fillH: 0.46, fillW: 0.86, at: 0.44 });
+      rigTo(S.rig, camera, 1 / 60, false, 5, time, 0);
+      set.env.outline.width = inkFor(camera, viewHeight, sp.ch.headRadius); troupe.aim(camera); S.camera = camera;
+      return camera;
+    },
   };
   return enc;
 }

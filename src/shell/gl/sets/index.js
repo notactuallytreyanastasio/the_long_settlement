@@ -12,8 +12,9 @@
 import { lanternStalls } from './lantern-stalls.js';
 import { harborNight } from './harbor-night.js';
 import { pierRiot } from './pier-riot.js';
+import { ferryDawn } from './ferry-dawn.js';
 
-const list = [lanternStalls, harborNight, pierRiot];
+const list = [lanternStalls, harborNight, pierRiot, ferryDawn];
 
 export const SETS = {};
 for (const s of list) {

@@ -47,7 +47,7 @@ const LIGHTS = {
       sky: { zenith: '#0c1568', mid: '#2a2f9c', midAt: 0.4, horizon: '#b0509a', below: '#6a3aa0', glow: '#ff8a4a', glowAmount: 0.95, sunDir: dirFrom(2.5, 1.5), moon: 0, stars: 0.8, sun: { size: 0.01, color: '#ff9a50', halo: '#ff8a4a', haloAmount: 0.55 } },
       water: { deep: '#14237e', mid: '#2c3aa8', shallow: '#c8569a', foam: '#ffc8b0', glint: '#ff9a5a', glintDensity: 0.3 },
     },
-    cloud: { color: '#9a7fe0', shadowTint: '#4a3aa0' }, ray: 0.42, beam: 0.2, smoke: '#a98ae6', smokeShade: '#4a3a9c', smoke2: '#9a66b8',
+    cloud: { color: '#9a7fe0', shadowTint: '#4a3aa0' }, ray: 0.42, beam: 0.2, smoke: '#8f74d8', smokeShade: '#c0506a', smoke2: '#9a66b8',
   },
 };
 
@@ -197,7 +197,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   for (const f of flames) { f.n.castShadow = false; scene.root.add(f.n); }
   const FIRE_TOP = [fireAt[0][0], fireAt[0][1] + 1.2, fireAt[0][2]];
   // the smoke: lobed toon clouds climbing off the fire and leaning down the wind, one instanced draw, looping
-  const SMOKE_N = low ? 5 : 7;
+  const SMOKE_N = low ? 6 : 9;
   const smoke = node('smoke', tint(cloud({ seed: 4, w: 2.2, puffs: 3 }), L.smoke), GL0.material({ name: 'riot-smoke', outline: false, rim: 0, fog: 0.2, shadowTint: L.smokeShade, receiveShadow: false, castShadow: false, bandEdge: 0.1, bandSoft: 0.01, lightUp: 0.6 }));
   smoke.castShadow = false; smoke.instances = GL0.makeInstances(SMOKE_N); smoke.instances.count = SMOKE_N; scene.root.add(smoke);
 
@@ -275,9 +275,9 @@ function build(engine = GL0, { light, low = false } = {}) {
     lhGlow.alpha = 0.3 + 0.3 * Math.pow(Math.abs(Math.cos(time * 22 * DEG)), 6);
     for (let i = 0; i < floats.length; i++) floats[i].glow.alpha = 0.5 + 0.2 * Math.sin(time * 2.1 + floats[i].ph);
     clouds.update(time); if (high) high.update(time);
-    for (let i = 0; i < SMOKE_N; i++) { // each lobe rises 9 units over 14 seconds, growing, then starts again small
-      const u = ((time / 14 + i / SMOKE_N) % 1 + 1) % 1, sc = (0.35 + 1.5 * u) * big * Math.min(1, u * 8) * Math.min(1, (1 - u) * 5);
-      SM_P[0] = FIRE_TOP[0] + 0.3 + u * u * 5.5 + Math.sin(i * 2.4 + time * 0.3) * 0.25; SM_P[1] = FIRE_TOP[1] + 0.9 + u * 9; SM_P[2] = FIRE_TOP[2] - 0.6 - u * 2;
+    for (let i = 0; i < SMOKE_N; i++) { // each lobe rises 5.6 units over 16 seconds, growing, then starts again small
+      const u = ((time / 16 + i / SMOKE_N) % 1 + 1) % 1, sc = (0.55 + 1.1 * u) * big * Math.min(1, u * 14) * Math.min(1, (1 - u) * 4);
+      SM_P[0] = FIRE_TOP[0] + 0.2 + u * u * 4.2 + Math.sin(i * 2.4 + time * 0.3) * 0.2; SM_P[1] = FIRE_TOP[1] + 0.7 + u * 5.6; SM_P[2] = FIRE_TOP[2] - 0.8 - u * 1.5;
       GL0.quat.fromEuler(SM_Q, 0, i * 1.3 + time * 0.05, Math.sin(i * 1.7) * 0.2); SM_S[0] = SM_S[1] = SM_S[2] = Math.max(0.001, sc);
       m4.fromTRS(SM_M, SM_P, SM_Q, SM_S); smoke.instances.data.set(SM_M, i * 20);
     }

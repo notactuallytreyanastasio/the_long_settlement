@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 26105,
-  "lines": 500
+  "bytes": 26669,
+  "lines": 503
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 148431,
-  "lines": 1997
+  "bytes": 151028,
+  "lines": 2019
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12501,8 +12501,8 @@
  },
  {
   "path": "src/shell/gl/faces.js",
-  "bytes": 26162,
-  "lines": 362
+  "bytes": 26553,
+  "lines": 365
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -12560,14 +12560,19 @@
   "lines": 270
  },
  {
+  "path": "src/shell/gl/sets/ferry-dawn.js",
+  "bytes": 20540,
+  "lines": 256
+ },
+ {
   "path": "src/shell/gl/sets/harbor-night.js",
   "bytes": 28132,
   "lines": 349
  },
  {
   "path": "src/shell/gl/sets/index.js",
-  "bytes": 1121,
-  "lines": 26
+  "bytes": 1177,
+  "lines": 27
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
@@ -12585,8 +12590,18 @@
   "lines": 390
  },
  {
+  "path": "src/shell/gl/sets/mint-office.js",
+  "bytes": 20978,
+  "lines": 231
+ },
+ {
+  "path": "src/shell/gl/sets/orrery.js",
+  "bytes": 19026,
+  "lines": 214
+ },
+ {
   "path": "src/shell/gl/sets/pier-riot.js",
-  "bytes": 25961,
+  "bytes": 25967,
   "lines": 317
  },
  {
@@ -12601,13 +12616,13 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 75938,
-  "lines": 1070
+  "bytes": 77763,
+  "lines": 1092
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 103393,
-  "lines": 1413
+  "bytes": 104990,
+  "lines": 1431
  },
  {
   "path": "src/shell/input.js",

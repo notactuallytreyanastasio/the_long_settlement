@@ -142,14 +142,14 @@ function lockOn(hd, pts, width, { thick = 0.42, n = 10, seg = 8, ink = tipInk } 
   return strand(curve(pts.map((q) => hd.at(q[0], q[1], q[2] ?? 1.04)), n), w, (t) => w(t) * thick + 0.002, seg, null, ink);
 }
 /** A spike growing out of the head at yaw/pitch, bent along `sweep`. */
-function spikeOn(hd, yaw, pitch, len, width, sweep = [0, 0, 0], { thick = 0.7, seg = 7, root = 0.86 } = {}) {
+function spikeOn(hd, yaw, pitch, len, width, sweep = [0, 0, 0], { thick = 0.7, seg = 7, root = 0.86, n = 6 } = {}) {
   const p0 = hd.at(yaw, pitch, root), n0 = norm(p0);
   const d = norm([n0[0] + sweep[0], n0[1] + sweep[1], n0[2] + sweep[2]]);
   const d2 = norm([d[0] + sweep[0] * 0.7, d[1] + sweep[1] * 0.7, d[2] + sweep[2] * 0.7]);
   const p1 = [p0[0] + d[0] * len * 0.5, p0[1] + d[1] * len * 0.5, p0[2] + d[2] * len * 0.5];
   const p2 = [p1[0] + d2[0] * len * 0.5, p1[1] + d2[1] * len * 0.5, p1[2] + d2[2] * len * 0.5];
   const w = (t) => width * (1 - t * t) * (0.62 + 0.38 * (1 - t)) + 0.003;
-  return strand(curve([p0, p1, p2], 6), w, (t) => w(t) * thick, seg);
+  return strand(curve([p0, p1, p2], n), w, (t) => w(t) * thick, seg);
 }
 
 /** A lathe whose bands each keep their own colour (crisp stripes): rows = [[r, y, colour of the band above]...]. */
@@ -275,8 +275,8 @@ export const HAIR = {
   /** A headscarf tied at the nape, its two ends swinging: { color, front, side, back, tails: false }. */
   kerchief(hd, s, ctx) {
     const col = s.color || '#e8483f', R = hd.R;
-    const m = dye(hairCap(hd, { front: s.front ?? 0.6, side: s.side ?? -0.18, back: s.back ?? -0.66, grow: [1.1, 1.12, 1.11], seg: ctx.S(24), rings: ctx.S(14) }), col);
-    const k = hd.at(180, -34, 1.1), out = { fixed: [m, dye(place(blob({ rx: 0.04, ry: 0.034, rz: 0.034, seg: ctx.S(9), rings: ctx.S(6) }), k[0], k[1], k[2]), col)], swing: [] };
+    const m = dye(hairCap(hd, { front: s.front ?? 0.6, side: s.side ?? -0.18, back: s.back ?? -0.66, grow: [1.13, 1.15, 1.14], seg: ctx.S(24), rings: ctx.S(14) }), col);
+    const k = hd.at(180, -34, 1.14), out = { fixed: [m, dye(place(blob({ rx: 0.04, ry: 0.034, rz: 0.034, seg: ctx.S(9), rings: ctx.S(6) }), k[0], k[1], k[2]), col)], swing: [] };
     if (s.tails !== false) {
       const w = lockW(0.036), parts = [-1, 1].map((sx) => strand(curve([[0, 0, 0], [sx * 0.03, -0.05, -0.02], [sx * 0.05, -0.11, -0.016]], ctx.N(6)), w, (t) => w(t) * 0.45 + 0.002, ctx.S(6), [0, 0, -1]));
       out.swing.push({ name: ctx.uid('kerchief'), mesh: dye(merge(parts), col), pos: k, spring: { axis: [0, -1, 0], length: 0.11, stiffness: 60, damping: 6, gravity: 2, limit: 30 } });
@@ -312,8 +312,8 @@ export const HAIR = {
     const fixed = [], swing = [];
     s.spikes.forEach((k, i) => {
       const sw = k[5] || s.sweep || [0, 0, 0];
-      if (!k[4]) { fixed.push(spikeOn(hd, k[0], k[1], k[2], k[3], sw, { thick: s.thick ?? 0.7, seg: ctx.S(7) })); return; }
-      const base = hd.at(k[0], k[1], 0.86), m = spikeOn(hd, k[0], k[1], k[2], k[3], sw, { thick: s.thick ?? 0.7, seg: ctx.S(7) });
+      if (!k[4]) { fixed.push(spikeOn(hd, k[0], k[1], k[2], k[3], sw, { thick: s.thick ?? 0.7, seg: ctx.S(7), n: ctx.N(6) })); return; }
+      const base = hd.at(k[0], k[1], 0.86), m = spikeOn(hd, k[0], k[1], k[2], k[3], sw, { thick: s.thick ?? 0.7, seg: ctx.S(7), n: ctx.N(6) });
       const n0 = norm(base), ax = norm([n0[0] + sw[0], n0[1] + sw[1], n0[2] + sw[2]]);
       swing.push({ name: `spike${i}`, mesh: place(m, -base[0], -base[1], -base[2]), pos: base, spring: { axis: ax, length: k[2], stiffness: 150, damping: 9, limit: 22 } });
     });
@@ -413,7 +413,7 @@ export const EXTRAS = {
   /** Shoulder tabs. */
   epaulettes(b, s) {
     const d = b.dim;
-    for (const sx of [-1, 1]) b.parts.chest.push(tint(place(roundedBox(0.085, 0.022, 0.07, 0.01, 2), sx * d.shoulderX * 0.92, d.shoulderY + 0.038, 0, 0, 0, -sx * 14), s.color));
+    for (const sx of [-1, 1]) b.parts.chest.push(tint(place(roundedBox(0.085, 0.022, 0.07, 0.01, b.lo ? 1 : 2), sx * d.shoulderX * 0.92, d.shoulderY + 0.038, 0, 0, 0, -sx * 14), s.color));
   },
   /** A knitted shawl: a capelet over the shoulders in rows of two colours with bobbles on the hem, and a drape on each upper arm. */
   shawl(b, s) {
@@ -623,6 +623,11 @@ export const POSES = {
   slump: { hips: { r: [10, 0, 0], p: [0, -0.03, -0.01] }, chest: [22, 0, 0], head: [26, -8, 6], armL: [-6, 0, 5], foreL: [-8, 0, 0], armR: [-6, 0, -5], foreR: [-8, 0, 0], legL: [-14, 0, 4], shinL: [26, 0, 0], legR: [-14, 0, -4], shinR: [26, 0, 0] },
   handsUp: { chest: [-6, 0, 0], head: [8, 0, 0], armL: [-10, 0, 100], foreL: [0, 0, 62], handL: [0, 0, 0], armR: [-10, 0, -100], foreR: [0, 0, -62] },
   nodDown: { head: [16, 0, 0], chest: [4, 0, 0] },
+  // held: 'walk' is a cycle, not a pose (state.pose = 'walk' while you move the root; state.walk = steps per second, default 2.1)
+  walk: {},
+  walkA: { hips: { r: [4, 7, 0] }, chest: [2, -9, 0], legL: [-30, 0, 2], shinL: [14, 0, 0], legR: [24, 0, -2], shinR: [34, 0, 0], armL: [24, 0, 8], foreL: [-24, 0, 0], armR: [-26, 0, -8], foreR: [-40, 0, 0] },
+  // listening to the Line: two fingers to the right ear, eyes down and away
+  listen: { chest: [2, -8, 4], head: [8, -14, -10], armR: [-6, 0, -98], foreR: [-8, 0, -146], handR: [0, 0, -20] },
   shakeL: { head: [2, 22, 0] }, shakeR: { head: [2, -22, 0] },
   // Ren + Ilse: he drops to a knee and makes a step of his hands, she runs up it and comes down pointing
   teamBrace: { hips: { r: [6, 24, 0], p: [0, -0.1, 0] }, chest: [14, 10, 0], head: [-18, -20, 0], legL: [-70, 0, 6], shinL: [84, 0, 0], legR: [14, 0, -6], shinR: [70, 0, 0], armL: [-46, 0, -8], foreL: [-56, 0, -30], armR: [-46, 0, 8], foreR: [-56, 0, 30] },
@@ -811,6 +816,13 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       const n = hd.normalAt(Math.atan2(unit[i], unit[i + 2]) / DEG, Math.asin(unit[i + 1]) / DEG);
       sk.normals[i] = n[0]; sk.normals[i + 1] = n[1]; sk.normals[i + 2] = n[2];
     }
+    if (lo && def.face?.marks?.blush !== 0) { // at stage size the cheeks are painted on the skull: one draw fewer than a marks decal
+      const pink = def.face?.marks?.blushColor ? rgb(def.face.marks.blushColor) : mixc(headSkin, '#ff5a5a', 0.62), amt = (def.face?.marks?.blush ?? 0.5) * 1.5, C = sk.colors;
+      for (let i = 0; i < unit.length; i += 3) {
+        const yaw = Math.atan2(unit[i], unit[i + 2]) / DEG, pitch = Math.asin(Math.max(-1, Math.min(1, unit[i + 1]))) / DEG, wgt = Math.min(1, amt) * smooth(1 - Math.hypot((Math.abs(yaw) - 36) / 15, (pitch + 25) / 12));
+        if (wgt > 0) { C[i] += (pink[0] - C[i]) * wgt; C[i + 1] += (pink[1] - C[i + 1]) * wgt; C[i + 2] += (pink[2] - C[i + 2]) * wgt; }
+      }
+    }
     const head = [sk];
     if (def.face?.ears !== 0) for (const sx of [-1, 1]) head.push(tint(place(ellipsoid(0.027 * B.head, 0.044 * B.head, 0.031 * B.head, lo ? 6 : 10, lo ? 4 : 7), sx * HR[0] * 1.08, -HR[1] * 0.2, -0.012, 0, sx * 24, 0), headSkin));
     if (def.face?.nose !== 0) { const np = hd.at(0, -19.5, 0.985), nk = def.face?.nose ?? 1; head.push(setOutline(tint(place(ellipsoid(0.017 * nk, 0.011 * nk, 0.014 * nk, lo ? 5 : 8, lo ? 3 : 6), np[0], np[1], np[2]), headSkin), 0)); }
@@ -911,20 +923,20 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const eyes = node('eyes', two(FACE.ball.w, FACE.ball.h, false), faces.eyeMaterial, { parent: pivot });
     const lids = node('lids', two(FACE.lid.w, FACE.lid.h, true), fm, { parent: pivot, tint: headSkin });
     const wide = hd.patch(0, FACE.wide.pitch, FACE.wide.w, FACE.wide.h, 0.013, lo ? 5 : 10);
-    const marks = node('marks', wide, fm, { parent: pivot });
+    const marks = lo ? null : node('marks', wide, fm, { parent: pivot });
     const mouth = node('mouth', hd.patch(0, F.mouthPitch, FACE.mouth.w * mk2, FACE.mouth.h * mk2, 0.014, lo ? 3 : 5), fm, { parent: pivot });
-    const fx = node('fx', wide, fm, { parent: pivot, visible: false });
-    { const ms = { skin: headSkin, ...(def.face?.marks || {}) }; marks.uvRect.set(faces.marks(JSON.stringify(ms), ms)); } // keyed by what is drawn, so look-alikes share a cell
+    const fx = lo ? null : node('fx', wide, fm, { parent: pivot, visible: false }); // tears and shock lines are a close-up's business
+    if (marks) { const ms = { skin: headSkin, ...(def.face?.marks || {}) }; marks.uvRect.set(faces.marks(JSON.stringify(ms), ms)); } // keyed by what is drawn, so look-alikes share a cell
     const table = {};
     for (const e of EMOTES) {
       table[e] = {
         open: faces.lid(F.set, e, false), shut: faces.lid(F.set, e, true), eye: faces.eyeball(F.iris, EMOTE[e].eye),
-        mouth: [0, 1, 2, 3].map((n) => faces.mouth(e, n)), fx: faces.fx(EMOTE[e].fx),
+        mouth: [0, 1, 2, 3].map((n) => faces.mouth(e, n)), fx: lo ? null : faces.fx(EMOTE[e].fx),
       };
       // face.mouths { emote: closed shape }: the mouth a person's face rests in (a smirk, a thin line), see faces.js CLOSED
       if (F.mouths && F.mouths[e]) table[e].mouth[0] = faces.mouthShape(F.mouths[e]);
     }
-    face = { eyes, lids, marks, mouth, fx, table, F, tris: (eyes.mesh.indices.length + lids.mesh.indices.length + wide.indices.length + mouth.mesh.indices.length) / 3 };
+    face = { eyes, lids, marks, mouth, fx, table, F, tris: (eyes.mesh.indices.length + lids.mesh.indices.length + (lo ? 0 : wide.indices.length) + mouth.mesh.indices.length) / 3 };
   }
 
   // one draw for the whole figure; from here on the nodes are joints
@@ -954,7 +966,8 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   let time = seed * 1.73, emote = 'neutral', prevEmote = 'neutral', emoteT = 1, blinkHold = 0;
   let poseA = null, poseB = null, poseT = 1, poseName = 'stand';
   let talkW = 0, mouthLevel = 0;
-  let clip = null, clipName = '', clipT = 0, clipSpeed = 1, clipHeld = false, travel = 0;
+  let clip = null, clipName = '', clipT = 0, clipSpeed = 1, clipHeld = false, travel = 0, walkW = 0, walkPh = 0;
+  const walkA = poseOf('walkA'), walkB = mirrored(walkA);
   let yawNow = 0, yawInit = false, lookYaw = 0, lookPitch = 0, eyeX = 0, eyeY = 0, lit = 1, flash = 0;
   const tmp = v3.create(), tmp2 = v3.create(), inv = m4.create(), down = v3.create();
   const headPos = new Float32Array(3), lampPos = lampNode ? new Float32Array(3) : null;
@@ -1020,8 +1033,15 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
         rig.apply(gestures[gi % gestures.length], talkW * env * (A.gesture ?? 1));
       }
 
+      // the walk cycle: two mirrored strides and a bounce at each footfall
+      walkW = snap ? (wantPose === 'walk' ? 1 : 0) : approach(walkW, wantPose === 'walk' && !clip ? 1 : 0, dt * 8);
+      let walkUp = 0;
+      if (walkW > 0.01) {
+        walkPh += dt * (s.walk ?? 2.1) * Math.PI; const sw = Math.sin(walkPh), a = Math.abs(sw) ** 0.8;
+        rig.apply(sw > 0 ? walkA : walkB, a * walkW); walkUp = (1 - Math.abs(Math.cos(walkPh))) * 0.028 * walkW;
+      }
       // one-shot clip
-      let fwd = 0, up = 0, sq = 0;
+      let fwd = 0, up = walkUp, sq = 0;
       if (clip) {
         if (!clipHeld) clipT += dt * clipSpeed;
         const K = clip.keys, P = clipPoses[clipName];
@@ -1033,7 +1053,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
           let i = 0; while (i < K.length - 2 && clipT > K[i + 1][0]) i++;
           const a = K[i], c = K[i + 1], u = smooth((clipT - a[0]) / Math.max(1e-4, c[0] - a[0]));
           if (P[i]) rig.apply(P[i], 1 - u); if (P[i + 1]) rig.apply(P[i + 1], u);
-          fwd = a[2] + (c[2] - a[2]) * u; up = a[3] + (c[3] - a[3]) * u; sq = a[4] + (c[4] - a[4]) * u;
+          fwd = a[2] + (c[2] - a[2]) * u; up += a[3] + (c[3] - a[3]) * u; sq = a[4] + (c[4] - a[4]) * u;
         }
       }
       fwd += travel;
@@ -1105,7 +1125,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
         face.lids.uvRect.set(shut ? T.shut : T.open);
         setEyes(T.eye, eyeX * 0.105, eyeY * 0.08);
         face.mouth.uvRect.set(T.mouth[mouthLevel < 0.12 ? 0 : mouthLevel < 0.42 ? 1 : mouthLevel < 0.72 ? 2 : 3]);
-        if (T.fx) { face.fx.visible = true; face.fx.uvRect.set(T.fx); } else face.fx.visible = false;
+        if (face.fx) { if (T.fx) { face.fx.visible = true; face.fx.uvRect.set(T.fx); } else face.fx.visible = false; }
       }
       if (skinNode) { flash = Math.max(0, flash - dt * 5); skinNode.flash[0] = skinNode.flash[1] = skinNode.flash[2] = 1; skinNode.flash[3] = flash * 0.85; }
     },
@@ -1114,7 +1134,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   // cost
   let tris = 0; for (const sk of skins) tris += sk.mesh.indices.length / 3;
   ch.stats.triangles = tris + (face ? face.tris : 0); ch.stats.lod = lod;
-  ch.stats.draws = skins.length * 3 + (face ? 4 : 0);
+  ch.stats.draws = skins.length * 3 + (face ? (lo ? 3 : 4) : 0); // skin + outline + shadow, then the face decals (one more while an emote shows its overlay, full detail only)
   ch.stats.vertices = skins.reduce((a, sk) => a + vertexCount(sk.mesh), 0);
   ch.update(0, NOSTATE);
   return ch;
@@ -1424,7 +1444,7 @@ export const CAST = {
       legs: { color: '#1a2628' }, shoes: { color: '#1a2628', sole: '#9fb4a8', tall: true },
       collar: { kind: 'high', color: '#1c3033' }, belt: { color: '#1a2628', buckle: '#c9d2de' }, buttons: { color: '#c9d2de', count: 3 },
       gloves: { L: '#8d949e' },
-      extras: [{ kind: 'glasses', half: true, color: '#e6ebf5', size: 0.9 }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }, { kind: 'earring', side: 'L', color: '#e6ebf5', size: 0.55 }, { kind: 'earring', side: 'R', color: '#e6ebf5', size: 0.55 }],
+      extras: [{ kind: 'glasses', half: true, color: '#3a4a6a', size: 0.9 }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }, { kind: 'earring', side: 'L', color: '#e6ebf5', size: 0.55 }, { kind: 'earring', side: 'R', color: '#e6ebf5', size: 0.55 }],
     },
     poses: {
       // hands behind her back, weight even, chin a degree too high
@@ -1495,16 +1515,16 @@ export const CAST = {
     gestures: ['talkPoint', 'talkBoth'], anim: { gesture: 1.0, gesturePeriod: 2.2 }, idle: { speed: 0.85, sway: 0.7 },
   },
 
-  // A Mint steward: clears the route, moves you along. Cream and oxblood, a pillbox hat, a striped wand.
+  // A Mint steward: clears the route, moves you along. Mint grey with oxblood facings, a pillbox hat, white gloves, a striped wand.
   steward: {
     id: 'steward', seed: 11, skin: '#f0c6a0',
     build: { height: 0.98, legs: 1.0, torso: 1.04, head: 1.0, width: 1.06, belly: 0.08 },
     hair: { color: '#8a5a34', brow: '#6a4226', pieces: [{ kind: 'cap', front: 0.5, side: 0.0, back: -0.5 }, { kind: 'fringe', n: 3, from: -34, to: 34, top: 40, tip: 22, jag: 3, w: 0.05, r: 1.09 }, { kind: 'kepi', color: '#a3283f', band: '#ffd24a', peak: false, tall: 0.8 }] },
     face: { set: 'round', iris: '#5a6a3a', eyeScale: 0.86, eyePitch: -6.5, brow: { w: 0.02, len: 22, at: [24, 12], tilt: 4 }, marks: { blush: 0.45, freckles: true }, mouths: { neutral: 'pursed' } },
     costume: {
-      top: { color: '#fbe9c4', hem: -0.06, flare: 1.2, trim: '#a3283f', placket: '#d9c08a', lining: '#a3283f' },
-      sleeves: { color: '#fbe9c4', cuff: '#a3283f', flare: 1.1 },
-      legs: { color: '#7a1c30' }, shoes: { color: '#2a2030', sole: '#4a4560' },
+      top: { color: '#aab2c8', hem: -0.06, flare: 1.2, trim: '#a3283f', placket: '#8a92aa', lining: '#a3283f' },
+      sleeves: { color: '#aab2c8', cuff: '#a3283f', flare: 1.1 },
+      legs: { color: '#5a6078' }, shoes: { color: '#2a2030', sole: '#4a4560', tall: true },
       collar: { kind: 'stand', color: '#a3283f' }, belt: { color: '#a3283f', buckle: '#ffd24a' }, buttons: { color: '#ffd24a', count: 3 },
       gloves: { L: '#ffffff', R: '#ffffff' },
     },
@@ -1842,6 +1862,8 @@ export const CAST = {
 
 // the speaker id 'crowd' is a docker; 'docker-lantern' carries one for the walk to the ferry (setLit(false) until the cue)
 CAST.crowd = { ...CAST.docker, id: 'crowd' };
+// 'docker-hat': the one who brings the hat round when the Commons covers a debt (signature: the hat held out)
+CAST['docker-hat'] = { ...CAST.docker, id: 'docker-hat', props: [{ kind: 'hat', hand: 'R', color: '#7c8094' }], poses: { ...CAST.docker.poses, stand: { ...CAST.docker.poses.stand, armR: [-30, 0, -10], foreR: [-62, 0, 0] }, signature: { chest: [6, 8, 0], armR: [-66, 0, -4], foreR: [-30, 0, 0], head: [-8, -6, 4] } } };
 CAST['docker-lantern'] = { ...CAST.docker, id: 'docker-lantern', props: [{ kind: 'lantern', hand: 'R', size: 0.07 }], poses: { ...CAST.docker.poses, stand: { ...CAST.docker.poses.stand, armR: [-24, 0, -18], foreR: [-56, 0, 0] }, signature: { armR: [-120, 0, -16], foreR: [-30, 0, 0], head: [-10, 0, 0] } } };
 
 /**
@@ -1864,7 +1886,7 @@ export function castVariant(id, k = 0) {
   d.skin = pick(skins); d.hair.color = pick(hairs); d.hair.brow = mixc(d.hair.color, '#1a1040', 0.3);
   d.build = { ...d.build, height: (d.build.height ?? 1) * (0.94 + r() * 0.12), width: (d.build.width ?? 1) * (0.92 + r() * 0.16), belly: Math.max(0, (d.build.belly ?? 0) + (r() - 0.4) * 0.2), head: (d.build.head ?? 1) * (0.97 + r() * 0.06) };
   d.face.eyeScale = (d.face.eyeScale ?? 1) * (0.94 + r() * 0.12); d.face.iris = pick(['#4a3a2a', '#5a6a3a', '#5a4a8a', '#3f6f9a', '#7a4a26']);
-  d.face.marks = { ...(d.face.marks || {}), blush: 0.3 + r() * 0.3, stubble: !!(d.face.marks && d.face.marks.stubble) && r() > 0.4, freckles: r() > 0.7 };
+  d.face.marks = { ...(d.face.marks || {}), blush: r() < 0.5 ? 0.35 : 0.5, stubble: !!(d.face.marks && d.face.marks.stubble) && r() > 0.4, freckles: r() > 0.7 };
   if (!uniform) {
     const c = pick(cloth), c2 = mixc(c, '#1a1040', 0.3);
     d.costume.top = { ...d.costume.top, color: c, trim: c2, lining: mixc(c, '#1a1040', 0.5) }; if (d.costume.top.placket) d.costume.top.placket = mixc(c, '#1a1040', 0.18);
