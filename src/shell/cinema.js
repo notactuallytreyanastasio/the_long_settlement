@@ -1798,7 +1798,7 @@ def('mint-office', { amb: '#1e120c', rim: '#ffb070', key: -1 }, (ctx, t, px) => 
     ctx.strokeStyle = '#d8b25a'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.ellipse(ox, dy - 90, 46 - i * 9, Math.max(2, (46 - i * 9) * Math.abs(Math.sin(t * (0.3 + i * 0.17) + i))), i * 0.9, 0, TAU); ctx.stroke();
   }
-  circ(ctx, ox, dy - 90, 9, '#f0d68a');
+  coldFlame(ctx, ox, dy - 84, 9, t, 2); // a lamp-engine in little: his own light, on his own desk
 });
 
 // ── ferry-dawn ──
@@ -2296,9 +2296,9 @@ def('orrery', { amb: '#0c151c', rim: '#a8dcff', key: -1 }, (ctx, t, px) => {
   }
   ctx.fillStyle = '#070b0f';
   ctx.beginPath(); ctx.rect(X0, -180, XW, 280);
-  for (let i = -5; i < 5; i++) { // arch heads cut out of the wall above the piers
-    const xa = cx + i * 150 + (i >= -2 && i < 2 ? 0 : (i < 0 ? -1 : 1) * 0) + px * 0.15, wA = i >= -2 && i < 2 ? 150 : 150;
-    ctx.moveTo(xa + wA - 16, 100); ctx.lineTo(xa + 16, 100); ctx.quadraticCurveTo(xa + wA / 2, -10, xa + wA - 16, 100);
+  for (const [a0, a1] of [[-750, -600], [-600, -450], [-450, -300], [-300, 300], [300, 450], [450, 600], [600, 750]]) { // arch heads, cut out of the wall above the piers
+    const xa = cx + a0 + px * 0.15, wA = a1 - a0;
+    ctx.moveTo(xa + wA - 16, 100); ctx.lineTo(xa + 16, 100); ctx.quadraticCurveTo(xa + wA / 2, 100 - Math.min(150, wA * 0.5), xa + wA - 16, 100);
   }
   ctx.fill('evenodd');
   // the beam the engine throws: cold light going out between the piers, turning
@@ -2483,7 +2483,6 @@ def('shore-dusk', { amb: '#2a1c3a', rim: '#ff9d5c', key: 1 }, (ctx, t, px) => {
   motes(ctx, 23, 30, '#ffb060', t, { x0: 540 + px * 0.9, x1: 750 + px * 0.9, y0: 300, y1: 660, vx: 10, vy: -80, r: 1.8, a: 0.9, tw: 1, wob: 20 });
 });
 
-// ══ BEGIN ch3 ══
 // ───────────────────────── chapter 3: Halcyon Reach ─────────────────────────
 /** Halcyon's emblem: the plumb-weight, a bob hanging true on its line */
 function plumbWeight(ctx, x, y, s, col) {
@@ -2862,9 +2861,7 @@ def('underwriting-floor', { amb: '#0b1917', rim: '#c2ecd0', key: -1 }, (ctx, t, 
 }, (ctx, t, px) => {
   motes(ctx, 219, 44, '#d4f4dc', t, { x0: -60 + px, x1: 1340 + px, y0: 100, y1: 620, vx: 3, vy: 3, r: 1.3, a: 0.26, tw: 1, wob: 16 });
 });
-// ══ END ch3 ══
 
-// ══ BEGIN ch4 ══
 // ───────────────────────── chapter 4: dark water ─────────────────────────
 function rain(ctx, seed, n, t, px, slant, a, lw) {
   ctx.strokeStyle = `rgba(206,228,240,${a})`; ctx.lineWidth = lw; ctx.beginPath();
@@ -3284,9 +3281,7 @@ def('under-lane', { amb: '#050b14', rim: '#ffc27a', key: -1 }, (ctx, t, px) => {
 }, (ctx, t, px) => {
   for (let i = 0; i < 7; i++) { const x = mod(rnd(i * 3) * 1900 + t * (8 + i * 2), 1900) - 300 + px; ctx.fillStyle = 'rgba(120,150,190,.05)'; ctx.beginPath(); ctx.ellipse(x, 350 + i * 44, 400, 26, 0, 0, TAU); ctx.fill(); }
 });
-// ══ END ch4 ══
 
-// ══ BEGIN ch5 ══
 // ───────────────────────── chapter 5: Tallis ─────────────────────────
 // ── exchange-floor: the trading pits ──
 const BOARD_ROWS = [['STILLSALT', 880, 14, 0], ['MARK', 96, 5, -1], ['LAPSE BOND', 38, 9, 1], ['RENEWAL', 61, 7, -1], ['LANE CARGO', 212, 11, 0], ['LAMP OIL', 47, 3, 0]];
@@ -3392,9 +3387,9 @@ def('exchange-steps', { amb: '#363240', rim: '#ffd8b0', key: -1 }, (ctx, t, px) 
     rect(ctx, x - w / 2 - 8, 466, w + 16, 16, '#8a7e78');
   }
   ctx.fillStyle = vgrad(ctx, 30, 106, [[0, '#8a7e7c'], [1, '#b0a294']]); ctx.fillRect(470 + ex, 40, 1200, 66);
-  rect(ctx, 460 + ex, 30, 1220, 12, '#c8b8a4'); rect(ctx, 470 + ex, 100, 1200, 5, '#6a6068');
-  ctx.fillStyle = 'rgba(42,36,48,.75)'; ctx.font = `700 30px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('T H E   E X C H A N G E   O F   T A L L I S', 1000 + ex, 84); ctx.textAlign = 'left';
+  rect(ctx, 460 + ex, 30, 1220, 12, '#c8b8a4');
+  ctx.fillStyle = 'rgba(42,36,48,.75)'; ctx.font = `700 21px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('T H E   E X C H A N G E   O F   T A L L I S', 930 + ex, 100); ctx.textAlign = 'left';
   poly(ctx, [[470 + ex, 30], [470 + ex, -180], [440 + ex, -180], [440 + ex, 40]], '#5a5260');
   // the opening bell, in the porch
   { const bx = 714 + ex, a = Math.sin(t * 1.3) * 0.1; ctx.save(); ctx.translate(bx, 140); ctx.rotate(a); seg(ctx, 0, 0, 0, 30, '#1c140a', 3);
@@ -3426,7 +3421,7 @@ const DARK_ISLANDS = new Set([2, 7, 9, 13, 18, 24, 26, 31, 33, 36, 39]);   // el
 if (DARK_ISLANDS.size !== 11) throw new Error(`cinema: the model shows ${40 - DARK_ISLANDS.size} lit islands; the bible says twenty-nine`);
 def('corvane-study', { amb: '#16121a', rim: '#cfdcf0', key: 1 }, (ctx, t, px) => {
   fillAll(ctx, vgrad(ctx, -180, 800, [[0, '#0c080c'], [0.5, '#22161a'], [1, '#0a0707']]));
-  for (let i = -1; i < 9; i++) { const x = -230 + i * 230 + px * 0.2; ctx.strokeStyle = 'rgba(138,106,46,.35)'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 16, 30, 198, 420); }
+  for (let i = -1; i < 9; i++) { const x = -230 + i * 230 + px * 0.2; ctx.fillStyle = 'rgba(0,0,0,.07)'; ctx.fillRect(x + 16, 30, 198, 420); ctx.fillStyle = 'rgba(90,40,46,.1)'; ctx.fillRect(x + 28, 42, 174, 396); }
   rect(ctx, X0, 470, XW, 6, '#3a2610');
   // the one window: rain, the roofs of Tallis, and a customs shed where Ropewalk would be
   const wx = 960 + px * 0.25;
@@ -3657,10 +3652,10 @@ def('cell', { amb: '#14161e', rim: '#ffd9a8', key: -1 }, (ctx, t, px) => {
   rect(ctx, sx - 10, 250, 230, 8, '#2a1e14'); seg(ctx, sx + 4, 258, sx + 4, 282, '#2a1e14', 4); seg(ctx, sx + 206, 258, sx + 206, 282, '#2a1e14', 4);
   for (let i = 0; i < 7; i++) { const h = 40 + rnd(i * 3) * 22, w = 15 + rnd(i * 7) * 9; rect(ctx, sx + 4 + i * 24, 250 - h, w, h, ['#3a1c1c', '#1c2a3a', '#2e2a20', '#1c3a2c'][i % 4]); rect(ctx, sx + 4 + i * 24, 250 - h * 0.8, w, 2, 'rgba(201,168,90,.5)'); }
   { const x = sx + 190; ctx.fillStyle = '#d8d2c0'; ctx.beginPath(); ctx.ellipse(x, 244, 20, 6, 0, 0, TAU); ctx.fill(); rect(ctx, x - 9, 218, 18, 26, '#c8c2b0'); }
-  { const x = 1150 + bx; circ(ctx, x, 150, 5, '#3a3e48'); // his robe, on the peg: he is not permitted to wear it
-    ctx.fillStyle = '#0c0c12'; ctx.beginPath(); ctx.moveTo(x - 8, 152); ctx.quadraticCurveTo(x - 70, 190, x - 62, 480); ctx.lineTo(x + 60, 480); ctx.quadraticCurveTo(x + 66, 190, x + 8, 152); ctx.fill();
-    for (const s of [-1, 1]) { ctx.strokeStyle = 'rgba(169,155,196,.35)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x + s * 8, 160); ctx.quadraticCurveTo(x + s * 26, 300, x + s * 22, 478); ctx.stroke(); }
-    poly(ctx, [[x - 7, 162], [x - 10, 200], [x, 204], [x + 10, 200], [x + 7, 162]], '#e9e2d2'); }
+  { const x = 1150 + bx; circ(ctx, x, 150, 5, '#3a3e48'); // the greatcoat he was brought here in, on the one peg
+    ctx.fillStyle = '#12131a'; ctx.beginPath(); ctx.moveTo(x - 8, 152); ctx.quadraticCurveTo(x - 70, 190, x - 62, 480); ctx.lineTo(x + 60, 480); ctx.quadraticCurveTo(x + 66, 190, x + 8, 152); ctx.fill();
+    poly(ctx, [[x - 8, 154], [x - 34, 196], [x - 6, 250], [x, 170]], '#1c1e28'); poly(ctx, [[x + 8, 154], [x + 34, 196], [x + 6, 250], [x, 170]], '#191b24');
+    seg(ctx, x, 250, x, 478, 'rgba(0,0,0,.5)', 2); for (let i = 0; i < 4; i++) circ(ctx, x + 8, 280 + i * 50, 3.2, '#3a3e48'); }
   // floor
   ctx.fillStyle = vgrad(ctx, 488, 800, [[0, '#1a1c24'], [1, '#07080a']]); ctx.fillRect(X0, 488, XW, 500);
   for (let i = -8; i <= 8; i++) seg(ctx, 640 + i * 110 + px * 0.4, 488, 640 + i * 400 + px, 980, 'rgba(0,0,0,.3)', 1.5);
@@ -3684,7 +3679,6 @@ def('cell', { amb: '#14161e', rim: '#ffd9a8', key: -1 }, (ctx, t, px) => {
 }, (ctx, t, px) => {
   motes(ctx, 471, 34, '#d4dcff', t, { x0: 400 + px, x1: 1000 + px, y0: 200, y1: 640, vx: -2, vy: 3, r: 1.2, a: 0.3, tw: 1, wob: 12 });
 });
-// ══ END ch5 ══
 
 /** every backdrop key this renderer implements */
 export const BACKDROPS = Object.keys(P);
@@ -3891,7 +3885,7 @@ function drawRadioInset(ctx, who, line, level, tms, t) {
     // not live: a recording, with the name of whoever was recorded and a reel turning
     ctx.fillText('RECORDING', x + 98, y + 21);
     ctx.fillStyle = 'rgba(110,245,220,.5)';
-    ctx.fillText(String(who.name).toUpperCase(), x + 176, y + 21);
+    ctx.fillText(String(who.name).toUpperCase(), x + 176, y + 21, w - 176 - 40);
     ctx.strokeStyle = 'rgba(110,245,220,.8)'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(x + w - 22, y + 17, 6, 0, TAU); ctx.stroke();
     for (let i = 0; i < 3; i++) { const a = t * 2.2 + i * (TAU / 3); seg(ctx, x + w - 22, y + 17, x + w - 22 + Math.cos(a) * 5, y + 17 + Math.sin(a) * 5, 'rgba(110,245,220,.8)', 1.5); }

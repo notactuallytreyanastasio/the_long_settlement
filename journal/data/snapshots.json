@@ -1526,5 +1526,61 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T05:07:54.402Z",
+  "files": 584,
+  "lines": 20722,
+  "bytes": 15330671,
+  "linesByDir": {
+   ".": 113,
+   "assets/voice": 2735,
+   "src/content": 4170,
+   "src/core": 1813,
+   "src/shell": 8364,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 140,
+   "test/economy.test.js": 277,
+   "test/game.test.js": 741,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 199,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 156,
+   "test/story.test.js": 163,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 76
+  },
+  "changed": [
+   "M src/content/tables.js",
+   "M src/shell/cinema.js"
+  ],
+  "tests": {
+   "total": 137,
+   "pass": 133,
+   "fail": 4,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 7512,
+   "failures": [
+    "every line is spoken by a cast member, says something, and uses only contract fields",
+    "every cinematic opens on a backdrop, and Thorne is only ever heard over the Line",
+    "chapters name a real table and every objective id is an element of it",
+    "no scene is too hard: the median seed needs under four minutes for each"
+   ]
+  },
+  "nodes": {
+   "goal": 2,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 2,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

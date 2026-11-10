@@ -159,7 +159,9 @@ function vessery() {
 
   const walls = [
     ...sh.walls, ...lo.walls,
-    // ceiling, then the breakwater that stops a launch and drops it on the lot lanes
+    // ceiling, then the breakwater that stops a launch and drops it on the lot lanes. It
+    // ends on the first lane guide: when it ended 17 units short, 13 plunge strengths in 80
+    // slipped down the gap and missed the lots altogether.
     { a: sh.arcEnd, b: [118, 20] },
     { a: [118, 20], b: [127, 72], bounce: 0.3 },
     ...poly([[127, 118], [56, 150], [L, 205]]),
@@ -238,8 +240,9 @@ function vessery() {
 
 // ═════════════════════════ SALTMERE ═════════════════════════
 // A mine and a court. Steeper, with a headframe wall splitting the top: salt lanes and
-// the shaft bumpers stacked on the right, and up the middle a single narrow gallery that
-// climbs to the Orrery. The Orrery is a dead-end lane: hard to enter, certain once in.
+// the shaft bumpers stacked on the right, the picket line across the left flats, and up
+// the middle a single narrow gallery that climbs to the Orrery. The Orrery is a dead-end
+// lane: hard to enter, certain once in.
 
 function saltmere() {
   const sh = shell(92, 8);
@@ -294,7 +297,13 @@ function saltmere() {
     ],
     slings: lo.slings,
     targets: [
+      // The strike bank is the picket line: it stands free across the left flats, square to
+      // a cross shot from the right flipper. Mounted on the left of the Orrery gallery it faced
+      // away from every flipper and the bot found each target 3 to 4 times in five minutes;
+      // here, 12 to 17.
       ...bank(['strikeA', 'strikeB', 'strikeC'], [66, 292], [122, 240], 'strike', 0.06),
+      // The liens are on the court lane's wall beside the shafts. Lower down (y 246-330) the
+      // bottom two were out of the bumpers' reach: lien N 2.2 times in five minutes, here 19.
       ...bank(['lienL', 'lienI', 'lienE', 'lienN'], [mx(44), 178], [mx(44), 282], 'lien', 0.06),
     ],
     rollovers: [
