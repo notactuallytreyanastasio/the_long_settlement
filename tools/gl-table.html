@@ -23,6 +23,7 @@
 //   ?seed=3                     the game's seed and the bot's
 //   ?t=20                       simulate this many seconds of play, then freeze (for screenshots)
 //   ?until=bumper|shot|payout|drain|target|sling|saucer|reelStop|armed   after t, play on until that event, then freeze
+//   ?id=pierRamp                with until: only that element's event counts
 //   ?after=0.08                 seconds to play on past the `until` event
 //   ?balls=4                    keep this many balls live (added by hand: a multiball without waiting for one)
 //   ?skill=steady|mediocre      the bot's thumbs    ?hands=1  no bot: Z / M or left / right half of the screen flip, space or a touch at the bottom right launches
@@ -130,7 +131,7 @@ try {
     while (t < freezeAt) stepFrame(true);
     if (until) {
       let guard = 60 * 600, hit = false;
-      while (!hit && guard-- > 0) hit = stepFrame(true).some((e) => e.type === until);
+      while (!hit && guard-- > 0) hit = stepFrame(true).some((e) => e.type === until && (!q.has('id') || e.id === q.get('id')));
       if (!hit) throw new Error(`gl-table: no "${until}" event in ten minutes of play`);
       for (let i = 0; i < Math.round(after * 60); i++) stepFrame(true);
     }

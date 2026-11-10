@@ -12556,7 +12556,7 @@
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 77097,
+  "bytes": 77288,
   "lines": 1108
  },
  {
@@ -12666,8 +12666,8 @@
  },
  {
   "path": "tools/gl-table.html",
-  "bytes": 12433,
-  "lines": 178
+  "bytes": 12553,
+  "lines": 179
  },
  {
   "path": "tools/render-voices.mjs",

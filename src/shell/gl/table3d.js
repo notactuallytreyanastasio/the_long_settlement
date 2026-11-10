@@ -95,8 +95,7 @@ function wallMesh(w, P, H) {
 }
 function bollard(P, s = 1) {
   return scaleMesh(merge(
-    tint(cylinder(0.04, 0.034, 0.23, 10), P.wood),
-    tint(place(torus(0.038, 0.011, 10, 5), 0, 0.192, 0), P.ink2),
+    tint(lathe([[0, 0], [0.04, 0], [0.036, 0.19], [0.044, 0.2], [0.044, 0.225], [0, 0.225]], 10), P.wood),
     tint(place(ellipsoid(0.047, 0.036, 0.047, 10, 6), 0, 0.243, 0), P.coral),
   ), s);
 }
@@ -164,7 +163,7 @@ function drumMesh(R, width, P, atlas) {
     const q = fromArrays([...corner(-1, 1), ...corner(1, 1), ...corner(-1, -1), ...corner(1, -1)], [0, 2, 3, 0, 3, 1],
       [r[0], r[1], r[0] + r[2], r[1], r[0], r[1] + r[3], r[0] + r[2], r[1] + r[3]], 180);
     if (q.normals[1] * ny + q.normals[2] * nz < 0) throw new Error('table3d: a reel face came out facing inward');
-    parts.push(setGlow(setOutline(q, 0), 0.7));
+    parts.push(setGlow(setOutline(q, 0), 1));
   }
   parts.push(plainUv(tint(place(remap(cylinder(0.07, 0.07, width + 0.12, 8), (x, y, z) => [y, z, x]), -(width + 0.12) / 2, 0, 0), P.gold), atlas.rect('blank')));
   return merge(parts);
@@ -474,7 +473,7 @@ export function createTableView(content, tableId, opts = {}) {
   // ---- environment: a low warm sun from the far left, long blue-violet shadows, lamps doing the rest
   const seedPoints = []; for (let i = 0; i < POINTS; i++) seedPoints.push({ pos: [0, 0, 0], color: '#ffb347', radius: 1, intensity: 0 });
   const env = makeEnv('sunset', {
-    key: { dir: [-0.44, 0.64, -0.6], color: '#fff2cf' },
+    key: { dir: [-0.44, 0.64, -0.6], color: '#ffecc4' },
     shadow: { tint: '#8a84e4', lift: 0.07, saturate: 1.4, radius: 5.5, center: [0, 0, -0.45], size: opts.shadowSize || 2048 },
     ambient: { sky: '#ffc9a0', ground: '#8f7ae0', amount: 0.09 },
     rim: { color: '#ffe9b0', amount: 0.7, edge: 0.72 },
@@ -624,7 +623,7 @@ export function createTableView(content, tableId, opts = {}) {
     lamps.push(L); if (id && !lampById.has(id)) lampById.set(id, L);
     return L;
   }
-  for (const b of bumpers) b.lamp = addLamp(b.b.id, 'bumper', WX(b.b.pos[0]), 0.31, WZ(b.b.pos[1]), b.b.r * S * 1.12, 0.09, b.b.r * S * 1.12, '#fff2b0', b.b.r * S * 5.5, 1.5);
+  for (const b of bumpers) b.lamp = addLamp(b.b.id, 'bumper', WX(b.b.pos[0]), 0.36, WZ(b.b.pos[1]), b.b.r * S * 0.74, 0.05, b.b.r * S * 0.74, '#fff2b0', b.b.r * S * 5.5, 1.5);
   for (const t of targets) t.lamp = addLamp(t.t.id, 'target', WX(t.t.mid[0]), 0.225, WZ(t.t.mid[1]), 0.068, 0.064, 0.068, P.want, 0.3, 0.95);
   for (const r of table.rollovers) addLamp(r.id, 'rollover', WX(r.pos[0]), 0.004, WZ(r.pos[1]), Math.min(r.r, 11) * 0.8 * S, 0.012, Math.min(r.r, 11) * 0.8 * S, P.want, 0.36, 0.8);
   for (const s of lay.shots) addLamp(s.id, 'shot', WX(s.lamp[0]), 0.004, WZ(s.lamp[1]), 0.09, 0.012, 0.09, P.want, 0.5, 1.1);
@@ -634,6 +633,7 @@ export function createTableView(content, tableId, opts = {}) {
   const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.582, -4.135, 0.04, 0.02, 0.04, P.spin, 0, 0));
   if (lamps.length > LAMPS) throw new Error(`table3d: table ${tableId} has ${lamps.length} lamps; the instanced call holds ${LAMPS}`);
   const fillLamp = table.reels.fill.map((id) => lampById.get(id) || null);
+  const kickLamps = ['outL', 'outR'].map((id) => lampById.get(id)).filter(Boolean);
   const where = new Map();
   for (const b of table.bumpers) where.set(b.id, b.pos);
   for (const t of lay.targets) where.set(t.id, t.mid);
@@ -773,11 +773,11 @@ export function createTableView(content, tableId, opts = {}) {
       if (fillLamp[i] && on) setLamp(fillLamp[i], 0.9, 3);
       if (on) setLamp(reelLamps[i], paying ? 0.5 + 0.5 * Math.sin(time * 22) : 0.9, 3); else if (cells[i].spin > 0) setLamp(reelLamps[i], chase * 0.7, 3);
     }
-    if (game.boons.kickback > 0) for (const id of ['outL', 'outR']) { const L = lampById.get(id); if (L) setLamp(L, 0.85, 3); }
-    if (game.reels.armed) for (const L of armLamps) setLamp(L, chase, 1);
+    if (game.boons.kickback > 0) for (let i = 0; i < kickLamps.length; i++) setLamp(kickLamps[i], 0.85, 3);
+    if (game.reels.armed) for (let i = 0; i < armLamps.length; i++) setLamp(armLamps[i], chase, 1);
     { const n = Math.floor((game.reels.charge / (game.reels.need || 1)) * 9 + 1e-6); for (let i = 0; i < 9; i++) if (i < n) setLamp(chargeLamps[i], game.reels.armed ? chase : 0.8, 1); }
-    if (celebrate > 0) { celebrate -= dt; for (let i = 0; i < lamps.length; i++) { const L = lamps[i]; if (L.kind !== 'charge') setLamp(L, 0.5 + 0.5 * Math.sin(time * 18 + i * 1.3), (i % 2) ? 3 : 1); } }
-    for (const b of bumpers) { if (b.flash > 0) { setLamp(b.lamp, b.flash, 4); b.flash = Math.max(0, b.flash - dt * 5); } }
+    if (celebrate > 0) { celebrate -= dt; for (let i = 0; i < lamps.length; i++) { const L = lamps[i]; if (L.kind !== 'charge' && L.level < 0.5) setLamp(L, 0.5 + 0.5 * Math.sin(time * 18 + i * 1.3), (i % 2) ? 3 : 4); } }
+    for (let i = 0; i < bumpers.length; i++) { const b = bumpers[i]; if (b.flash > 0) { setLamp(b.lamp, b.flash, 4); b.flash = Math.max(0, b.flash - dt * 5); } }
     if (phys) for (let i = 0; i < phys.balls.length; i++) { const ins = phys.balls[i].inside; for (let k = 0; k < ins.length; k++) { const L = lampById.get(ins[k]); if (L) setLamp(L, 1, 4); } }
 
     // lamps -> instances, halos, and the eight point lights (flashes first, then what the player should shoot)
@@ -785,7 +785,7 @@ export function createTableView(content, tableId, opts = {}) {
     for (let pass = 0; pass < 3 && np < POINTS; pass++) {
       for (let i = 0; i < lamps.length && np < POINTS; i++) {
         const L = lamps[i]; if (L.light <= 0 || L.level < 0.08) continue;
-        const pr = L.tone === 4 ? 0 : L.tone <= 1 ? 1 : 2; if (pr !== pass) continue;
+        const pr = L.kind === 'bumper' ? 0 : L.tone <= 1 ? 1 : 2; if (pr !== pass || (celebrate > 0 && pr > 0)) continue;
         const c = L.tone === 0 ? C.want : L.tone === 1 ? C.spin : L.tone === 2 ? C.done : L.tone === 3 ? C.lot : C.flash, p = points[np++];
         p.pos[0] = L.pos[0]; p.pos[1] = Math.max(L.pos[1], 0.16) + 0.1; p.pos[2] = L.pos[2]; p.color = c; p.radius = L.light; p.intensity = L.level * 1.15;
       }
@@ -1020,7 +1020,7 @@ function vBuoy(P) {
 function vGarland(P, a, b, n, sag, kit) {
   const A = [kit.WX(a[0]), a[2], kit.WZ(a[1])], B = [kit.WX(b[0]), b[2], kit.WZ(b[1])], pts = [], parts = [];
   for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t - sag * 4 * t * (1 - t), A[2] + (B[2] - A[2]) * t]); }
-  parts.push(tint(tube(pts, 0.005, 4, { crease: 180 }), P.woodDark));
+  parts.push(tint(tube(pts, 0.009, 5, { crease: 180 }), P.woodDark));
   const cols = [P.coral, P.gold, '#33c9a4', P.cream, '#ff7ad1'];
   for (let i = 1; i < n; i++) { const t = i / n, x = A[0] + (B[0] - A[0]) * t, y = A[1] + (B[1] - A[1]) * t - sag * 4 * t * (1 - t), z = A[2] + (B[2] - A[2]) * t; parts.push(setGlow(tint(place(ellipsoid(0.05, 0.06, 0.05, 10, 6), x, y - 0.06, z), cols[i % cols.length]), 0.75)); }
   for (const p of [A, B]) parts.push(tint(place(cylinder(0.02, 0.016, p[1] + 0.02, 6), p[0], 0, p[2]), P.woodDark), tint(place(sphere(0.03, 8, 6), p[0], p[1] + 0.02, p[2]), P.gold));
@@ -1066,7 +1066,7 @@ registerTableArt('vessery', {
     const wedge = [[4, 356], [72, 448], [4, 484]];
     k.land(wedge, '#ffe6ae', { smoothed: false, grow: 6 }); k.land(k.mirror(wedge), '#ffe6ae', { smoothed: false, grow: 6 });
     // the lower quays, either side of the flippers
-    const quay = [[-20, 500], [10, 500], [40, 540], [76, 566], [112, 664], [130, 702], [124, 716], [72, 697], [46, 700], [36, 724], [36, 830], [-20, 830]];
+    const quay = [[-20, 500], [10, 500], [40, 540], [76, 566], [112, 664], [130, 702], [124, 716], [86, 701], [62, 700], [47, 707], [39, 721], [36, 744], [36, 830], [-20, 830]];
     k.land(quay, '#ffe6ae', { smoothed: false }); k.cobbles(quay, '#f2cc8a', 8, 16);
     k.land(k.mirror(quay), '#ffe6ae', { smoothed: false }); k.cobbles(k.mirror(quay), '#f2cc8a', 9, 16);
     for (const m of [false, true]) { // sling islands: striped like a beach windbreak
