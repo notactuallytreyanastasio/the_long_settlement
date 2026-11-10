@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 26669,
-  "lines": 503
+  "bytes": 25780,
+  "lines": 488
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12521,8 +12521,8 @@
  },
  {
   "path": "src/shell/gl/index.js",
-  "bytes": 5149,
-  "lines": 65
+  "bytes": 5170,
+  "lines": 64
  },
  {
   "path": "src/shell/gl/math.js",

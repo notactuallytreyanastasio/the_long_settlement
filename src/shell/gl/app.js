@@ -2,7 +2,7 @@
 //
 //   const app = createGlApp(glCanvas, hudCanvas, { quality: 'low' | 'mid' | 'high' | null });
 //   app.ok                              false when there is no WebGL2, and from the moment the context is lost
-//   app.canDraw(content, game)          true when every set the current chapter needs exists (see TEMP_SET_FALLBACK)
+//   app.canDraw(content, game)          true when every set the current chapter needs exists
 //   app.observe(content, before, msg, after)   once per core tick in play: the table's events (bumper, reelStop, ...)
 //   app.draw(content, game, fx, layout) the same contract as render.js: reads the game, never changes it.
 //                                       layout must be one from layout.js computeGlLayout (it has layout.gl)
@@ -35,17 +35,6 @@ import { SETS } from './sets/index.js';
 import { drawHud, HUD_BAND_HEAD, HUD_BAND_FOOT } from './hud.js';
 import { createDirector } from './stage.js';
 
-/**
- * TEMPORARY, for the integrator to delete: chapter 1's sets that did not exist when this was written are stood in
- * for by another set. canDraw counts a key listed here as present. A key in neither SETS nor this table makes
- * canDraw false, which is what keeps chapters 2-8 on the 2D renderer.
- */
-export const TEMP_SET_FALLBACK = Object.freeze({
-  'harbor-night': 'lantern-stalls', 'drum-hall': 'lantern-stalls', 'pier-riot': 'lantern-stalls', bench: 'lantern-stalls',
-  'mint-office': 'lantern-stalls', orrery: 'lantern-stalls', 'ferry-dawn': 'lantern-stalls',
-  ledger: 'lantern-stalls', line: 'lantern-stalls', black: 'lantern-stalls',
-});
-
 const INK = '#1d2146';
 const GROW = 0.75;              // seconds for the band to grow to the whole canvas, or shrink back
 const VEIL = 0.45;              // seconds an ink veil takes to lift after a screen gives way to the stage
@@ -72,13 +61,9 @@ const TABLE_LIGHT = Object.freeze({ dusk: 'dusk', night: 'night', predawn: 'nigh
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const smooth = (t) => t * t * (3 - 2 * t);
 
-/** The set definition for a key, or null. `stood` is true when it is a TEMP_SET_FALLBACK stand-in. */
+/** The set definition for a key, or null. */
 function setDef(key) {
-  const S = SETS;
-  if (Object.hasOwn(S, key)) return { def: S[key], stood: false };
-  const other = TEMP_SET_FALLBACK[key];
-  if (other && Object.hasOwn(S, other)) return { def: S[other], stood: true };
-  return null;
+  return Object.hasOwn(SETS, key) ? { def: SETS[key] } : null;
 }
 
 /** A light a set definition knows. The core names lights the artists may not have built ('interior'); a set's first light stands in. */

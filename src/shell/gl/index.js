@@ -1,4 +1,4 @@
-// The cel engine's public surface, in one import. Nothing in the live game imports this folder yet.
+// The cel engine's public surface, in one import. The live game reaches it through app.js (the 3D renderer main.js picks).
 //   import * as GL from './gl/index.js';
 // Slice page: /tools/gl-demo.html?view=live|cine|table|cast|engine (its header lists every parameter).
 //
@@ -56,9 +56,8 @@ export * from './fx.js';
 export { createAtlas } from './atlas.js';
 export { createRenderer } from './renderer.js';
 export { createFaces, EMOTES } from './faces.js';
-export { createCharacter, figureMaterial, teamMove, mirrorPose, CAST, CLIPS, POSES, HAIR, EXTRAS, PROPS } from './characters.js';
+export { createCharacter, createCrowd, castVariant, figureMaterial, teamMove, mirrorPose, CAST, CLIPS, POSES, HAIR, EXTRAS, PROPS } from './characters.js';
 export { createTableView, tableEvents, TABLE_ART, registerTableArt } from './table3d.js';
-export { createTroupe, createCine, createEncounter, comboOf, frameHeads, inkFor, projectTo, BEATS, COMBO_WEIGHT, COMBO_NAMES } from './stage.js';
+export { createTroupe, createCine, createEncounter, createDirector, castReady, UNITS, MODES, comboOf, frameHeads, inkFor, projectTo, BEATS, COMBO_WEIGHT, COMBO_NAMES } from './stage.js';
 export * as kit from './sets/kit.js';
-import { lanternStalls } from './sets/lantern-stalls.js';
-export const SETS = { [lanternStalls.id]: lanternStalls };
+export { SETS, hasSet } from './sets/index.js';
