@@ -26,11 +26,14 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { PAL, pickLight, steps, cloudBank, gull, headland, townBank, crate, ledgerBook } from './kit.js';
-import { TL, MARKS, ch5Materials, shell, dirFrom, throng, papers, gableHouse, fatColumn, bell, lantern, ironRail, paving } from './kit-ch5.js';
+import { TL, MARKS, ch5Materials, shell, dirFrom, throng, papers, gableHouse, fatColumn, bell, lantern, ironRail, paving, lightNames, ownLight, taskUnit } from './kit-ch5.js';
 
 const COL_Z = -1.5, RAIL_Z = -1.95, EDGE_Z = -2.2, STEP_N = 6, RISE = 0.2, RUN = 0.42;
 const STREET_Y = -STEP_N * RISE, FOOT_Z = EDGE_Z - STEP_N * RUN, ROW_Z = -10.9, SW = 2.9, SLOPE_Z = -13.5, QUAY_Z = -50, QUAY_Y = -3.0, WATER = -3.7;
 const streetY = (z) => (z > SLOPE_Z ? STREET_Y : STREET_Y + (QUAY_Y - STREET_Y) * (SLOPE_Z - z) / (SLOPE_Z - QUAY_Z));
+
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { day: 'morning', dawn: 'morning' };
 
 const LIGHTS = {
   morning: {
@@ -107,7 +110,7 @@ function mintHall({ w = 8, h = 5.2, d = 3, lit = 0.5 } = {}) {
 }
 
 function build(engine = null, { light: lightName = 'morning', low = false } = {}) {
-  const { name: light, L } = pickLight('exchange-steps', LIGHTS, lightName);
+  const { name: light, L } = pickLight('exchange-steps', LIGHTS, ownLight(LIGHTS, ALIAS, lightName));
   const M = ch5Materials(), r = rng(5151);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.water.level = WATER;
@@ -267,10 +270,33 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
     if (!low && time > nextMote) { nextMote = time + 0.3; P[0] = -3 + rnd() * 6; P[1] = 0.3 + rnd() * 2.8; P[2] = -1.2 + rnd() * 3; V[0] = 0.14; V[1] = 0.1 + rnd() * 0.1; V[2] = 0.05; sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.07 + rnd() * 0.06, life: 4.5, color: L.mote, alpha: light === 'morning' ? 0.55 : 0.9 }); }
   }
 
+  // ---- what the live stage asks for (kit-ch5 taskUnit)
+  //   'the-run'        ch5.s6: the city in the square and the street: a run at 0, the front rows standing still by 1;
+  //                    the bell swings each time the objective moves
+  //   'record-lamps'   ch5.s7: dusk on the porch: its four lanterns come on one at a time, a quarter of the objective each
+  // setback(): the crowd surges (s6); the lanterns gutter (s7)
+  let runUnit = null, lampUnit = null, surge = 0, rung = -1;
+  function task(type) {
+    if (type === 'the-run') return runUnit || (runUnit = taskUnit([0.3, 1.05, RAIL_Z + 0.1], null, (v, time, dt) => {
+      surge = Math.max(0, surge - (dt || 0) / 2.2); setCrowd(1); setMood(Math.min(1, 1 - 0.5 * v + 0.45 * surge));
+      const step = Math.floor(v * 3 + 0.04); if (step > rung) { if (rung >= 0) ring(); rung = step; } else if (step < rung) rung = step;
+    }));
+    if (type === 'record-lamps') return lampUnit || (lampUnit = taskUnit([lanPos[1][0], lanPos[1][1], lanPos[1][2]], null, (v, time, dt) => {
+      surge = Math.max(0, surge - (dt || 0) / 1.6); setCrowd(0.18); setMood(0.15);
+      for (let i = 0; i < 4; i++) { const k = Math.max(0.04, Math.min(1, v * 4 - [1, 0, 2, 3].indexOf(i))) * (1 - 0.7 * surge * Math.abs(Math.sin(time * 23 + i))); lamps[i].gain = k; glows[i].gain = k; }
+      if (cones) cones.visible = v > 0.3;
+      const at = lanPos[[1, 0, 2, 3][Math.min(3, Math.floor(v * 4))]]; lampUnit.pos[0] = at[0]; lampUnit.pos[1] = at[1]; lampUnit.pos[2] = at[2];
+    }));
+    return null;
+  }
+  const setback = () => { surge = 1; };
+  // a cutscene has the porch as the light state built it
+  const litAll = () => { for (let i = 0; i < 4; i++) { lamps[i].gain = 1; glows[i].gain = 1; } };
+
   return shell({
     id: 'exchange-steps', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.22,
     marks: { ...MARKS, rail: { pos: [0.95, 0, RAIL_Z + 0.42], face: 168 }, bell: MOUTH, focus: MOUTH },
-    extra: { setCrowd, setMood, ring, cue, crowdCount: near.people.length + mass.people.length },
+    extra: { setCrowd, setMood, ring, cue: (id) => { const hit = cue(id); if (hit) litAll(); return hit; }, task, setback, passLamp: setback, crowdCount: near.people.length + mass.people.length },
   });
 }
 
@@ -280,5 +306,5 @@ function anchorsOf(mesh, pos, yaw) {
   return (mesh.anchors.windows || []).map((q) => [pos[0] + q[0] * c + q[2] * s, pos[1] + q[1], pos[2] - q[0] * s + q[2] * c]);
 }
 
-export const exchangeSteps = { id: 'exchange-steps', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const exchangeSteps = { id: 'exchange-steps', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default exchangeSteps;

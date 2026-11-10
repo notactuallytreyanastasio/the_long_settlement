@@ -18,6 +18,31 @@ export const chapter6 = {
   // He defaulted at Tallis (ch5.s7): the plate under his name says so from here on.
   roles: { ren: 'Volunteer, in default' },
 
+  // ───────────────────────── the stage ─────────────────────────
+  // For the 3D stage (src/core/stage.js), as in chapter 1. sets: every backdrop key this chapter's lines name -> the
+  // set built for it and how it is lit when a cinematic goes there (a scene's own cutscene keeps its encounter's light).
+  // Three places change under the script rather than by a light name, through the set's cue(lineId):
+  //   kedge-roads   built 'dawn' (prologue, s1); from ch6.s7.c16 and through the epilogue it is turned grey: the lamp
+  //                 cut, the sea stood up beyond the half-mile, the Audit cutter across the mouth, the open boat out
+  //   quarter-flame 'interior' is the lamp whole and white; ch6.s7.c04 drops it to the quarter
+  //   compact-hall  ch6.s2.c26 shows the key; ch6.s5.c28 raises four hundred lanterns
+  // corvane-study wants twelve lamps dark from ch6.epi.16 (its own cue).
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      'kedge-roads': { set: 'kedge-roads', light: 'dawn' },
+      'compact-hall': { set: 'compact-hall', light: 'night' },
+      'counting-room': { set: 'counting-room', light: 'interior' },
+      'cutter-deck': { set: 'cutter-deck', light: 'dusk' },
+      'lantern-line': { set: 'lantern-line', light: 'night' },
+      'quarter-flame': { set: 'quarter-flame', light: 'interior' },
+      'corvane-study': { set: 'corvane-study', light: 'interior' },
+      black: { set: 'black', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'docker',
+  },
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch6.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
@@ -72,6 +97,21 @@ export const chapter6 = {
       hint: 'Go down and meet her: shoot the GANGWAY 3 times',
       objective: { kind: 'count', ids: ['gangwayRamp'], n: 3 },
       reward: { points: 20000 },
+      // Not a fight, and nobody may refuse anybody. The work is the walk down to be replaced; it ends in the order of procession
+      // the Tribune will give in the cutscene: herself, a volunteer beside her, a lawful shadow behind.
+      encounter: {
+        set: 'kedge-roads', light: 'dawn', mode: 'walk',
+        party: ['ilse', 'ren'],
+        opposition: { kind: 'force', who: ['gangway-walk'], name: "THE NOMINEE" },
+        extras: ['foss', 'docker', 'docker'],
+        setback: { cue: 'cask-swings', show: "The quay crane's slung cask swings wide across the way down; Ilse stops short and Ren puts an arm out in front of her." },
+        beats: [
+          { at: 0, cue: 'grey-on-the-quay', name: "Halcyon grey on the quay", show: "Dawn on the salt quay. A young woman in Halcyon grey stands at ease by the casks; two dockers further along are not working. Ilse and Ren come off the gangway at the left. A cask hangs slung from the quay crane." },
+          { at: 1, cue: 'replaced-politely', name: "Replaced politely", show: "They are down on the stones and walking. The crane has begun to lower its cask. Foss has not moved her feet." },
+          { at: 2, cue: 'level-with-her', name: "Level with her", show: "They draw level with the grey coat. The cask is half way down; the dockers have turned to watch." },
+          { at: 3, cue: 'six-paces-behind', name: "Six paces behind", show: "They have walked on past her. The cask is on the stones. Ilse in front, Ren beside, and the grey coat behind them, at ease." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s1.b01', who: 'crowd', text: "Halcyon officer on the quay, Tribune. Asking for you." },
         { id: 'ch6.s1.b02', who: 'ren', text: "Grey coat. Surety's cut. That is my replacement." },
@@ -147,6 +187,21 @@ export const chapter6 = {
       hint: 'Chalk up the hoppers: hit TALLY targets A, B and C',
       objective: { kind: 'all', ids: ['tallyA', 'tallyB', 'tallyC'] },
       reward: { points: 22000, trust: 30 },
+      // Not a fight. Hesper asks the question the Tribune may not; the work is Tobb's table, hatch by hatch, chalked where the
+      // whole Compact can see it. Ilse may sit and hear: she stands at the edge and takes no part.
+      encounter: {
+        set: 'compact-hall', light: 'night', mode: 'work',
+        party: ['tobb', 'ren', 'hesper'],
+        opposition: { kind: 'force', who: ['tally-column', 'tally-column', 'tally-column'], name: "THE HOPPER TABLE" },
+        extras: ['ilse'],
+        setback: { cue: 'hall-shouts', show: "Four hundred lanterns are shaken up at the table: black the quays! Tobb is driven back from the easel with the chalk in his hand." },
+        beats: [
+          { at: 0, cue: 'black-the-quays', name: "Black the quays", show: "The ropewalk under one hurricane lamp, four hundred dockers standing in the blue behind. An easel with an empty slate stands by the tally table; Tobb, Ren and Hesper before it. The Tribune stands apart at the edge, silent." },
+          { at: 1, cue: 'forty-days', name: "The capital: forty days", show: "Tobb chalks the first column: a tall pale bar." },
+          { at: 2, cue: 'thirty-days', name: "The rich ports: thirty", show: "A second bar beside it, three quarters the height." },
+          { at: 3, cue: 'nine-days', name: "The small lights: nine", show: "The third bar is short, and coral red. Nobody at the table is looking at anything else." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s2.b01', who: 'hesper', text: "The Compact meets in the ropewalk. Come and hear me." },
         { id: 'ch6.s2.b02', who: 'tobb', text: "She is going to move a strike. I can smell it." },
@@ -216,6 +271,20 @@ export const chapter6 = {
       hint: 'Read the rope ledger: light R-O-P-E',
       objective: { kind: 'all', ids: ['ropeR', 'ropeO', 'ropeP', 'ropeE'] },
       reward: { points: 25000 },
+      // Not a fight, and hardly a burglary: they were left the key. The bar is the sum, worked standing up.
+      encounter: {
+        set: 'counting-room', light: 'interior', mode: 'work',
+        party: ['tobb', 'ren'],
+        opposition: { kind: 'force', who: ['rope-ledger'], name: "THE ROPE LEDGER" },
+        setback: { cue: 'step-on-the-stair', show: "A step on the stair below. Ren turns the green lamp right down and neither of them moves until it has gone." },
+        beats: [
+          { at: 0, cue: 'the-key-fitted', name: "The key fitted", show: "The loft after midnight: moon through the tall window, shelves of ledgers and real rope, one green lamp turned low on the standing desk. Tobb at the book, Ren beside him. A bare slate leans by the shelves." },
+          { at: 1, cue: 'levy-book', name: "The levy book", show: "The lamp is up a little. One row of figures on the slate." },
+          { at: 2, cue: 'nine-years-of-rope', name: "Nine years of rope", show: "Two rows. Tobb goes back and forth between the desk and the slate." },
+          { at: 3, cue: 'will-not-close', name: "It will not close", show: "Three rows, the third the longest. The lamp is nearly full." },
+          { at: 4, cue: 'three-parts-ash', name: "Three parts ash to one", show: "The fourth row, in yellow chalk, with a ring round its last figure. The lamp is full on the book." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s3.b01', who: 'tobb', text: "A steward's key. She left it by my chalk." },
         { id: 'ch6.s3.b02', who: 'ren', text: "Then she wants something counted." },
@@ -285,6 +354,21 @@ export const chapter6 = {
       hint: 'Go out to the cutter: 20 hits on the CRANE bumpers',
       objective: { kind: 'count', ids: ['crane1', 'crane2', 'crane3'], n: 20 },
       reward: { points: 25000 },
+      // Not a fight. Sable has rowed him out himself; the work is the length of a deck, to the one place in Kedge where
+      // nobody is paid to listen.
+      encounter: {
+        set: 'cutter-deck', light: 'dusk', mode: 'walk',
+        party: ['ren', 'sable'],
+        opposition: { kind: 'force', who: ['search-lamp'], name: "THE AUDIT CUTTER" },
+        setback: { cue: 'lamp-comes-round', show: "The search lamp goes once round the roads and across the deck; both men stop dead in it and wait for it to pass." },
+        beats: [
+          { at: 0, cue: 'over-the-bow', name: "Alone. Bring nothing.", show: "Dusk on the cutter's deck. The search lamp is turned inboard on the bow, dazzling; Ren comes aft out of it with his brother a pace behind him. Kedge is a dark shore beyond the rail." },
+          { at: 5, cue: 'under-the-lamp', name: "Under the search lamp", show: "The lamp has begun to swing outboard. The first windows are lit along the shore." },
+          { at: 10, cue: 'past-the-mast', name: "Past the mast", show: "They are half way along the deck. The lamp's road of light lies out over the water now." },
+          { at: 15, cue: 'kedge-lights-its-lamps', name: "Kedge lights its lamps", show: "Most of the town's lamps are on. Nobody else is on deck." },
+          { at: 20, cue: 'nobody-paid-to-listen', name: "Nobody is paid to listen", show: "The lamp is trained out over the roads; the whole shore is lit. The two of them stand level, amidships, alone." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s4.b01', who: 'crowd', text: "Audit cutter in the roads! One boat coming in!" },
         { id: 'ch6.s4.b02', who: 'sable', text: "Alone, Ren. Bring nothing. I'll row." },
@@ -360,6 +444,21 @@ export const chapter6 = {
       hint: 'Open the fourth hearing: roll all three HATCH lanes',
       objective: { kind: 'all', ids: ['hatchL', 'hatchC', 'hatchR'] },
       reward: { points: 30000, trust: 15 },
+      // Not a fight. A Tribune may not speak to a motion; she may sit to hear, and the Compact opens its own meeting as her
+      // hearing, hatches off, all three. Tobb makes the points ("hear me first").
+      encounter: {
+        set: 'compact-hall', light: 'night', mode: 'talk',
+        party: ['tobb', 'hesper', 'ilse'],
+        opposition: { kind: 'force', who: ['hatch', 'hatch', 'hatch'], name: "THE FOURTH HEARING" },
+        extras: ['foss'],
+        setback: { cue: 'point-of-order', show: "The hall roars for its strike and four hundred lanterns are shaken at the table; the speakers give back a pace." },
+        beats: [
+          { at: 0, cue: 'she-may-always-sit', name: "She may always sit", show: "The same hall, the next night. Yesterday's three bars are still on the easel. Tobb stands forward to speak, Hesper and the Tribune behind him; a grey coat waits at the edge. The roof is shut." },
+          { at: 1, cue: 'first-hatch-off', name: "First hatch off", show: "A roof hatch is thrown back and the moon comes down in a shaft on the left of the floor." },
+          { at: 2, cue: 'second-hatch-off', name: "Second hatch off", show: "A second shaft, in the middle." },
+          { at: 3, cue: 'hearing-open', name: "The hearing is open", show: "Three shafts of moonlight stand in the head-house. The hall has gone quiet to hear." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s5.b01', who: 'ilse', text: "I may not speak to a motion. I may sit and hear." },
         { id: 'ch6.s5.b02', who: 'tobb', text: "Then hear me first. It is only a draft." },
@@ -435,6 +534,21 @@ export const chapter6 = {
       hint: 'Walk the line: ROADS, then GANGWAY, then the HOPPER',
       objective: { kind: 'sequence', ids: ['roadsOrbit', 'gangwayRamp', 'hopper'] },
       reward: { points: 35000, trust: 30 },
+      // Not a fight: no blades, no writs, and the Surety does not signal. The work is the docks turning out, a lantern each,
+      // while the Tribune walks. Ren is in the left file, one of forty, and is not seen until the cutscene finds him.
+      encounter: {
+        set: 'lantern-line', light: 'night', mode: 'walk',
+        party: ['ilse', 'foss'],
+        opposition: { kind: 'force', who: ['lantern-file'], name: "SIX HUNDRED PACES" },
+        extras: ['docker-lantern', 'docker-lantern'],
+        setback: { cue: 'escort-forms-up', show: "Halcyon's escort forms up at the head of the quay; the nearest lanterns waver and give a pace, and Ilse stops." },
+        beats: [
+          { at: 0, cue: 'six-hundred-paces', name: "Six hundred paces", show: "The open quay at night between dark warehouses, the great lamp white at its far end. Two dockers stand at the head of it with paper lanterns. Ilse starts across, the grey coat six paces behind her." },
+          { at: 1, cue: 'the-quay-is-ours', name: "The quay is ours tonight", show: "Lanterns come out of the warehouse doors: the first pairs take their places down both sides." },
+          { at: 2, cue: 'twenty-and-twenty', name: "Twenty and twenty", show: "Two files stand half way to the lamp-house, facing each other across the lane." },
+          { at: 3, cue: 'the-line-stands', name: "The line stands", show: "Two whole files of lanterns run the length of the quay. Ilse is at the mouth of the lane between them." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s6.b01', who: 'foss', text: "The escort will clear the quay, Tribune. For your safety." },
         { id: 'ch6.s6.b02', who: 'crowd', text: "Quay's ours tonight, miss. We'll stand." },
@@ -508,6 +622,20 @@ export const chapter6 = {
       hint: 'Cut the lamp with ash: sink the Plumb in the HOPPER twice',
       objective: { kind: 'count', ids: ['hopper'], n: 2 },
       reward: { points: 45000, trust: 35 },
+      // Not a fight. A shovel of ash at a time into a city's lamp, with sixty ships watching. The encounter takes the flame
+      // from white into yellow; Tobb's line in the cutscene (c04) sees it down to the quarter.
+      encounter: {
+        set: 'quarter-flame', light: 'interior', mode: 'work',
+        party: ['hesper', 'ilse', 'ren'],
+        opposition: { kind: 'force', who: ['great-lamp'], name: "KEDGE'S LAMP" },
+        extras: ['tobb'],
+        setback: { cue: 'too-much-ash', show: "Too much ash at once: a grey roll of smoke comes off the bowl and the flame gutters; all three step back from it." },
+        beats: [
+          { at: 0, cue: 'the-lamp-stands-white', name: "The lamp stands white", show: "The lamp room full of gold light: a white fire the height of a man in the great bowl, the rings of the engine turning round it. Hesper nearest the bowl, the Tribune and Ren behind her; Tobb at the edge with his watch." },
+          { at: 1, cue: 'ash-first', name: "Ash first, then salt", show: "A shovel of kelp-ash goes in; a grey puff over the bowl. The fire is shorter, and yellower." },
+          { at: 2, cue: 'its-dropping', name: "It's dropping", show: "A second shovel. The flame has sunk into yellow and the rings are slowing; the room is dimmer by half." },
+        ],
+      },
       briefing: [
         { id: 'ch6.s7.b01', who: 'hesper', text: "Ash first, then salt. Give me that shovel." },
         { id: 'ch6.s7.b02', who: 'tobb', text: "I'll time it. Nobody speak to me." },

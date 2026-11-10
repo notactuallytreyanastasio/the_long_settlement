@@ -29,9 +29,12 @@ import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { pickLight, sack, crate } from './kit.js';
 import { wall, wing, ceiling, doorway, hangingLamp, chair, stool } from './kit-b.js';
-import { TL, MARKS, ch5Materials, shell, norm, shaft, paving, vaultDoor, tubeWall, carrier, pigeonholes } from './kit-ch5.js';
+import { TL, MARKS, ch5Materials, shell, norm, shaft, paving, vaultDoor, tubeWall, carrier, pigeonholes, lightNames, ownLight, taskUnit } from './kit-ch5.js';
 
 const BW = 4.7, BACK = -4.7, FW = 7.2, WING_Z = 2.4, H = 5.8;
+
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { interior: 'night', predawn: 'night' };
 
 const LIGHTS = {
   night: {
@@ -72,7 +75,7 @@ const CAMERAS = {
 const bx = (w, h, d, x, y, z, c, rx = 0, ry = 0, rz = 0) => tint(place(box(w, h, d), x, y, z, rx, ry, rz), c);
 
 function build(engine = null, { light: lightName = 'night', low = false } = {}) {
-  const { name: light, L } = pickLight('clearing-house', LIGHTS, lightName);
+  const { name: light, L } = pickLight('clearing-house', LIGHTS, ownLight(LIGHTS, ALIAS, lightName));
   const M = ch5Materials(), r = rng(5555);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const WL = wing(-1, BW, BACK, FW, WING_Z), WR = wing(1, BW, BACK, FW, WING_Z);
@@ -185,15 +188,42 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     if (!low && lampShown > 0.5 && time > nextMote) { nextMote = time + 0.22; const a = rnd() * 6.283, rad = rnd() * 1.3; P[0] = LAMP[0] + Math.cos(a) * rad; P[1] = 1.1 + rnd() * 2.0; P[2] = LAMP[2] + Math.sin(a) * rad * 0.8; sprites.spawn({ kind: 'glow', pos: P, vel: MV, size: 0.05 + rnd() * 0.05, life: 4, color: '#ffd890', alpha: 0.8 }); }
   }
 
+  // ---- what the live stage asks for (kit-ch5 taskUnit)
+  //   'halcyon-lock'   ch5.s5: an iron-barred door, flat to the audience at stage left, with a brass lock plate and three
+  //                    tumblers on it. Each third of the objective turns one home (it lights); at 1 the door swings open.
+  //                    The room's lamp is kept low while they work (ch5.s5.c01 has it at 0.2).
+  // setback(): the lamp is held too high for a moment, and the room jumps out of the dark
+  let lockUnit = null;
+  function task(type) {
+    if (type !== 'halcyon-lock') return null;
+    if (lockUnit) return lockUnit;
+    const GX = -2.75, GZ = -0.55, GW = 1.3, GH = 2.25, bars = [];
+    for (let i = 0; i < 6; i++) bars.push(tint(place(cylinder(0.028, 0.028, GH - 0.14, 6), 0.1 + i * (GW - 0.2) / 5, GH / 2, 0), TL.iron));
+    for (const y of [0.1, GH - 0.06]) bars.push(bx(GW, 0.09, 0.07, GW / 2, y, 0, TL.iron));
+    bars.push(bx(0.34, 0.5, 0.09, GW - 0.2, 1.08, 0.03, TL.brassDark));
+    const frame = node('lock-frame', merge(bx(0.14, GH + 0.2, 0.16, -0.09, (GH + 0.2) / 2, 0, TL.wood), bx(0.14, GH + 0.2, 0.16, GW + 0.09, (GH + 0.2) / 2, 0, TL.wood), bx(GW + 0.32, 0.16, 0.18, GW / 2, GH + 0.2, 0, TL.wood)), M.prop, { pos: [GX, 0, GZ] }); frame.castShadow = false;
+    const leaf = node('lock-door', merge(bars), M.prop, { pos: [GX, 0, GZ] }); leaf.castShadow = false;
+    const dial = [0, 1, 2].map((k) => { const n = node('tumbler', merge(tint(place(cylinder(0.075, 0.075, 0.04, 10), 0, 0, 0, 90, 0, 0), TL.brass), bx(0.022, 0.07, 0.02, 0, 0.035, 0.025, TL.wine)), M.deco, { pos: [GW - 0.2, 1.25 - k * 0.17, 0.09] }); n.castShadow = false; leaf.add(n); return n; });
+    const glow = [0, 1, 2].map((k) => sprites.add({ kind: 'glow', pos: [GX + GW - 0.2, 1.25 - k * 0.17, GZ + 0.2], size: 0.5, color: '#ffd24a', alpha: 0 }));
+    scene.root.add(frame, leaf);
+    return (lockUnit = taskUnit([GX + GW - 0.2, 1.1, GZ + 0.15], [GX + GW + 0.25, 0.55], (v, time) => {
+      setLamp(0.2);
+      for (let k = 0; k < 3; k++) { const t = Math.max(0, Math.min(1, v * 3 - k)); dial[k].setRot(0, 0, t >= 1 ? 0 : 140 - 140 * t + Math.sin(time * 5 + k * 2) * 10 * (1 - t)); glow[k].alpha = t >= 1 ? 0.75 : 0.12 * t; glow[k].pos[0] = GX + (GW - 0.2) * Math.cos(open3 * 1.3); }
+      const want = v >= 0.999 ? 1 : 0; open3 += (want - open3) * 0.08; leaf.setRot(0, -75 * open3, 0);
+    }));
+  }
+  let open3 = 0;
+  const setback = () => { lampShown = 0.85; };
+
   return shell({
     id: 'clearing-house', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.5,
     marks: {
       ...MARKS, seat: { pos: SEAT, face: 0 }, carrier: REST, tube: H3, focus: LAMP,
       door: { pos: WR.at(DOOR.x, 0.9), face: WR.yaw }, dais: DAIS,
     },
-    extra: { setLamp, send, reset, cue },
+    extra: { setLamp, send, reset, cue, task, setback, passLamp: setback },
   });
 }
 
-export const clearingHouse = { id: 'clearing-house', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const clearingHouse = { id: 'clearing-house', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default clearingHouse;

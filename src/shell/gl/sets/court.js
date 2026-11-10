@@ -48,10 +48,10 @@ const LIGHTS = {
 };
 
 const CAMERAS = {
-  wide: { target: [-0.35, 2.1, -0.7], dist: 9.0, yaw: 17, pitch: 3, fov: 50, aspect: 0.46, shadowCenter: [0, 0, -1.6], shadowRadius: 8 },
+  wide: { target: [-0.35, 1.85, -0.7], dist: 9.0, yaw: 17, pitch: 3, fov: 50, aspect: 0.46, shadowCenter: [0, 0, -1.6], shadowRadius: 8 },
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -15, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 21, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
-  low: { target: [0.1, 2.3, -0.9], dist: 6.4, yaw: -6, pitch: -12, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 8 },
+  low: { target: [0.1, 1.95, -0.5], dist: 6.4, yaw: -6, pitch: -10, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 8 },
   stage: { target: [0, 1.25, 0.1], dist: 10.2, yaw: -10, pitch: 6, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -1], shadowRadius: 8, outline: 0.7 },
   landscape: { target: [0, 2.1, -1.4], dist: 10, yaw: 4, pitch: 5, fov: 40, aspect: 1.6, shadowCenter: [0, 0, -1.6], shadowRadius: 9.5 },
 };

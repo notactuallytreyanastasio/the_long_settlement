@@ -24,12 +24,13 @@
 //   outlineMinPx  0      skip the outline of anything whose bounding sphere is smaller than this on screen
 //   trim          true   static meshes sorted by trimStatic() draw only the triangles that can face the camera (colour
 //                 pass) or away from it (outline pass) while the camera is inside the box they were sorted for
+//   autoTrim      true   static meshes nobody sorted (a table, a set that did not call trimSet) are sorted on first draw
 //   batch         true   small blended decals (faces) that share a material are baked into one draw each frame
 //
 // A view may override per call: { shadow: 'off', shadowSize, maxLamps }.
 
 import { v3, m4, DEG, frustumPlanes, sphereInFrustum, maxScale } from './math.js';
-import { boundingSphere } from './mesh.js';
+import { boundingSphere, trimForView } from './mesh.js';
 import { createContext, createProgram, createGeometry, uploadInstances, createTexture, createShadowTarget, createColorTarget, copyShadow } from './gl.js';
 import * as S from './shaders.js';
 import { SPRITE_FLOATS } from './sprites.js';
@@ -38,9 +39,9 @@ const MAX_CAND = 32;
 
 /** The three tiers. `high` is what the slice was drawn with; `medium` is the phone default to start from. */
 export const QUALITY = {
-  high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0, trim: true, batch: true },
-  medium: { name: 'medium', dprCap: 2, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4, trim: true, batch: true },
-  low: { name: 'low', dprCap: 1.5, aa: 'none', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7, trim: true, batch: true },
+  high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0, trim: true, autoTrim: true, batch: true },
+  medium: { name: 'medium', dprCap: 2, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4, trim: true, autoTrim: true, batch: true },
+  low: { name: 'low', dprCap: 1.5, aa: 'none', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7, trim: true, autoTrim: true, batch: true },
 };
 const WATER_Q = { full: 0, cheap: 1, flat: 2 };
 
@@ -74,7 +75,7 @@ export function createRenderer(canvas, opts = {}) {
   const ctx = createContext(canvas, { ...opts, antialias: false, dprCap: Math.min(hardDpr, Q.dprCap) }); // antialiasing is ours, so it can change
   const gl = ctx.gl;
   const PASSES = ['shadow', 'opaque', 'outline', 'water', 'sky', 'blended', 'beams', 'sprites'];
-  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0, trimMiss: 0, batched: 0, pass: {}, figures: { draws: 0, tris: 0 } };
+  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0, trimMiss: 0, trimBuilt: 0, batched: 0, shadowKept: '', pass: {}, figures: { draws: 0, tris: 0 } };
   for (const k of PASSES) stats.pass[k] = { draws: 0, tris: 0 };
   let passNow = stats.pass.opaque, overdrawOnly = null;
   /** Every draw from here on is counted under this pass; a fill measurement of one pass masks the others' colour (they still write depth). */
@@ -218,6 +219,35 @@ export function createRenderer(canvas, opts = {}) {
     return Math.abs(x) < shadowR + sph[3] && Math.abs(y) < shadowR + sph[3];
   }
 
+  /**
+   * Is this static node's mesh sorted for where the camera is now (mesh.js trimForView)? A set sorts its own for its camera
+   * marks (scene.js trimSet). Anything else static, such as a table under a fixed camera, is sorted here the first time it
+   * is drawn, for a box around the camera, and again (at most AUTO_TRIES times, one mesh a render call) when the camera
+   * leaves that box; after that it is simply drawn whole whenever the camera is outside. A mesh that two nodes share, or
+   * whose node has moved, is never sorted.
+   */
+  const AUTO_TRIES = 5, autoBox = { min: [0, 0, 0], max: [0, 0, 0] };
+  let autoLeft = 0;
+  function trimmed(n) {
+    const mesh = n.mesh, e = frame.camera.position; let tr = mesh.trim;
+    if (tr && tr.world && !sameMat(tr.world, n.world)) { if (tr.auto) { mesh.trim = null; mesh._noTrim = true; } return false; }
+    if (tr && e[0] >= tr.min[0] && e[0] <= tr.max[0] && e[1] >= tr.min[1] && e[1] <= tr.max[1] && e[2] >= tr.min[2] && e[2] <= tr.max[2]) return true;
+    stats.trimMiss++;
+    if ((tr && !tr.auto) || mesh._noTrim || !Q.autoTrim || autoLeft <= 0) return false;
+    const mat = n.material, tries = tr ? tr.tries : 0;
+    if (tries >= AUTO_TRIES || mat.kind !== 'toon' || mat.doubleSided || mat.texMode === 'blend' || mesh.indices.length < 900 || mesh.bones) { if (!tr) mesh._noTrim = true; return false; }
+    autoLeft--;
+    // air around the camera: more the further it stands from what it looks at, and more each time it has had to grow
+    const pad = Math.max(0.5, v3.dist(e, frame.camera.target) * 0.06) * (1 + tries);
+    for (let k = 0; k < 3; k++) { autoBox.min[k] = Math.min(e[k] - pad, tr ? tr.min[k] : Infinity); autoBox.max[k] = Math.max(e[k] + pad, tr ? tr.max[k] : -Infinity); }
+    tr = trimForView(mesh, n.world, autoBox);
+    tr.world = new Float32Array(n.world); tr.auto = true; tr.tries = tries + 1;
+    const c = mesh._gpu;                                         // the order of the triangles changed: send the indices again
+    if (c && c.gen === ctx.generation) { gl.bindVertexArray(c.geo.vao); gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, c.geo.indexType === gl.UNSIGNED_SHORT ? new Uint16Array(mesh.indices) : mesh.indices); gl.bindVertexArray(null); }
+    stats.trimBuilt++;
+    return true;
+  }
+
   function collect(n) {
     if (!n.visible) return;
     stats.nodes++;
@@ -232,10 +262,7 @@ export function createRenderer(canvas, opts = {}) {
           // how big it is on screen, for the outline pass (0 = unknown: always outlined)
           n._px = bounded ? sph[3] / (Math.max(Math.hypot(sph[0] - frame.camera.position[0], sph[1] - frame.camera.position[1], sph[2] - frame.camera.position[2]), 1e-3) * frame.pxUnit) : 0;
           n._r = bounded ? sph[3] : Infinity;
-          // a static mesh sorted for a camera box draws only the triangles that can face the right way, while the camera is in the box
-          const tr = n.static && Q.trim ? n.mesh.trim : null;
-          n._trim = false;
-          if (tr && sameMat(tr.world, n.world)) { const e = frame.camera.position; if (e[0] >= tr.min[0] && e[0] <= tr.max[0] && e[1] >= tr.min[1] && e[1] <= tr.max[1] && e[2] >= tr.min[2] && e[2] <= tr.max[2]) n._trim = true; else stats.trimMiss++; }
+          n._trim = Q.trim && n.static && !n.instances && trimmed(n);
           if (mat.kind === 'beam') beams.push(n);
           else if (mat.texMode === 'blend') blended.push(n);
           else opaque.push(n);
@@ -337,7 +364,7 @@ export function createRenderer(canvas, opts = {}) {
     gl.bindVertexArray(geo.vao);
     let tris = inst ? geo.triangles * inst.count : geo.triangles;
     if (inst) gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count);
-    else if (part > 0 && n._trim) {
+    else if (part > 0 && n._trim && n.mesh.trim) {
       const r = part === 1 ? n.mesh.trim.view : n.mesh.trim.outline;
       tris = r[1] / 3;
       if (r[1] > 0) gl.drawElements(gl.TRIANGLES, r[1], geo.indexType, r[0] * (geo.indexType === gl.UNSIGNED_SHORT ? 2 : 4));
@@ -478,7 +505,7 @@ export function createRenderer(canvas, opts = {}) {
     }
     camera.update(W / H);
     for (let i = 0; i < PASSES.length; i++) { const ps = stats.pass[PASSES[i]]; ps.draws = 0; ps.tris = 0; }
-    stats.figures.draws = 0; stats.figures.tris = 0; stats.trimMiss = 0; stats.batched = 0;
+    stats.figures.draws = 0; stats.figures.tris = 0; stats.trimMiss = 0; stats.trimBuilt = 0; stats.batched = 0; stats.shadowKept = ''; autoLeft = 1;
     stats.drawCalls = 0; stats.triangles = 0; stats.nodes = 0; stats.culled = 0; stats.shadowDraws = 0; stats.shadowTriangles = 0; stats.shadowFresh = false; stats.width = W; stats.height = H;
     frame = frame || {}; frame.env = env; frame.camera = camera; frame.time = time; frame.shadowTexel = 0.01; frame.shadowSize = 16;
     frame.pxUnit = (2 * Math.tan(camera.fov * DEG / 2)) / H; // world units per device pixel at depth 1
@@ -527,6 +554,7 @@ export function createRenderer(canvas, opts = {}) {
           // what never moves: drawn once into a map of its own, copied in before the moving things each time
           if (!entry.kept) entry.kept = createShadowTarget(gl, entry.size);
           if (!entry.keptValid || entry.keptHash !== staticHash || !sameMat(entry.keptVP, shadowVP)) {
+            stats.shadowKept = !entry.keptValid ? 'new' : entry.keptHash !== staticHash ? 'set' : 'moved';   // why the kept map was drawn again
             gl.bindFramebuffer(gl.FRAMEBUFFER, entry.kept.fbo); gl.clear(gl.DEPTH_BUFFER_BIT);
             drawCasters(statics);
             entry.keptValid = true; entry.keptHash = staticHash; entry.keptVP.set(shadowVP);
@@ -719,7 +747,7 @@ export function createRenderer(canvas, opts = {}) {
     },
     resize: () => ctx.resize(),
     /** Call after editing a mesh's arrays in place, so it is uploaded (and measured) again. */
-    invalidate(mesh) { mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
+    invalidate(mesh) { mesh.trim = null; mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
     dispose() { const ext = gl.getExtension('WEBGL_lose_context'); if (ext) ext.loseContext(); },
   };
   return api;

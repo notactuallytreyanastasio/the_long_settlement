@@ -26,7 +26,7 @@ export const chapter8 = {
   // for it and how it is lit when a cinematic goes there. A scene's own cutscene keeps its encounter's light.
   // One build per set serves the whole chapter; where the script changes the hour or the state on a set, the
   // set does it itself on the line (set.cue(lineId)):
-  //   cresset-harbour  built at noon for ch8.pro.02; turns to night on ch8.s3.c15 and ch8.mepi.01 (ch8.pro.* turns it back)
+  //   cresset-harbour  built for night (ch8.s3.c15, ch8.mepi.01: its lit windows are baked); ch8.pro.* turns it to noon
   //   founders-lamp    burning for ch8.s3; capped and dark on ch8.m6.c20, wound up from c23, alight on c24
   //   quay-break       in flight on ch8.m6.c04; empty, under the relit lamp, on ch8.m6.c25
   //   mole-dark        the cap down on ch8.s5.c22, the sea standing by c25; boats out on ch8.s6.c20; the quay empty on ch8.m6.c14
@@ -39,7 +39,7 @@ export const chapter8 = {
   stage: {
     sets: {
       ledger: { set: 'ledger', light: 'interior' },
-      'cresset-harbour': { set: 'cresset-harbour', light: 'day' },
+      'cresset-harbour': { set: 'cresset-harbour', light: 'night' },
       cell: { set: 'cell', light: 'interior' },
       'full-bench': { set: 'full-bench', light: 'day' },
       'founders-lamp': { set: 'founders-lamp', light: 'night' },

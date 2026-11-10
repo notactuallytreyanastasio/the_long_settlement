@@ -26,10 +26,13 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { pickLight } from './kit.js';
 import { wall, windowFrame, lightPatch, skyline, ceiling, boards, wainscot, curtain, rug, chair, doorway, sconce, wing } from './kit-b.js';
-import { TL, MARKS, ch5Materials, shell, norm, rain, shaft, islandTable, longClock, pendulum } from './kit-ch5.js';
+import { TL, MARKS, ch5Materials, shell, norm, rain, shaft, islandTable, longClock, pendulum, lightNames, ownLight, taskUnit } from './kit-ch5.js';
 
 const BW = 4.3, BACK = -4.3, FW = 6.8, WING_Z = 2.4, H = 5.4;
 const DARK = [2, 7, 9, 13, 18, 24, 26, 31, 33, 36, 39, 15, 28, 5, 21, 11, 37, 3, 30, 17, 23, 8, 34, 12, 27, 6, 38, 19, 14, 29, 22, 4, 35, 10, 32, 16, 25, 20, 1, 0];
+
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { interior: 'rain', day: 'rain', dusk: 'rain' };
 
 const LIGHTS = {
   rain: {
@@ -72,7 +75,7 @@ const CAMERAS = {
 const bx = (w, h, d, x, y, z, c, rx = 0, ry = 0, rz = 0) => tint(place(box(w, h, d), x, y, z, rx, ry, rz), c);
 
 function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
-  const { name: light, L } = pickLight('corvane-study', LIGHTS, lightName);
+  const { name: light, L } = pickLight('corvane-study', LIGHTS, ownLight(LIGHTS, ALIAS, lightName));
   const M = ch5Materials(); M.shaft.beam.near = 0.15;   // rain light: a haze, not a spotlight
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const WL = wing(-1, BW, BACK, FW, WING_Z), WR = wing(1, BW, BACK, FW, WING_Z);
@@ -193,16 +196,28 @@ function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
     if (!low && time > nextDrop) { nextDrop = time + 0.5; const i = Math.floor(rnd() * 40); if (state[i] > 0.5) sprites.sparkle(spots[i], { count: 1, size: 0.14, spread: 0.1, life: 0.8, color: '#fff0b0' }); }
   }
 
+  // ---- what the live stage asks for (kit-ch5 taskUnit)
+  //   'brass-aurelle'   ch5.s2: the model as she comes into the room: every small lamp out at 0, and they come up island by
+  //                     island until twenty-nine burn at 1 (the eleven that stay dark are the room's default, as ch5.s2.c01 has it)
+  // setback(): a handful of the lamps gutter out and have to come back
+  // marks.seat: where the director stands Corvane while an encounter is played here (at his window, back to the room)
+  let modelUnit = null, gutter = 0;
+  function task(type) {
+    if (type !== 'brass-aurelle') return null;
+    return modelUnit || (modelUnit = taskUnit([MODEL[0], MODEL[1] + 0.25, MODEL[2] + 0.3], null, (v, time, dt) => { gutter = Math.max(0, gutter - (dt || 0) / 2.4); setDark(40 - Math.round(29 * v) + Math.round(7 * gutter * Math.min(1, v * 3))); }));
+  }
+  const setback = () => { gutter = 1; };
+
   return shell({
     id: 'corvane-study', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.5,
     motes: low ? null : { box: [WIN.x - 0.6, WIN.x + 2.6, 0.5, 3.6, BACK + 0.4, -0.4], every: 0.5, color: '#dfe8ff', size: 0.05, vel: [0.03, -0.02, 0.04], life: 6, alpha: 0.6 },
     marks: {
       ...MARKS, model: MODEL, focus: MODEL, lamps40: spots,
-      window: { pos: [WIN.x + 0.1, 0, BACK + 1.0], face: 180 }, guest: { pos: GUEST, face: 62 },
+      window: { pos: [WIN.x + 0.1, 0, BACK + 1.0], face: 180 }, guest: { pos: GUEST, face: 62 }, seat: { pos: [WIN.x - 0.55, 0, BACK + 1.25], face: 150 },
     },
-    extra: { setDark, snuff, cue, litCount: () => 40 - dark },
+    extra: { setDark, snuff, cue, task, setback, passLamp: setback, litCount: () => 40 - dark },
   });
 }
 
-export const corvaneStudy = { id: 'corvane-study', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const corvaneStudy = { id: 'corvane-study', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default corvaneStudy;

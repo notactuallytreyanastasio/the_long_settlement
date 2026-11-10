@@ -175,7 +175,7 @@ function build(engine = null, { light, low = false } = {}) {
     apply(v, fresh) { if (fresh) { setSeal(true); setBoard('odds'); climbed = true; chalked = false; ringed = 0; } setCrowd(0.2 + 0.8 * v); },
   });
   const chalkUnit = taskUnit({
-    pos: [BOARD[0], BOARD[1] + 0.7, BOARD[2] + 0.2], stand: null,
+    pos: [BOARD[0], BOARD[1] + 0.7, BOARD[2] + 0.2], stand: [Math.max(-1.6, Math.min(1.9, BOARD[0] - 0.9)), 0.12],   // the board is up by the doors: he works toward it from the step
     apply(v, fresh) {
       if (fresh) { setSeal(false); setCrowd(0.7); chalked = true; climbed = false; }
       if (v < 0.24) setBoard('odds'); else if (v < 0.49) setBoard('wiped'); else { setBoard('table'); tableNode.scale[1] = Math.max(0.05, Math.min(1, (v - 0.4) / 0.6)); }

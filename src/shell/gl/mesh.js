@@ -241,12 +241,32 @@ export function bounds(mesh) {
 
 // ------------------------------------------------------------------------------------ revolved shapes
 
+
+// ------------------------------------------------------------------------------------ level of detail
+
+let DETAIL = 1;
+/**
+ * Build something coarser: while fn runs, every round primitive below (lathe and all that is turned on it:
+ * sphere, cylinder, cone, capsule, limb, disc; torus, tube, roundedBox corners) is cut with `k` times the
+ * segments it was asked for. Counts that are already a shape and not a smoothness are left alone: six sides or
+ * fewer around (a four-sided "cylinder" is a pyramid roof), four rings or fewer. For a set built for a
+ * 220-pixel band, 0.7 takes a quarter to a third off its triangles. Returns what fn returns. Nests.
+ */
+export function withDetail(k, fn) {
+  const before = DETAIL; DETAIL = Math.min(before, k > 0 ? k : 1);
+  try { return fn(); } finally { DETAIL = before; }
+}
+export const detail = () => DETAIL;
+const lodSeg = (n) => (DETAIL >= 1 || n <= 6 ? n : Math.max(6, Math.round(n * DETAIL)));
+const lodRings = (n) => (DETAIL >= 1 || n <= 4 ? n : Math.max(4, Math.round(n * DETAIL)));
+
 /**
  * Revolve a 2D profile [[radius, y], ...] about the Y axis. List the profile from the bottom up for
  * an outward-facing surface (it is corrected if the result is inside out). A radius of 0 closes the
  * end. `crease` (degrees) decides which profile corners shade hard.
  */
 export function lathe(profile, seg = 20, { crease = 40 } = {}) {
+  seg = lodSeg(seg);
   const rings = profile.length, pos = [], uv = [], idx = [];
   let len = 0; const along = [0];
   for (let i = 1; i < rings; i++) { len += Math.hypot(profile[i][0] - profile[i - 1][0], profile[i][1] - profile[i - 1][1]); along.push(len); }
@@ -276,6 +296,7 @@ export function lathe(profile, seg = 20, { crease = 40 } = {}) {
 
 /** A sphere centred on the origin. */
 export function sphere(radius = 1, seg = 20, rings = 12) {
+  rings = lodRings(rings);
   const prof = [];
   for (let i = 0; i <= rings; i++) { const a = -Math.PI / 2 + (i / rings) * Math.PI; prof.push([i === 0 || i === rings ? 0 : Math.cos(a) * radius, Math.sin(a) * radius]); }
   return lathe(prof, seg, { crease: 180 });
@@ -336,6 +357,7 @@ export function capsule(radius = 0.5, height = 2, seg = 16, capRings = 5) {
 }
 /** A capsule whose bottom and top spheres differ: radius r0 at the bottom, r1 at the top. */
 export function taperedCapsule(r0, r1, height, seg = 16, capRings = 5) {
+  capRings = DETAIL < 1 && capRings > 3 ? Math.max(3, Math.round(capRings * DETAIL)) : capRings;
   const prof = [], y0 = r0, y1 = Math.max(height - r1, r0);
   for (let i = 0; i <= capRings; i++) { const a = -Math.PI / 2 + (i / capRings) * (Math.PI / 2); prof.push([i === 0 ? 0 : Math.cos(a) * r0, y0 + Math.sin(a) * r0]); }
   for (let i = 0; i <= capRings; i++) { const a = (i / capRings) * (Math.PI / 2); prof.push([i === capRings ? 0 : Math.cos(a) * r1, y1 + Math.sin(a) * r1]); }
@@ -351,6 +373,7 @@ export function limb(r0, r1, length, seg = 12, capRings = 4) {
 }
 
 export function torus(R = 1, r = 0.25, seg = 24, tubeSeg = 10) {
+  seg = lodSeg(seg); tubeSeg = lodRings(tubeSeg);
   const pos = [], uv = [], idx = [];
   for (let i = 0; i <= seg; i++) for (let j = 0; j <= tubeSeg; j++) {
     const a = (i / seg) * Math.PI * 2, b = (j / tubeSeg) * Math.PI * 2, d = R + Math.cos(b) * r;
@@ -368,6 +391,7 @@ export function box(w = 1, h = 1, d = 1) { return roundedBox(w, h, d, 0); }
 
 /** A box with rounded edges and corners, centred on the origin. `seg` is the steps per rounded corner. */
 export function roundedBox(w = 1, h = 1, d = 1, radius = 0.1, seg = 3) {
+  if (DETAIL < 1 && seg > 1) seg = Math.max(1, Math.round(seg * DETAIL));
   const hx = w / 2, hy = h / 2, hz = d / 2, r = Math.min(radius, hx, hy, hz);
   const coords = (half) => {
     if (r <= 0) return [-half, half];
@@ -533,6 +557,7 @@ export function curve(points, n = 16) {
  * cross-section axis is scaled by it).
  */
 export function tube(path, radius = 0.1, seg = 10, { caps = true, squash = 1, crease = 60 } = {}) {
+  seg = lodRings(seg);
   const n = path.length;
   const rad = (i) => (typeof radius === 'function' ? radius(i / (n - 1)) : Array.isArray(radius) ? radius[i] : radius);
   const pos = [], uv = [], idx = [];

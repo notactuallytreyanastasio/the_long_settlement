@@ -9,7 +9,13 @@
 //   const set = cressetHarbour.build(GL, { light: 'day' | 'night', low: false });
 //
 // Same shape as sets/lantern-stalls.js. Figures face +Z, cameras look toward -Z (the sea), the strip x -3.2..3.2, z 0..1.6 is clear.
-//   setLamp(0..1)   the Founders' Lamp (1 = burning white);  cue(lineId) is accepted and changes nothing (the light state is the build's)
+//   setLamp(0..1)   the Founders' Lamp (1 = burning white)
+//   setHour('day' | 'night')   turn the built set to the other hour: sky, sun, fog, water, the quay lamps, the gulls. The
+//                   chapter builds ONE cresset-harbour (a backdrop key maps to one set and light), so the hour is the line's:
+//   cue(lineId)     ch8.pro.* noon; ch8.s3.* and ch8.mepi.* night. What is baked at build stays as built (the town's lit
+//                   windows, the lamp-post glass, the paving), so build 'night' when both hours are wanted: lit windows at
+//                   noon pass, dark ones at night do not.
+// Light names: 'day' (the default), 'night'.
 // marks: a, b, c, two, party, opposition, plus focus (the lamp), wall { pos, face } (where she sits on the harbour wall),
 //        rail { pos, face }, stair { pos, face } (top of the customs stair), gangway { pos, face }
 
@@ -18,7 +24,7 @@ import { merge, tint, place, box, cylinder, sphere, tube, curve } from '../mesh.
 import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { PAL, anchorAt, crate, barrel, sack, bollard, ropeCoil, boat, lampPost, pole, bunting, steps, railing, ferry, gangway, gull } from './kit.js';
-import { C8, materials8, shell8, cams, marks8, pick8, norm8, dirFrom, harbourBase, bannerDrop } from './kit-ch8.js';
+import { C8, materials8, shell8, cams, marks8, pick8, norm8, dirFrom, harbourBase, bannerDrop, blendEnv8, noteLean8 } from './kit-ch8.js';
 
 const QUAY_Z = -5.6, WATER = -0.5;
 
@@ -55,8 +61,10 @@ const LIGHTS = {
 const CAMERAS = cams({ two: { yaw: 7 }, low: { target: [0.4, 1.9, 0.2], dist: 6.4, yaw: -10, pitch: -13, fov: 56 } });
 
 function build(engine = null, { light: lightName, low = false } = {}) {
-  const [light, L] = pick8('cresset-harbour', LIGHTS, lightName);
+  const [light, L0] = pick8('cresset-harbour', LIGHTS, lightName);
+  const L = { ...L0 };                 // this build's own copy: setHour() changes power, halo and white on it
   const M = materials8(), r = rng(8101), night = L.night;
+  const ENVS = { day: makeEnv(LIGHTS.day.preset, LIGHTS.day.env), night: makeEnv(LIGHTS.night.preset, LIGHTS.night.env) };
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env; env.sky.sunDir = norm8(env.sky.sunDir);
   const sprites = scene.sprites = createSprites(low ? 160 : 384);
   const base = harbourBase({ scene, M, low, seed: 5, quayZ: QUAY_Z, water: WATER, ground: L.ground, cobbles: L.cobbles, beam: L.beam, far: { lit: night ? 0.85 : 0.25, towerGlow: night ? 0.5 : 0 }, cloud: { ...L.cloud, count: 5 } });
@@ -100,7 +108,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   fg.add(node('fg1', crate({ s: 0.55, seed: 21 }), M.prop, { pos: [-1.6, 0, 2.95], rot: [0, 20, 0] }), node('fg2', bollard({ s: 1.2 }), M.prop, { pos: [1.75, 0, 2.9] }), node('fg3', ropeCoil({ r: 0.24 }), M.prop, { pos: [1.15, 0, 2.6] }));
   const foreground = mergeStatic(fg, 'foreground'); scene.root.add(foreground);
   const gulls = node('gulls', gull({}), M.speck); gulls.instances = makeInstances(5); gulls.instances.count = 5;
-  if (!night) scene.root.add(gulls);
+  scene.root.add(gulls); gulls.visible = !night;
   const actors = group('actors'); scene.root.add(actors);
 
   // ---- lamps: the Founders' Lamp cannot reach as a point light from fifty metres, so its white is a lamp of its own, high on the seaward right
@@ -112,8 +120,24 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     { name: 'ferry', pos: [gate[0], 1.6, QUAY_Z + 0.8], color: '#ffb860', radius: 4.5, base: 0.8 },
   ];
   const glows = postLamps.map((p, i) => ({ sprite: sprites.add({ kind: 'glow', pos: p, size: 1.9, color: '#ffb450', alpha: 0 }), base: 0.55, lamp: i + 1 }));
-  glows.push({ sprite: sprites.add({ kind: 'glow', pos: laneLamp, size: 2.6, color: '#ffe9a0', alpha: 0 }), base: 0.5, fixed: night });
-  if (night && !low) A.windows.slice(0, 18).forEach((p) => glows.push({ sprite: sprites.add({ kind: 'glow', pos: p, size: 3.0, color: '#ffc060', alpha: 0 }), base: 0.4, fixed: true }));
+  const ferryGlow = { sprite: sprites.add({ kind: 'glow', pos: laneLamp, size: 2.6, color: '#ffe9a0', alpha: 0 }), base: 0.5, fixed: night };
+  glows.push(ferryGlow);
+  const winGlows = low ? [] : A.windows.slice(0, 18).map((p) => ({ sprite: sprites.add({ kind: 'glow', pos: p, size: 3.0, color: '#ffc060', alpha: 0 }), base: night ? 0.4 : 0, fixed: true }));
+  for (const g of winGlows) glows.push(g);
+  let hour = light;
+  /** Turn the set to the other hour (see the header for what does not turn). Immediate: the script only does it under a cut. */
+  function setHour(name) {
+    if (name !== 'day' && name !== 'night') throw new Error(`cresset-harbour: setHour("${name}"): 'day' or 'night'`);
+    if (name === hour) return;
+    hour = name; const H = LIGHTS[name], isNight = name === 'night';
+    blendEnv8(env, ENVS[name], ENVS[name], 0); env.sky.sunDir = norm8(env.sky.sunDir);
+    L.power = H.power; L.halo = H.halo; L.white = H.white; lamps[0].base = H.white;
+    ferryGlow.fixed = isNight; for (const g of winGlows) g.base = isNight ? 0.4 : 0;
+    gulls.visible = !isNight;
+    const ct = base.clouds.node.tint, same = isNight === night;        // the painted clouds keep their built colour: tint them toward the other hour's
+    ct[0] = same ? 1 : isNight ? 0.5 : 1.25; ct[1] = same ? 1 : isNight ? 0.6 : 1.2; ct[2] = same ? 1 : isNight ? 0.95 : 1.05;
+  }
+  const cue = (id) => { noteLean8(id); if (/^ch8\.pro\./.test(id)) { setHour('day'); return true; } if (/^ch8\.(s3|mepi)\./.test(id)) { setHour('night'); return true; } return false; };
   let lampGoal = 1;
   const setLamp = (v) => { lampGoal = Math.max(0, Math.min(1, v)); };
   const P = [0, 0, 0], Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), rnd = rng(5);
@@ -121,7 +145,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   function tick(time, dt, pw, live) {
     base.lamp.set(lampGoal * L.halo); base.lamp.update(time); lamps[0].k = lampGoal; base.clouds.update(time);
     if (cutter) { cutter.position[1] = CUTTER[1] + Math.sin(time * 1.3) * 0.04; cutter.setRot(Math.sin(time * 1.1) * 2.5, 80 + Math.sin(time * 0.3) * 3, Math.sin(time * 1.6 + 1) * 4); }
-    if (!night) {
+    if (gulls.visible) {
       for (let i = 0; i < 5; i++) {
         const a = time * (0.22 + i * 0.03) * (i % 2 ? 1 : -1) + i * 1.9, rad = 7 + i * 2.2;
         P[0] = -4 + i * 3.5 + Math.cos(a) * rad; P[1] = 5 + i * 1.3 + Math.sin(time * 0.5 + i) * 0.8; P[2] = -24 - i * 5 + Math.sin(a) * rad * 0.6;
@@ -141,7 +165,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     id: 'cresset-harbour', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     motes: low ? null : { box: [-4, 4, 0.4, 3.4, -4, 1.5], every: 0.4, color: night ? '#dfeaff' : '#ffffff', size: 0.07, vel: [0.12, 0.08, 0.03], life: 4.5, alpha: night ? 0.8 : 0.5 },
     marks: { ...marks8(), focus: A.lamp, wall: { pos: [WALL[0] + 0.3, 0.62, WALL[2]], face: 24 }, rail: { pos: [1.2, 0, RAIL_Z + 0.5], face: 180 }, stair: { pos: [STAIR_X, 0, QUAY_Z + 0.7], face: 0 }, gangway: { pos: [gate[0], 0, QUAY_Z + 1.0], face: 0 } },
-    extra: { setLamp },
+    extra: { setLamp, setHour, cue },
   });
 }
 

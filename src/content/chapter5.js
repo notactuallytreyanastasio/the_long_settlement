@@ -14,6 +14,25 @@ export const chapter5 = {
   riggedSpin: null,
   music: { play: 'exchange', cine: 'tense' },
 
+  // The 3D stage. sets: the set and light for every backdrop key the lines below use (a scene's own cutscene keeps the
+  // light of its encounter: the floor by day in scene 1 and after the bell in scene 3, the steps by morning in scene 6
+  // and at dusk in scene 7). The people who gather behind the party are Tallis depositors.
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      'under-lane': { set: 'under-lane', light: 'predawn' },          // ch5.pro.02: "before dawn"
+      'exchange-floor': { set: 'exchange-floor', light: 'day' },
+      'corvane-study': { set: 'corvane-study', light: 'night' },      // the epilogue; scene 2 is its own encounter's rain light
+      'commons-queue': { set: 'commons-queue', light: 'dawn' },
+      'clearing-house': { set: 'clearing-house', light: 'night' },
+      'exchange-steps': { set: 'exchange-steps', light: 'night' },    // ch5.epi.01: "Night over Tallis"
+      cell: { set: 'cell', light: 'interior' },
+      black: { set: 'black', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'townswoman',
+  },
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch5.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
@@ -66,6 +85,19 @@ export const chapter5 = {
       hint: 'Open the hearing: roll all three BELL lanes',
       objective: { kind: 'all', ids: ['bellL', 'bellC', 'bellR'] },
       reward: { points: 15000 },
+      encounter: {
+        set: 'exchange-floor', light: 'day', mode: 'talk',
+        party: ['ilse', 'ren', 'tobb'],
+        opposition: { kind: 'force', who: ['price-board'], name: 'THE FLOOR' },
+        extras: ['clerk', 'clerk'],
+        setback: { cue: 'floor-roars', show: 'Both pits roar at once and the lapse bar jumps on the board; Ilse loses the room and the three are put back a step.' },
+        beats: [
+          { at: 0, cue: 'bell-rung', name: 'The floor is open', show: 'The trading floor at full cry: both pits packed, clerks on the gallery, slips falling. Ilse stands between the pits with Ren and Tobb behind her; two floor clerks at the right take no notice. On the board the lapse bar is short and green.' },
+          { at: 1, cue: 'between-the-pits', name: 'A hearing in a marketplace', show: 'Ilse is speaking, one hand up. The lapse bar has stepped along the board.' },
+          { at: 2, cue: 'board-moves', name: 'Watch the board', show: 'The bar steps again as she speaks. The pits are a little quieter.' },
+          { at: 3, cue: 'hearing-open', name: 'Open, and recorded', show: 'The floor has half turned to listen and has not stopped trading. The bar stands at thirty-one.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s1.b01', who: 'crowd', text: "Bell! Bell! The floor is open!" },
         { id: 'ch5.s1.b02', who: 'ilse', text: "A hearing in a marketplace. Very well." },
@@ -135,6 +167,18 @@ export const chapter5 = {
       hint: 'Answer the summons: sink the Plumb in the STRONGROOM twice',
       objective: { kind: 'count', ids: ['strongroom'], n: 2 },
       reward: { points: 20000 },
+      encounter: {
+        set: 'corvane-study', light: 'interior', mode: 'walk',
+        party: ['ilse'],
+        opposition: { kind: 'force', who: ['brass-aurelle'], name: 'AURELLE IN BRASS' },
+        extras: ['corvane'],
+        setback: { cue: 'lamps-gutter', show: 'A handful of the small lamps on the model gutter out together; Ilse stops where she is until they come back.' },
+        beats: [
+          { at: 0, cue: 'alone-he-asks', name: 'Alone, he asks', show: 'The Chancellor\'s room in the rain. He stands at the window with his back to the door. On the table the brass model of Aurelle is unlit. Ilse has just come in, stage left, alone.' },
+          { at: 1, cue: 'count-the-doors', name: 'One window, one table', show: 'She has crossed half the room. The lamps on the model are coming up island by island: about fifteen burn.' },
+          { at: 2, cue: 'twenty-nine', name: 'Twenty-nine lit', show: 'She stands at the table. Twenty-nine small lamps burn on the model and eleven do not; the room is lit by it.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s2.b01', who: 'crowd', text: "The Chancellor's carriage, Tribune. Alone, he asks." },
         { id: 'ch5.s2.b02', who: 'ren', text: "I'll be at the gate. Count the doors." },
@@ -212,6 +256,20 @@ export const chapter5 = {
       hint: 'Trace the sellers: 20 hits on the PIT bumpers',
       objective: { kind: 'count', ids: ['pit1', 'pit2', 'pit3'], n: 20 },
       reward: { points: 20000 },
+      encounter: {
+        set: 'exchange-floor', light: 'dusk', mode: 'work',
+        party: ['ren'],
+        opposition: { kind: 'force', who: ['sell-slips'], name: 'NINE SELLERS' },
+        extras: ['sable'],
+        setback: { cue: 'draught-takes-two', show: 'A draught from the east door takes two slips off the cord; Ren steps back and has to find them again.' },
+        beats: [
+          { at: 0, cue: 'slips-in-drifts', name: 'After the closing bell', show: 'The floor after the bell: pits empty, the day\'s slips in drifts, the lamps lit. Ren reads slips beside a cord strung between two posts; nothing is pegged on it yet. Sable stands off to the right, behind him.' },
+          { at: 5, cue: 'two-names', name: 'The same hand twice', show: 'Two sell slips hang on the cord.' },
+          { at: 10, cue: 'four-names', name: 'Marks nobody holds', show: 'Four or five slips on the cord. Ren has moved along it.' },
+          { at: 15, cue: 'seven-names', name: 'For delivery in five days', show: 'Seven slips, most of the cord.' },
+          { at: 20, cue: 'nine-sellers', name: 'Nine. The same nine', show: 'Nine slips hang in a row from post to post.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s3.b01', who: 'sable', text: "Don't turn round, Ren. Keep reading the slips." },
         { id: 'ch5.s3.b02', who: 'ren', text: "Somebody is selling marks they don't hold." },
@@ -278,6 +336,19 @@ export const chapter5 = {
       hint: 'Work the line at Ropewalk: hit all three QUEUE targets',
       objective: { kind: 'all', ids: ['queueA', 'queueB', 'queueC'] },
       reward: { points: 25000, trust: 35 },
+      encounter: {
+        set: 'commons-queue', light: 'dawn', mode: 'talk',
+        party: ['ilse', 'tobb'],
+        opposition: { kind: 'force', who: ['ropewalk-line'], name: 'THE RUN ON ROPEWALK' },
+        extras: ['townsman', 'fishwife', 'townswoman'],
+        setback: { cue: 'open-up', show: 'Somebody at the door starts shouting again and the front of the line shoves; Ilse and Tobb are put back a step.' },
+        beats: [
+          { at: 0, cue: 'since-midnight', name: 'Since midnight', show: 'Ropewalk at first light. The savings hall\'s door is lit and a third of a line stands at it, shouting. Ilse and Tobb face three depositors at the right; the ledger table stands in the street behind them.' },
+          { at: 1, cue: 'word-is-out', name: 'Word is out', show: 'The line has grown back to the corner. It is quieter near the front.' },
+          { at: 2, cue: 'three-hundred', name: 'Three hundred', show: 'The line runs most of the way down the street to the harbour.' },
+          { at: 3, cue: 'nobody-talking', name: 'Not one of them talking', show: 'The whole street is a line and nobody in it is talking. They are all looking at the Tribune.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s4.b01', who: 'crowd', text: "They're queueing at Ropewalk! Since midnight!" },
         { id: 'ch5.s4.b02', who: 'ilse', text: "No promises. Bring the ledger outside." },
@@ -347,6 +418,18 @@ export const chapter5 = {
       hint: 'Break in with Sable: 3 shots round the CLEARING orbit',
       objective: { kind: 'count', ids: ['clearingOrbit'], n: 3 },
       reward: { points: 25000 },
+      encounter: {
+        set: 'clearing-house', light: 'night', mode: 'stealth',
+        party: ['ren', 'sable'],
+        opposition: { kind: 'force', who: ['halcyon-lock'], name: 'HALCYON PATTERN' },
+        setback: { cue: 'lamp-too-high', show: 'The lamp is held too high and the whole room jumps out of the dark for a moment; both brothers freeze.' },
+        beats: [
+          { at: 0, cue: 'coal-chute', name: 'By the coal chute', show: 'The clearing house before light, its one lamp turned right down. An iron-barred door at stage left with a brass lock plate; Ren is low at the lock and Sable behind him.' },
+          { at: 1, cue: 'tumbler-one', name: 'One', show: 'The first tumbler on the plate has turned home and shines.' },
+          { at: 2, cue: 'tumbler-two', name: 'Two. Wait for it', show: 'Two tumblers home.' },
+          { at: 3, cue: 'tumbler-three', name: 'Now', show: 'The third turns and the barred door swings open.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s5.b01', who: 'sable', text: "Coal chute. You first. I have the lamp." },
         { id: 'ch5.s5.b02', who: 'ren', text: "You hold it too high. You always did." },
@@ -419,6 +502,19 @@ export const chapter5 = {
       hint: 'Hold the steps: shoot the STEPS ramp 3 times',
       objective: { kind: 'count', ids: ['stepsRamp'], n: 3 },
       reward: { points: 30000, trust: 15 },
+      encounter: {
+        set: 'exchange-steps', light: 'day', mode: 'talk',
+        party: ['ilse', 'ren', 'tobb'],
+        opposition: { kind: 'force', who: ['the-run'], name: 'THE RUN' },
+        extras: ['townsman', 'townswoman'],
+        setback: { cue: 'street-surges', show: 'The street surges at the foot of the steps and the noise comes up over the rail; the three are put back toward the columns.' },
+        beats: [
+          { at: 0, cue: 'sheet-is-open', name: 'The sheet is open', show: 'The porch of the Exchange, morning. Below the rail the square and the street are packed and heaving. Ilse stands forward with Ren and Tobb behind her; two citizens have come up onto the porch at the right.' },
+          { at: 1, cue: 'go-up', name: 'Go up', show: 'The bell swings. The front of the square has stopped shoving to look up.' },
+          { at: 2, cue: 'read-it-properly', name: 'Read out properly', show: 'The bell swings again. Half the square is standing still.' },
+          { at: 3, cue: 'steps-held', name: 'The steps are held', show: 'A third bell. The crowd is all still there, and watching her feet, not each other\'s.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s6.b01', who: 'crowd', text: "The sheet's open! The salt is gone! Sell!" },
         { id: 'ch5.s6.b02', who: 'ilse', text: "Then I will read it out properly." },
@@ -486,6 +582,19 @@ export const chapter5 = {
       hint: 'Put it on the record: light M-A-R-K',
       objective: { kind: 'all', ids: ['noteM', 'noteA', 'noteR', 'noteK'] },
       reward: { points: 40000 },
+      encounter: {
+        set: 'exchange-steps', light: 'dusk', mode: 'talk',
+        party: ['ren', 'ilse'],
+        opposition: { kind: 'force', who: ['record-lamps'], name: 'SCHEDULE ONE' },
+        setback: { cue: 'lamps-gutter', show: 'The porch lanterns gutter together and Ren and Ilse are put back a step.' },
+        beats: [
+          { at: 0, cue: 'line-opens', name: 'The Line opens', show: 'The same porch at dusk, the square nearly empty, the porch lanterns unlit. Ren stands forward, listening, with Ilse a pace behind him.' },
+          { at: 1, cue: 'lamp-m', name: 'M', show: 'The first porch lantern comes on, over the middle bay.' },
+          { at: 2, cue: 'lamp-a', name: 'A', show: 'The second, across the bay from it.' },
+          { at: 3, cue: 'lamp-r', name: 'R', show: 'A third, at the left end of the porch.' },
+          { at: 4, cue: 'lamp-k', name: 'K. On the record', show: 'All four lanterns burn and the porch is warm against the dusk.' },
+        ],
+      },
       briefing: [
         { id: 'ch5.s7.b01', who: 'thorne', fx: 'radio', text: "Vasker. This is a relay. Listen carefully." },
         { id: 'ch5.s7.b02', who: 'ren', text: "The Line. It's open again." },

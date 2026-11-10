@@ -622,6 +622,13 @@ export const EXTRAS = {
     }
     if (s.rosette !== false) { const x = sx * 0.4 * d.shoulderX, y = d.shoulderY - 0.05; b.parts.chest.push(setOutline(tint(place(cylinder(0.026, 0.026, 0.012, b.S(10), { crease: 40 }), x, y, b.torsoZ(x, y) + 0.008, 84, 0, 0), s.rosette || '#fff6dc'), 0.7)); }
   },
+  /** Audit irons: a heavy band on each wrist (the chain between them is the 'shackle' prop, which hangs from one hand): { color }. */
+  irons(b, s) {
+    const d = b.dim, col = s.color || '#8d949e', r = 0.05 * (b.dim.rx / 0.132);
+    for (const side of ['L', 'R']) b.parts['fore' + side].push(merge(
+      tint(place(cylinder(r * 1.3, r * 1.3, 0.04, b.S(12), { crease: 50 }), 0, -d.fore - 0.02, 0), col),
+      setOutline(tint(place(sphere(0.014, 5, 3), 0, -d.fore, r * 1.3), mixc(col, '#1a1040', 0.4)), 0)));
+  },
   /** A hood thrown back: a roll of cloth round the neck and its point hanging between the shoulders: { color, lining }. */
   cowl(b, s) {
     const d = b.dim, col = s.color || '#6a5638', y = d.neckY - 0.012;
@@ -698,6 +705,12 @@ export const PROPS = {
     const m = merge(tint(roundedBox(0.17, 0.22, 0.016, 0.006, 1), s.frame || '#a8743a'), tint(place(roundedBox(0.138, 0.188, 0.008, 0.003, 1), 0, 0, 0.007), s.color || '#2c3440'),
       setOutline(tint(place(roundedBox(0.09, 0.01, 0.004, 0.002, 1), -0.01, 0.045, 0.012), '#f4f0e6'), 0), setOutline(tint(place(roundedBox(0.06, 0.01, 0.004, 0.002, 1), -0.025, 0.01, 0.012), '#f4f0e6'), 0), setOutline(tint(place(roundedBox(0.1, 0.01, 0.004, 0.002, 1), 0, -0.03, 0.012), '#f4f0e6'), 0));
     return { mesh: place(m, 0.02, -0.07, 0.06, -12, -18, 4) };
+  },
+  /** The chain of a pair of irons, hanging from the hand that carries its slack: { color, links }. */
+  shackle(s, S) {
+    const col = s.color || '#8d949e', parts = [];
+    for (let i = 0; i < (s.links || 4); i++) parts.push(tint(place(torus(0.02, 0.0065, 7, 4), 0, -0.03 - i * 0.034, 0, 90, i % 2 ? 90 : 0, 0), i % 2 ? mixc(col, '#1a1040', 0.25) : col));
+    return { mesh: merge(parts), hang: true };
   },
   /** An oar, carried upright (it stays upright whatever the hand does): { color, blade, length }. */
   oar(s, S) {
@@ -2170,6 +2183,26 @@ export const CAST = {
     gestures: ['talkPoint', 'talkSmall'], anim: { gesture: 0.8 }, idle: { speed: 0.75, sway: 0.4 },
   },
 
+  // A Halcyon escort: one of the Surety's eleven. Foss's grey and brass on somebody larger, a grey kepi, a writ ready.
+  escort: {
+    id: 'escort', seed: 44, skin: '#e2b894', rank: { uniform: true },
+    alts: [{ pieces: [{ kind: 'cap', front: 0.5, side: -0.1, back: -0.56 }, { kind: 'fringe', n: 4, from: -40, to: 40, top: 30, tip: 15, jag: 2, part: 0, gather: 0.6, r: 1.07 }, { kind: 'kepi', color: '#8794a8', band: '#d9b04e', peak: '#2a2c3a', tall: 0.8 }], face: { set: 'lash' }, build: { width: 0.96, height: 0.97 } }],
+    build: { height: 1.05, legs: 1.14, torso: 1.08, head: 0.94, width: 1.12, hands: 1.1 },
+    hair: { color: '#3d2c33', brow: '#2c2026', pieces: [{ kind: 'cap', front: 0.48, side: 0.0, back: -0.5 }, { kind: 'kepi', color: '#8794a8', band: '#d9b04e', peak: '#2a2c3a', tall: 0.8 }] },
+    face: { set: 'sharp', iris: '#5a6a3a', eyeScale: 0.82, eyePitch: -7, brow: { w: 0.022, len: 24, at: [24, 11.5], tilt: 4 }, marks: { blush: 0.25 }, mouths: { neutral: 'flat' } },
+    costume: {
+      top: { color: '#8794a8', hem: -0.1, flare: 1.16, trim: '#d9b04e', placket: '#6a768a', lining: '#3a4252' }, sleeves: { color: '#8794a8', cuff: '#d9b04e', flare: 1.08 },
+      legs: { color: '#4a5266' }, shoes: { color: '#2a2c3a', sole: '#d9b04e', tall: true }, collar: { kind: 'high', color: '#6a768a' }, belt: { color: '#2a2c3a', buckle: '#d9b04e' }, buttons: { color: '#d9b04e', count: 4 },
+      extras: [{ kind: 'epaulettes', color: '#d9b04e' }],
+    },
+    props: [{ kind: 'writ', hand: 'L' }], handed: 'L',
+    poses: {
+      stand: { hips: { r: [0, -6, 0] }, chest: [-4, 4, 0], head: [4, 6, 0], legL: [0, 4, 8], legR: [0, -4, -8], armR: [22, 0, -6], foreR: [12, 0, 62], armL: [-22, 0, 10], foreL: [-84, -10, 0] },
+      signature: { chest: [8, -10, 0], head: [-6, 8, 6], armL: [-78, 0, 4], foreL: [-16, 0, 0] },
+    },
+    gestures: ['talkSmall', 'talkPoint'], anim: { gesture: 0.7 }, idle: { speed: 0.7, sway: 0.4 },
+  },
+
   // A rower of the Kedge Compact: a hooped jersey, bare arms, a red band round the brow, an oar taller than they are.
   rower: {
     id: 'rower', seed: 39, skin: '#c98e6e', rank: { uniform: true, beards: true },
@@ -2286,6 +2319,15 @@ CAST['corvane-plain'] = reworn(CAST.corvane, 'corvane-plain', (d) => { strip(d, 
 // Sable without the Audit's pin; Maravel off the bench (the cell, the dock, the quay): no gavel, no bands
 CAST['sable-plain'] = reworn(CAST.sable, 'sable-plain', (d) => { strip(d, 'brooch'); d.costume.collar = { kind: 'turned', color: '#22242e' }; });
 CAST['maravel-plain'] = reworn(CAST.maravel, 'maravel-plain', (d) => { strip(d, 'tabs'); d.props = []; d.costume.collar = { kind: 'scarf', color: '#8a86a0' }; d.costume.top.trim = '#34304c'; d.costume.sleeves.cuff = '#4a4666'; });
+// In Audit irons (chapter 7): wrists together in front, the slack of the chain in the right hand
+const inIrons = (base, stand) => reworn(base, base.id + '-irons', (d) => {
+  strip(d, 'earpiece', 'epaulettes'); d.costume.extras.push({ kind: 'irons' }); d.props = [{ kind: 'shackle', hand: 'R' }];
+  d.poses = { ...base.poses, stand: { ...base.poses.stand, ...stand }, signature: { chest: [4, 0, 0], head: [-10, 0, 0], armL: [-58, 0, 12], foreL: [-70, 0, -40], armR: [-58, 0, -12], foreR: [-70, 0, 40] } };
+  d.gestures = ['talkSmall', 'talkChin'];
+});
+CAST['ren-irons'] = inIrons(CAST['ren-volunteer'], { chest: [2, 4, -2], head: [9, 8, 4], armL: [-16, 0, 10], foreL: [-58, 0, -46], armR: [-16, 0, -10], foreR: [-58, 0, 46], handR: [0, 0, 0] });
+CAST['ren-irons'].id = 'ren-irons';
+CAST['thorne-irons'] = inIrons(CAST.thorne, { armL: [-14, 0, 8], foreL: [-56, 0, -44], armR: [-14, 0, -8], foreR: [-56, 0, 44] });
 // Ilse as Tribune of the Lot (chapter 6 on): the same clerk with the office's sash across her
 CAST['ilse-tribune'] = reworn(CAST.ilse, 'ilse-tribune', (d) => { strip(d, 'chain'); d.costume.extras.push({ kind: 'sash', color: '#7a3f8a', rosette: '#ffcf3f', from: 'R' }); });
 // The last page: the Ledger with the hood down. Ilse at seventy: the braid gone white with the pen still through it,

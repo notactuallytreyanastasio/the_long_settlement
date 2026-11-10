@@ -564,3 +564,22 @@ export function shaft({ w = 1.4, h = 2.4, dir = [0.3, -1, 1], len = 5, cards = 3
   }
   return setOutline(tint(merge(parts), color), 0);
 }
+
+// ------------------------------------------------------------------------------------ what the live stage asks of a set
+
+/**
+ * The core names an encounter may light a set by are dusk, night, predawn, dawn, day, interior (core/stage.js LIGHTS),
+ * and app.js gives a set its FIRST light for any name it does not list. A set whose own lights are called otherwise
+ * lists the core names it answers in an ALIAS { coreName: ownName }:
+ *   export const x = { id, lights: lightNames(LIGHTS, ALIAS), ... };     and in build:  pickLight(id, LIGHTS, ownLight(LIGHTS, ALIAS, name))
+ */
+export const lightNames = (LIGHTS, ALIAS) => [...Object.keys(LIGHTS), ...Object.keys(ALIAS).filter((k) => !LIGHTS[k])];
+export const ownLight = (LIGHTS, ALIAS, name) => (name != null && !LIGHTS[name] && ALIAS[name] ? ALIAS[name] : name);
+
+/**
+ * One thing a 'force' encounter is about, in the shape the director's set.task() wants (stage.js):
+ *   pos     where energy from the table lands and the party looks;  stand [x, z] where somebody works on it, or null
+ *   apply(v, time, dt)   v 0..1 how done it is, eased by the director, called every frame of the encounter
+ * This is how a set follows the objective: apply() drives the set's own hooks (crowd, mood, lamps, ...).
+ */
+export const taskUnit = (pos, stand, apply) => ({ pos, stand, glows: [], set: apply });

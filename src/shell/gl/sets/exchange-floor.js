@@ -21,15 +21,18 @@
 
 import { m4, quat, rng, DEG } from '../math.js';
 import { merge, tint, place, box, cylinder, sphere, ellipsoid, setGlow, setOutline, extrude } from '../mesh.js';
-import { node, group, makeEnv, createScene, mergeStatic, material as GLmaterial } from '../scene.js';
+import { node, group, makeEnv, createScene, mergeStatic, makeInstances, material as GLmaterial } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { pickLight, crate } from './kit.js';
 import { wall, windowFrame, lightPatch, wing, ceiling, stool } from './kit-b.js';
-import { TL, MARKS, ch5Materials, shell, norm, throng, papers, shaft, fatColumn, lantern, ironRail, paving, priceBoard, pit, standard } from './kit-ch5.js';
+import { TL, MARKS, ch5Materials, shell, norm, throng, papers, shaft, fatColumn, lantern, ironRail, paving, priceBoard, pit, standard, lightNames, ownLight, taskUnit } from './kit-ch5.js';
 
 const BW = 6.6, BACK = -6.6, FW = 9.4, WING_Z = 2.6, H = 8.2, GAL_Y = 2.05, GAL_D = 1.15;
 const PITS = [{ x: -3.5, z: -3.25, color: '#ff7a5a', floor: TL.wine, name: 'salt' }, { x: 3.5, z: -3.25, color: TL.teal, floor: TL.plum, name: 'bond' }];
 const PIT_R = 1.95;
+
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { dusk: 'evening', night: 'evening', interior: 'day' };
 
 const LIGHTS = {
   day: {
@@ -74,7 +77,7 @@ const CAMERAS = {
 const bx = (w, h, d, x, y, z, c, rx = 0, ry = 0, rz = 0) => tint(place(box(w, h, d), x, y, z, rx, ry, rz), c);
 
 function build(engine = null, { light: lightName = 'day', low = false } = {}) {
-  const { name: light, L } = pickLight('exchange-floor', LIGHTS, lightName);
+  const { name: light, L } = pickLight('exchange-floor', LIGHTS, ownLight(LIGHTS, ALIAS, lightName));
   const M = ch5Materials(), r = rng(5252);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const WL = wing(-1, BW, BACK, FW, WING_Z), WR = wing(1, BW, BACK, FW, WING_Z);
@@ -189,6 +192,34 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     if (Math.abs(shown - before) > 0.0015 && time > nextSpark) { nextSpark = time + 0.12; P[0] = LAPSE[0] + bar.scale[0]; P[1] = LAPSE[1]; P[2] = LAPSE[2] + 0.1; sprites.puff(P, { count: 1, size: 0.22, rise: 0.2, spread: 0.1, life: 0.8, color: '#f4f8ff' }); }
   }
 
+  // ---- what the live stage asks for (kit-ch5 taskUnit)
+  //   'price-board'   ch5.s1: the floor as the hearing is opened: the pits roaring, and the lapse-bond bar on the board
+  //                   stepping up every time the objective does (it stands at 0.31 when the cutscene begins)
+  //   'sell-slips'    ch5.s3: a cord between two posts with the sell slips Ren has matched pegged along it, nine by the end
+  // setback(): the floor roars and the bar jumps (s1); a draught takes two slips off the cord (s3)
+  let boardUnit = null, slipUnit = null, surge = 0;
+  function task(type) {
+    if (type === 'price-board') return boardUnit || (boardUnit = taskUnit([LAPSE[0] + 1.3, LAPSE[1], LAPSE[2] + 0.2], null, (v, time, dt) => { surge = Math.max(0, surge - (dt || 0) / 2.2); setCrowd(1); setMood(Math.min(1, 1 - 0.3 * v + 0.4 * surge)); setLapse(0.19 + 0.12 * v + 0.14 * surge); }));
+    if (type === 'sell-slips') {
+      if (slipUnit) return slipUnit;
+      const N = 9, X0 = 0.72, DX = 0.235, Y = 1.3, Z = 0.12, xr = X0 + (N - 1) * DX;
+      const line = node('slip-line', merge(tint(place(cylinder(0.035, 0.045, Y + 0.08, 6), X0 - 0.2, (Y + 0.08) / 2, Z), TL.wood), tint(place(cylinder(0.035, 0.045, Y + 0.08, 6), xr + 0.2, (Y + 0.08) / 2, Z), TL.wood), tint(place(box(xr - X0 + 0.4, 0.02, 0.02), (X0 + xr) / 2, Y, Z), TL.iron)), M.prop); line.castShadow = false;
+      const slips = node('sell-slips', setGlow(tint(box(1, 1, 1), TL.paper), 0.45), M.paper); slips.castShadow = false; slips.instances = makeInstances(N);
+      const q = quat.create(), rr = rng(19);
+      for (let k = 0; k < N; k++) { const o = k * 20; m4.fromTRS(slips.instances.data.subarray(o, o + 16), [X0 + k * DX, Y - 0.17 - rr() * 0.02, Z + 0.02], quat.fromEuler(q, 0, 0, (rr() - 0.5) * 0.24), [0.17, 0.27, 0.012]); const c = k % 3 === 1 ? [1, 0.82, 0.8] : k % 3 === 2 ? [0.82, 0.96, 1] : [1, 0.98, 0.9]; slips.instances.data.set([c[0], c[1], c[2], 1], o + 16); }
+      scene.root.add(line, slips);
+      const u = taskUnit([X0, Y - 0.15, Z + 0.1], [X0 - 0.45, 0.62], (v, time, dt) => {
+        surge = Math.max(0, surge - (dt || 0) / 2.2);
+        const n = Math.max(0, Math.round(N * v) - (surge > 0.05 ? 2 : 0)); slips.instances.count = n; slips.visible = n > 0; slips.instances.dirty = true;
+        const next = Math.min(N - 1, n); u.pos[0] = X0 + next * DX; u.stand[0] = Math.min(1.9, u.pos[0] - 0.45);
+        setCrowd(0); setMood(0);
+      });
+      return (slipUnit = u);
+    }
+    return null;
+  }
+  const setback = () => { surge = 1; };
+
   return shell({
     id: 'exchange-floor', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.45,
     motes: low ? null : { box: [-2.6, 2.8, 0.6, 5.4, -5.6, -0.6], every: 0.3, color: L.mote, size: 0.07, vel: [0.03, -0.03, 0.05], life: 6, alpha: 0.75 },
@@ -196,9 +227,9 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
       ...MARKS, board: [BOARD[0], BOARD[1] + 1.2, BOARD[2]], lapse: LAPSE, focus: [0, FAN.sill + 1.0, BACK],
       salt: { pos: [PITS[0].x + 1.5, 0, PITS[0].z + 1.5], face: -140 }, bond: { pos: [PITS[1].x - 1.5, 0, PITS[1].z + 1.5], face: 140 },
     },
-    extra: { setCrowd, setMood, setLapse, cue },
+    extra: { setCrowd, setMood, setLapse, cue, task, setback, passLamp: setback },
   });
 }
 
-export const exchangeFloor = { id: 'exchange-floor', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const exchangeFloor = { id: 'exchange-floor', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default exchangeFloor;

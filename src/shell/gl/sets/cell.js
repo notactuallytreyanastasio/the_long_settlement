@@ -23,9 +23,12 @@ import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { pickLight } from './kit.js';
-import { TL, MARKS, ch5Materials, shell, norm, shaft, paving, cot, washstand, coatPeg, barredWindow, cellDoor } from './kit-ch5.js';
+import { TL, MARKS, ch5Materials, shell, norm, shaft, paving, cot, washstand, coatPeg, barredWindow, cellDoor, lightNames, ownLight, taskUnit } from './kit-ch5.js';
 
 const BW = 3.5, BACK = -3.5, FW = 5.6, WING_Z = 2.4, H = 4.1;
+
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { interior: 'lamp', night: 'dark' };
 
 const LIGHTS = {
   lamp: {
@@ -66,7 +69,7 @@ const CAMERAS = {
 const bx = (w, h, d, x, y, z, c, rx = 0, ry = 0, rz = 0) => tint(place(box(w, h, d), x, y, z, rx, ry, rz), c);
 
 function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
-  const { name: light, L } = pickLight('cell', LIGHTS, lightName);
+  const { name: light, L } = pickLight('cell', LIGHTS, ownLight(LIGHTS, ALIAS, lightName));
   const M = ch5Materials(), r = rng(5656);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const wingOf = (side) => { const dx = FW - BW, dz = WING_Z - BACK, len = Math.hypot(dx, dz), yaw = Math.atan2(-side * dz, dx) / DEG; return { len, yaw, pos: [side * (BW + FW) / 2, 0, (BACK + WING_Z) / 2] }; };
@@ -172,5 +175,5 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   });
 }
 
-export const cell = { id: 'cell', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const cell = { id: 'cell', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default cell;

@@ -26,7 +26,7 @@
 import { DEG } from './math.js';
 import { Node, makeLight } from './scene.js';
 import { box, cylinder, sphere, torus, tint, place, merge } from './mesh.js';
-import { createCharacter, CAST, CLIPS, POSES, figureMaterial, teamMove, mirrorPose } from './characters.js';
+import { createCharacter, CAST, CLIPS, POSES, figureMaterial, teamMove, mirrorPose, castVariant } from './characters.js';
 import { createFaces } from './faces.js';
 import { paperLantern, kitMaterials } from './sets/kit.js';
 import { comboOf, pushRecent, COMBO_WEIGHT, COMBO_NAMES } from '../../core/stage.js';
@@ -40,6 +40,27 @@ const smooth = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
 // The walk: characters.js has no looping gait, so a walking figure is held alternately in 'stride' and its mirror
 // while the stage moves its root. Registered once; a real 'walk' pose or clip in characters.js would replace this.
 if (!POSES.strideB) POSES.strideB = mirrorPose(POSES.stride);
+
+// The working moves of the task tableaux (MODES below). characters.js keeps POSES and CLIPS as open registries; these
+// are the stage's own entries. Each clip has a clear wind-up before `impact` (0.26 to 0.3 s: the table's bolt is timed
+// to land on the thing as the hand does) and a held contact after it.
+const addPose = (name, p) => { if (!POSES[name]) POSES[name] = p; };
+const addClip = (name, c) => { if (!CLIPS[name]) CLIPS[name] = c; };
+addPose('brace', { hips: { r: [8, 0, 0], p: [0, -0.03, 0] }, chest: [8, 0, 0], head: [-6, 0, 0], armL: [-52, 0, 10], foreL: [-66, 0, 0], armR: [-52, 0, -10], foreR: [-66, 0, 0], legL: [-26, 0, 6], shinL: [30, 0, 0], legR: [18, 0, -6], shinR: [18, 0, 0] });
+addPose('reachUp', { hips: { r: [-4, 0, 0], p: [0, 0.02, 0] }, chest: [-12, 0, 0], head: [-18, 0, 0], armR: [-158, 0, -8], foreR: [-10, 0, 0], armL: [-128, 0, 12], foreL: [-34, 0, 0], legL: [-4, 0, 4], legR: [6, 0, -4] });
+addPose('pushBack', { hips: { r: [4, 0, 0], p: [0, -0.03, -0.04] }, chest: [2, 0, 0], head: [2, 0, 0], armL: [-40, 0, 10], foreL: [-104, 0, 0], armR: [-40, 0, -10], foreR: [-104, 0, 0], legL: [-20, 0, 4], shinL: [30, 0, 0], legR: [10, 0, -4], shinR: [20, 0, 0] });
+addPose('pushHit', { hips: { r: [14, 0, 0], p: [0, -0.03, 0.06] }, chest: [16, 0, 0], head: [-14, 0, 0], armL: [-86, 0, 6], foreL: [-6, 0, 0], armR: [-86, 0, -6], foreR: [-6, 0, 0], legL: [30, 0, 4], shinL: [10, 0, 0], legR: [-36, 0, -4], shinR: [40, 0, 0] });
+addPose('kneelWork', { hips: { r: [14, 0, 0], p: [0, -0.1, 0.02] }, chest: [20, 0, 0], head: [-12, 0, 0], legL: [-70, 0, 8], shinL: [100, 0, 0], legR: [-10, 0, -6], shinR: [86, 0, 0], armL: [-52, 0, 8], foreL: [-30, 0, 0], armR: [-60, 0, -8], foreR: [-24, 0, 0] });
+addClip('workUp', { dur: 0.62, impact: 0.27, keys: [[0, null, 0, 0, 0], [0.14, 'crouch', 0, 0, -0.1], [0.27, 'reachUp', 0.05, 0.07, 0.1], [0.44, 'reachUp', 0.05, 0.05, 0.04], [0.62, null, 0, 0, 0]] });
+addClip('workDown', { dur: 0.64, impact: 0.28, keys: [[0, null, 0, 0, 0], [0.15, 'chopUp', -0.02, 0.05, 0.08], [0.28, 'chopDown', 0.1, 0, -0.12], [0.44, 'chopDown', 0.1, 0, -0.04], [0.64, null, 0, 0, 0]] });
+addClip('shove', { dur: 0.62, impact: 0.27, keys: [[0, null, 0, 0, 0], [0.14, 'pushBack', -0.06, 0, -0.06], [0.27, 'pushHit', 0.14, 0, 0.06], [0.44, 'pushHit', 0.12, 0, 0], [0.62, null, 0, 0, 0]] });
+addClip('kneelTap', { dur: 0.66, impact: 0.28, keys: [[0, null, 0, 0, 0], [0.15, 'crouch', 0, 0, -0.08], [0.28, 'kneelWork', 0.06, 0, -0.05], [0.46, 'kneelWork', 0.06, 0, 0], [0.66, null, 0, 0, 0]] });
+addClip('creep', { dur: 0.5, impact: 0.26, keys: [[0, null, 0, 0, 0], [0.12, 'crouch', 0, 0, -0.1], [0.26, 'stride', 0.1, 0.02, 0], [0.4, 'crouch', 0.04, 0, -0.04], [0.5, null, 0, 0, 0]] });
+
+// rank-and-file ids whose doubles are told apart by castVariant. Named people are never varied.
+const VARIED = {};
+const NAMED = ['ren', 'ilse', 'nan', 'tobb', 'corvane', 'maravel', 'thorne', 'narrator', 'sable', 'hesper', 'ansel', 'wyn', 'foss', 'tamsin'];
+const variedOk = (id) => NAMED.indexOf(id.split('-')[0]) < 0;
 
 /** True when every id is a cast member that can be spawned. */
 export function castReady(ids) { for (let i = 0; i < ids.length; i++) if (!CAST[ids[i]]) return false; return true; }
@@ -76,7 +97,8 @@ export function createTroupe({ detail = 1, material = null, standIn = null } = {
     take(id, n = 0, lod = 'full') {
       const key = id + '#' + n + ':' + lod;
       let ch = pool.get(key);
-      if (!ch) { ch = troupe.spawn(id, { lod }); pool.set(key, ch); }
+      // doubles of the rank and file (n >= 10: extras, supporters, the hat) are each their own look where the cast has variants
+      if (!ch) { ch = troupe.spawn(n >= 10 && VARIED[id] ? castVariant(id, n) : id, { lod }); pool.set(key, ch); }
       return ch;
     },
     /** Build these now (a title card is the time), so nobody is built in the middle of a scene. */
@@ -156,10 +178,11 @@ function cineSlot(set, n, i, out) {
   const m = set.marks && set.marks.b ? set.marks : DEFAULT_MARKS;
   let s = null;
   if (n === 1) s = m.b; else if (n === 2 && m.two) s = m.two[i]; else if (n === 3) s = i === 0 ? m.a : i === 1 ? m.b : m.c;
+  else if (m.cast && m.cast[n] && m.cast[n][i]) s = m.cast[n][i];       // a set's own places for a bigger company
   if (s) { out[0] = s.pos[0]; out[1] = s.pos[2]; out[2] = s.face; return out; }
-  // four or five: a shallow zigzag across the strip, so every head has clear air and nobody is hidden
-  const span = n === 4 ? 1.45 : 1.75, x = lerp(-span, span, i / (n - 1));
-  out[0] = x; out[1] = i % 2 ? 1.0 : 0.5; out[2] = clamp(-x * 13, -24, 24);
+  // four and more: two shallow rows, alternating, so every head has clear air and nobody is hidden
+  const span = n === 4 ? 1.45 : n === 5 ? 1.75 : n === 6 ? 1.95 : 2.3, x = lerp(-span, span, i / (n - 1));
+  out[0] = x; out[1] = i % 2 ? 1.05 : 0.45; out[2] = clamp(-x * 13, -24, 24);
   return out;
 }
 
@@ -180,22 +203,35 @@ function makeStage(set, troupe) {
   const actors = [], sprites = set.scene.sprites || null;
   const S = {
     set, troupe, actors, sprites, units: [], unitRoot: null, floorRoot: null, mats: null, rig: makeRig(), camera: null,
-    view: { shadowCenter: [0, 0, 0.5], shadowRadius: 3.4 }, fill: null, lines: null, fight: null,
+    view: { shadowCenter: [0, 0, 0.5], shadowRadius: 3.4 }, fill: null, lines: null, fight: null, blobs: false, who: null,
   };
   // a low warm lamp in front of the cast at night: the set's lamps hang overhead, so without it every chin and mouth is in the blue
   if (set.light === 'night' && set.scene.root) { S.fill = new Node('stageFill', { pos: [-0.5, 1.2, 2.9], light: makeLight({ color: '#ffb45e', radius: 4.6, intensity: 0 }) }); set.scene.root.add(S.fill); }
 
+  /**
+   * Stage coordinates (the set.actors group's own: where figures are placed) to world. They are the same thing on a
+   * set that stands still; on a boat or a rolling deck set.actors moves, and everything aimed at a figure from outside
+   * that group (sprites, bolts, rings, the camera's target) goes through here. One frame behind the renderer's matrices.
+   */
+  S.toWorld = (x, y, z, out) => {
+    const m = set.actors.world;
+    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12]; out[1] = m[1] * x + m[5] * y + m[9] * z + m[13]; out[2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+    return out;
+  };
   /** The first figure of that cast id on stage (and not on the way out). n picks a double. */
   S.find = (id, n = -1) => { for (let i = 0; i < actors.length; i++) { const a = actors[i]; if (a.id === id && !a.leaving && (n < 0 || a.n === n)) return a; } return null; };
   /** Put a figure on the stage at (x, z); from: x to walk on from, or null to be there already. */
-  S.enter = (id, n, lod, x, z, face, from) => {
+  S.enter = (id, n, lod, x, z, face, from, wear) => {
     let a = null;
-    for (let i = 0; i < actors.length; i++) if (actors[i].id === id && actors[i].n === n) a = actors[i];   // on the way out: turn round
+    const as = wear || id;      // the figure that plays this cast id: a costume of the same person, or the person
+    for (let i = 0; i < actors.length; i++) if (actors[i].id === id && actors[i].n === n && actors[i].wear === as) a = actors[i];   // on the way out: turn round
     if (!a) {
-      const ch = troupe.take(id, n, lod); ch.release(); ch.home(); ch.id = id;
+      if (!troupe.has(as)) throw new Error(`stage: no cast member "${as}"${as !== id ? ` (worn by ${id})` : ''} on set ${set.id} (have ${Object.keys(CAST).join(', ')})`);
+      if (VARIED[as] === undefined) VARIED[as] = variedOk(as);
+      const ch = troupe.take(as, n, lod); ch.release(); ch.home(); ch.id = id;
       set.actors.add(ch.root);
       a = {
-        id, n, ch, lod, x: 0, z: 0, gx: 0, gz: 0, face: 0, moving: false, leaving: false, gait: Math.random(), speed: WALK,
+        id, n, ch, lod, wear: as, pinned: false, shade: null, x: 0, z: 0, gx: 0, gz: 0, face: 0, moving: false, leaving: false, gait: Math.random(), speed: WALK,
         ox: 0, oy: 0, oz: 0, kx: 0, kT: 9, kA: 0, kHold: 0, role: '', side: 0, slot: 0, held: false, busyT: 0,
         emote: 'neutral', temp: 'neutral', tempT: 0, pose: 'stand', flashPose: 'stand', poseT: 0, talk: -1, quietT: 99,
         dash: { on: false, t: 0, ant: 0, out: 0, hold: 0, back: 0, dx: 0, dz: 0, hop: 0, trail: false, rock: 0.07 },
@@ -212,7 +248,8 @@ function makeStage(set, troupe) {
   S.drop = (a) => {
     const i = actors.indexOf(a); if (i < 0) return;
     actors.splice(i, 1); a.ch.release(); a.ch.home(); set.actors.remove(a.ch.root);
-    if (a.glow) sprites.remove(a.glow); if (a.aura) sprites.remove(a.aura);
+    if (a.glow) sprites.remove(a.glow); if (a.aura) sprites.remove(a.aura); if (a.shade) sprites.remove(a.shade);
+    a.glow = a.aura = a.shade = null;
     if (a.ch.skin) { a.ch.skin.tint[0] = a.ch.skin.tint[1] = a.ch.skin.tint[2] = 1; }
   };
   /** Send a figure off the nearer side (or the side asked for). cut: gone at once. */
@@ -224,7 +261,7 @@ function makeStage(set, troupe) {
   S.clearUnits = () => {
     for (const u of S.units) { if (u.glows) for (const g of u.glows) sprites.remove(g); }
     if (S.unitRoot) { set.scene.root.remove(S.unitRoot); S.unitRoot = null; S.floorRoot = null; }
-    S.units.length = 0;
+    S.units.length = 0; S.who = null;
   };
   /** Everybody off, props gone: the set is being left. */
   S.clear = () => { while (actors.length) S.drop(actors[actors.length - 1]); S.clearUnits(); S.rig.has = false; if (S.fight) S.fight.key = ''; if (S.lines) S.lines.reset(); };
@@ -267,6 +304,9 @@ function makeStage(set, troupe) {
       const h = a.ch.headPos, hk = Math.min(1, dt * 7);
       a.hp[0] += (h[0] - a.hp[0]) * hk; a.hp[1] += (h[1] - a.hp[1]) * hk; a.hp[2] += (h[2] - a.hp[2]) * hk;
       if (a.glow) { const l = a.ch.lampPos; a.glow.pos[0] = l[0]; a.glow.pos[1] = l[1]; a.glow.pos[2] = l[2]; }
+      // with the shadow map off (the band at the low tier) a blob under the feet is the figure's contact with the ground
+      if (S.blobs && sprites && !a.shade) a.shade = sprites.add({ kind: 'shade', pos: [0, 0.02, 0], size: [0.9, 0.55] });
+      if (a.shade) { if (!S.blobs) { sprites.remove(a.shade); a.shade = null; } else { S.toWorld(a.x + a.ox + a.kx, 0.02, a.z + a.oz, a.shade.pos); } }
     }
   };
   return S;
@@ -298,7 +338,8 @@ const NO = /^(No\b|Never\b|Not\b|Nothing\b)/, YES = /^(Yes\b|Aye\b|Good\b|All of
  */
 function linesOn(S) {
   const set = S.set, troupe = S.troupe;
-  let onKey = '', lineRef = undefined, speaker = null, addressee = null, lastSpeakerId = '', camName = 'wide', lineT = 0, lineN = 0, dtLast = 0;
+  let onKey = '', lineRef = undefined, speaker = null, addressee = null, lastSpeakerId = '', camName = 'wide', lineT = 0, lineN = 0, dtLast = 0, wear = null;
+  const wearOf = (id) => (wear && wear[id]) || id;
   const L = {
     get speaker() { return speaker; }, get addressee() { return addressee; },
     reset() { onKey = ''; lineRef = undefined; speaker = null; addressee = null; lastSpeakerId = ''; },
@@ -309,8 +350,9 @@ function linesOn(S) {
       for (let i = 0; i < n; i++) {
         cineSlot(set, n, i, SLOT);
         let a = S.find(on[i]);
-        if (a && a.lod !== 'full') { const x = a.x, z = a.z; S.drop(a); a = S.enter(on[i], 0, 'full', x, z, SLOT[2], null); }   // the band's cheap figure will not stand a close-up
-        if (!a) a = S.enter(on[i], 0, 'full', SLOT[0], SLOT[1], SLOT[2], cut ? null : (SLOT[0] < -0.01 || (SLOT[0] < 0.01 && i === 0) ? -OFF_X : OFF_X));
+        // the band's cheap figure will not stand a close-up, and a change of costume is a change of figure: both swap where they stand
+        if (a && (a.lod !== 'full' || a.wear !== wearOf(on[i]))) { const x = a.x, z = a.z; S.drop(a); a = S.enter(on[i], 0, 'full', x, z, SLOT[2], null, wearOf(on[i])); }
+        if (!a) a = S.enter(on[i], 0, 'full', SLOT[0], SLOT[1], SLOT[2], cut ? null : (SLOT[0] < -0.01 || (SLOT[0] < 0.01 && i === 0) ? -OFF_X : OFF_X), wearOf(on[i]));
         if (a.held) { a.ch.release(); a.held = false; }
         a.role = 'cast'; a.side = 0; a.slot = i; a.gx = SLOT[0]; a.gz = SLOT[1]; a.face = a.home = SLOT[2]; a.pose = 'stand'; a.speed = WALK; a.dash.on = false;
         if (cut) snapTo(a);
@@ -318,8 +360,8 @@ function linesOn(S) {
     },
     update(dt, time, s) {
       const on = s.on || [], cut = !!s.cut, line = s.line || null;
-      dtLast = dt; lineT += dt;
-      let key = ''; for (let i = 0; i < on.length; i++) key += on[i] + ',';
+      dtLast = dt; lineT += dt; wear = s.wear || null;
+      let key = ''; for (let i = 0; i < on.length; i++) key += wearOf(on[i]) + ',';
       camName = s.cam || (line && line.cam) || camName;
       if (key !== onKey || cut) {
         // an empty stage and a close-up: that is a cut to a face, not somebody trotting into their own close-up
@@ -331,7 +373,7 @@ function linesOn(S) {
         // a new line: the last listener may nod, the new speaker gets a face and, on a line that wants one, a gesture
         const before = speaker;
         lineRef = line; lineT = 0; lineN++;
-        if (line && line.id && set.cue) set.cue(line.id);      // a set's own stage business, keyed to the script
+        if (line && line.id) { if (set.cue) set.cue(line.id); if (S.onCue) S.onCue(set, line.id); }      // a set's own stage business, keyed to the script
         speaker = who ? S.find(who) : null; if (speaker && speaker.role !== 'cast') speaker = null;
         if (speaker !== before && before && before.role === 'cast') addressee = before;
         if (addressee === speaker || (addressee && addressee.role !== 'cast')) addressee = null;
@@ -525,10 +567,13 @@ function buildUnits(S, who) {
       if (!make) throw new Error(`stage: no prop for force type "${who[i]}" on set ${set.id} (have ${Object.keys(UNITS).join(', ')}; or the set answers set.task)`);
       if (!S.unitRoot) { S.unitRoot = new Node('units'); S.floorRoot = new Node('floorUnits'); S.unitRoot.add(S.floorRoot); set.scene.root.add(S.unitRoot); S.mats = S.mats || kitMaterials(); }
       u = make(S, FLOOR_UNITS[who[i]] ? S.floorRoot : S.unitRoot, i);
+      u.own = true;
     }
+    if (!u.pos || typeof u.set !== 'function') throw new Error(`stage: set ${set.id} answered task("${who[i]}") without { pos, set(v) }`);
     u.v = -1; u.shown = 0; u.type = who[i];
     S.units.push(u);
   }
+  S.who = who;
 }
 
 // ------------------------------------------------------------------------------------ the live stage
@@ -542,114 +587,187 @@ export const BEATS = {
   bumper: 'jab', sling: 'jab', lane: 'jab', rollover: 'jab', target: 'chop', saucer: 'chop',
   shot: 'big', payout: 'boon', drain: 'struck', loan: 'loan', aid: 'aid', trust: 'trust', sceneClear: 'win', save: 'saved',
 };
-/** How each encounter mode plays a hit: the clip or pose, how far toward the thing the actor goes (0 stays put), the pose held between hits. */
+/**
+ * How each encounter mode is staged.
+ *   fight    the whole strip: party left, opposition right, blows carried across (jab / chop are the clips)
+ * The others are TABLEAUX (tab): the band frames only the party and the thing they are at, a third closer, the
+ * table's bolts land on that thing as the hand does, and a ring on it (or lit steps on the floor) is the objective.
+ *   work     at the unit: two flank it and work it in turn
+ *   hold     braced against whoever presses from the right; every hit shoves the line back
+ *   stealth  crouched, creeping along a route of steps; every hit lights the next step
+ *   talk     the lead makes points; the listeners are won one at a time
+ *   walk     the party travels the route and the camera goes with them
+ */
 export const MODES = {
-  fight:   { jab: 'strike', chop: 'strike2', reach: 1, hold: 'stand', team: true },
-  work:    { jab: 'strike', chop: 'strike2', reach: 1, hold: 'stand', team: true },
-  hold:    { jab: 'strike', chop: 'strike2', reach: 0.45, hold: 'talkShrug', team: false },
-  stealth: { jab: 'hop', chop: 'hop', reach: 0.3, hold: 'crouch', team: false },
-  talk:    { jab: '', chop: '', reach: 0, hold: 'stand', team: false, poses: ['talkPoint', 'talkBoth', 'talkOpen'] },
-  walk:    { jab: 'hop', chop: 'hop', reach: 0, hold: 'stand', team: false },
+  fight:   { jab: 'strike', chop: 'strike2', reach: 1, hold: 'stand', team: true, tab: false, route: false },
+  work:    { jab: 'workDown', chop: 'workDown', reach: 0, hold: 'stand', team: false, tab: true, route: false },
+  hold:    { jab: 'shove', chop: 'shove', reach: 0.5, hold: 'brace', team: false, tab: true, route: false },
+  stealth: { jab: 'creep', chop: 'creep', reach: 0, hold: 'crouch', team: false, tab: true, route: true },
+  talk:    { jab: '', chop: '', reach: 0, hold: 'stand', team: false, tab: true, route: false, poses: ['talkPoint', 'talkBoth', 'talkOpen'] },
+  walk:    { jab: 'hop', chop: 'hop', reach: 0, hold: 'stand', team: false, tab: true, route: true },
 };
-const PARTY_SLOT = [[-0.9, 0.8], [-1.7, 0.52], [-2.45, 0.95]];
-const OPP_SLOT = [[0.9, 0.8], [1.7, 0.45], [2.45, 0.95]];
-const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]], BACK_L = [[-3.05, 0.0], [-2.4, -0.1]];
-const HALF_W = 3.0;   // world units of the strip either side of centre that the band's camera keeps in frame
+// each party member keeps a lane of its own (z), and ends a dash on that lane: nobody runs through whoever stands ahead
+const PARTY_SLOT = [[-0.9, 0.86], [-1.72, 0.36], [-2.5, 1.3]];
+const OPP_SLOT = [[0.9, 0.8], [1.72, 0.4], [2.5, 1.24]];
+const LANE = [0.04, -0.46, 0.46];
+const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]];
+const HALF_W = 3.0;    // world units of the strip either side of centre that the fight's camera keeps in frame
+const HALF_TAB = 1.95; // the closest a tableau is framed
+const STANDOFF = 1.0;  // how far short of a person a blow is carried: chibi heads are wide, and at 0.82 they met
 const LAG = 0.16;      // seconds between a table hit and the stage answering: the time the energy takes to climb
+const TAB_IMPACT = 0.27; // seconds into a tableau's working clip that the hand lands (the bolt is timed to it)
 const MAX_FOLK = 2;    // figures are the band's draw calls: two supporters, a clerk and the hat are already five more
+const MAX_PIPS = 12;
 // scheduled steps
-const DO_STRIKE = 1, DO_LAND = 2, DO_RELEASE = 3, DO_TEAM = 4, DO_GIVE = 5, DO_AWAY = 6, DO_SETTLE = 7, DO_CHEER = 8, DO_UNFOCUS = 9;
+const DO_STRIKE = 1, DO_LAND = 2, DO_RELEASE = 3, DO_TEAM = 4, DO_GIVE = 5, DO_AWAY = 6, DO_SETTLE = 7, DO_CHEER = 8, DO_UNFOCUS = 9, DO_STEP = 10;
+const WORK_CLIP = { up: 'workUp', down: 'workDown', push: 'shove', kneel: 'kneelTap' };
+
+/** The hat the Commons passes: big, red, full of gold, so it is seen in a band 220 px tall. */
+function hatMesh() {
+  return merge(
+    tint(cylinder(0.21, 0.15, 0.17, 12), '#e0483a'), tint(place(torus(0.215, 0.035, 12, 6), 0, 0.17, 0), '#fff3d6'),
+    tint(place(cylinder(0.17, 0.17, 0.03, 12), 0, 0.15, 0), '#ffc93a'),
+    tint(place(sphere(0.06, 8, 6), -0.06, 0.2, 0.02), '#ffd24a'), tint(place(sphere(0.06, 8, 6), 0.07, 0.19, -0.03), '#ffe27a'), tint(place(sphere(0.05, 8, 6), 0.0, 0.22, 0.06), '#ffd24a'),
+  );
+}
 
 /**
  * The encounter on a stage, driven by stageState and game.recent.
- *   update(dt, time, { stage, recent, content, game, voice, hit })      frame(camera, aspect, viewHeight, time, rect)
+ *   update(dt, time, { stage, recent, content, game, voice, hit, wear })      frame(camera, aspect, viewHeight, time, rect, pad)
+ * Reads: goal (the objective as it is shown: a ring on the thing, or steps on the floor; screen positions are filled by frame),
+ * tab { cx, half } (what the camera frames), cues, sparks, punch, power, won.
  */
 function fightOn(S, opts = {}) {
   const set = S.set, troupe = S.troupe, sprites = S.sprites, lod = opts.lod || 'stage';
   const party = [], opp = [], extras = [], folk = [], hatters = [];
-  const sched = []; for (let i = 0; i < 24; i++) sched.push({ on: false, t: 0, code: 0, a: null, b: null, n: 0 });
+  const sched = []; for (let i = 0; i < 28; i++) sched.push({ on: false, t: 0, code: 0, a: null, b: null, n: 0 });
   const cues = [], cuePool = []; for (let i = 0; i < 12; i++) cuePool.push({ type: '', level: 0, name: '', team: false, big: false, x: NaN, y: NaN, who: null });
-  const sparks = [], sparkPool = []; for (let i = 0; i < 14; i++) sparkPool.push({ x0: 0, y0: 0, x1: 0, y1: 0, t: 0, big: false, gold: false, who: null, live: false });
+  const sparks = [], sparkPool = []; for (let i = 0; i < 14; i++) sparkPool.push({ x0: 0, y0: 0, x1: 0, y1: 0, t: 0, dur: 0.3, big: false, gold: false, who: null, pt: [0, 0, 0], live: false });
   const focus = { t: 9, dur: 0, x: 0, x2: 0, zoom: 1 };
-  const HIT = [0, 0];
+  const tab = { cx: 0, half: HALF_W };
+  const route = { x0: -2.2, x1: 2.0, z: 0.8 };
+  const pips = []; for (let i = 0; i < MAX_PIPS; i++) pips.push({ x: 0, y: 0, on: false, lit: false });
+  const goal = { on: false, kind: 'ring', pos: [0, 1, 0.3], size: 0.5, done: 0, total: 1, pulse: 0, pop: 0, x: NaN, y: NaN, r: 20, pips, n: 0, fade: 1 };
+  const HIT = [0, 0], AIM = [0, 0, 0], W3 = [0, 0, 0];
   let clerk = null, seenN = -2, first = true, won = false, level = 0, turn = 0, oppTurn = 0, power = 0.6, punch = 0, mode = MODES.fight, kind = 'people';
-  let done = 0, total = 1, beat = -1, dtLast = 0, stageRef = null, townsfolkId = '', clerkId = '', hitFn = null, nextAura = 0, timeNow = 0, auraOn = false, auraGold = false;
+  let done = 0, total = 1, beat = -2, dtLast = 0, stageRef = null, townsfolkId = '', clerkId = '', hitFn = null, nextAura = 0, timeNow = 0, auraOn = false, auraGold = false;
+  let lastBark = '', wear = null, hatNode = null, hatGlow = null, hatT = 0, resolveT = 0, ppu = 40;
 
   const F = {
-    key: '', party, opposition: opp, extras, folk, cues, sparks, focus,
-    get punch() { return punch; }, get power() { return power; }, get won() { return won; },
+    key: '', party, opposition: opp, extras, folk, cues, sparks, focus, goal, tab,
+    get punch() { return punch; }, get power() { return power; }, get won() { return won; }, get mode() { return mode; },
   };
   const at = (t, code, a, b, n) => { for (let i = 0; i < sched.length; i++) if (!sched[i].on) { const s = sched[i]; s.on = true; s.t = t; s.code = code; s.a = a; s.b = b; s.n = n || 0; return; } };   // pool full: the step is dropped, never grown
   const cue = (type) => { if (cues.length >= cuePool.length) return cuePool[0]; const c = cuePool[cues.length]; c.type = type; c.level = level; c.name = ''; c.team = false; c.big = false; c.x = NaN; c.y = NaN; c.who = null; cues.push(c); return c; };
-  const free = (list) => { for (let k = 0; k < list.length; k++) { const a = list[(turn + k) % list.length]; if (a.busyT <= 0 && !a.ch.busy && !a.held && !a.moving && a.kT > 8) { turn = (turn + k + 1) % list.length; return a; } } return null; };
+  const ready = (a) => !!a && a.busyT <= 0 && !a.ch.busy && !a.held && !a.moving && a.kT > 8;
+  const free = (list, n = list.length) => { for (let k = 0; k < n; k++) { const a = list[(turn + k) % n]; if (ready(a)) { turn = (turn + k + 1) % n; return a; } } return null; };
   const chestY = (a) => a.ch.height * 0.58;
-  /** The thing a hit goes to: a person of the opposition, the task unit in hand, or (holding a line) whoever is pressing. */
-  function target() {
+  const wearOf = (id) => (wear && wear[id]) || id;
+  const frac = () => (won ? 1 : total > 0 ? done / total : 0);
+  const isUnit = (t) => !!t && !t.ch;
+  const curUnit = () => Math.min(S.units.length - 1, Math.floor(done * S.units.length / Math.max(1, total)));
+  /** The people the party is acting on: an opposition of people, or (holding a line, talking) the extras. */
+  const front = () => (kind === 'people' ? opp : mode === MODES.hold || mode === MODES.talk ? extras : NOBODY);
+  /** The thing a hit goes to: a person, the task unit in hand, or null (a route: the next step on the floor). */
+  function target(rotate) {
+    const fr = front();
+    if (mode.route) return null;
+    if (mode === MODES.talk && fr.length) return fr[Math.min(fr.length - 1, Math.floor(frac() * fr.length))];   // the one being won now
+    if (mode === MODES.hold && fr.length) return fr[(rotate ? oppTurn++ : oppTurn) % fr.length];
     if (kind === 'people' && opp.length) return opp[0];    // the front of their line takes it; a big blow spills onto the rest
-    if (mode === MODES.hold && extras.length) return extras[oppTurn++ % extras.length];
-    if (S.units.length) { const i = Math.min(S.units.length - 1, Math.floor(done * S.units.length / Math.max(1, total))); return S.units[i]; }
+    if (S.units.length) return S.units[curUnit()];
     return null;
   }
-  const isUnit = (t) => !!t && !t.ch;
-  const tx = (t) => (isUnit(t) ? (t.stand ? t.stand[0] : t.pos[0]) : t.x + t.kx - 0.82);
-  const tz = (t) => (isUnit(t) ? (t.stand ? t.stand[1] : t.pos[2]) : t.z + 0.04);
+  // where a blow at a person is carried to, by the lane of whoever throws it
+  const tx = (t, a) => (isUnit(t) ? (t.stand ? t.stand[0] : t.pos[0] - 0.62) : t.x + t.kx - STANDOFF);
+  const tz = (t, a) => (isUnit(t) ? (t.stand ? t.stand[1] : t.pos[2]) : t.z + LANE[a ? a.slot % 3 : 0]);
+  const nPips = () => Math.min(MAX_PIPS, Math.max(1, total));
+  const pipX = (k) => lerp(route.x0, route.x1, k / nPips());
+  /** World point a bolt for target t lands on (and the ring sits on). */
+  function aimOf(t, out) {
+    if (isUnit(t)) { out[0] = t.pos[0]; out[1] = t.pos[1]; out[2] = t.pos[2]; return out; }
+    if (t) return S.toWorld(t.x + t.kx, mode === MODES.talk ? t.ch.height * 0.8 : chestY(t), t.z, out);
+    const k = Math.min(nPips(), Math.floor(frac() * nPips()) + 1);
+    return S.toWorld(pipX(k), 0.05, route.z, out);
+  }
 
-  /** Energy from the table: a 2D spark from where the ball struck to the actor's chest (the shell supplies the table point). */
-  function energy(ev, a, big, gold) {
-    cue('energy').who = a.ch;
+  /** Energy from the table: a 2D spark from where the ball struck to the actor's chest, or (tableaux) to the thing itself. */
+  function energy(ev, a, big, gold, t, dur) {
+    cue('energy').who = a ? a.ch : null;
     let s = null; for (let i = 0; i < sparkPool.length; i++) if (!sparkPool[i].live) { s = sparkPool[i]; break; }
     if (!s) return;
-    s.live = true; s.t = 0; s.big = !!big; s.gold = !!gold; s.who = a; s.x0 = NaN;
+    s.live = true; s.t = 0; s.big = !!big; s.gold = !!gold; s.who = t === undefined ? a : null; s.x0 = NaN; s.dur = dur || 0.3;
+    if (t !== undefined) aimOf(t, s.pt);
     if (hitFn && ev && hitFn(ev, HIT)) { s.x0 = HIT[0]; s.y0 = HIT[1]; }
     sparks.push(s);
   }
 
   function land(t, by, big) {
-    if (!t) return;
     let x, y, z;
-    if (isUnit(t)) { x = t.pos[0]; y = t.pos[1]; z = t.pos[2] + 0.15; t.wob = 1; }
-    else {
-      x = t.x + t.kx; y = chestY(t); z = t.z + 0.15;
-      if (!t.held) t.ch.act('hit');
-      feel(t, 'shock', 0.7); knock(t, (t.side > 0 ? -1 : 1) * (big ? 0.5 : 0.2), big ? 0.12 : 0);
+    aimOf(t === undefined ? null : t, AIM); x = AIM[0]; y = AIM[1]; z = AIM[2] + 0.15;
+    if (isUnit(t)) t.wob = 1;
+    else if (t) {
+      if (mode === MODES.talk) { feel(t, 'shock', 0.5); if (!t.ch.busy && !t.held) t.ch.act(big ? 'nod' : 'hop'); }
+      else {
+        if (mode === MODES.fight) x = AIM[0] - 0.3 * (t.side > 0 ? -1 : 1);     // the blow stops short of a chibi's head: the stars are where the fist is
+        if (!t.held) t.ch.act('hit');
+        feel(t, 'shock', 0.7); knock(t, (t.side > 0 ? -1 : 1) * (big ? 0.5 : mode === MODES.hold ? 0.32 : 0.2), big ? 0.12 : 0);
+      }
       if (t.ch.skin) t.ch.skin.flash[3] = 1;
     }
     if (sprites) {
-      burst(sprites, x, y, z, big ? 9 : 5, big ? 0.5 : 0.3, big ? '#ffe27a' : '#ffffff', big ? 2.2 : 1.4);
+      burst(sprites, x, y, z, big ? 9 : 5, big ? 0.5 : 0.3, big || mode.tab ? '#ffe27a' : '#ffffff', big ? 2.2 : 1.4);
       particle(sprites, K_PUFF, x, y, z, 0, 0.3, 0, big ? 0.2 : 0.14, big ? 0.34 : 0.24, big ? 0.4 : 0.3, '#fff6e0', 0, 1);
-      if (big) particle(sprites, K_RING, x, 0.03, z, 0, 0, 0, 0.3, 2.2, 0.5, '#fff6e0');
+      if (big || mode.route) particle(sprites, K_RING, x, 0.03, z, 0, 0, 0, 0.3, big ? 2.2 : 1.1, 0.5, '#fff6e0');
     }
-    punch = Math.max(punch, big ? 1 : 0.3);
-    const c = cue('hit'); c.big = !!big; c.who = isUnit(t) ? null : t.ch;
+    goal.pulse = 1;
+    punch = Math.max(punch, big ? 1 : mode.tab ? 0.22 : 0.3);
+    const c = cue('hit'); c.big = !!big; c.who = t && !isUnit(t) ? t.ch : null;
   }
 
+  /** One hit answered by one member. Fight: a blow carried across on the member's own lane. Tableaux: the working move of the mode, where they stand. */
   function strike(a, t, chop, time) {
     if (a.moving || a.held) return;
-    const clipName = chop ? mode.chop : mode.jab;
-    if (!clipName) { // talking: the hit is a point made
-      const poses = mode.poses; flash(a, poses[(turn + (chop ? 1 : 0)) % poses.length], 0.7); a.talk = -2; a.busyT = 0.5; feel(a, 'anger', 0.8);
-      if (sprites && t) { const sx = a.x + 0.3, sy = a.ch.height * 0.86, k = 1 / 0.28; particle(sprites, K_STAR, sx, sy, a.z + 0.1, (t.pos[0] - sx) * k, (t.pos[1] - sy) * k, 0, 0.3, 0.2, 0.28, '#ffffff'); }
-      at(time + 0.28, DO_LAND, t, a, 0); return;
+    if (!mode.tab) {
+      const c = a.ch.act(chop ? mode.chop : mode.jab);
+      feel(a, 'anger', 0.8);
+      if (t) { const ant = Math.max(0.08, c.impact - 0.13); startDash(a, tx(t, a), tz(t, a), ant, c.impact - ant, 0.16, 0.3, 0.16, false); } else a.busyT = c.dur;
+      at(time + c.impact, DO_LAND, t, a, 0); return;
     }
-    const c = a.ch.act(clipName), reach = t ? mode.reach : 0;
-    feel(a, mode === MODES.fight ? 'anger' : 'grim', 0.8);
-    if (reach > 0) {
-      const ant = Math.max(0.08, c.impact - 0.13);
-      startDash(a, lerp(a.x, tx(t), reach), lerp(a.z, tz(t), reach), ant, c.impact - ant, 0.16, 0.3, 0.16, false);
-    } else a.busyT = c.dur;
-    at(time + c.impact, DO_LAND, t, a, 0);
+    if (mode === MODES.talk) { // a point made
+      const poses = mode.poses; flash(a, poses[(turn++ + (chop ? 1 : 0)) % poses.length], 0.7); a.talk = -2; a.busyT = 0.5; feel(a, chop ? 'anger' : 'smile', 0.8);
+      at(time + TAB_IMPACT, DO_LAND, t, a, chop ? 1 : 0); return;
+    }
+    if (mode.route) { // one step: the lead goes, the others follow a beat behind
+      const c = a.ch.act(mode.jab); a.busyT = c.dur * 0.8; startDash(a, a.x + 0.24, a.z, 0.06, c.impact, 0.06, 0.22, mode === MODES.walk ? 0.05 : 0, false, 0);
+      for (let k = 1; k < party.length; k++) at(time + 0.1 * k, DO_STEP, party[k], null, 0);
+      at(time + TAB_IMPACT, DO_LAND, undefined, a, chop ? 1 : 0); return;
+    }
+    let name = mode.jab;
+    if (mode === MODES.work) name = WORK_CLIP[isUnit(t) ? t.reach || (t.pos[1] > 1.05 ? 'up' : 'down') : 'push'] || 'workDown';
+    const c = a.ch.act(name);
+    feel(a, 'grim', 0.8); a.busyT = c.dur * 0.85;
+    if (mode === MODES.hold && t) startDash(a, lerp(a.x, tx(t, a), mode.reach), a.z, 0.1, c.impact - 0.1, 0.14, 0.26, 0, false);
+    at(time + c.impact, DO_LAND, t, a, chop ? 1 : 0);
   }
 
   function big(ev, time) {
-    const t = target(), a0 = party[0], a1 = party[1];
-    const ready = (a) => a && a.busyT <= 0 && !a.ch.busy && !a.held && !a.moving && a.kT > 8;
+    const t = target(true), a0 = party[0], a1 = party[1];
+    if (mode.tab) {
+      // the same move, struck in gold, and at a chain of two or more the second member goes in with it
+      const a = pickActor(); energy(ev, a, true, true, t, LAG + TAB_IMPACT);
+      if (a) at(time + LAG, DO_STRIKE, a, t, 1); else at(time + LAG + TAB_IMPACT, DO_LAND, t, null, 1);
+      if (level >= 2) { const b = pickActor(); if (b && b !== a) at(time + LAG + 0.12, DO_STRIKE, b, t, 1); }
+      for (let k = 2; k < party.length; k++) at(time + 0.35, DO_CHEER, party[k], null, 0);
+      return;
+    }
     if (level >= 3 && mode.team && ready(a0) && ready(a1) && t) {
       // THE TEAM MOVE: the camera goes in on the pair, the lead braces, the second runs up him and comes down on the target
-      const c = teamMove(a0.ch, a1.ch), land0 = tx(t), h = a1.ch.height;
+      const c = teamMove(a0.ch, a1.ch), land0 = tx(t, a0), h = a1.ch.height;
       feel(a0, 'anger', 1.7); feel(a1, 'smile', 1.7);
       // the clip carries the follower 1.3 heights forward on its own, up and over the lead; the dash supplies the rest of the
       // way and only starts once she is in the air, so she goes over him and not through him
-      startDash(a1, land0 - 1.3 * h + 0.2, tz(t), 0.7, 0.32, 0.2, 0.3, 0.2, true, 0);
+      startDash(a1, land0 - 1.3 * h + 0.2, t.z + 0.04, 0.7, 0.32, 0.2, 0.3, 0.2, true, 0);
       a0.busyT = c.dur; a1.busyT = c.dur;
       energy(ev, a0, true, true); energy(ev, a1, true, true);
       focus.t = 0; focus.dur = c.impact + 0.25; focus.x = (a0.x + a1.x) / 2 + 0.35; focus.x2 = land0 - 0.2; focus.zoom = 0.72;
@@ -661,8 +779,6 @@ function fightOn(S, opts = {}) {
     }
     const a = free(party); if (!a) { land(t, null, false); return; }
     energy(ev, a, true, false);
-    if (!mode.jab) { flash(a, 'talkBoth', 1.1); a.talk = -2; a.busyT = 0.8; feel(a, 'anger', 1.2); at(time + LAG + 0.3, DO_LAND, t, a, 1); return; }
-    if (mode === MODES.walk || mode === MODES.stealth) { a.ch.act(mode === MODES.walk ? 'cheer' : 'hop'); if (t && mode.reach) startDash(a, lerp(a.x, tx(t), 0.6), a.z, 0.1, 0.16, 0.2, 0.34, 0.1, true); at(time + 0.3, DO_LAND, t, a, 1); return; }
     a.ch.act('windup'); a.held = true; feel(a, 'anger', 1.5); a.busyT = 1.3;
     if (sprites) for (let i = 0; i < 5; i++) { const an = i * 1.256; particle(sprites, K_STAR, a.x + Math.cos(an) * 0.6, chestY(a) + Math.sin(an) * 0.6, a.z + 0.2, -Math.cos(an) * 1.5, -Math.sin(an) * 1.5, 0, 0.22, 0.1, 0.4, '#ffe27a'); }
     at(time + CLIPS.windup.dur + 0.06, DO_RELEASE, a, t, 0);
@@ -674,60 +790,114 @@ function fightOn(S, opts = {}) {
     const a = s.a, b = s.b;
     switch (s.code) {
       case DO_STRIKE: strike(a, b, s.n === 1, time); break;
-      case DO_LAND: land(a, b, s.n === 1); break;
+      case DO_LAND: land(a === null ? undefined : a, b, s.n === 1); break;
+      case DO_STEP: if (a && ready(a)) { const c = a.ch.act(mode.jab); a.busyT = c.dur * 0.8; startDash(a, a.x + 0.24, a.z, 0.06, c.impact, 0.06, 0.22, 0, false, 0); } break;
       case DO_RELEASE: {
         a.held = false; const c = a.ch.act('release');
-        if (b && mode.reach > 0) startDash(a, lerp(a.x, tx(b), mode.reach), lerp(a.z, tz(b), mode.reach), 0.02, c.impact - 0.02, 0.3, 0.34, 0.22, true);
+        if (b) startDash(a, tx(b, a) - 0.15, tz(b, a), 0.02, c.impact - 0.02, 0.3, 0.34, 0.22, true);
         at(time + c.impact, DO_LAND, b, a, 1); break;
       }
       case DO_TEAM: {
         land(a, b, true); punch = 1;
         for (let k = 0; k < opp.length; k++) if (opp[k] !== a) at(time + 0.07 * (k + 1), DO_LAND, opp[k], b, 0);
-        for (const e of extras) if (mode === MODES.hold) knock(e, 0.4, 0.2);
         if (sprites) { const x = isUnit(a) ? a.pos[0] : a.x, z = isUnit(a) ? a.pos[2] : a.z; particle(sprites, K_RING, x, 0.03, z, 0, 0, 0, 0.4, 3.4, 0.6, '#ffe27a'); burst(sprites, x, 0.9, z + 0.2, 14, 0.6, '#ffe27a', 3); }
         break;
       }
       case DO_CHEER: if (a && !a.ch.busy && !a.held && !a.moving) { a.ch.act('cheer'); feel(a, 'smile', 1.4); } break;
       case DO_GIVE: { // the clerk (or the hat) has reached the party: hand it over
         const lead = party[0];
-        if (a && !a.leaving) { a.ch.act('nod'); if (sprites) burst(sprites, a.x + 0.3, a.ch.height * 0.62, a.z + 0.1, 5, 0.3, s.n === 1 ? '#ffe27a' : '#ffffff', 0.9); }
+        if (a && !a.leaving) { a.ch.act('nod'); if (sprites) burst(sprites, a.x + 0.3, a.ch.height * 0.62, a.z + 0.1, s.n === 1 ? 10 : 5, s.n === 1 ? 0.45 : 0.3, s.n === 1 ? '#ffe27a' : '#ffffff', s.n === 1 ? 1.6 : 0.9); }
         if (lead && !lead.ch.busy && !lead.held) lead.ch.act(s.n === 1 ? 'cheer' : 'nod');
-        if (s.n === 1) for (const p of party) feel(p, 'smile', 1.6);
+        if (s.n === 1) { for (const p of party) feel(p, 'smile', 1.6); hatT = 0; }
         const c = cue('boon'); c.who = lead ? lead.ch : null;
         break;
       }
-      case DO_AWAY: if (a && S.actors.indexOf(a) >= 0) { if (s.n === 1 && stageRef && stageRef.buffs && stageRef.buffs.debt > 0) { a.gx = -3.75; a.gz = 0.5; a.face = 60; } else { S.leave(a, false, -1); if (a === clerk) clerk = null; } } break;
+      case DO_AWAY: if (a && S.actors.indexOf(a) >= 0) { if (s.n === 1 && stageRef && stageRef.buffs && stageRef.buffs.debt > 0) { a.gx = tab.cx - tab.half - 0.75; a.gz = 0.5; a.face = 60; } else { S.leave(a, false, -1); if (a === clerk) clerk = null; } } break;
       case DO_SETTLE: if (a && S.actors.indexOf(a) >= 0) settle(a); break;
       case DO_UNFOCUS: focus.t = 9; break;
     }
   }
 
+  // supporters stand in the back row at the left of whatever the camera frames, and go along when it moves
+  const folkX = (k) => tab.cx - tab.half + 0.4 + 0.62 * k;
   function settle(a) { // a townsperson takes a place behind the party
     const i = hatters.indexOf(a); if (i >= 0) hatters.splice(i, 1);
     if (folk.length >= MAX_FOLK) { S.leave(a, false, -1); return; }
-    const s = BACK_L[folk.length]; a.role = 'folk'; a.side = 1; a.gx = s[0]; a.gz = s[1]; a.face = 38; a.pose = 'stand'; folk.push(a);
+    a.role = 'folk'; a.side = 1; a.gx = folkX(folk.length); a.gz = folk.length ? -0.1 : 0; a.face = 38; a.pose = 'stand'; folk.push(a);
   }
-  function supporter(n, cut) { const s = BACK_L[folk.length], a = S.enter(townsfolkId, 10 + n, lod, s[0], s[1], 38, cut ? null : -OFF_X); a.role = 'folk'; a.side = 1; a.emote = 'smile'; a.pose = 'stand'; folk.push(a); return a; }
-  function hat(time) { // two townsfolk come on with the hat and wait at the edge with it held out
+  function supporter(n, cut) { const a = S.enter(townsfolkId, 10 + n, lod, folkX(folk.length), folk.length ? -0.1 : 0, 38, cut ? null : tab.cx - tab.half - 1.3); a.role = 'folk'; a.side = 1; a.emote = 'smile'; a.pose = 'stand'; folk.push(a); return a; }
+  function hat(time) { // two townsfolk come on with the hat and wait at the edge of the frame with it held out
     if (hatters.length || !townsfolkId) return;
-    for (let k = 0; k < 2; k++) { const a = S.enter(townsfolkId, 20 + k, lod, -3.45 + k * 0.62, 1.32 - k * 0.3, 62, -OFF_X - k * 0.7); a.role = 'hat'; a.side = 1; a.emote = 'smile'; a.pose = k === 0 ? 'talkBoth' : 'stand'; hatters.push(a); }
+    const left = tab.cx - tab.half;
+    for (let k = 0; k < 2; k++) { const a = S.enter(townsfolkId, 20 + k, lod, left + 0.42 + k * 0.6, 1.36 - k * 0.3, 62, left - 1.3 - k * 0.7); a.role = 'hat'; a.side = 1; a.emote = 'smile'; a.pose = k === 0 ? 'talkBoth' : 'stand'; hatters.push(a); }
+    hatT = 0;
+  }
+  /** The hat itself: carried in front of the first of them, glowing, dropping gold. Built on first use. */
+  function hatProp(dt, time) {
+    const h = hatters.length ? hatters[0] : null;
+    if (!h) { if (hatNode) hatNode.visible = false; if (hatGlow) hatGlow.alpha = 0; return; }
+    if (!hatNode) { S.mats = S.mats || kitMaterials(); hatNode = new Node('hat', { mesh: hatMesh(), material: S.mats.prop }); set.actors.add(hatNode); hatGlow = sprites ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 1.1, color: '#ffd24a', alpha: 0 }) : null; }
+    else if (hatNode.parent !== set.actors) set.actors.add(hatNode);
+    hatT += dt;
+    const x = h.x + 0.36, y = h.ch.height * 0.5 + Math.sin(time * 5) * 0.03, z = h.z + 0.2;
+    hatNode.visible = true; hatNode.setPos(x, y, z); hatNode.setRot(-14, 0, Math.sin(time * 2.3) * 6); hatNode.setScale(1 + 0.12 * Math.max(0, Math.sin(time * 5)));
+    if (hatGlow) { S.toWorld(x, y + 0.12, z + 0.05, W3); hatGlow.pos[0] = W3[0]; hatGlow.pos[1] = W3[1]; hatGlow.pos[2] = W3[2]; hatGlow.alpha = 0.55 + 0.25 * Math.sin(time * 5); }
+    if (sprites && Math.floor(hatT * 3) !== Math.floor((hatT - dt) * 3)) { S.toWorld(x, y + 0.2, z, W3); particle(sprites, K_STAR, W3[0] + (Math.random() - 0.5) * 0.2, W3[1], W3[2], 0, 0.8, 0, 0.2, 0.08, 0.7, '#ffe27a'); }
   }
 
-  /** Where the party stands, which moves with the objective in the modes that are a journey. */
+  /** Where the party stands. In the tableaux this is the staging: at the unit, on the route, at the line. */
   function partySlot(i, out) {
-    const p = total > 0 ? done / total : 0, s = PARTY_SLOT[i];
+    const p = frac(), s = PARTY_SLOT[i];
     let x = s[0], z = s[1];
-    if (mode === MODES.stealth && S.units.length) { x = lerp(tx(S.units[0]), tx(S.units[S.units.length - 1]), won ? 1 : p) - i * 0.7; z = 0.75; }   // from the first thing to the last, as far as the objective has got
-    else if (mode === MODES.walk) x = s[0] - 1.3 + 2.9 * p;
-    else if (mode === MODES.talk && i === 0) x = -0.55;
+    if (mode.route) { x = lerp(route.x0, route.x1, p) - i * 0.72; z = i === 1 ? route.z - 0.42 : i === 2 ? route.z + 0.42 : route.z; }
+    else if (mode === MODES.work) {
+      const t = target(false);
+      if (isUnit(t)) {
+        // the lead at the thing's stand, the second on its far side facing back, a third behind the lead
+        const sx = t.stand ? t.stand[0] : t.pos[0] - 0.62, sz = t.stand ? t.stand[1] : clamp(t.pos[2] + 0.35, 0.3, 1.2);
+        if (i === 0) { x = sx; z = sz; } else if (i === 1) { x = t.pos[0] + Math.max(0.55, t.pos[0] - sx); z = sz - 0.08; } else { x = sx - 0.8; z = sz + 0.3; }
+      } else if (t) x = t.gx - STANDOFF - 0.1 - i * 0.76;
+    } else if (mode === MODES.hold) x = -0.5 - i * 0.74 + 0.55 * p;
+    else if (mode === MODES.talk) x = -0.62 - i * 0.78;
     else if (kind === 'people') x = s[0] - 0.25 + 0.45 * p;
-    out[0] = clamp(x, -HALF_W + 0.45 + 0.1 * i, HALF_W - 0.45); out[1] = z; return out;      // never out of the band's frame
+    out[0] = clamp(x, -HALF_W + 0.45 + 0.1 * i, HALF_W - 0.45); out[1] = z; return out;      // never off the strip
+  }
+  /** Which way a party member faces: toward the thing (a second worker stands on its far side). */
+  const partyFace = (a) => (mode === MODES.work && a.slot === 1 && S.units.length ? -58 : 58);
+  /** Who answers a hit. */
+  function pickActor() {
+    if (mode.route || mode === MODES.talk) return ready(party[0]) ? party[0] : mode === MODES.talk && ready(party[1]) ? party[1] : null;
+    return free(party, mode === MODES.work ? Math.min(2, party.length) : party.length);
+  }
+  /** Where the people the party is acting on stand (tableaux): pressed back as the objective goes. */
+  function frontSlot(i, out) {
+    const p = frac(), s = OPP_SLOT[i];
+    if (mode === MODES.hold) { out[0] = 0.62 + i * 0.78 + 0.85 * p; out[1] = s[1]; }
+    else if (mode === MODES.talk) { out[0] = 0.72 + i * 0.8; out[1] = i === 1 ? 0.3 : i === 2 ? 1.2 : 0.78; }
+    else if (mode.route) { out[0] = route.x1 + 0.95 + i * 0.7; out[1] = s[1]; }
+    else { out[0] = s[0] + (mode.tab ? 0 : 0.5 * p); out[1] = s[1]; }
+    return out;
+  }
+  /** What the camera frames: the fight keeps the strip; a tableau its party and the thing they are at. */
+  function frameTab() {
+    if (!mode.tab) { tab.cx = 0; tab.half = HALF_W; return; }
+    let lo = 9, hi = -9;
+    for (const a of party) { if (a.gx - 0.42 < lo) lo = a.gx - 0.42; if (a.gx + 0.42 > hi) hi = a.gx + 0.42; }
+    if (mode.route) hi = Math.max(hi, (party[0] ? party[0].gx : 0) + 2.1);
+    else {
+      const t = target(false), fr = front();
+      if (isUnit(t)) { lo = Math.min(lo, t.pos[0] - 0.5); hi = Math.max(hi, t.pos[0] + 0.5); }
+      for (let i = 0; i < fr.length && i < 2; i++) hi = Math.max(hi, fr[i].gx + 0.45);
+    }
+    if (lo > hi) { lo = -HALF_TAB; hi = HALF_TAB; }
+    tab.half = clamp((hi - lo) / 2 + 0.1, HALF_TAB, HALF_W);
+    tab.cx = clamp((hi + lo) / 2, -HALF_W - 0.6 + tab.half, HALF_W + 0.6 - tab.half);
   }
 
   /** A new scene's encounter on this stage. Figures already here walk to their new places; cut: everyone is simply there. */
   function setup(st, cut, content, game) {
     stageRef = st; mode = MODES[st.mode] || MODES.fight; kind = st.opposition ? st.opposition.kind : 'people';
-    won = false; done = st.progress.done; total = st.progress.total; beat = st.beat ? st.beat.index : -1; turn = 0; oppTurn = 0; focus.t = 9;
+    won = false; done = st.progress.done; total = st.progress.total; beat = -2; turn = 0; oppTurn = 0; focus.t = 9; resolveT = 0;
     for (let i = 0; i < sched.length; i++) sched[i].on = false;
     const ch = content && game ? content.chapters[game.chapter] : null;
     townsfolkId = (ch && ch.stage && ch.stage.townsfolk) || opts.townsfolk || '';
@@ -736,51 +906,69 @@ function fightOn(S, opts = {}) {
     for (let i = hatters.length - 1; i >= 0; i--) if (S.actors.indexOf(hatters[i]) < 0 || hatters[i].leaving) hatters.splice(i, 1);
     for (let i = folk.length - 1; i >= 0; i--) if (S.actors.indexOf(folk[i]) < 0 || folk[i].leaving) folk.splice(i, 1);
     if (clerk && (S.actors.indexOf(clerk) < 0 || clerk.leaving)) clerk = null;
+    if (set.encounter) set.encounter(st);
     // mark everyone, then claim who stays
     for (const a of S.actors) if (a.role !== 'folk' && a.role !== 'hat' && a !== clerk) a.role = 'old';
     if (kind === 'force') buildUnits(S, st.opposition.who); else S.clearUnits();
+    // the route of the modes that are a journey: from the first thing to the last, or across the strip to the set's goal mark
+    const gm = set.marks && set.marks.goal ? set.marks.goal.pos : null, nu = S.units.length;
+    const stand = (u) => (u.stand ? u.stand[0] : u.pos[0] - 0.62);
+    route.x1 = nu ? stand(S.units[nu - 1]) : gm ? gm[0] - 0.55 : 2.0; route.x0 = nu > 1 ? stand(S.units[0]) : Math.min(-2.2, route.x1 - 2.4); route.z = 0.8;
+    const wants = (a, id) => a && a.wear === wearOf(id);
     for (let i = 0; i < st.party.length; i++) {
       const id = st.party[i]; let a = S.find(id);
-      if (!a) a = S.enter(id, 0, lod, 0, 0, 0, cut ? null : -OFF_X - i * 0.5);
+      if (a && !wants(a, id)) { S.drop(a); a = null; }
+      if (!a) a = S.enter(id, 0, lod, 0, 0, 0, cut ? null : -OFF_X - i * 0.5, wearOf(id));
       if (a.held) { a.ch.release(); a.held = false; }
-      a.role = 'party'; a.side = 1; a.slot = i; a.pose = mode.hold; a.emote = mode === MODES.fight ? 'grim' : 'neutral'; a.face = 58; party.push(a);
-      partySlot(i, SLOT); a.gx = SLOT[0]; a.gz = SLOT[1]; if (cut) snapTo(a);
+      a.role = 'party'; a.side = 1; a.slot = i; a.pose = mode.hold; a.emote = mode === MODES.fight ? 'grim' : 'neutral'; party.push(a);
+      a.speed = mode === MODES.stealth ? WALK * 0.6 : WALK;
     }
+    for (const a of party) { partySlot(a.slot, SLOT); a.gx = SLOT[0]; a.gz = SLOT[1]; a.face = partyFace(a); if (cut) snapTo(a); }
     const people = kind === 'people' ? st.opposition.who : [];
     for (let i = 0; i < people.length; i++) {
-      let a = null; for (const x of S.actors) if (x.id === people[i] && x.role === 'old' && !a) a = x;
-      if (!a) a = S.enter(people[i], i, lod, 0, 0, 0, cut ? null : OFF_X + i * 0.5);
+      let a = null; for (const x of S.actors) if (x.id === people[i] && x.role === 'old' && !a && wants(x, people[i])) a = x;
+      if (!a) a = S.enter(people[i], i, lod, 0, 0, 0, cut ? null : OFF_X + i * 0.5, wearOf(people[i]));
       if (a.held) { a.ch.release(); a.held = false; }
-      a.role = 'opp'; a.side = -1; a.slot = i; a.pose = 'stand'; a.emote = 'anger'; a.face = -58; a.gx = OPP_SLOT[i][0]; a.gz = OPP_SLOT[i][1]; opp.push(a); if (cut) snapTo(a);
+      a.role = 'opp'; a.side = -1; a.slot = i; a.pose = mode === MODES.hold ? 'brace' : 'stand'; a.emote = 'anger'; a.face = -58; opp.push(a);
+      frontSlot(i, SLOT); a.gx = SLOT[0]; a.gz = SLOT[1]; if (cut) snapTo(a);
     }
-    const ex = st.extras || [];
+    const ex = st.extras || [], marks = set.marks && set.marks.extras ? set.marks.extras : null;
+    const pressing = kind !== 'people' && (mode === MODES.hold || mode === MODES.talk);     // the extras ARE who the party is acting on
+    const unitR = nu ? S.units[nu - 1].pos[0] : 1.2;
     for (let i = 0; i < ex.length; i++) {
-      let a = null; for (const x of S.actors) if (x.id === ex[i] && x.role === 'old' && !a) a = x;
-      // holding a line, the extras ARE the pressure: they stand where an opposition would. Otherwise they watch from the back.
-      const s = mode === MODES.hold ? OPP_SLOT[i] : BACK_R[i];
-      const sx = mode === MODES.hold ? s[0] - 0.35 : mode === MODES.walk ? -0.9 + i * 1.5 : S.units.length ? 2.62 + i * 0.42 : s[0];   // beside a prop they keep to the edge, out of its way
-      if (!a) a = S.enter(ex[i], 30 + i, lod, sx, s[1], 0, cut ? null : OFF_X + i * 0.6);
+      let a = null; for (const x of S.actors) if (x.id === ex[i] && x.role === 'old' && !a && wants(x, ex[i])) a = x;
+      let gx, gz, face = -42;
+      if (marks && marks[i]) { gx = marks[i].pos[0]; gz = marks[i].pos[2]; face = marks[i].face; }
+      else if (pressing) { frontSlot(i, SLOT); gx = SLOT[0]; gz = SLOT[1]; face = -58; }
+      else if (mode.route) { gx = lerp(route.x0, route.x1, (i + 1) / (ex.length + 1)) + 0.35; gz = 0.04 - 0.06 * i; face = 6; }        // along the way, in the back row
+      else if (mode.tab) { gx = Math.min(HALF_W - 0.3 - 0.5 * (ex.length - 1), nu ? unitR + 1.05 : 2.3) + i * 0.5; gz = 0.05 + (i % 2) * 0.5; }               // beside the thing, out of its way
+      else { gx = BACK_R[i][0]; gz = BACK_R[i][1]; }
+      if (!a) a = S.enter(ex[i], 30 + i, lod, gx, gz, 0, cut ? null : OFF_X + i * 0.6, wearOf(ex[i]));
       if (a.held) { a.ch.release(); a.held = false; }
-      const seat = ex[i] === 'corvane' && set.marks && set.marks.seat ? set.marks.seat : null;
-      a.role = 'extra'; a.side = -1; a.slot = i; a.pose = 'stand'; a.emote = mode === MODES.hold ? 'anger' : 'neutral'; a.gx = sx; a.gz = S.units.length && mode !== MODES.hold && mode !== MODES.walk ? 1.05 - i * 0.55 : s[1]; a.face = mode === MODES.walk ? 10 : -42;
-      if (seat) { a.gx = seat.pos[0]; a.gz = seat.pos[2]; a.face = seat.face; }
+      const seat = ex[i] === 'corvane' && set.marks && set.marks.seat && !(marks && marks[i]) ? set.marks.seat : null;
+      a.role = 'extra'; a.side = -1; a.slot = i; a.pose = pressing && mode === MODES.hold ? 'brace' : 'stand'; a.emote = pressing ? 'anger' : 'neutral'; a.gx = gx; a.gz = gz; a.face = face; a.pinned = !!(marks && marks[i]);
+      if (seat) { a.gx = seat.pos[0]; a.gz = seat.pos[2]; a.face = seat.face; a.pinned = true; }
       extras.push(a); if (cut) snapTo(a);
     }
     for (let i = S.actors.length - 1; i >= 0; i--) if (S.actors[i].role === 'old') S.leave(S.actors[i], cut);
+    frameTab();
     // supporters already earned stand behind the party from the start
     const want = townsfolkId && st.buffs ? Math.min(MAX_FOLK, st.buffs.supporters || 0) : 0;
     while (folk.length < want) supporter(folk.length, true);
     for (const u of S.units) u.shown = unitV(S.units.indexOf(u));
+    goal.pulse = 0; goal.pop = 0;
   }
   const unitV = (i) => (won ? 1 : S.units.length === 1 ? done / Math.max(1, total) : clamp(done * S.units.length / Math.max(1, total) - i, 0, 1));
 
   function win(time) {
-    if (won) return; won = true; punch = Math.max(punch, 0.8); focus.t = 9;
-    for (const o of opp) { o.ch.release(); o.dash.on = false; o.ch.act(o === opp[0] ? 'yield' : 'surrender'); o.held = true; o.emote = 'tears'; o.tempT = 0; }
+    if (won) return; won = true; punch = Math.max(punch, 0.8); focus.t = 9; resolveT = 0;
+    for (const o of opp) { o.ch.release(); o.dash.on = false; if (mode === MODES.talk) { o.emote = 'smile'; o.pose = 'stand'; o.ch.act('nod'); } else { o.ch.act(o === opp[0] ? 'yield' : 'surrender'); o.held = true; o.emote = 'tears'; } o.tempT = 0; }
     for (const p of party) { p.ch.release(); p.held = false; p.pose = 'stand'; p.emote = 'smile'; p.tempT = 0; at(time + 0.1 * p.slot, DO_CHEER, p, null, 0); }
-    for (const e of extras) { e.emote = kind === 'people' ? 'shock' : 'smile'; if (mode === MODES.hold) knock(e, 0.35, 0.6); }
+    for (const e of extras) { e.emote = kind === 'people' ? 'shock' : 'smile'; e.pose = 'stand'; if (mode === MODES.hold) knock(e, 0.35, 0.6); else if (mode === MODES.talk && !e.ch.busy) e.ch.act('nod'); }
     for (const f of folk) at(time + 0.25, DO_CHEER, f, null, 0);
-    if (sprites) burst(sprites, 0, 1.5, 0.6, 12, 0.5, '#ffe27a', 2.4);
+    aimOf(target(false), AIM);
+    if (sprites) { burst(sprites, AIM[0], Math.max(0.9, AIM[1]), AIM[2] + 0.2, 14, 0.5, '#ffe27a', 2.4); particle(sprites, K_RING, AIM[0], 0.03, AIM[2], 0, 0, 0, 0.4, 2.6, 0.6, '#ffe27a'); }
+    goal.pop = 1;
     cue('clear');
   }
 
@@ -789,7 +977,14 @@ function fightOn(S, opts = {}) {
     if (!act || won) return;
     if (act === 'win') { win(time); return; }
     if (act === 'jab' || act === 'chop') {
-      const t = target(), a = free(party);
+      const t = target(true), a = mode.tab ? pickActor() : free(party);
+      if (mode.tab) {
+        // the bolt goes to the THING, timed to land as the hand does; with nobody free it still lands and the thing still answers
+        energy(e, a, false, false, t, LAG + TAB_IMPACT);
+        if (a) at(time + LAG, DO_STRIKE, a, t, act === 'chop' ? 1 : 0); else at(time + LAG + TAB_IMPACT, DO_LAND, t, null, 0);
+        if (level >= 2 && !mode.route) { const b = pickActor(); if (b && b !== a) at(time + LAG + 0.12, DO_STRIKE, b, t, 1); }
+        return;
+      }
       if (!a) { if (isUnit(t)) t.wob = 0.5; return; }     // everyone is mid-move: the hit still counts, the stage just does not double up
       energy(e, a, false, false);
       at(time + LAG, DO_STRIKE, a, t, act === 'chop' ? 1 : 0);
@@ -803,26 +998,28 @@ function fightOn(S, opts = {}) {
       if (e.saved) { for (const p of party) feel(p, 'shock', 0.5); return; }
       // the setback: whoever opposes comes in, the whole party is driven back and holds there a moment
       const a = kind === 'people' ? opp[0] : extras[0];
-      if (a && !a.held && !a.moving) { const c = a.ch.act('strike'), v = party[0]; if (v) startDash(a, v.x + 0.7, v.z, 0.1, c.impact - 0.1, 0.2, 0.4, 0.1, false); }
-      else if (sprites) { P3[0] = 3.6; P3[1] = 1.0; P3[2] = 0.7; V3[0] = -6; V3[1] = 0; V3[2] = 0; sprites.gust(P3, GUST); }
-      for (const p of party) { if (p.held) { p.ch.release(); p.held = false; } p.dash.on = false; if (!p.moving) p.ch.act('hit'); knock(p, -0.55 - 0.1 * p.slot, 0.5); feel(p, p.slot === 0 ? 'shock' : 'tears', 1.5); p.busyT = 1.1; }
+      if (a && !a.held && !a.moving && !a.pinned) { const c = a.ch.act('strike'), v = party[0]; if (v) startDash(a, v.x + STANDOFF * 0.8, v.z, 0.1, c.impact - 0.1, 0.2, 0.4, 0.1, false); }
+      else if (sprites) { P3[0] = tab.cx + tab.half + 0.6; P3[1] = 1.0; P3[2] = 0.7; V3[0] = -6; V3[1] = 0; V3[2] = 0; sprites.gust(P3, GUST); }
+      for (const p of party) { if (p.held) { p.ch.release(); p.held = false; } p.dash.on = false; if (!p.moving) p.ch.act('hit'); knock(p, (partyFace(p) > 0 ? -1 : 1) * (0.55 + 0.1 * p.slot), 0.5); feel(p, p.slot === 0 ? 'shock' : 'tears', 1.5); p.busyT = 1.1; }
       for (const f of folk) feel(f, 'shock', 1.2);
       punch = Math.max(punch, 0.7); focus.t = 9;
-      if (set.passLamp) set.passLamp(); if (set.pourTea) set.pourTea();      // the set's own tell for this encounter's setback, where it has one
+      // the set's own tell for this encounter's setback, where it has one
+      if (set.setback) set.setback(stageRef && stageRef.setback ? stageRef.setback.cue : '');
+      if (set.passLamp) set.passLamp(); if (set.pourTea) set.pourTea();
       cue('break');
     } else if (act === 'saved') { for (const p of party) feel(p, 'smile', 0.8); }
     else if (act === 'loan') {
       if (!clerkId) return;
       const lead = party[0]; if (!lead) return;
-      if (!clerk || S.actors.indexOf(clerk) < 0) clerk = S.enter(clerkId, 40, lod, 0, 0, 62, -OFF_X);
-      clerk.role = 'clerk'; clerk.side = 1; clerk.leaving = false; clerk.gx = lead.gx - 0.5; clerk.gz = lead.gz + 0.5; clerk.face = 62; clerk.speed = WALK * 1.25;
+      if (!clerk || S.actors.indexOf(clerk) < 0) clerk = S.enter(clerkId, 40, lod, 0, 0, 62, tab.cx - tab.half - 1.4);
+      clerk.role = 'clerk'; clerk.side = 1; clerk.leaving = false; clerk.gx = lead.gx - 0.55; clerk.gz = lead.gz + 0.46; clerk.face = 62; clerk.speed = WALK * 1.25;
       const eta = Math.hypot(clerk.gx - clerk.x, clerk.gz - clerk.z) / clerk.speed;
       at(time + eta + 0.1, DO_GIVE, clerk, null, 0); at(time + eta + 0.9, DO_AWAY, clerk, null, 1);
       if (e.refused) for (const h of hatters) { feel(h, 'tears', 2); at(time + 1.2, DO_AWAY, h, null, 0); }
     } else if (act === 'aid') {
       if (!hatters.length) hat(time);
       const lead = party[0], h = hatters[0]; if (!h || !lead) return;
-      h.gx = lead.gx - 0.5; h.gz = lead.gz + 0.5; h.speed = WALK * 1.25;
+      h.gx = lead.gx - 0.6; h.gz = lead.gz + 0.46; h.speed = WALK * 1.25;
       const eta = Math.hypot(h.gx - h.x, h.gz - h.z) / h.speed;
       at(time + eta + 0.1, DO_GIVE, h, null, 1);
       for (let k = 0; k < hatters.length; k++) at(time + eta + 1.0 + k * 0.2, DO_SETTLE, hatters[k], null, 0);
@@ -831,7 +1028,7 @@ function fightOn(S, opts = {}) {
   const GUST = { vel: V3, size: 1.5, life: 0.9, color: '#ffffff', alpha: 0.9 };
 
   F.update = (dt, time, f) => {
-    const st = f.stage; dtLast = dt; timeNow = time; hitFn = f.hit || null; stageRef = st;
+    const st = f.stage; dtLast = dt; timeNow = time; hitFn = f.hit || null; stageRef = st; wear = f.wear || null;
     cues.length = 0;
     const key = (f.game ? f.game.chapter + ':' + f.game.scene : 'x') + ':' + st.set + ':' + (st.opposition ? st.opposition.name : '');
     const cut = !!f.cut || first;
@@ -853,36 +1050,51 @@ function fightOn(S, opts = {}) {
     const p = st.progress;
     if (p.total !== total) total = p.total;
     if (p.done > done && !won) {
-      done = p.done;
-      if (kind === 'people') { for (const o of opp) { feel(o, 'shock', 1.1); knock(o, 0.3, 0.3); } }
-      for (const a of party) if (!a.ch.busy && !a.held && !a.moving && a.busyT <= 0 && mode !== MODES.stealth) { a.ch.act(mode === MODES.talk ? 'nod' : 'hop'); }
+      done = p.done; goal.pop = 1;
+      const fr = front();
+      if (mode === MODES.talk && fr.length) { const n = Math.floor(frac() * fr.length); for (let i = 0; i < fr.length; i++) if (i < n && fr[i].emote !== 'smile') { fr[i].emote = 'smile'; fr[i].tempT = 0; if (!fr[i].ch.busy) fr[i].ch.act('nod'); } }
+      else if (kind === 'people' || mode === MODES.hold) for (const o of fr) { feel(o, 'shock', 1.1); knock(o, 0.3, 0.3); }
+      for (const a of party) if (ready(a) && !mode.route) a.ch.act(mode === MODES.talk ? 'nod' : 'hop');
+      if (sprites) { aimOf(target(false), AIM); burst(sprites, AIM[0], AIM[1], AIM[2] + 0.2, 9, 0.42, '#ffe27a', 1.9); }
       const c = cue('beat'); c.name = st.beat ? st.beat.name : '';
     } else if (p.done < done) done = p.done;
-    if (st.phase === 'resolve') win(time);
+    if (st.phase === 'resolve') { win(time); resolveT += dt; }
+    // the set is told which beat the scene is in
+    const bi = st.beat ? st.beat.index : -1;
+    if (bi !== beat) { beat = bi; if (set.beat && st.beat) set.beat(st.beat.cue, bi, st.beat.of, done, total); }
+    // a line spoken in play (briefing, bark) may be a cue for the set too
+    const said = f.voice && f.voice.line ? f.voice.line.id : '';
+    if (said !== lastBark) { lastBark = said; if (said && set.cue) set.cue(said); }
     // scheduled steps
     for (let i = 0; i < sched.length; i++) if (sched[i].on && sched[i].t <= time) { sched[i].on = false; run(sched[i], time); }
+    // places
+    for (const a of party) {
+      partySlot(a.slot, SLOT); a.gx = SLOT[0]; a.gz = SLOT[1];
+      a.pose = won ? 'stand' : mode.hold;
+      if (a.tempT <= 0 && !won) a.emote = level >= 2 ? 'smile' : mode === MODES.fight ? 'grim' : 'neutral';
+      a.face = partyFace(a); a.st.energy = 0.8 + 0.25 * level;
+    }
+    if (!won) {
+      const fr = front();
+      for (const o of fr) { if (o.pinned) continue; frontSlot(o.slot, SLOT); o.gx = SLOT[0]; o.gz = SLOT[1]; if (o.tempT <= 0 && mode !== MODES.talk) o.emote = frac() > 0.6 ? 'shock' : 'anger'; }
+    }
+    frameTab();
     // supporters, the hat, the clerk
     const b = st.buffs || null;
     if (b && townsfolkId) {
       if (folk.length + hatters.length < Math.min(MAX_FOLK, b.supporters || 0)) supporter(folk.length, false);
       if (b.hat && !hatters.length) hat(time);
     }
-    // places
-    for (const a of party) {
-      partySlot(a.slot, SLOT); a.gx = SLOT[0]; a.gz = SLOT[1];
-      a.pose = won ? 'stand' : mode.hold;
-      if (a.tempT <= 0 && !won) a.emote = level >= 2 ? 'smile' : mode === MODES.fight ? 'grim' : 'neutral';
-      a.face = 58; a.st.energy = 0.8 + 0.25 * level;
-    }
-    if (kind === 'people' && !won) for (const o of opp) { o.gx = OPP_SLOT[o.slot][0] + 0.5 * (done / Math.max(1, total)); if (o.tempT <= 0) o.emote = done / Math.max(1, total) > 0.6 ? 'shock' : 'anger'; }
+    for (let k = 0; k < folk.length; k++) folk[k].gx = folkX(k);
+    hatProp(dt, time);
     // who looks where, who is heard
     const lens = f.camera || S.camera, vw = f.voice && f.voice.who ? f.voice.who : '', vl = f.voice && f.voice.level != null ? f.voice.level : null;
-    const t0 = party[0] || null, o0 = kind === 'people' ? opp[0] : null, u0 = S.units.length ? S.units[Math.min(S.units.length - 1, Math.floor(done * S.units.length / Math.max(1, total)))] : null;
+    const t0 = party[0] || null, tg = target(false), look = isUnit(tg) ? tg.pos : tg ? tg.hp : null;
     for (const a of S.actors) {
       if (a.role === 'gone' || a.role === 'old') { a.talk = -1; continue; }
       if (a.busyT <= 0 || a.talk !== -2) a.talk = a.id === vw ? (vl == null ? -2 : Math.max(vl, 0.03)) : -1;
       const st2 = a.st;
-      if (a.side > 0 && a.role !== 'clerk') st2.look = o0 ? o0.hp : u0 ? u0.pos : null;
+      if (a.side > 0 && a.role !== 'clerk') st2.look = look;
       else if (a.side < 0) st2.look = mode === MODES.walk && lens ? null : t0 ? t0.hp : null;
       else st2.look = t0 ? t0.hp : null;
       if (won && lens && a.role === 'party') st2.look = 'camera';
@@ -905,47 +1117,75 @@ function fightOn(S, opts = {}) {
     auraOn = !!b && ((b.shield || 0) > 0 || (b.double || 1) > 1); auraGold = !!b && (b.double || 1) > 1;
     for (const a of party) {
       if (auraOn && !a.aura && sprites) a.aura = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 1.5, color: '#8fd8ff', alpha: 0 });
-      if (a.aura) { const g = a.aura; g.pos[0] = a.x + a.ox + a.kx; g.pos[1] = a.ch.height * 0.5; g.pos[2] = a.z + a.oz - 0.1; g.alpha += ((auraOn ? 0.34 + 0.08 * Math.sin(time * 4 + a.slot) : 0) - g.alpha) * Math.min(1, dt * 5); g.color[0] = auraGold ? 1 : 0.56; g.color[1] = auraGold ? 0.82 : 0.85; g.color[2] = auraGold ? 0.3 : 1; }
+      if (a.aura) { const g = a.aura; S.toWorld(a.x + a.ox + a.kx, a.ch.height * 0.5, a.z + a.oz - 0.1, g.pos); g.alpha += ((auraOn ? 0.34 + 0.08 * Math.sin(time * 4 + a.slot) : 0) - g.alpha) * Math.min(1, dt * 5); g.color[0] = auraGold ? 1 : 0.56; g.color[1] = auraGold ? 0.82 : 0.85; g.color[2] = auraGold ? 0.3 : 1; }
     }
     if (auraOn && sprites && time > nextAura) { nextAura = time + 0.22; const a = party[Math.floor(Math.random() * party.length)]; if (a) particle(sprites, K_STAR, a.x + (Math.random() - 0.5) * 0.5, 0.2, a.z + 0.1, 0, 0.9, 0, 0.16, 0.08, 0.8, auraGold ? '#ffe27a' : '#bfeaff'); }
     if (focus.t < 8) { focus.t += dt; if (focus.t > focus.dur + 0.2) focus.t = 9; }
+    // the objective as it is shown
+    goal.on = mode.tab && total > 0; goal.kind = mode.route ? 'route' : 'ring'; goal.done = won ? total : done; goal.total = total; goal.n = mode.route ? nPips() : 0;
+    goal.pulse = Math.max(0, goal.pulse - dt * 3.2); goal.pop = Math.max(0, goal.pop - dt * 1.5);
+    if (goal.on && !mode.route) {
+      const fr = front();
+      if (mode === MODES.hold && fr.length) S.toWorld(fr[0].x + fr[0].kx - 0.55, 0.62, 0.8, goal.pos);      // the line itself, between them
+      else aimOf(tg, goal.pos);
+      goal.size = isUnit(tg) ? tg.size || 0.5 : 0.5;
+    }
   };
 
-  /** The stage camera: the whole strip, pushed in on the pair for a team move, shaken by a blow. */
-  F.frame = (camera, aspect, viewHeight, time, rect, pad) => {
+  /** The stage camera: what frameTab chose, pushed in on the pair for a team move, shaken by a blow. Also places the sparks and the objective on the glass. */
+  F.frame = (camera, aspect, viewHeight, time, rect, pad, grow = 0) => {
     const fov = 24, tv = Math.tan(fov * DEG / 2);
-    // the strip is HALF_W either side of centre; the ground line sits just above whatever the HUD covers at the foot
-    // of the rectangle (pad.bottom, px), so feet are never under the status strip, however tall the band is
-    const d = Math.min(HALF_W / (tv * aspect), 14.2), h = viewHeight || 220, foot = pad ? pad.bottom : 0;
-    let cx = 0, dd = d, cy = clamp((h / 2 - foot - 10) * (2 * d * tv) / h, 0.55, 1.5);
-    if (mode === MODES.walk || mode === MODES.stealth) { const a = party[0]; if (a && aspect < 1.2) cx = a.x; }   // grown toward full screen, the frame is narrower than the strip: stay with the lead
-    if (aspect < 1.2 && party.length && won) { cx = 0; for (const a of party) cx += a.x / party.length; }
+    // the ground line sits just above whatever the HUD covers at the foot of the rectangle (pad.bottom, px), so feet
+    // are never under the status strip, however tall the band is
+    const d = Math.min(tab.half / (tv * aspect), 14.2), h = viewHeight || 220, foot = pad ? pad.bottom : 0;
+    let cx = tab.cx, dd = d, cy = clamp((h / 2 - foot - 10) * (2 * d * tv) / h, 0.5, 1.5);
+    if (aspect < 1.2 && party.length) {
+      // grown toward full screen the frame is narrower than the strip: stay with the lead, and, once it is won, with the lead and the thing done
+      const a = party[0]; cx = a.x;
+      if (won) { aimOf(target(false), AIM); cx = Math.abs(AIM[0] - a.x) < 2.3 ? (a.x + AIM[0]) / 2 : a.x + 0.4; dd *= 1 - 0.1 * smooth(resolveT / 1.1); }
+    }
     if (focus.t < 8) { const k = smooth(focus.t / 0.25) * (1 - smooth((focus.t - focus.dur + 0.1) / 0.2)); cx = lerp(cx, lerp(focus.x, focus.x2, smooth((focus.t - 0.6) / 0.4)), k); dd *= lerp(1, focus.zoom, k); cy = lerp(cy, cy * focus.zoom + 0.12, k); }
     RT[0] = cx; RT[1] = cy; RT[2] = 0.5;
-    PROBE.fov = fov; PROBE.orbit(RT, dd, 7 + Math.sin(time * 0.21) * 1.0, 7);
+    PROBE.fov = fov; PROBE.orbit(RT, dd, (mode.tab ? 5 : 7) + Math.sin(time * 0.21) * 1.0, 7);
     rigTo(S.rig, camera, dtLast, false, focus.t < 8 ? 9 : 5, time, punch);
-    S.view.shadowCenter[0] = 0; S.view.shadowCenter[2] = 0.2; S.view.shadowRadius = 5.2; set.env.shadow.center = S.view.shadowCenter; set.env.shadow.radius = 5.2;
+    S.view.shadowCenter[0] = S.rig.x; S.view.shadowCenter[2] = 0.2; S.view.shadowRadius = tab.half + 2.2; set.env.shadow.center = S.view.shadowCenter; set.env.shadow.radius = S.view.shadowRadius;
     if (set.foreground) set.foreground.visible = false;
     if (set.wings) for (let i = 0; i < set.wings.length; i++) set.wings[i].visible = aspect < 1.6;   // a set's far sides are outside the band at rest: not drawn until it grows
     if (S.fill) S.fill.light.intensity = 0.6;
     set.env.outline.width = inkFor(camera, viewHeight || 220, party[0] ? party[0].ch.headRadius : 0.2);
     troupe.aim(camera);
     S.camera = camera;
-    // sparks: aim each at its actor's chest as it is now, and run it
+    ppu = h / (2 * S.rig.d * tv);
     if (rect) {
       camera.update(aspect);
+      // sparks: aim each at its actor's chest as it is now (or at the thing), and run it
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i], a = s.who;
-        P3[0] = a.x + a.ox + a.kx; P3[1] = chestY(a); P3[2] = a.z + a.oz;
+        if (a) S.toWorld(a.x + a.ox + a.kx, chestY(a), a.z + a.oz, P3); else { P3[0] = s.pt[0]; P3[1] = s.pt[1]; P3[2] = s.pt[2]; }
         if (projectTo(camera, P3, rect, HIT)) { s.x1 = HIT[0]; s.y1 = HIT[1]; }
         if (s.x0 !== s.x0) { s.x0 = rect.x + rect.w * (0.3 + 0.4 * ((i * 0.37) % 1)); s.y0 = rect.y + rect.h + 60; }   // the shell gave no table point: rise from under the seam
-        s.t += dtLast / 0.3;
+        s.t += dtLast / s.dur;
         if (s.t > 1.25) { s.live = false; sparks.splice(i, 1); }
       }
-    } else { for (let i = 0; i < sparks.length; i++) sparks[i].live = false; sparks.length = 0; }
+      // the objective: the ring on the thing, or the steps along the floor
+      goal.x = NaN;
+      if (goal.on && goal.kind === 'ring') {
+        if (projectTo(camera, goal.pos, rect, HIT)) { goal.x = HIT[0]; goal.y = HIT[1]; goal.r = clamp(goal.size * ppu * 0.62, 15, 30); }
+      } else if (goal.on) {
+        const n = goal.n, lit = Math.floor(frac() * n + 1e-6);
+        for (let k = 0; k < MAX_PIPS; k++) {
+          const q = pips[k]; q.on = false; if (k >= n) continue;
+          S.toWorld(pipX(k + 1), 0.03, route.z + 0.38, P3);
+          if (projectTo(camera, P3, rect, HIT)) { q.on = true; q.x = HIT[0]; q.y = HIT[1]; q.lit = k < lit; }
+        }
+        goal.r = clamp(0.09 * ppu, 4, 8);
+      }
+      goal.fade = 1 - clamp(grow * 2.5, 0, 1);
+    } else { for (let i = 0; i < sparks.length; i++) sparks[i].live = false; sparks.length = 0; goal.x = NaN; }
   };
   return F;
 }
+const NOBODY = [];
 
 /**
  * A scene's encounter played from table events (the slice API; the game goes through createDirector).

@@ -548,7 +548,6 @@ export function createTableView(content, tableId, opts = {}) {
       rim: { color: '#ffe9b0', amount: 0.7, edge: 0.72 },
       fog: { density: 0, max: 0 },
       water: { level: -0.13, deep: '#1f86d8', mid: '#2fb2e4', shallow: '#7fe8dc', foam: '#ffffff', glint: '#fff4c8', glintDensity: 0.22, drift: [0.25, 0.1], shores: [] },
-      ...(art.env || {}),
     }),
     night: makeEnv('night', {
       key: { dir: [-0.38, 0.72, -0.58], color: '#7f96ee' },
@@ -558,7 +557,6 @@ export function createTableView(content, tableId, opts = {}) {
       fog: { density: 0, max: 0 },
       sky: { horizon: '#27408f' },
       water: { level: -0.13, deep: '#101f6e', mid: '#1b3a9a', shallow: '#3f7fd6', foam: '#cfe0ff', glint: '#bcd4ff', glintDensity: 0.16, drift: [0.25, 0.1], shores: [] },
-      ...(art.envNight || {}),
     }),
     day: makeEnv('day', {
       key: { dir: [-0.36, 0.8, -0.48], color: '#fffaf0' },
@@ -567,13 +565,14 @@ export function createTableView(content, tableId, opts = {}) {
       rim: { color: '#ffffff', amount: 0.6, edge: 0.74 },
       fog: { density: 0, max: 0 },
       water: { level: -0.13, deep: '#1f8ee0', mid: '#34bdea', shallow: '#8ff0e0', foam: '#ffffff', glint: '#ffffff', glintDensity: 0.24, drift: [0.25, 0.1], shores: [] },
-      ...(art.envDay || {}),
     }),
   };
   LIGHTS.dawn = makeEnv(LIGHTS.dusk, { // the same low sun come round to the other side, cooler and pinker
     key: { dir: [0.5, 0.56, -0.62], color: '#ffe4d6' }, shadow: { tint: '#8e90ea', ...shadowBox }, ambient: { sky: '#ffd0d8', ground: '#8fa0ea', amount: 0.1 },
-    water: { deep: '#3a86d6', mid: '#5fb6e6', shallow: '#a8ecdf', glint: '#ffe9e0' }, ...(art.envDawn || {}),
+    water: { deep: '#3a86d6', mid: '#5fb6e6', shallow: '#a8ecdf', glint: '#ffe9e0' },
   });
+  // a table's own weather is laid over each (deeply: an art that changes the key's colour keeps its direction)
+  for (const [name, over] of [['dusk', art.env], ['night', art.envNight], ['day', art.envDay], ['dawn', art.envDawn || art.env]]) if (over) LIGHTS[name] = makeEnv(LIGHTS[name], over);
   // A stage names its light for its own set; the table has four. Anything it does not know is dusk, said once.
   const LIGHT_ALIAS = { sunset: 'dusk', interior: 'dusk', predawn: 'night', riot: 'night', dark: 'night', hush: 'night', lamp: 'night' };
   const warned = new Set();

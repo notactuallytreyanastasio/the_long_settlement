@@ -53,7 +53,7 @@ const CAMERAS = {
   wide: { target: [0, 1.9, -0.6], dist: 8.6, yaw: 2, pitch: 3, fov: 50, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 7.5 },
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -15, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 21, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
-  low: { target: [0.2, 2.0, -0.6], dist: 6.2, yaw: -10, pitch: -11, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1], shadowRadius: 7.5 },
+  low: { target: [0.2, 1.9, -0.3], dist: 6.2, yaw: -10, pitch: -11, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1], shadowRadius: 7.5 },
   stage: { target: [0.2, 1.2, 0.1], dist: 9.8, yaw: -12, pitch: 6, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -0.8], shadowRadius: 7.5, outline: 0.7 },
   landscape: { target: [0, 1.9, -1.2], dist: 9.6, yaw: 4, pitch: 5, fov: 40, aspect: 1.6, shadowCenter: [0, 0, -1.5], shadowRadius: 9 },
 };

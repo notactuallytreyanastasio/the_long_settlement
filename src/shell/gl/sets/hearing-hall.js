@@ -68,7 +68,7 @@ const CAMERAS = {
   wide: { target: [0.1, 1.75, -0.4], dist: 8.6, yaw: 3, pitch: 4, fov: 46, aspect: 0.46, shadowCenter: [0, 0, -0.6], shadowRadius: 7 },
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -13, pitch: 4, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 19, pitch: 2, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
-  low: { target: [0.1, 2.1, -0.4], dist: 6.4, yaw: -6, pitch: -12, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -0.6], shadowRadius: 7 },
+  low: { target: [0.1, 1.95, -0.2], dist: 6.4, yaw: -6, pitch: -11, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -0.6], shadowRadius: 7 },
   stage: { target: [0, 1.25, 0.3], dist: 9.6, yaw: -13, pitch: 5, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -0.2], shadowRadius: 7, outline: 0.7 },
   landscape: { target: [0, 2.2, -1.2], dist: 10.5, yaw: 4, pitch: 3, fov: 44, aspect: 1.6, shadowCenter: [0, 0, -0.6], shadowRadius: 9 },
   gallery: { target: [-0.7, GAL_Y + 1.0, GAL_Z - 0.6], dist: 5.4, yaw: -44, pitch: 5, fov: 44, aspect: 0.46, shadowCenter: [-1, GAL_Y, GAL_Z], shadowRadius: 4 }, // from the left side: the great window's shaft runs down the middle of the house and the side windows' shafts come in from the right; a camera inside either is veiled

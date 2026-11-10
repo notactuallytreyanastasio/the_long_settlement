@@ -17,6 +17,32 @@ export const chapter7 = {
   music: { play: 'festival', cine: 'court' },
   roles: { ren: 'Volunteer, in default' },
 
+  // ───────────────────────── the stage ─────────────────────────
+  // For the 3D stage (src/core/stage.js), as in chapter 1. sets: every backdrop key this chapter's lines name -> the
+  // set built for it and how it is lit when a cinematic goes there (a scene's own cutscene keeps its encounter's light).
+  // hall-steps is lit two ways: ch7.s3 asks for 'dusk' (late afternoon, the Audit's seal on the doors), ch7.s7 for 'day'
+  // (noon, the seal gone). drum-open likewise: 'day' for the count (s4), 'dusk' for the evening at the Reels (s5).
+  // State that changes under the script goes through each set's cue(lineId): the drum on the trestles (fish-dock,
+  // ch7.s4.c03 on), Little Brand hung beside Tessaly (stall-day, ch7.s1.c26), the blue answers (mole-lanterns,
+  // ch7.s7.c17 and c18). corvane-study wants twelve lamps dark from ch7.epi.16 (its own cue).
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      'fish-dock': { set: 'fish-dock', light: 'day' },
+      'stall-day': { set: 'stall-day', light: 'day' },
+      'hall-steps': { set: 'hall-steps', light: 'day' },
+      'drum-open': { set: 'drum-open', light: 'day' },
+      'mole-lanterns': { set: 'mole-lanterns', light: 'night' },
+      bench: { set: 'bench', light: 'interior' },
+      'cutter-brig': { set: 'cutter-brig', light: 'night' },
+      'ferry-dawn': { set: 'ferry-dawn', light: 'dawn' },
+      'corvane-study': { set: 'corvane-study', light: 'interior' },
+      black: { set: 'black', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'docker',
+  },
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch7.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
@@ -73,6 +99,19 @@ export const chapter7 = {
       hint: 'Help at the stall: hit all three STALL targets',
       objective: { kind: 'all', ids: ['stallA', 'stallB', 'stallC'] },
       reward: { points: 25000, trust: 25 },
+      // Not a fight. He has a letter for her and she has paste going off: the work is papering frames.
+      encounter: {
+        set: 'stall-day', light: 'day', mode: 'work',
+        party: ['ren', 'nan'],
+        opposition: { kind: 'force', who: ['bare-frames'], name: "FORTY BARE FRAMES" },
+        setback: { cue: 'gust-down-the-lane', show: "A gust down the lane sets every frame on the wire swinging; Nan slaps a hand flat on the paper and Ren is sent back a step." },
+        beats: [
+          { at: 0, cue: 'forty-bare-frames', name: "Forty bare frames", show: "The lantern lane by day, the sun low over the water. A trestle, a paste pot, bare bamboo frames swinging along the back wire. Ren at the trestle, Nan beside him." },
+          { at: 1, cue: 'hold-that-frame', name: "Hold that frame", show: "The first frames on the wire have paper on them, and colour." },
+          { at: 2, cue: 'paste-does-not-keep', name: "Paste doesn't keep", show: "Two thirds of the wire is papered. The sun comes through it." },
+          { at: 3, cue: 'letters-keep', name: "Letters keep", show: "The whole back wire is papered lanterns. Tessaly hangs alone on the short wire over the trestle." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s1.b01', who: 'nan', text: "You. No collar on you. Mind my frames anyway." },
         { id: 'ch7.s1.b02', who: 'ren', text: "I have a letter for you. From the west." },
@@ -146,6 +185,21 @@ export const chapter7 = {
       hint: 'Call the struck names: roll all three ROLL lanes',
       objective: { kind: 'all', ids: ['rollL', 'rollC', 'rollR'] },
       reward: { points: 25000, trust: 15 },
+      // Not a fight. The seventh hearing opens with a roll: anyone struck from the drum may say their name and hear it said
+      // back. They come lane by lane.
+      encounter: {
+        set: 'fish-dock', light: 'day', mode: 'talk',
+        party: ['ilse', 'tobb', 'ren'],
+        opposition: { kind: 'force', who: ['struck-roll'], name: "THE STRUCK NAMES" },
+        extras: ['docker', 'fishwife', 'townsman'],
+        setback: { cue: 'dock-presses-in', show: "The dock presses in to hear and a name is lost in the noise; a third of the crowd is waved back and the speaker begins again." },
+        beats: [
+          { at: 0, cue: 'dock-before-hill', name: "Dock before Hill", show: "The fish dock in the morning, the Mint hall and its dome across the water. The trestles are laid as a table; a few dozen of the quarter stand about. The Tribune, Tobb with his chalk, Ren. Three citizens wait at the edge to say their names." },
+          { at: 1, cue: 'salters-lane', name: "Salters' Lane", show: "More of the quarter has come down. There are marks on the slate." },
+          { at: 2, cue: 'rope-lane', name: "Rope Lane", show: "The dock is two thirds full. The slate is filling." },
+          { at: 3, cue: 'the-shambles', name: "The Shambles", show: "The whole Dock Quarter stands on the quay, and the slate is chalked to the foot." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s2.b01', who: 'crowd', text: "Dock Quarter! Bring your name, if they struck it!" },
         { id: 'ch7.s2.b02', who: 'ilse', text: "Dock before Hill. I said so on the pier." },
@@ -221,6 +275,20 @@ export const chapter7 = {
       hint: 'Go up to the fourth step: 3 shots up the HALL STEPS',
       objective: { kind: 'count', ids: ['hallRamp'], n: 3 },
       reward: { points: 30000 },
+      // Not a fight. An officer walks up a stair to say what he did, with the dock coming up behind to watch.
+      encounter: {
+        set: 'hall-steps', light: 'dusk', mode: 'walk',
+        party: ['sable', 'ren'],
+        opposition: { kind: 'force', who: ['fourth-step'], name: "THE FOURTH STEP" },
+        extras: ['ilse'],
+        setback: { cue: 'dock-comes-up', show: "The watchers press up the flight behind them and are waved back down; the two brothers wait on the stair." },
+        beats: [
+          { at: 0, cue: 'up-from-the-cutter', name: "Up from the cutter", show: "The steps of the Mint hall late in the afternoon, the great doors shut under a red seal. The Tribune waits on the broad fourth step. The Assessor comes along it toward her in his black boots, his brother behind him." },
+          { at: 1, cue: 'a-word-tribune', name: "A word, Tribune", show: "A few of the dock have come up to the ends of the step to watch." },
+          { at: 2, cue: 'this-one-is-about-me', name: "This one is about me", show: "The flight below is filling. He is nearly up to her." },
+          { at: 3, cue: 'the-fourth-step', name: "The fourth step", show: "The dock stands at both ends of the step and all down the flight, quiet. The Assessor has stopped beside her." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s3.b01', who: 'sable', text: "Tribune. A word. This one is about me." },
         { id: 'ch7.s3.b02', who: 'ilse', text: "Come up, Assessor. I am listening." },
@@ -298,6 +366,20 @@ export const chapter7 = {
       hint: 'Open the drum: sink the Plumb in the DRUM twice',
       objective: { kind: 'count', ids: ['drum'], n: 2 },
       reward: { points: 35000, trust: 30 },
+      // Not a fight. The seal is cut by the hand that holds the warrant; the work is getting the drum out of its cradle with
+      // the whole dock coming in to see it done.
+      encounter: {
+        set: 'drum-open', light: 'day', mode: 'work',
+        party: ['sable', 'ren'],
+        opposition: { kind: 'force', who: ['lot-drum'], name: "THE SEALED DRUM" },
+        extras: ['docker', 'docker'],
+        setback: { cue: 'aisle-jams', show: "The dock jams the aisle to see and has to be pushed back from the dais; the brothers are jostled off the cradle." },
+        beats: [
+          { at: 0, cue: 'the-doors-stand-open', name: "The doors stand open", show: "The drum hall from the dais, behind the Reels: the great doors cut open at the far end, one shaft of daylight down the nave to the lot drum in its cradle, still under wax. Sable and Ren at the drum; two dockers wait to carry." },
+          { at: 1, cue: 'anyone-who-can-count', name: "Anyone who can count", show: "The dock has come in at the doors and half way down the aisles." },
+          { at: 2, cue: 'take-it-down-the-steps', name: "Take it down the steps", show: "The wax is off the drum. The hall is full to the dais." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s4.b01', who: 'sable', text: "The doors open to my warrant. Bring the drum down." },
         { id: 'ch7.s4.b02', who: 'crowd', text: "Clear the trestles! Anyone who can count!" },
@@ -367,6 +449,20 @@ export const chapter7 = {
       hint: 'Strip the Reels: 20 hits on the PAWL bumpers',
       objective: { kind: 'count', ids: ['pawl1', 'pawl2', 'pawl3'], n: 20 },
       reward: { points: 35000 },
+      // Not a fight. Three wheels, three pawls and a great deal of honest brass, gone over a tooth at a time by lamp.
+      encounter: {
+        set: 'drum-open', light: 'dusk', mode: 'work',
+        party: ['ren', 'sable', 'tobb'],
+        opposition: { kind: 'force', who: ['reel-works'], name: "THE THIRD REEL" },
+        setback: { cue: 'wheels-run-back', show: "A pawl slips and all three wheels run back a turn; the lamp is jerked away and they begin again from the first." },
+        beats: [
+          { at: 0, cue: 'the-back-plate-is-off', name: "The back-plate is off", show: "The same hall in the evening, emptied, the drum gone from its cradle. A hand lamp on the bench. Ren at the open back of the Reels, his brother and Tobb behind him; the brass plate is coming away." },
+          { at: 5, cue: 'first-wheel', name: "First wheel: honest brass", show: "The plate leans against the cabinet. The first wheel is run a tooth at a time and its pawl drops true." },
+          { at: 10, cue: 'second-wheel', name: "Second wheel: honest", show: "The second wheel, the same." },
+          { at: 15, cue: 'lower-with-the-lamp', name: "Lower with the lamp", show: "They are at the third wheel, close in." },
+          { at: 20, cue: 'behind-the-orb-stop', name: "Behind the orb stop", show: "Behind the third reel, wired to its pawl, a piece of lead the size of a plum shows and glints." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s5.b01', who: 'sable', text: "Back-plate is off. Nobody touches the third reel." },
         { id: 'ch7.s5.b02', who: 'tobb', text: "I know what it pays. Show me what it does." },
@@ -438,6 +534,19 @@ export const chapter7 = {
       hint: 'Bring her up from the cutter: 2 shots round the QUAY',
       objective: { kind: 'count', ids: ['quayOrbit'], n: 2 },
       reward: { points: 40000 },
+      // Not a fight. She asked to be heard; the work is the walk from the cutter to the trestles in front of the whole dock.
+      encounter: {
+        set: 'fish-dock', light: 'day', mode: 'walk',
+        party: ['sable', 'thorne'],
+        opposition: { kind: 'force', who: ['quay-walk'], name: "ARTICLE SIX" },
+        extras: ['ilse', 'ren'],
+        setback: { cue: 'dock-closes-in', show: "The dock closes across the quay to look at her; the Assessor stops and waits until a way is made." },
+        beats: [
+          { at: 0, cue: 'his-other-prisoner', name: "His other prisoner", show: "The fish dock next morning, the slate chalked full by the trestle. The Tribune and Ren wait at the table. The Assessor comes along the quay from the mole, and a step behind him, at her own request, the Proctor." },
+          { at: 1, cue: 'along-the-quay', name: "Along the quay", show: "They are half way along. More of the dock has gathered to see who it is." },
+          { at: 2, cue: 'three-in-one-place', name: "Three in one place", show: "They have reached the trestles. The dock stands round, most of the quarter, and nobody speaks." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s6.b01', who: 'sable', text: "My other prisoner asks to be heard. Article six." },
         { id: 'ch7.s6.b02', who: 'ilse', text: "I may not send for her. I may sit." },
@@ -515,6 +624,21 @@ export const chapter7 = {
       hint: 'Chalk the table on the wall: light N-A-M-E',
       objective: { kind: 'all', ids: ['nameN', 'nameA', 'nameM', 'nameE'] },
       reward: { points: 50000, trust: 25 },
+      // Not a fight. Odds were all the publishing they left him; the work is wiping them off and chalking a true table.
+      encounter: {
+        set: 'hall-steps', light: 'day', mode: 'work',
+        party: ['tobb'],
+        opposition: { kind: 'force', who: ['chalk-table'], name: "THE OLD ODDS BOARD" },
+        extras: ['ilse', 'docker', 'fishwife'],
+        setback: { cue: 'who-says-so', show: "The watchers press up the flight shouting who says so; a third are waved back down and Tobb is jostled off his line." },
+        beats: [
+          { at: 0, cue: 'sevens-the-docks', name: "Sevens the docks", show: "The hall steps at noon, the seal gone from the doors. Tobb on the fourth step under his old board by the doors, the odds still chalked on it; the Tribune and two of the dock watch from the edge." },
+          { at: 1, cue: 'stand-back', name: "Stand back", show: "The board is wiped clean." },
+          { at: 2, cue: 'three-of-ash-to-one', name: "Three of ash to one", show: "The first rows of a table are chalked at the foot of the board." },
+          { at: 3, cue: 'forty-lights', name: "Forty lights", show: "The table is most of the way up the board. More of the dock has come up the flight." },
+          { at: 4, cue: 'for-twenty-four-years', name: "For twenty-four years", show: "The whole table stands on the board, ringed, and lit. The steps are full." },
+        ],
+      },
       briefing: [
         { id: 'ch7.s7.b01', who: 'tobb', text: "My board is still on that wall. Chalk, somebody." },
         { id: 'ch7.s7.b02', who: 'nan', text: "Twelve names painted. Mind the wet ones." },

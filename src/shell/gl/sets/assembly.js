@@ -137,7 +137,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   let sky = L.sky, skyNow = L.sky, draped = 12, houseGoal = 1, houseNow = 1;
   const setSky = (v) => { sky = Math.max(0, Math.min(1, v)); }, setDraped = (n) => { draped = Math.max(0, Math.min(12, Math.round(n))); }, setHouse = (v) => { houseGoal = Math.max(0, Math.min(1, v)); };
   const rise = [0, 0, 0], arms = [0, 0];
-  const blockAt = (b) => { let x = 0, y = 0, z = 0, n = 0; for (const p of people) if (p.block === b && p.s.row === 0) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } if (!n) for (const p of people) if (p.block === b) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } return [x / n, y / n + 1.3, z / n + 0.3]; };
+  const blockAt = (b) => { let x = 0, y = 0, z = 0, n = 0; for (const p of people) if (p.block === b && p.s.row === 0) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } if (!n) for (const p of people) if (p.block === b) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } return [Math.max(-3.3, Math.min(3.3, x / n)), y / n + 1.3, z / n + 0.3]; };
   const blockTasks = [0, 1, 2].map((b) => unit8(blockAt(b), null, (v) => { rise[b] = v; }));
   const treatyGlow = sprites.add({ kind: 'glow', pos: [FOCUS[0], FOCUS[1] + 0.15, FOCUS[2] + 0.2], size: 2.4, color: '#fff2b0', alpha: 0 });
   let treaty = 0, treatyNow = 0;

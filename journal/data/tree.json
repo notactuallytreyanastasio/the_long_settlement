@@ -12371,22 +12371,22 @@
  },
  {
   "path": "src/content/chapter5.js",
-  "bytes": 53217,
-  "lines": 669
+  "bytes": 62108,
+  "lines": 778
  },
  {
   "path": "src/content/chapter6.js",
-  "bytes": 58313,
-  "lines": 704
+  "bytes": 70042,
+  "lines": 832
  },
  {
   "path": "src/content/chapter7.js",
-  "bytes": 62090,
-  "lines": 717
+  "bytes": 72844,
+  "lines": 841
  },
  {
   "path": "src/content/chapter8.js",
-  "bytes": 96264,
+  "bytes": 96262,
   "lines": 1047
  },
  {
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 196187,
-  "lines": 2487
+  "bytes": 199969,
+  "lines": 2529
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12531,13 +12531,13 @@
  },
  {
   "path": "src/shell/gl/mesh.js",
-  "bytes": 38608,
-  "lines": 703
+  "bytes": 39936,
+  "lines": 728
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 48973,
-  "lines": 730
+  "bytes": 51301,
+  "lines": 758
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12556,12 +12556,12 @@
  },
  {
   "path": "src/shell/gl/sets/academy-yard.js",
-  "bytes": 27987,
+  "bytes": 27988,
   "lines": 334
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
-  "bytes": 19011,
+  "bytes": 19042,
   "lines": 202
  },
  {
@@ -12586,13 +12586,13 @@
  },
  {
   "path": "src/shell/gl/sets/cell.js",
-  "bytes": 15321,
-  "lines": 177
+  "bytes": 15505,
+  "lines": 180
  },
  {
   "path": "src/shell/gl/sets/clearing-house.js",
-  "bytes": 16762,
-  "lines": 200
+  "bytes": 19436,
+  "lines": 230
  },
  {
   "path": "src/shell/gl/sets/commons-hall.js",
@@ -12601,8 +12601,8 @@
  },
  {
   "path": "src/shell/gl/sets/commons-queue.js",
-  "bytes": 21413,
-  "lines": 242
+  "bytes": 22400,
+  "lines": 256
  },
  {
   "path": "src/shell/gl/sets/compact-hall.js",
@@ -12611,8 +12611,8 @@
  },
  {
   "path": "src/shell/gl/sets/corvane-study.js",
-  "bytes": 17683,
-  "lines": 209
+  "bytes": 18880,
+  "lines": 224
  },
  {
   "path": "src/shell/gl/sets/counting-room.js",
@@ -12621,13 +12621,13 @@
  },
  {
   "path": "src/shell/gl/sets/court.js",
-  "bytes": 15788,
+  "bytes": 15790,
   "lines": 203
  },
  {
   "path": "src/shell/gl/sets/cresset-harbour.js",
-  "bytes": 12883,
-  "lines": 150
+  "bytes": 14925,
+  "lines": 174
  },
  {
   "path": "src/shell/gl/sets/cutter-brig.js",
@@ -12661,13 +12661,13 @@
  },
  {
   "path": "src/shell/gl/sets/exchange-floor.js",
-  "bytes": 17010,
-  "lines": 205
+  "bytes": 19792,
+  "lines": 236
  },
  {
   "path": "src/shell/gl/sets/exchange-steps.js",
-  "bytes": 24312,
-  "lines": 285
+  "bytes": 26338,
+  "lines": 311
  },
  {
   "path": "src/shell/gl/sets/ferry-dawn.js",
@@ -12696,7 +12696,7 @@
  },
  {
   "path": "src/shell/gl/sets/hall-steps.js",
-  "bytes": 18764,
+  "bytes": 18881,
   "lines": 236
  },
  {
@@ -12706,7 +12706,7 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 30367,
+  "bytes": 30368,
   "lines": 310
  },
  {
@@ -12746,8 +12746,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
-  "bytes": 45155,
-  "lines": 567
+  "bytes": 46503,
+  "lines": 586
  },
  {
   "path": "src/shell/gl/sets/kit-ch6.js",
@@ -12821,7 +12821,7 @@
  },
  {
   "path": "src/shell/gl/sets/picket.js",
-  "bytes": 19630,
+  "bytes": 19631,
   "lines": 235
  },
  {
@@ -12881,13 +12881,13 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 78594,
-  "lines": 1098
+  "bytes": 97992,
+  "lines": 1338
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 107492,
-  "lines": 1455
+  "bytes": 107678,
+  "lines": 1454
  },
  {
   "path": "src/shell/input.js",

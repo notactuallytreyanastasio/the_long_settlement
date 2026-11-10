@@ -26,10 +26,13 @@ import { merge, tint, place, box, cylinder, extrude, setGlow, setOutline, torus,
 import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { PAL, pickLight, cloudBank, gull, headland, lampPost, crate, barrel, ledgerBook, anchorAt } from './kit.js';
-import { TL, MARKS, ch5Materials, shell, dirFrom, throng, papers, gableHouse, paving, ringsSign } from './kit-ch5.js';
+import { TL, MARKS, ch5Materials, shell, dirFrom, throng, papers, gableHouse, paving, ringsSign, lightNames, ownLight, taskUnit } from './kit-ch5.js';
 
 const QUAY_Z = -46, WATER = -1.5, STREET_X = -2.6;
 const HALL = { pos: [4.25, 0, -5.5], yaw: -32, w: 7.2, h: 4.5, d: 4 };
+
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { day: 'morning', predawn: 'dawn' };
 
 const LIGHTS = {
   dawn: {
@@ -101,7 +104,7 @@ function savingsHall({ w = 7.2, h = 4.5, d = 4 } = {}) {
 }
 
 function build(engine = null, { light: lightName = 'dawn', low = false } = {}) {
-  const { name: light, L } = pickLight('commons-queue', LIGHTS, lightName);
+  const { name: light, L } = pickLight('commons-queue', LIGHTS, ownLight(LIGHTS, ALIAS, lightName));
   const M = ch5Materials(), r = rng(5454);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.water.level = WATER;
@@ -228,14 +231,25 @@ function build(engine = null, { light: lightName = 'dawn', low = false } = {}) {
     if (time > nextGust) { nextGust = time + 3 + rnd() * 2; P[0] = -5 + rnd() * 3; P[1] = 1.6 + rnd() * 2; P[2] = -8 + rnd() * 5; V[0] = 1.8; V[1] = 0.1; V[2] = 0.2; sprites.gust(P, { vel: V, size: 0.9 + rnd() * 0.4, life: 2.2, alpha: 0.7, color: '#fff0e6' }); }
   }
 
+  // ---- what the live stage asks for (kit-ch5 taskUnit)
+  //   'ropewalk-line'   ch5.s4: the line as word gets round: a third of it at 0 and loud, the whole street by 1 and nobody
+  //                     talking (where ch5.s4.c01 finds it). Nobody sits and nothing is chalked yet: that is the cutscene's
+  // setback(): somebody at the door starts shouting again
+  let lineUnit = null, surge = 0;
+  function task(type) {
+    if (type !== 'ropewalk-line') return null;
+    return lineUnit || (lineUnit = taskUnit([TABLE[0], 1.0, TABLE[2]], null, (v, time, dt) => { surge = Math.max(0, surge - (dt || 0) / 2.4); setQueue(0.3 + 0.7 * v); setSitting(0); setChalk(0); setMood(Math.min(1, 0.95 - 0.85 * v + 0.6 * surge)); }));
+  }
+  const setback = () => { surge = 1; };
+
   const tableMark = { pos: [TABLE[0], 0, TABLE[2] - 0.75], face: 0 };
   return shell({
     id: 'commons-queue', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.22,
     motes: low ? null : { box: [-3, 3, 0.3, 3, -3, 2], every: 0.4, color: L.mote, size: 0.06, vel: [0.1, 0.06, 0.03], life: 5, alpha: 0.6 },
     marks: { ...MARKS, table: tableMark, ledger: [TABLE[0], 0.95, TABLE[2]], door: { pos: [door[0], 0, door[2]], face: HALL.yaw }, wall: hallAt('chalk'), focus: doorGlow },
-    extra: { setQueue, setSitting, setChalk, setMood, cue, queueCount: everyone.length },
+    extra: { setQueue, setSitting, setChalk, setMood, cue, task, setback, passLamp: setback, queueCount: everyone.length },
   });
 }
 
-export const commonsQueue = { id: 'commons-queue', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const commonsQueue = { id: 'commons-queue', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default commonsQueue;
