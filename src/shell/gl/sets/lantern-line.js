@@ -12,6 +12,8 @@
 // Added here:
 //   setLine(0..1)   how much of the two files has turned out (they arrive front to back); 1 from the start
 //   cue(lineId)     ch6.s6.c01..c04: the quay is still open (setLine(0)); from c05 the files stand
+//   task('lantern-file')  ch6.s6: setLine(v), the two files turning out front to back with the objective. After it,
+//                   cue c01..c04 leave the files standing. setback(): the near lanterns waver (also passLamp)
 //   marks.file      a place in the left file, about half way down, for Ren { pos, face }; marks.walk [far, near]: the
 //                   Tribune's way between the lanterns; marks.focus: the great lamp
 // low: true thins the far half of the files to plain figures, drops the hoists' loads, the bunting and half the cobbles.
@@ -22,7 +24,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { PAL, anchorAt, pickLight, scatter, cobble, bollard, ropeCoil, crowd, cloudBank, bunting, crate, sack } from './kit.js';
-import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, dirFrom, norm3, cask, lampHouse, warehouse, bar } from './kit-ch6.js';
+import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, taskUnit, pulse, dirFrom, norm3, cask, lampHouse, warehouse, bar } from './kit-ch6.js';
 
 const CORNERS = [[-4.86, -0.8], [4.86, -1.7], [-4.86, -7.6], [4.86, -8.4]];
 const FILE_X = 2.5, FILE_Z0 = -1.5, PITCH = 1.6, PER_FILE = 21, FACE_X = 4.9, LH_Z = -46;
@@ -158,17 +160,31 @@ function build(engine = null, { light, low = false } = {}) {
   const actors = group('actors'); scene.root.add(actors);
 
   // ---- per frame
-  let line = 1;
+  let line = 1, wavering = false;
   const CO = { lit: 1, lively: 0.2 }, P = [0, 0, 0], V = [0, 0, 0], rnd = rng(47);
   let nextSpark = 0, nextEmber = 0, nextGust = 2;
   function setLine(v, snap = false) { line = Math.max(0, Math.min(1, v)); nearFile.setAmount(line); farFile.setAmount(line); if (snap) { nearFile.update(0, 0, CO); farFile.update(0, 0, CO); } }
+  // the live stage's task (ch6.s6): the docks turn out, front to back, as the objective goes
+  let stood = false;
+  const waver = pulse(1.8);
+  const fileUnit = taskUnit({
+    pos: [0, 1.5, FILE_Z0 - 2 * PITCH], stand: null,
+    apply(v, fresh) { if (fresh) stood = true; setLine(v, fresh && v === 0); },
+  });
+  const task = (type) => (type === 'lantern-file' ? fileUnit.arm() : null);
+  /** The drain: Halcyon's escort forms up at the head of the quay and the nearest lanterns give a pace. */
+  function setback() { waver.hit(); }
   function cue(lineId) {
     const m = typeof lineId === 'string' && /^ch6\.s6\.c(\d+)$/.exec(lineId); if (!m) return false;
-    setLine(Number(m[1]) >= 5 ? 1 : 0, Number(m[1]) === 1);
+    const n = Number(m[1]);
+    if (stood) { if (n >= 5) { stood = false; setLine(1); } return true; }     // the encounter already stood the files: c01-c04 do not send them home again
+    setLine(n >= 5 ? 1 : 0, n === 1);
     return true;
   }
   function tick(time, dt, pw, live) {
-    CO.lit = Math.min(1.4, 0.35 + pw * 0.7); CO.lively = 0.18;
+    const wv = waver.value(dt);
+    if (wv > 0 || wavering) { wavering = wv > 0; const a = line * (1 - 0.4 * wv); nearFile.setAmount(a); farFile.setAmount(a); }
+    CO.lit = Math.min(1.4, 0.35 + pw * 0.7) * (1 - 0.5 * wv); CO.lively = 0.18 + 0.6 * wv;
     nearFile.update(time, dt, CO); farFile.update(time, dt, CO);
     // the lane's light is the files': it goes with them
     const here = (nearFile.people[0].here + farFile.people[farFile.people.length - 1].here) * 0.5;
@@ -186,7 +202,7 @@ function build(engine = null, { light, low = false } = {}) {
   return shell({
     id: 'lantern-line', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue,
     marks: { ...STD_MARKS(), file: { pos: [-FILE_X, 0, FILE_Z0 - 10 * PITCH + PITCH / 2], face: 84 }, walk: [{ pos: [0, 0, FILE_Z0 - (PER_FILE - 1) * PITCH], face: 180 }, { pos: [0, 0, FILE_Z0], face: 180 }], focus: LAMP },
-    extra: { setLine, files: [nearFile, farFile] },
+    extra: { setLine, files: [nearFile, farFile], task, setback, passLamp: setback },
   });
 }
 

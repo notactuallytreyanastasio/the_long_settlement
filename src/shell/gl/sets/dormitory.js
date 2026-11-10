@@ -76,7 +76,7 @@ const MARKS = {
 };
 
 function build(engine = null, { light: lightName = 'evening', low = false } = {}) {
-  const [light, L] = lightOf('dormitory', LIGHTS, lightName);
+  const [light, L] = lightOf('dormitory', LIGHTS, ALIAS[lightName] || lightName);
   const M = kitBMaterials(), r = rng(1919);
   M.deco = material({ name: 'dorm-deco', rim: 0, outline: false, castShadow: false });
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
@@ -253,5 +253,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
   });
 }
 
-export const dormitory = { id: 'dormitory', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+// the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'
+const ALIAS = { interior: 'evening' };
+export const dormitory = { id: 'dormitory', lights: [...Object.keys(LIGHTS), ...Object.keys(ALIAS)], cameras: Object.keys(CAMERAS), build };
 export default dormitory;

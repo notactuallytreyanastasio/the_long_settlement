@@ -14,6 +14,26 @@ export const chapter3 = {
   riggedSpin: null,
   music: { play: 'academy', cine: 'tense' },
 
+  // ───────────────────────── the stage ─────────────────────────
+  // For the 3D stage (src/core/stage.js), in the shape chapter 1 uses. sets: every backdrop key this chapter names
+  // -> the set and how it is lit when a cinematic goes there (a scene's own cutscene keeps its encounter's light:
+  // the hall is full and lit in scenes 2 and 6 and dark in 7; the yard is day for the parade, dawn in the epilogue).
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      'ferry-dawn': { set: 'ferry-dawn', light: 'dawn' },
+      'academy-yard': { set: 'academy-yard', light: 'dawn' },
+      'hearing-hall': { set: 'hearing-hall', light: 'interior' },
+      'mint-office': { set: 'mint-office', light: 'interior' },
+      dormitory: { set: 'dormitory', light: 'interior' },
+      'underwriting-floor': { set: 'underwriting-floor', light: 'night' },
+      'proctor-office': { set: 'proctor-office', light: 'night' },
+      black: { set: 'black', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'townsman',
+  },
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch3.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
@@ -65,6 +85,19 @@ export const chapter3 = {
       hint: 'Take the honours: two laps of the PARADE orbit',
       objective: { kind: 'count', ids: ['paradeOrbit'], n: 2 },
       reward: { points: 8000 },
+      // STAGE: Not a fight. Twice round a parade ground with two thousand people not looking at you.
+      encounter: {
+        set: 'academy-yard', light: 'day', mode: 'walk',
+        party: ['ilse', 'ren', 'tobb'],
+        opposition: { kind: 'force', who: ['parade'], name: 'TWO THOUSAND IN STEP' },
+        extras: ['proctor', 'thorne', 'proctor'],
+        setback: { cue: 'eyes-front', show: 'A drum rolls and two thousand heels come together; Ilse checks her step and Tobb all but walks into her.' },
+        beats: [
+          { at: 0, cue: 'present', name: 'Present, for the Tribune', show: 'The plumb-weight banner over a half-formed parade. Thorne stands with two proctors at the back of the avenue; Ilse, Ren and Tobb set off from stage left.' },
+          { at: 1, cue: 'once-round', name: 'Once round the yard', show: 'Every rank has fallen in, both sides of the chained avenue. Nobody turns a head as the three go by.' },
+          { at: 2, cue: 'escort-of-twelve', name: 'An escort of twelve', show: "Twelve in the Proctor's teal have fallen in behind the party. The three have come round to the banner." },
+        ],
+      },
       briefing: [
         { id: 'ch3.s1.b01', who: 'crowd', text: 'Halcyon Academy! Present, for the Tribune of the Lot!' },
         { id: 'ch3.s1.b02', who: 'thorne', text: 'Walk with me, both of you. Twice round the yard.' },
@@ -132,6 +165,20 @@ export const chapter3 = {
       hint: 'Open the hearing: roll all three OATH lanes',
       objective: { kind: 'all', ids: ['oathL', 'oathC', 'oathR'] },
       reward: { points: 10000 },
+      // STAGE: Not a fight. A house filling by rows until the doors are shut on the minute, and nobody in it will speak.
+      encounter: {
+        set: 'hearing-hall', light: 'interior', mode: 'talk',
+        party: ['ilse', 'ren', 'tobb'],
+        opposition: { kind: 'force', who: ['silent-house'], name: 'TWO THOUSAND SILENT' },
+        extras: ['thorne'],
+        setback: { cue: 'a-cough', show: 'Somebody coughs and two thousand heads turn to see who; Ilse waits for the house to settle.' },
+        beats: [
+          { at: 0, cue: 'house-filling', name: 'The house is filling', show: 'Ilse at the lip of the stage, Ren and Tobb behind her, Thorne stage right. The back rows of the auditorium are taken; the front is empty velvet.' },
+          { at: 1, cue: 'by-rows', name: 'By rows, in step', show: 'Two thirds of the seats are filled, row upon row.' },
+          { at: 2, cue: 'every-seat', name: 'Every seat by ten', show: 'Every seat is taken to the front row. Nobody has a hand raised.' },
+          { at: 3, cue: 'all-rise', name: 'All rise', show: 'The whole house is on its feet for the Tribune, and silent.' },
+        ],
+      },
       briefing: [
         { id: 'ch3.s2.b01', who: 'crowd', text: 'All rise for the Tribune of the Lot.' },
         { id: 'ch3.s2.b02', who: 'ilse', text: "Anyone may speak. That's the whole of the rule." },
@@ -201,6 +248,20 @@ export const chapter3 = {
       hint: 'Read the contract: hit all three DORM targets',
       objective: { kind: 'all', ids: ['dormA', 'dormB', 'dormC'] },
       reward: { points: 12000, trust: 30 },
+      // STAGE: Not a fight. A tally under a bunk, and a dormitory of boys reading their own contracts for the first time.
+      encounter: {
+        set: 'dormitory', light: 'interior', mode: 'talk',
+        party: ['ren', 'ansel'],
+        opposition: { kind: 'force', who: ['indentures'], name: 'THE INDENTURES' },
+        extras: ['ilse'],
+        setback: { cue: 'step-in-the-passage', show: 'A step goes by in the passage; every boy looks at the door and Ren waits for it to pass.' },
+        beats: [
+          { at: 0, cue: 'bed-nineteen', name: 'Bed nineteen', show: 'Iron bunks down both sides, one gas lamp. Ren and Ansel in the lobby arch; Ilse stands by the pegs, stage right, being furniture.' },
+          { at: 1, cue: 'two-tallies', name: 'Two tallies', show: 'The scratched tally under the frame of bed nineteen shows lit.' },
+          { at: 2, cue: 'own-copy', name: 'Every boy his own copy', show: 'Boys sit on the foot of their bunks down half the room, each holding his contract in both hands.' },
+          { at: 3, cue: 'the-back-page', name: 'Turn to the back', show: 'Every bunk has a boy on it and every boy a paper. The tally is bright.' },
+        ],
+      },
       briefing: [
         { id: 'ch3.s3.b01', who: 'ansel', text: "That's my bunk, sir. Nineteen. Did you want it?" },
         { id: 'ch3.s3.b02', who: 'ren', text: 'Everybody fetch your indenture. Bring a pencil.' },
@@ -278,6 +339,19 @@ export const chapter3 = {
       hint: 'Search the night floor: 20 hits on the DRILL bumpers',
       objective: { kind: 'count', ids: ['drill1', 'drill2', 'drill3'], n: 20 },
       reward: { points: 14000 },
+      // STAGE: Not a fight. One cadet on a floor that never quite sleeps, between two rounds of the night clerk.
+      encounter: {
+        set: 'underwriting-floor', light: 'night', mode: 'stealth',
+        party: ['ren'],
+        opposition: { kind: 'force', who: ['night-round', 'returns'], name: 'THE NIGHT FLOOR' },
+        setback: { cue: 'clerk-looks-up', show: 'The pen stops under the one lit lamp; Ren goes flat behind a high desk until it starts again.' },
+        beats: [
+          { at: 0, cue: 'change-of-rounds', name: 'Count before you admire', show: 'Moon in three tall windows over a wall of lettered drawers. One lamp burning over the night clerk. Ren low at stage left, by the tube room.' },
+          { at: 7, cue: 'nine-minutes', name: 'Nine minutes', show: 'Carriers tick through the brass tubes overhead. Ren is among the high desks.' },
+          { at: 14, cue: 'dullest-thing', name: 'The dullest thing here', show: 'He is across the floor. The stationery returns cabinet has begun to show.' },
+          { at: 20, cue: 'plain-cover', name: 'Stationery returns', show: 'Ren at the returns cabinet, which is lit. The clerk has not looked up.' },
+        ],
+      },
       briefing: [
         { id: 'ch3.s4.b01', who: 'ren', text: 'No Line tonight. This one is on my own account.' },
         { id: 'ch3.s4.b02', who: 'crowd', text: "Who's there? The floor is closed till six." },
@@ -346,6 +420,19 @@ export const chapter3 = {
       hint: 'Climb the east stair: sink the Plumb in the VAULT twice',
       objective: { kind: 'count', ids: ['vault'], n: 2 },
       reward: { points: 18000 },
+      // STAGE: Not a fight. The top of the east stair, a folder, and a desk with nothing on it that is not square to the edge.
+      encounter: {
+        set: 'proctor-office', light: 'night', mode: 'talk',
+        party: ['ren'],
+        opposition: { kind: 'force', who: ['folder'], name: 'THE EAST STAIR' },
+        extras: ['thorne'],
+        setback: { cue: 'clock-strikes', show: 'The regulator strikes the quarter; Ren stops where he is, as he did at twelve.' },
+        beats: [
+          { at: 0, cue: 'her-lamp', name: 'Her lamp is on', show: 'The green desk lamp lit, the Line glowing amber on the wall. Thorne stands by her desk, stage right; Ren has come in with nothing in his hands yet.' },
+          { at: 1, cue: 'carrow-folder', name: 'The Carrow folder', show: 'The folder lies on her desk, thin, square to the edge.' },
+          { at: 2, cue: 'uninvited', name: 'Never once uninvited', show: 'Ren stands before the desk. The Line has gone dim: his end of it is in a sock.' },
+        ],
+      },
       briefing: [
         { id: 'ch3.s5.b01', who: 'ren', text: 'Her lamp is on. It always was.' },
         { id: 'ch3.s5.b02', who: 'thorne', fx: 'radio', text: 'Vasker. Your Line is in a sock. Come up.' },
@@ -422,6 +509,19 @@ export const chapter3 = {
       hint: 'Fill the gallery: two shots up the GALLERY ramp',
       objective: { kind: 'count', ids: ['galleryRamp'], n: 2 },
       reward: { points: 25000, trust: 35 },
+      // STAGE: Not a fight. The same two thousand, and the children put up in the gallery.
+      encounter: {
+        set: 'hearing-hall', light: 'interior', mode: 'talk',
+        party: ['ilse', 'ren'],
+        opposition: { kind: 'force', who: ['gallery'], name: 'THE GALLERY' },
+        extras: ['thorne', 'ansel'],
+        setback: { cue: 'clause-fourteen', show: 'Company counsel rises with an indenture open at clause fourteen; the cadets shrink back from the rail.' },
+        beats: [
+          { at: 0, cue: 'resumed', name: 'The hearing is resumed', show: 'The house full and seated as before; the gallery above it empty. Ilse at the lip of the stage, Ren behind her. Thorne and a small cadet stage right.' },
+          { at: 1, cue: 'put-upstairs', name: 'Where children are put', show: 'Cadets have filed in along half the gallery rail.' },
+          { at: 2, cue: 'bench-creaks', name: 'A bench creaks', show: 'The gallery rail is lined with cadets from end to end. The house below has not moved.' },
+        ],
+      },
       briefing: [
         { id: 'ch3.s6.b01', who: 'ilse', text: 'The hearing is resumed. Anyone may speak.' },
         { id: 'ch3.s6.b02', who: 'ansel', text: "It's me first. We voted. Don't look at me." },
@@ -493,6 +593,21 @@ export const chapter3 = {
       hint: 'Hear what the Audit has brought: light B-O-N-D',
       objective: { kind: 'all', ids: ['bondB', 'bondO', 'bondN', 'bondD'] },
       reward: { points: 20000 },
+      // STAGE: Not a fight. An empty hall at night, a record being read through, and a man who keeps not looking at her Surety.
+      encounter: {
+        set: 'hearing-hall', light: 'night', mode: 'talk',
+        party: ['ilse', 'ren'],
+        opposition: { kind: 'force', who: ['the-record'], name: 'WHAT THE AUDIT HOLDS' },
+        extras: ['sable'],
+        setback: { cue: 'door-bangs', show: 'A door bangs at the top of the aisle; all three look up into the dark house.' },
+        beats: [
+          { at: 0, cue: 'seats-turned-up', name: 'Two thousand seats, empty', show: 'The hall dark, every seat turned up, a shaft of moon from the great window. Ilse and Ren at the lip of the stage; the Assessor stands off, stage right.' },
+          { at: 1, cue: 'record-read', name: 'Reading the record through', show: 'The first footlight at the lip is lit.' },
+          { at: 2, cue: 'one-line', name: 'One line of the tune', show: 'Two footlights. The stage is a little warmer.' },
+          { at: 3, cue: 'holding-something', name: 'He is holding something', show: 'Three footlights lit along the lip.' },
+          { at: 4, cue: 'not-looking', name: 'Not looking at her Surety', show: 'All four footlights are lit. The three stand in their light with the dark house behind.' },
+        ],
+      },
       briefing: [
         { id: 'ch3.s7.b01', who: 'sable', text: 'Tribune. A word. Not with him. With you.' },
         { id: 'ch3.s7.b02', who: 'ilse', text: 'He stays, Assessor. He is my Surety.' },

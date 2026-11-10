@@ -14,6 +14,25 @@ export const chapter4 = {
   riggedSpin: null,
   music: { play: 'village', cine: 'silence' },
 
+  // The 3D stage. sets: the set and light for every backdrop key the lines below use (a scene's own cutscene keeps the
+  // light of its encounter). Little Brand has no Mint and no coin, but the Mint's loan clerk still reaches the table
+  // (the loan barks say so); the people who gather behind the party are islanders.
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      'ferry-storm': { set: 'ferry-storm', light: 'dusk' },      // the lane still open at ch4.pro.02; the set's own cues bring the storm (pro.04, pro.07)
+      line: { set: 'line', light: 'night' },
+      black: { set: 'black', light: 'night' },
+      'wreck-shore': { set: 'wreck-shore', light: 'predawn' },
+      'dark-village': { set: 'dark-village', light: 'day' },
+      'shore-dusk': { set: 'shore-dusk', light: 'day' },         // Little Brand's sea wall, no fire anywhere: the set's 'brand' look
+      'hidden-lamp': { set: 'hidden-lamp', light: 'night' },
+      'under-lane': { set: 'under-lane', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'fishwife',
+  },
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch4.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
@@ -67,6 +86,19 @@ export const chapter4 = {
       hint: 'Get ashore: shoot the BREAKWATER ramp 3 times',
       objective: { kind: 'count', ids: ['breakwaterRamp'], n: 3 },
       reward: { points: 8000, trust: 25 },
+      encounter: {
+        set: 'wreck-shore', light: 'predawn', mode: 'walk',
+        party: ['ren', 'ilse', 'tobb'],
+        opposition: { kind: 'force', who: ['long-rope'], name: 'THE CHURN' },
+        extras: ['fishwife', 'townsman'],
+        setback: { cue: 'sea-comes-back', show: 'A sea comes in over the three of them and takes them a yard back down the shingle; spray stands over the breakwater.' },
+        beats: [
+          { at: 0, cue: 'three-in-the-surf', name: 'Three in the surf', show: 'Ren, Ilse and Tobb at the water\'s edge, stage left, the sea running hard behind them. One hooded lantern on the breakwater; two islanders at the foot of it with a coil of rope.' },
+          { at: 1, cue: 'long-rope-out', name: 'The long rope', show: 'The rope is paid out a third of the way along the shingle. More of the island has come onto the breakwater. The three are a few yards up the beach.' },
+          { at: 2, cue: 'shingle-underfoot', name: 'Shingle underfoot', show: 'The rope runs most of the way to them. The breakwater is lined with people. The sea has eased.' },
+          { at: 3, cue: 'hauled-out', name: 'Out of the Churn', show: 'The rope reaches them and all eleven are down. The three stand mid-beach under the lantern, out of the water.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s1.b01', who: 'crowd', text: "Three in the surf! Bring the long rope!" },
         { id: 'ch4.s1.b02', who: 'ren', text: "Kick for the breakwater. Hold on to the cover." },
@@ -134,6 +166,19 @@ export const chapter4 = {
       hint: 'Work off your keep: hit all three NET targets',
       objective: { kind: 'all', ids: ['netA', 'netB', 'netC'] },
       reward: { points: 9000, trust: 25 },
+      encounter: {
+        set: 'dark-village', light: 'day', mode: 'work',
+        party: ['tobb', 'ilse', 'ren'],
+        opposition: { kind: 'force', who: ['torn-net', 'torn-net', 'torn-net'], name: 'A DAY OWED' },
+        extras: ['wyn'],
+        setback: { cue: 'knot-slips', show: 'A knot slips and the three are knocked back from the frames; the keeper watches and says nothing.' },
+        beats: [
+          { at: 0, cue: 'nets-torn', name: 'A day owed', show: 'The yard in front of the net hall, morning. Three drying frames with torn scraps of net on them. Tobb nearest, Ilse and Ren behind him, kept apart. Wyn watches from the right.' },
+          { at: 1, cue: 'first-net', name: 'One net sound', show: 'The first frame carries a whole net with a coral float. Tobb goes to the second.' },
+          { at: 2, cue: 'second-net', name: 'Two', show: 'Two frames whole. A few islanders have stopped at the yard\'s edge to watch strangers work.' },
+          { at: 3, cue: 'third-net', name: 'A knot on their cord', show: 'All three nets hang whole and bright. The day is paid.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s2.b01', who: 'wyn', text: "You've eaten. That's a day owed. Nets." },
         { id: 'ch4.s2.b02', who: 'tobb', text: "Will somebody tell me what a herring costs here?" },
@@ -197,6 +242,17 @@ export const chapter4 = {
       hint: 'Follow the keeper: sink the Plumb in the HEARTH',
       objective: { kind: 'all', ids: ['hearth'] },
       reward: { points: 12000 },
+      encounter: {
+        set: 'dark-village', light: 'night', mode: 'stealth',
+        party: ['ren'],
+        opposition: { kind: 'force', who: ['hall-shadow', 'keeper-path'], name: 'THE KEEPER\'S PATH' },
+        extras: ['wyn'],
+        setback: { cue: 'keeper-turns', show: 'A gust takes the yard; Ren drops back into the shadow of the hall and holds still.' },
+        beats: [
+          { at: 0, cue: 'no-lamps', name: 'No lamps', show: 'Little Brand at night: no light in any window, the stove banked behind the hall doors. The keeper stands at the head of the cliff path, stage right, by one hooded lantern on a staff. Ren is low in the shadow at the left of the yard.' },
+          { at: 1, cue: 'down-the-path', name: 'Down the cliff path', show: 'Ren has crossed the yard, low, to the head of the path. The slit of the keeper\'s lantern is a little wider than it was.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s3.b01', who: 'ren', text: "No lamps. But the keeper walks out every night." },
         { id: 'ch4.s3.b02', who: 'tobb', text: "Stillsalt. I'd know that smell in my grave." },
@@ -266,6 +322,18 @@ export const chapter4 = {
       hint: 'Cross by night: two shots round the UNDER-LANE orbit',
       objective: { kind: 'count', ids: ['underlaneOrbit'], n: 2 },
       reward: { points: 14000 },
+      encounter: {
+        set: 'under-lane', light: 'night', mode: 'stealth',
+        party: ['ren', 'ilse', 'tobb'],
+        opposition: { kind: 'force', who: ['search-line'], name: 'THE SEARCH LINE' },
+        extras: ['wyn'],
+        setback: { cue: 'lamp-comes-round', show: 'The cutter\'s search lamp comes across the boat; for a moment everything in it is white, and the three are thrown back on their thwarts.' },
+        beats: [
+          { at: 0, cue: 'past-the-reef', name: 'No talk past the reef', show: 'The Compact boat on black water, its lantern hooded to a slit. Ren, Ilse and Tobb low in the near side, the keeper at the bow end, rowers beyond. Nothing on the horizon.' },
+          { at: 1, cue: 'lamps-north', name: 'Lamps to the north', show: 'A cutter shows, far off to the north, one search lamp swinging. The stroke has lengthened.' },
+          { at: 2, cue: 'working-a-pattern', name: 'Out and back', show: 'The cutter is nearer and working one bearing out and back; its lamp sweeps the water between. The boat holds its line.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s4.b01', who: 'wyn', text: "Lantern hooded. Oars muffled. No talk past the reef." },
         { id: 'ch4.s4.b02', who: 'ren', text: "Lamps to the north. A cutter, working a pattern." },
@@ -337,6 +405,19 @@ export const chapter4 = {
       hint: 'Open the eighth hearing: roll all three TIDE lanes',
       objective: { kind: 'all', ids: ['tideL', 'tideC', 'tideR'] },
       reward: { points: 18000, trust: 15 },
+      encounter: {
+        set: 'dark-village', light: 'interior', mode: 'talk',
+        party: ['ilse', 'ren'],
+        opposition: { kind: 'force', who: ['net-hall'], name: 'NO EIGHTH HEARING' },
+        extras: ['wyn', 'fishwife', 'townsman'],
+        setback: { cue: 'soup-and-sorry', show: 'Half a bench gets up to go: soup and sorry, and off she goes. Ilse and Ren are put back a step.' },
+        beats: [
+          { at: 0, cue: 'a-question', name: 'A question for the Tribune', show: 'Night. The net hall\'s doors stand open on the stove and the accounts net; a handful of people on the benches. Ilse stands in the yard at the threshold with Ren behind her; the keeper and two islanders at the right.' },
+          { at: 1, cue: 'benches-fill', name: 'The island comes in', show: 'A third of the benches are taken. Ilse is speaking, one hand up.' },
+          { at: 2, cue: 'sixty-one', name: 'Sixty-one and a stove', show: 'The benches are nearly full and people stand along the walls.' },
+          { at: 3, cue: 'floor-is-hers', name: 'What the statute does say', show: 'The whole island is in the hall and the yard, and quiet. The floor is hers.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s5.b01', who: 'wyn', text: "A question for the Tribune. In front of everyone." },
         { id: 'ch4.s5.b02', who: 'ilse', text: "There is no eighth hearing in the statute." },
@@ -410,6 +491,20 @@ export const chapter4 = {
       hint: 'Finish the net: 20 hits on the REEF bumpers',
       objective: { kind: 'count', ids: ['reef1', 'reef2', 'reef3'], n: 20 },
       reward: { points: 20000, trust: 25 },
+      encounter: {
+        set: 'shore-dusk', light: 'day', mode: 'work',
+        party: ['ren', 'ilse'],
+        opposition: { kind: 'force', who: ['drift-net'], name: 'SIX FEET OF HOLE' },
+        extras: ['wyn'],
+        setback: { cue: 'join-pulls-out', show: 'A join pulls out and both of them step back from the net; the keeper, further along the wall, looks round.' },
+        beats: [
+          { at: 0, cue: 'six-feet', name: 'Six feet of hole', show: 'Little Brand\'s sea wall with the drift net pegged along it, a hole in the middle. Ren works at the tear, Ilse a little behind him; they do not look at each other. No fire, no lamp.' },
+          { at: 5, cue: 'four-feet', name: 'While you work, Surety', show: 'A quarter of the hole is closed.' },
+          { at: 10, cue: 'half-closed', name: 'Half closed', show: 'Half the hole is closed. Ilse has come up level with him.' },
+          { at: 15, cue: 'arms-length', name: 'An arm\'s length', show: 'One quarter is left: an arm\'s length of open mesh between their hands.' },
+          { at: 20, cue: 'sound-join', name: 'A sound join', show: 'The net is whole from peg to peg.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s6.b01', who: 'wyn', text: "Thursday. That net wants its middle." },
         { id: 'ch4.s6.b02', who: 'ren', text: "Tribune. I have a disclosure. Nobody asked for it." },
@@ -485,6 +580,19 @@ export const chapter4 = {
       hint: 'Trim the hidden lamp: hit all four WICK targets',
       objective: { kind: 'all', ids: ['wickW', 'wickI', 'wickC', 'wickK'] },
       reward: { points: 22000, trust: 30 },
+      encounter: {
+        set: 'hidden-lamp', light: 'night', mode: 'work',
+        party: ['wyn', 'ren'],
+        opposition: { kind: 'force', who: ['hidden-wick'], name: 'THE HIDDEN LAMP' },
+        setback: { cue: 'spray-comes-in', show: 'A sea breaks at the cave mouth; spray comes in and the flame ducks almost out. Wyn and Ren are put back from the ledge.' },
+        beats: [
+          { at: 0, cue: 'flame-gutters', name: 'The flame gutters', show: 'The sea-cave. On its ledge the hidden lamp burns low behind a nearly shut copper shutter. The keeper stands toward it with Ren behind her. Black water in the cave mouth, nothing showing on it.' },
+          { at: 1, cue: 'wick-trimmed', name: 'Wick', show: 'The flame stands a little higher and bluer.' },
+          { at: 2, cue: 'scrapings-fed', name: 'Scrapings', show: 'Brighter again; the shutter is a hand open and one far island is answering.' },
+          { at: 3, cue: 'copper-wiped', name: 'Copper', show: 'The cave walls take the blue. The shutter is nearly a third open.' },
+          { at: 4, cue: 'burns-clean', name: 'It burns clean', show: 'The lamp burns clean and steady, the shutter a third open, two points of blue out on the water.' },
+        ],
+      },
       briefing: [
         { id: 'ch4.s7.b01', who: 'wyn', text: "Vasker. Down to the cave. Alone, first." },
         { id: 'ch4.s7.b02', who: 'ren', text: "Is it the eleventh island?" },

@@ -12,6 +12,27 @@ export const chapter2 = {
   riggedSpin: null,
   music: { play: 'mine', cine: 'tense' },
 
+  // ───────────────────────── the stage ─────────────────────────
+  // For the 3D stage (src/core/stage.js), in the shape chapter 1 uses. sets: every backdrop key this chapter names
+  // -> the set and how it is lit when a cinematic goes there (a scene's own cutscene keeps its encounter's light:
+  // commons-hall is night in scene 2 and day in scene 7). The miners are the townsfolk who gather as trust rises.
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      causeway: { set: 'causeway', light: 'day' },
+      picket: { set: 'picket', light: 'night' },
+      'commons-hall': { set: 'commons-hall', light: 'night' },
+      'mine-deep': { set: 'mine-deep', light: 'interior' },
+      court: { set: 'court', light: 'day' },
+      'ledger-room': { set: 'ledger-room', light: 'night' },
+      orrery: { set: 'orrery', light: 'night' },
+      'shore-dusk': { set: 'shore-dusk', light: 'dusk' },
+      black: { set: 'black', light: 'night' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'docker',
+  },
+
   prologue: [
     { id: 'ch2.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
       text: 'Entered at Saltmere, first city of the Circuit. A town that dug the money out of the ground and could not afford its own light.' },
@@ -62,6 +83,20 @@ export const chapter2 = {
       hint: 'Cross to Saltmere: shoot the CAUSEWAY ramp 3 times',
       objective: { kind: 'count', ids: ['causewayRamp'], n: 3 },
       reward: { points: 6000 },
+      // STAGE: Not a fight. A walk up a salt road with the tide behind, to a gate that fills with miners as they come.
+      encounter: {
+        set: 'picket', light: 'night', mode: 'walk',
+        party: ['ren', 'ilse', 'tobb'],
+        opposition: { kind: 'force', who: ['picket-line'], name: 'THE PICKET' },
+        extras: ['docker', 'docker', 'hesper'],
+        setback: { cue: 'tide-on-the-road', show: 'The tide slops across the salt road behind them; the three are driven back a pace and every lamp on the line lifts to look.' },
+        beats: [
+          { at: 0, cue: 'salt-road', name: 'Four miles of salt', show: 'The gate is chained shut under two fire baskets, the notice nailed to its left leaf. A handful of miners stand the line. Ren, Ilse and Tobb come up the road from stage left.' },
+          { at: 1, cue: 'lamps-on-the-line', name: 'They have been seen', show: 'More lamps come down to the gate. The three are a third of the way along the road.' },
+          { at: 2, cue: 'the-notice', name: 'A notice on the gate', show: 'The line is two deep and has closed up. The party is near enough to read the paper on the gate.' },
+          { at: 3, cue: 'far-enough', name: 'That is far enough', show: 'Forty on the gate, shoulder to shoulder, Hesper Dunmore among them. The three have stopped a pace short of the line.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s1.b01', who: 'thorne', fx: 'radio', text: "Saltmere's gate is shut. Get your principal through it." },
         { id: 'ch2.s1.b02', who: 'ren', text: "Tide's coming in over the road. Twice up the causeway." },
@@ -122,6 +157,20 @@ export const chapter2 = {
       hint: 'Work the Commons kitchen: hit all three STRIKE targets',
       objective: { kind: 'all', ids: ['strikeA', 'strikeB', 'strikeC'] },
       reward: { points: 8000, trust: 25 },
+      // STAGE: Not a fight. Three red-sealed notices on the Commons table, a queue behind them, and four words written on each.
+      encounter: {
+        set: 'commons-hall', light: 'night', mode: 'work',
+        party: ['ilse', 'ren'],
+        opposition: { kind: 'force', who: ['red-notice', 'red-notice', 'red-notice'], name: 'RED SEALS' },
+        extras: ['townsman', 'townswoman', 'hesper'],
+        setback: { cue: 'pot-boils-over', show: 'A pot goes over on the stove and the queue turns to look; Ilse loses her line and Ren is back at the boiler.' },
+        beats: [
+          { at: 0, cue: 'table-and-queue', name: 'A table, and a queue', show: 'The hall is full and the stove going. Three notices with red seals lie propped on the trestle; Ilse stands over them, Ren beside her with his sleeves up.' },
+          { at: 1, cue: 'show-me-the-order', name: 'Show me the order', show: 'The first notice has a reply pinned over its seal, four words long. The queue has moved up one.' },
+          { at: 2, cue: 'second-reply', name: "A clerk's afternoon", show: 'Two replies written. Some of the hall has eaten and gone.' },
+          { at: 3, cue: 'thirtieth', name: 'Make them owe a reply', show: 'All three notices are answered. The queue is short, the hall thinner, the big lamp steady.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s2.b01', who: 'hesper', text: "Pots, soldier. They don't wash themselves." },
         { id: 'ch2.s2.b02', who: 'ilse', text: 'Who has a notice they cannot read? Bring it here.' },
@@ -180,6 +229,20 @@ export const chapter2 = {
       hint: 'Go down the mine: 24 hits on the SHAFT bumpers',
       objective: { kind: 'count', ids: ['shaft1', 'shaft2', 'shaft3'], n: 24 },
       reward: { points: 10000 },
+      // STAGE: Not a fight. Eleven hundred feet down and along gallery nine, to a book in a green cloth.
+      encounter: {
+        set: 'mine-deep', light: 'interior', mode: 'walk',
+        party: ['hesper', 'ren', 'ilse'],
+        opposition: { kind: 'force', who: ['gallery-nine'], name: 'ELEVEN HUNDRED FEET' },
+        extras: ['tobb'],
+        setback: { cue: 'lamp-gutters', show: 'The hook lamp gutters in a breath of bad air and the gallery goes blue; they stop where they are until it steadies.' },
+        beats: [
+          { at: 0, cue: 'cage-lands', name: 'The cage lands', show: 'The cage stands at the foot of the shaft, stage left. Hesper leads them out under the first cap beam; the gallery beyond is dark.' },
+          { at: 8, cue: 'gallery-nine', name: 'Gallery nine', show: 'The cage has been hauled away up the shaft. They are walking the tub rails; the lamp reaches further down the gallery.' },
+          { at: 16, cue: 'only-rock', name: 'It is only rock', show: 'The walls are bare. A few last blue shards catch the lamp in the cracks as they pass.' },
+          { at: 24, cue: 'green-cloth', name: 'The assay book', show: 'They have reached the gallery office. The book lies shut in its green cloth on the stand, lit.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s3.b01', who: 'thorne', fx: 'radio', text: "Exam task. The mine's assay book. Photograph every page." },
         { id: 'ch2.s3.b02', who: 'hesper', text: 'Mind your heads. The cage drops fast.' },
@@ -242,6 +305,19 @@ export const chapter2 = {
       hint: 'Argue the stay: two shots round the COURT orbit',
       objective: { kind: 'count', ids: ['courtOrbit'], n: 2 },
       reward: { points: 15000, trust: 15 },
+      // STAGE: Not a fight. An argument made twice before a borrowed bench, with four hundred people standing.
+      encounter: {
+        set: 'court', light: 'day', mode: 'talk',
+        party: ['ilse', 'hesper'],
+        opposition: { kind: 'force', who: ['the-stay'], name: 'THE CIRCUIT BENCH' },
+        extras: ['sable'],
+        setback: { cue: 'be-brief', show: 'The magistrate raps for brevity; Ilse loses her place and the hall mutters behind her.' },
+        beats: [
+          { at: 0, cue: 'petition', name: 'Petition for a stay', show: 'The bench sits on its dais under the roll, four hundred standing on the forms. Ilse at the front with Hesper behind her; the Assessor waits stage right.' },
+          { at: 1, cue: 'only-road', name: 'The only road for salt', show: 'The hall has gone quite still to listen. A paper lies before the magistrate.' },
+          { at: 2, cue: 'payable-in-calm', name: 'Payable in calm', show: 'The hall is leaning in, on its toes. The magistrate has the gavel in his hand.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s4.b01', who: 'ilse', text: 'One petition. Thirty days. That is all I ask.' },
         { id: 'ch2.s4.b02', who: 'ren', text: "The Assessor's table. I know that coat." },
@@ -316,6 +392,20 @@ export const chapter2 = {
       hint: 'Search the records vault: light L-I-E-N',
       objective: { kind: 'all', ids: ['lienL', 'lienI', 'lienE', 'lienN'] },
       reward: { points: 12000 },
+      // STAGE: Not a fight. Two men, one lamp, four drawers, and a clerk asleep by the door.
+      encounter: {
+        set: 'ledger-room', light: 'night', mode: 'stealth',
+        party: ['ren', 'tobb'],
+        opposition: { kind: 'force', who: ['lien-drawer', 'lien-drawer', 'lien-drawer', 'lien-drawer'], name: 'FOUR DRAWERS' },
+        setback: { cue: 'clerk-stirs', show: 'The night clerk stirs on his chair and his candle flares; Ren and Tobb stand like furniture until he settles.' },
+        beats: [
+          { at: 0, cue: 'powder-vault', name: 'The old powder vault', show: 'Moon through the grille on a cabinet of deed drawers, all shut. The clerk sleeps by the iron door, stage left. Ren and Tobb keep low.' },
+          { at: 1, cue: 'drawer-l', name: 'Drawer L', show: 'The first lettered drawer stands open and lit.' },
+          { at: 2, cue: 'drawer-i', name: 'Drawer I', show: 'Two drawers open. They have moved along the cabinet.' },
+          { at: 3, cue: 'drawer-e', name: 'Drawer E', show: 'Three open. Tobb has a finger on the fourth.' },
+          { at: 4, cue: 'drawer-n', name: 'To whom', show: 'L, I, E, N: all four stand open and lit. The register on its stand is the only thing left to read.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s5.b01', who: 'tobb', text: 'Four drawers. One of them names the creditor.' },
         { id: 'ch2.s5.b02', who: 'ren', text: 'Quietly. The night clerk sleeps by the door.' },
@@ -384,6 +474,18 @@ export const chapter2 = {
       hint: 'Hold the lamp-house: sink the Plumb in the ORRERY twice',
       objective: { kind: 'count', ids: ['orrery'], n: 2 },
       reward: { points: 20000, trust: 15 },
+      // STAGE: The one licensed confrontation of the chapter: a door held against Mint stewards. Nobody is struck down; they are turned back.
+      encounter: {
+        set: 'orrery', light: 'night', mode: 'hold',
+        party: ['ren'],
+        opposition: { kind: 'people', who: ['steward', 'steward', 'steward'], name: 'MINT STEWARDS' },
+        setback: { cue: 'cap-at-the-sill', show: 'The stewards get the brass cap as far as the sill; Ren is driven back a step and sets his feet again.' },
+        beats: [
+          { at: 0, cue: 'lamp-house-door', name: 'The lamp-house door', show: 'Ren alone under the turning rings with the stay in his hand. Three Mint stewards come at him from stage right.' },
+          { at: 1, cue: 'lawfully-drawn', name: 'Lawfully drawn', show: 'The first steward has been put back off the sill. The others have stopped to look at the seal.' },
+          { at: 2, cue: 'no-further', name: 'They come no further', show: 'The stewards stand where they are, hands down. The door is his.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s6.b01', who: 'crowd', text: "Stewards on the causeway! They've come a night early!" },
         { id: 'ch2.s6.b02', who: 'ren', text: 'The lamp-house. Now. Bring the stay.' },
@@ -454,6 +556,20 @@ export const chapter2 = {
       hint: 'Settle with the Commons: roll all three SALT lanes',
       objective: { kind: 'all', ids: ['saltL', 'saltC', 'saltR'] },
       reward: { points: 20000, trust: 30 },
+      // STAGE: Not a fight. A town coming in to look at its own accounts, and a woman with the chalk in her hand.
+      encounter: {
+        set: 'commons-hall', light: 'day', mode: 'talk',
+        party: ['ilse', 'ren', 'tobb'],
+        opposition: { kind: 'force', who: ['long-board'], name: 'GAVE, AND IS OWED' },
+        extras: ['hesper'],
+        setback: { cue: 'door-blows-open', show: 'The gable door blows open and chalk dust lifts off the board; everyone turns from it to shut the weather out.' },
+        beats: [
+          { at: 0, cue: 'the-long-board', name: 'Gave, and is owed', show: 'Daylight through the gable, the hall nearly empty. The chalk board runs the length of the back wall; Hesper stands under it, stage right.' },
+          { at: 1, cue: 'weeks-coal', name: 'A week of coal', show: 'A fresh tally is chalked and lit under GAVE. A few of the town have come in to look.' },
+          { at: 2, cue: 'owed-a-roof', name: 'Old Bram is owed a roof', show: 'A second tally. More have come in behind the tables.' },
+          { at: 3, cue: 'never-square', name: 'Nobody is ever square', show: 'Three tallies lit along the board and half the town standing in the hall. The IS OWED column still has room.' },
+        ],
+      },
       briefing: [
         { id: 'ch2.s7.b01', who: 'hesper', text: 'Come and see the board before you sail.' },
         { id: 'ch2.s7.b02', who: 'tobb', text: "Thirty days. I'd not have quoted that at any price." },

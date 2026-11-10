@@ -73,6 +73,7 @@ function stadium(ax, az, bx, bz, r0, r1 = r0, n = 4) {
 }
 const rectPts = (x0, z0, x1, z1) => [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
 const NO_SHORES = [];
+const LANE_Y = [650, 575, 500, 425, 350]; // the lamps up the plunger lane (table y): they run while a ball waits to be launched
 /** Colour the faces that look up with `top` and the rest with `side`: a crisp cap on a creased solid. */
 const capped = (mesh, side, top, at = 0.35) => paint(mesh, (x, y, z, nx, ny) => (ny > at ? top : side));
 /** Send every uv of a mesh to one point of the atlas (the blank cell), so a decal material leaves it alone. */
@@ -383,8 +384,18 @@ function paintKit(g, table, P) {
 }
 
 /** Painted on every table over its own art: the sockets of inserts, holes, arrows, labels and the table's lettering. */
-function paintFunctional(kit, layout) {
+function paintFunctional(kit, layout, at = {}) {
   const { g, table, P } = kit;
+  // a label is a plate: lettering on the busiest painting still reads at phone size. `at` moves one ({ id: [x, y] }).
+  const plate = (id, str, x, y, size) => {
+    if (at[id]) { x = at[id][0]; y = at[id][1]; }
+    g.save(); g.translate(x, y); g.font = `${size}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if ('letterSpacing' in g) g.letterSpacing = '0.4px';
+    const w = g.measureText(str).width + size * 0.95, h = size * 1.5;
+    g.fillStyle = P.plateEdge; g.beginPath(); rrect(g, -w / 2 - 1.3, -h / 2 - 1.3, w + 2.6, h + 2.6, h * 0.5); g.fill();
+    g.fillStyle = P.plate; g.beginPath(); rrect(g, -w / 2, -h / 2, w, h, h * 0.45); g.fill();
+    g.fillStyle = P.plateText; g.fillText(str, 0, size * 0.07); g.restore();
+  };
   const socket = (x, y, r) => {
     g.fillStyle = P.ink; g.beginPath(); g.arc(x, y, r + 2.2, 0, 7); g.fill();
     g.fillStyle = P.socket; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
@@ -393,15 +404,16 @@ function paintFunctional(kit, layout) {
   for (const b of table.bumpers) {
     g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.arc(b.pos[0], b.pos[1], b.r + 9, 0, 7); g.fill();
     g.strokeStyle = P.ink; g.lineWidth = 1.4; g.setLineDash([5, 4]); g.beginPath(); g.arc(b.pos[0], b.pos[1], b.r + 9, 0, 7); g.stroke(); g.setLineDash([]);
+    const lab = table.labels[b.id]; if (lab) plate(b.id, lab, b.pos[0], b.pos[1] + b.r + 16, 7.5);
   }
   for (const r of table.rollovers) {
     socket(r.pos[0], r.pos[1], Math.min(r.r, 11) * 0.82);
-    const lab = table.labels[r.id]; if (lab) kit.text(lab, r.pos[0], r.pos[1] + Math.min(r.r, 11) + 9, 7.5, { edge: 2.6 });
+    const lab = table.labels[r.id]; if (lab) plate(r.id, lab, r.pos[0], r.pos[1] + Math.min(r.r, 11) + 10, 7.5);
   }
   for (const sc of table.saucers) {
     g.fillStyle = P.ink; g.beginPath(); g.arc(sc.pos[0], sc.pos[1], sc.r + 3, 0, 7); g.fill();
     g.fillStyle = '#0d1630'; g.beginPath(); g.arc(sc.pos[0], sc.pos[1] + 1.5, sc.r - 1, 0, 7); g.fill();
-    const lab = table.labels[sc.id]; if (lab) kit.text(lab, sc.pos[0], sc.pos[1] + sc.r + 13, 8, { edge: 2.6 });
+    const lab = table.labels[sc.id]; if (lab) plate(sc.id, lab, sc.pos[0], sc.pos[1] + sc.r + 14, 8.5);
   }
   for (const s of layout.shots) {
     socket(s.lamp[0], s.lamp[1], 9);
@@ -413,8 +425,9 @@ function paintFunctional(kit, layout) {
         g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(cx + px * 8 - s.dir[0] * 5, cy + py * 8 - s.dir[1] * 5); g.lineTo(cx + s.dir[0] * 3, cy + s.dir[1] * 3); g.lineTo(cx - px * 8 - s.dir[0] * 5, cy - py * 8 - s.dir[1] * 5); g.stroke();
       }
     }
-    const lab = table.labels[s.id]; if (lab) kit.text(lab, s.lamp[0] - s.dir[0] * 56, s.lamp[1] - s.dir[1] * 56, 9, { edge: 3 });
+    const lab = table.labels[s.id]; if (lab) plate(s.id, lab, s.lamp[0] - s.dir[0] * 54, s.lamp[1] - s.dir[1] * 54, 10);
   }
+  for (const y of LANE_Y) socket(table.plunger.pos[0], y, 5.5);
   for (const t of layout.targets) {
     const lab = table.labels[t.id]; if (!lab || lab.length > 2) continue;
     const x = t.mid[0] + t.front[0] * 17, y = t.mid[1] + t.front[1] * 17;
@@ -480,6 +493,7 @@ const BASE_PALETTE = {
   plank: '#dba160', plankDark: '#b97a42', shallow: '#8ff0e0', socket: '#24406e',
   want: '#ffd04a', spin: '#ff7ad1', done: '#ffab3d', lot: '#ffe27a', hull: '#a8683a', rail: '#d08a4c',
   power: '#7df2ff', powerHot: '#ffffff', save: '#6dffb0', loan: '#ff4a3a', credit: '#58e0c0',
+  plate: '#1d2742', plateEdge: '#fff6dc', plateText: '#fff6dc',
   groups: ['#ff9a3d', '#5b8cf0', '#33c9a4', '#f06aa8', '#b08cf5'],
   sea: ['#2d8fe0', '#37b4e6', '#62dcd6'],
 };
@@ -569,7 +583,7 @@ export function createTableView(content, tableId, opts = {}) {
     if (!warned.has(name)) { warned.add(name); console.warn(`table3d: no light called ${JSON.stringify(name)} (have ${Object.keys(LIGHTS).join(', ')}, and ${Object.keys(LIGHT_ALIAS).join(', ')} as other names); using dusk`); }
     return 'dusk';
   };
-  let lightName = lightKey(opts.light || 'dusk'), lightFrom = LIGHTS[lightName], lightTo = lightFrom, lightT = 1, lightDur = 0, nightAmount = lightName === 'night' ? 1 : 0;
+  let lightName = lightKey(opts.light || art.light || 'dusk'), lightFrom = LIGHTS[lightName], lightTo = lightFrom, lightT = 1, lightDur = 0, nightAmount = lightName === 'night' ? 1 : 0;
   const env = makeEnv(LIGHTS[lightName]);
   const points = env.points = seedPoints.map((q) => ({ ...q, color: rgb(q.color) }));
   // the sea laps the cabinet: one rounded box of shore (it was nine circles, each a loop iteration per water fragment)
@@ -597,9 +611,9 @@ export function createTableView(content, tableId, opts = {}) {
   const fieldCanvas = document.createElement('canvas'); fieldCanvas.width = 1024; fieldCanvas.height = 2048;
   {
     const g = fieldCanvas.getContext('2d'); g.scale(1024 / 400, 2048 / 800);
-    const kit = paintKit(g, table, P);
+    const kit = paintKit(g, table, P); kit.lay = lay;
     if (art.paint) art.paint(kit); else { kit.sea(P.sea); kit.waves(5, 90, 'rgba(255,255,255,0.7)'); }
-    paintFunctional(kit, lay);
+    paintFunctional(kit, lay, art.labelAt || {});
   }
   const fieldTex = texture(fieldCanvas);
 
@@ -635,23 +649,28 @@ export function createTableView(content, tableId, opts = {}) {
   for (const z of RAIL_Z) for (const x of [-2.1, 2.1]) set.add(node('socket', tint(place(lathe([[0.064, 0], [0.07, 0.016], [0.05, 0.028]], sg(10, 8)), x, 0.238, z), P.ink2), setMat));
   for (const x of [-2.1, 2.1]) set.add(node('wire', tint(place(box(0.03, 0.012, 7.3), x, 0.243, -0.15), P.gold), setMat));
 
+  // what a table's art is handed to build with (scenery, and the head of the cabinet)
+  const artKit = { table, P, WX, WZ, S, lay, YAW: YAW_SIGN, bollard: (s) => bollard(P, s), prism, stadium, rectPts, capped };
+  // the reel booth wears the place: colours from art.booth, and anything art.head(kit) stands on or around it
+  const BOOTH = { awning: [P.coral, P.cream], post: [P.coral, P.cream], fascia: [P.cream, P.coral], back: P.ink2, bulbs: [P.gold, '#a79fd0'], pillar: [P.cream, P.coral], deck: [P.rail, P.wood], ...(art.booth || {}) };
   const DR = 0.5, DW = 0.66, DX = [-0.76, 0, 0.76], DY = 0.3, DZ = -4.6, HEAD_TOP = 1.0;
   const PORT = [0, HEAD_TOP + 0.32, -4.86], LEVER = [2.1, 0.24, 2.1]; // the lever stands on the right rail above the launch corner, clear of where a HUD puts its button
   set.add(node('lever-hub', place(leverHubMesh(P), LEVER[0], LEVER[1], LEVER[2]), setMat));
   {
     const head = [];
-    head.push(capped(prism(rectPts(-2.2, -5.2, 2.2, -4.02), -0.05, 0.22, 0.03), P.rail, P.wood));
-    head.push(capped(prism(rectPts(-1.24, -5.1, 1.24, -4.1), 0.2, 0.34, 0.03), P.ink2, P.ink2));
-    for (const x of [-1.14, -0.38, 0.38, 1.14]) head.push(capped(prism(stadium(x, -4.95, x, -4.3, 0.045), 0.3, 0.8, 0.04), P.coral, P.cream));
+    head.push(capped(prism(rectPts(-2.2, -5.2, 2.2, -4.02), -0.05, 0.22, 0.03), BOOTH.deck[0], BOOTH.deck[1]));
+    head.push(capped(prism(rectPts(-1.24, -5.1, 1.24, -4.1), 0.2, 0.34, 0.03), BOOTH.back, BOOTH.back));
+    for (const x of [-1.14, -0.38, 0.38, 1.14]) head.push(capped(prism(stadium(x, -4.95, x, -4.3, 0.045), 0.3, 0.8, 0.04), BOOTH.post[0], BOOTH.post[1]));
     // the collector: a brass cradle on the roof holding the glass every line of power runs into
     head.push(tint(place(lathe([[0, 0], [0.2, 0], [0.2, 0.04], [0.11, 0.07], [0.09, 0.2], [0.15, 0.24], [0.15, 0.27], [0, 0.27]], sg(14, 8)), PORT[0], HEAD_TOP - 0.03, PORT[2]), P.gold));
     for (let i = 0; i < 3; i++) { const a = (i / 3) * TAU + 0.5; head.push(tint(place(tube([[Math.cos(a) * 0.14, 0, Math.sin(a) * 0.14], [Math.cos(a) * 0.19, 0.14, Math.sin(a) * 0.19], [Math.cos(a) * 0.1, 0.3, Math.sin(a) * 0.1]], 0.014, sg(5, 4), { crease: 180 }), PORT[0], HEAD_TOP + 0.22, PORT[2]), P.gold)); }
     // a fascia in front and an awning above, so each drum shows one face and a sliver of its neighbours
-    head.push(capped(prism(rectPts(-1.24, -4.2, 1.24, -4.07), 0.2, 0.55, 0.03), P.cream, P.coral));
-    for (let i = 0; i < 7; i++) head.push(tint(prism(rectPts(-1.26 + i * 0.36, -5.1, -1.26 + (i + 1) * 0.36, -4.62), 0.9, 0.97, 0.012), i % 2 ? P.cream : P.coral));
-    head.push(capped(prism(rectPts(-1.3, -5.16, 1.3, -5.08), 0.2, 0.98, 0.03), P.ink2, P.ink2));
-    for (let i = 0; i < 7; i++) head.push(tint(place(sphere(i % 2 ? 0.075 : 0.055, sg(10, 6), sg(6, 4)), -1.08 + i * 0.36, 0.9, -4.62), i % 2 ? '#a79fd0' : P.gold));
-    for (const x of [-1.86, 1.86]) head.push(merge(tint(place(cylinder(0.11, 0.09, 0.5, 12), x, 0.2, -4.66), P.cream), tint(place(lathe([[0.13, 0], [0.15, 0.04], [0.1, 0.08], [0, 0.1]], 12), x, 0.7, -4.66), P.coral)));
+    head.push(capped(prism(rectPts(-1.24, -4.2, 1.24, -4.07), 0.2, 0.55, 0.03), BOOTH.fascia[0], BOOTH.fascia[1]));
+    for (let i = 0; i < 7; i++) head.push(tint(prism(rectPts(-1.26 + i * 0.36, -5.1, -1.26 + (i + 1) * 0.36, -4.62), 0.9, 0.97, 0.012), BOOTH.awning[(i + 1) % 2]));
+    head.push(capped(prism(rectPts(-1.3, -5.16, 1.3, -5.08), 0.2, 0.98, 0.03), BOOTH.back, BOOTH.back));
+    for (let i = 0; i < 7; i++) head.push(tint(place(sphere(i % 2 ? 0.075 : 0.055, sg(10, 6), sg(6, 4)), -1.08 + i * 0.36, 0.9, -4.62), BOOTH.bulbs[(i + 1) % 2]));
+    for (const x of [-1.86, 1.86]) head.push(merge(tint(place(cylinder(0.11, 0.09, 0.5, 12), x, 0.2, -4.66), BOOTH.pillar[0]), tint(place(lathe([[0.13, 0], [0.15, 0.04], [0.1, 0.08], [0, 0.1]], 12), x, 0.7, -4.66), BOOTH.pillar[1])));
+    if (art.head) for (const m of art.head(artKit)) head.push(m);
     for (let i = 0; i < 9; i++) head.push(tint(place(lathe([[0.05, 0], [0.056, 0.02], [0.04, 0.035]], sg(10, 6)), (i - 4) * 0.2, 0.55, -4.135), P.ink2));
     set.add(node('head', merge(head), setMat));
   }
@@ -676,8 +695,7 @@ export function createTableView(content, tableId, opts = {}) {
   const artLamps = []; // { pos [x, y, z], color, radius, flicker }
   const beams = [];
   if (art.scenery) {
-    const kit = { table, P, WX, WZ, S, bollard: (s) => bollard(P, s) };
-    for (const it of art.scenery(kit)) {
+    for (const it of art.scenery(artKit)) {
       if (it.mesh) set.add(node(it.name || 'prop', it.mesh, setMat, { pos: [WX(it.at[0]), it.y || 0, WZ(it.at[1])], rot: [0, it.rot || 0, 0], scale: it.scale ?? 1 }));
       for (const l of it.lamps || []) {
         const pos = [WX(l.at[0]), l.h, WZ(l.at[1])];
@@ -759,6 +777,7 @@ export function createTableView(content, tableId, opts = {}) {
     if (fl && fr) for (let i = 0; i < 7; i++) { const u = i / 6, x = fl.pivot[0] + (fr.pivot[0] - fl.pivot[0]) * (0.14 + 0.72 * u), y = Math.min(table.drainY - 8, Math.max(fl.pivot[1], fr.pivot[1]) + 38 + 16 * Math.sin(u * Math.PI)); saveLamps.push(addLamp('', 'save', WX(x), 0.03, WZ(y), 0.07, 0.035, 0.07, P.save, 0.62, 0)); } }
   const ballGlow = []; for (let i = 0; i < BALLS; i++) { const g = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: R * 7, color: '#ffffff', alpha: 0 }); g.visible = false; ballGlow.push(g); }
   const armLamps = [-1.86, 1.86].map((x) => addLamp('', 'arm', x, 0.76, -4.66, 0.1, 0.07, 0.1, P.spin, 0.7, 1.4));
+  const laneLamps = LANE_Y.map((y) => addLamp('', 'lane', WX(table.plunger.pos[0]), 0.004, WZ(y), 0.05, 0.012, 0.05, P.want, 0.42, 0));
   const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.582, -4.135, 0.04, 0.02, 0.04, P.spin, 0, 0));
   if (lamps.length > LAMPS) throw new Error(`table3d: table ${tableId} has ${lamps.length} lamps; the instanced call holds ${LAMPS}`);
   const fillLamp = table.reels.fill.map((id) => lampById.get(id) || null);
@@ -1007,6 +1026,11 @@ export function createTableView(content, tableId, opts = {}) {
       }
       setLamp(portLamp, Math.min(1, 0.12 + 0.6 * power + portFlash), portFlash > 0.35 ? 9 : 5);
     }
+    // a ball waiting on the plunger sits where a HUD puts its button: the lane above it runs with light, toward the field
+    if (lever.state === 'launch' || (phys && phys.balls.some((b) => b.state === 'plunger'))) {
+      const run = (time * 5) % (laneLamps.length + 2), ch = phys ? phys.charge : 0;
+      for (let i = 0; i < laneLamps.length; i++) { const near = Math.max(0, 1 - Math.abs(run - i) / 1.3); setLamp(laneLamps[i], Math.min(1, 0.28 + 0.72 * near + ch * 0.5), ch > 0.02 ? 9 : 0); }
+    }
     // ball save: the hammock is up while the save runs, and blinks through its last two and a half seconds
     if (game.boons.ballSave > 0 || saveFlash > 0) {
       const left = game.boons.ballSave, on = left > 2.5 || Math.sin(time * 16) > -0.2 || saveFlash > 0;
@@ -1030,7 +1054,7 @@ export function createTableView(content, tableId, opts = {}) {
       else if (st === 'loan') setLamp(leverLamp, Math.sin(time * 4) > 0 ? 0.95 : 0.25, 7);
       else if (st === 'busy') setLamp(leverLamp, 0.5 + 0.5 * lever.pull, 9);
     }
-    if (celebrate > 0) { celebrate -= dt; for (let i = 0; i < lamps.length; i++) { const L = lamps[i]; if (L.kind !== 'charge' && L.kind !== 'face' && L.kind !== 'save' && L.kind !== 'lever' && L.level < 0.5) setLamp(L, 0.5 + 0.5 * Math.sin(time * 18 + i * 1.3), (i % 2) ? 3 : 4); } }
+    if (celebrate > 0) { celebrate -= dt; for (let i = 0; i < lamps.length; i++) { const L = lamps[i]; if (L.kind !== 'charge' && L.kind !== 'face' && L.kind !== 'save' && L.kind !== 'lever' && L.kind !== 'lane' && L.level < 0.5) setLamp(L, 0.5 + 0.5 * Math.sin(time * 18 + i * 1.3), (i % 2) ? 3 : 4); } }
     for (let i = 0; i < bumpers.length; i++) { const b = bumpers[i]; if (b.flash > 0) { setLamp(b.lamp, b.flash, 4); b.flash = Math.max(0, b.flash - dt * 5); } }
     if (phys) for (let i = 0; i < phys.balls.length; i++) { const ins = phys.balls[i].inside; for (let k = 0; k < ins.length; k++) { const L = lampById.get(ins[k]); if (L) setLamp(L, 1, 4); } }
 

@@ -22,7 +22,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, createSprites, rayMesh, rayMaterial, makeInstances,
 } from '../index.js';
 import { PAL, kitMaterials, anchorAt, pickLight, scatter, barrel, sack, crate, ropeCoil, cloudBank, headland, cobble, crowd, steps, gull, brazier, rock } from './kit.js';
-import { C4, crag, stoneHut, cappedLamp, hoodedLantern, hatchCover, spar, kelp, blanketRoll, breakwater, seaSwells, netPole, c4Shell, cams, MARKS4, norm3, dirFrom } from './kit-ch4.js';
+import { C4, crag, stoneHut, cappedLamp, hoodedLantern, hatchCover, spar, kelp, blanketRoll, breakwater, seaSwells, netPole, c4Shell, cams, MARKS4, norm3, dirFrom, taskUnit } from './kit-ch4.js';
 
 const WATER = -0.34, BW_Z = -4.3, BW_H = 1.6, BW_X0 = -0.3;
 
@@ -166,10 +166,27 @@ function build(engine = GL0, { light, low = false } = {}) {
     lastT = time;
   }
 
+  // ---- what the live stage asks for (kit-ch4 taskUnit)
+  //   'long-rope'   ch4.s1: the island's rope, paid out along the shingle from the foot of the breakwater toward the three
+  //                 in the surf; as the objective counts up the rope runs out, the eleven come down, and the sea eases
+  // setback(): a sea comes in over the party (the director calls it, as passLamp, on a drain no ball save covered)
+  let ropeUnit = null;
+  function task(type) {
+    if (type !== 'long-rope') return null;
+    if (ropeUnit) return ropeUnit;
+    const X0 = 2.55, Z0 = 0.42;
+    const rope = node('long-rope', tint(tube(curve([[0, 0.035, 0], [-0.2, 0.035, 0.07], [-0.45, 0.035, -0.05], [-0.7, 0.035, 0.05], [-1, 0.035, 0]], 14), 0.028, 5, { crease: 180 }), PAL.rope), M.prop, { pos: [X0, 0, Z0] }); rope.castShadow = false;
+    const coil = node('rope-coil', ropeCoil({ r: 0.24 }), M.prop, { pos: [X0 + 0.25, 0, Z0 - 0.1] }); coil.castShadow = false;
+    scene.root.add(rope, coil);
+    const u = taskUnit([X0 - 1, 0.3, Z0], null, (v) => { const len = 0.9 + 3.3 * v; rope.setScale(len, 1, 1 + 0.5 * (1 - v)); u.pos[0] = X0 - len; setRescue(0.12 + 0.88 * v); setSurf(0.95 - 0.5 * v); });
+    return (ropeUnit = u);
+  }
+  const setback = () => { surfNow = 1.35; P[0] = -2.3; P[1] = 0.05; P[2] = 0.95; sprites.splash(P, { size: 2.6, life: 1.2, spray: 9, color: '#ffffff' }); sprites.puff(P, { count: 6, size: 0.6, rise: 1.8, spread: 1.1, life: 1.1, color: '#f4ecff' }); };
+
   return c4Shell({
     id: 'wreck-shore', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,
     marks: { ...MARKS4, focus: LAMP, surf: { pos: [-4.4, slope(-4.4, 0.6), 0.6], face: 70 }, steps: { pos: [2.9, 0, BW_Z + 3.3], face: 0 }, cover: { pos: [-1.3, 0, -0.75], face: 30 }, breakwater: [1, BW_H, BW_Z] },
-    extra: { setRescue, setSurf, cue },
+    extra: { setRescue, setSurf, cue, task, setback, passLamp: setback },
   });
 }
 

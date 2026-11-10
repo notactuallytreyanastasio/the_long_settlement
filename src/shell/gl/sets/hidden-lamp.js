@@ -24,7 +24,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, createSprites, rayMesh, rayMaterial,
 } from '../index.js';
 import { PAL, kitMaterials, anchorAt, pickLight, flame, barrel, sack, crate, ropeCoil, cloudBank } from './kit.js';
-import { C4, crag, stalactite, copperLamp, chartDesk, kelp, blanketRoll, c4Shell, cams, MARKS4, norm3, dirFrom } from './kit-ch4.js';
+import { C4, crag, stalactite, copperLamp, chartDesk, kelp, blanketRoll, c4Shell, cams, MARKS4, norm3, dirFrom, taskUnit } from './kit-ch4.js';
 
 const WATER = -0.28, LIP = -4.9;
 
@@ -190,7 +190,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     { name: 'mouth', pos: [1.4, 1.6, LIP - 1.2], color: light === 'night' ? '#4f8cf0' : light === 'dawn' ? '#ffb0a0' : '#bfe8ff', radius: 8, base: 0.7, own: true, steady: true },
   ];
 
-  let shut = 0.12, shutNow = 0.12, signal = false, answers = 0, lastT = -1, nextSmoke = 0, nextSpark = 0, nextRing = 0.6, nextDrip = 2;
+  let trim = 1, duck = 0, shut = 0.12, shutNow = 0.12, signal = false, answers = 0, lastT = -1, nextSmoke = 0, nextSpark = 0, nextRing = 0.6, nextDrip = 2;
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(91);
   const setShutter = (v) => { shut = Math.max(0, Math.min(1, v)); }, setSignal = (on) => { signal = !!on; }, setAnswers = (n) => { answers = Math.max(0, Math.min(ISLES.length, n | 0)); };
   const CUES = {
@@ -199,17 +199,18 @@ function build(engine = GL0, { light, low = false } = {}) {
     'ch4.s5.c19': () => { setShutter(1); setSignal(true); setAnswers(9); }, 'ch4.s5.c26': () => setAnswers(10), 'ch4.s5.c27': () => { setAnswers(11); setSignal(false); },
     'ch4.s7.c01': () => { setShutter(0.3); setSignal(false); setAnswers(2); }, 'ch4.s7.c15': () => { setShutter(1); setSignal(true); }, 'ch8.epi.03': () => { setShutter(1); setSignal(false); setAnswers(11); },
   };
-  const cue = (id) => { const f = CUES[id]; if (f) f(); return !!f; };
+  const cue = (id) => { const f = CUES[id]; if (f) { f(); trim = 1; } return !!f; };
 
   function update(time, dt, pw) {
+    duck = Math.max(0, duck - dt / 1.6); const LF = L.flame * trim * (1 - 0.7 * duck);
     // the shutter eases; when the keeper is signalling it closes and opens in longs and shorts
     const beat = (time * 0.55) % 4, gate = signal ? (beat < 1.5 || (beat > 2 && beat < 2.5) || (beat > 3 && beat < 3.5) ? 1 : 0.06) : 1;
     shutNow += (shut * gate - shutNow) * Math.min(1, dt * 7 + (dt === 0 ? 1 : 0));
     shutter.setRot(0, 180 - shutNow * 118, 0);
-    const flick = 0.9 + 0.1 * Math.sin(time * 9.1) * Math.sin(time * 5.3 + 1), f = L.flame * (0.55 + 0.45 * Math.min(1.3, pw)) * flick;
-    fl.setScale(0.9 + 0.5 * Math.min(1.5, pw) * L.flame, (0.9 + 0.6 * Math.min(1.5, pw) * L.flame) * (0.92 + 0.16 * flick), 0.9 + 0.5 * Math.min(1.5, pw) * L.flame); fl.setRot(Math.sin(time * 3.1) * 5, time * 40, Math.sin(time * 2.3) * 6);
+    const flick = 0.9 + 0.1 * Math.sin(time * 9.1) * Math.sin(time * 5.3 + 1), f = LF * (0.55 + 0.45 * Math.min(1.3, pw)) * flick;
+    fl.setScale(0.9 + 0.5 * Math.min(1.5, pw) * LF, (0.9 + 0.6 * Math.min(1.5, pw) * LF) * (0.92 + 0.16 * flick), 0.9 + 0.5 * Math.min(1.5, pw) * LF); fl.setRot(Math.sin(time * 3.1) * 5, time * 40, Math.sin(time * 2.3) * 6);
     flameGlow.alpha = 0.62 * f; flameGlow.size[0] = flameGlow.size[1] = 2.0 + 0.9 * pw; flameCore.alpha = 0.8 * f;
-    lamps[0].k = (0.62 + 0.38 * shutNow) * L.flame * flick;
+    lamps[0].k = (0.62 + 0.38 * shutNow) * LF * flick;
     beam.visible = shutNow > 0.2 && pw > 0.05; beam.material.beam.near = 0.85 * Math.min(1, (shutNow - 0.2) / 0.5) * Math.min(1.2, pw) * (light === 'night' ? 1 : 0.3);
     spill.material.beam.near = 0.26 * f;
     cf.setScale(1, 0.9 + 0.2 * Math.sin(time * 11), 1); candleGlow.alpha = 0.6 * L.candle;
@@ -233,10 +234,23 @@ function build(engine = GL0, { light, low = false } = {}) {
     lastT = time;
   }
 
+  // ---- what the live stage asks for (kit-ch4 taskUnit)
+  //   'hidden-wick'   ch4.s7: the lamp being trimmed: at 0 the flame gutters low and yellowish behind the shutter, at 1 it
+  //                   burns clean, the shutter stands a third open and two islands are showing (where ch4.s7.c01 finds it)
+  // setback(): spray comes in at the cave mouth and the flame ducks (the director calls it, as passLamp, on an unsaved drain)
+  // setTrim(0..1): the same, for anyone who wants it without an encounter (1 = the lamp as every cutscene has it)
+  let wickUnit = null;
+  const setTrim = (v) => { trim = Math.max(0.2, Math.min(1, v)); };
+  function task(type) {
+    if (type !== 'hidden-wick') return null;
+    return wickUnit || (wickUnit = taskUnit([FLAME[0], FLAME[1] + 0.1, FLAME[2] + 0.1], [PED[0] + 1.0, PED[2] + 1.45], (v) => { setTrim(0.36 + 0.64 * v); setShutter(0.1 + 0.2 * v); setSignal(false); setAnswers(v > 0.95 ? 2 : v > 0.45 ? 1 : 0); }));
+  }
+  const setback = () => { duck = 1; P[0] = 1.4; P[1] = WATER + 0.1; P[2] = LIP - 0.4; sprites.splash(P, { size: 2.2, life: 1.2, spray: 8, color: '#cfe6ff' }); sprites.puff(P, { count: 5, size: 0.6, rise: 1.5, spread: 1, life: 1.2, color: '#bcd8ff' }); };
+
   return c4Shell({
     id: 'hidden-lamp', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,
     marks: { ...MARKS4, focus: FLAME, keeper: { pos: [PED[0] + 0.95, 0, PED[2] + 1.25], face: -150 }, mouth: { pos: [2.3, 0, -3.3], face: -20 }, desk: { pos: [1.5, 0, -0.9], face: 170 } },
-    extra: { setShutter, setSignal, setAnswers, cue },
+    extra: { setShutter, setSignal, setAnswers, setTrim, cue, task, setback, passLamp: setback },
   });
 }
 

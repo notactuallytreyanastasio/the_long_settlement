@@ -78,7 +78,7 @@ const MARKS = {
 };
 
 function build(engine = null, { light: lightName = 'morning', low = false } = {}) {
-  const { name: light, L } = pickLight('academy-yard', LIGHTS, lightName);
+  const { name: light, L } = pickLight('academy-yard', LIGHTS, ALIAS[lightName] || lightName);
   const M = kitMaterials(), r = rng(1903);
   M.deco = material({ name: 'yard-deco', rim: 0.5, outline: false, castShadow: false });
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
@@ -316,5 +316,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   };
 }
 
-export const academyYard = { id: 'academy-yard', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+// the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'
+const ALIAS = { day: 'morning' };
+export const academyYard = { id: 'academy-yard', lights: [...Object.keys(LIGHTS), ...Object.keys(ALIAS)], cameras: Object.keys(CAMERAS), build };
 export default academyYard;

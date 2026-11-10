@@ -58,7 +58,7 @@ const CAMERAS = {
 };
 
 function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
-  const [light, L] = lightOf('mine-deep', LIGHTS, lightName);
+  const [light, L] = lightOf('mine-deep', LIGHTS, ALIAS[lightName] || lightName);
   const M = ch2Materials(), r = rng(1109);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const deco = (n) => { n.castShadow = false; return n; };
@@ -224,5 +224,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   });
 }
 
-export const mineDeep = { id: 'mine-deep', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+// the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'
+const ALIAS = { interior: 'lamp' };
+export const mineDeep = { id: 'mine-deep', lights: [...Object.keys(LIGHTS), ...Object.keys(ALIAS)], cameras: Object.keys(CAMERAS), build };
 export default mineDeep;

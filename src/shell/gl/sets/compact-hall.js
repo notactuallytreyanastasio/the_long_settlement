@@ -15,6 +15,11 @@
 //   setVote(0..1)   the dockers' lanterns go up, front rows first: "from a coil of rope it looked like a harbour"
 //   setKey(on)      the steward's key on the tally table, next to the chalk
 //   cue(lineId)     ch6.s2.c26.. shows the key; ch6.s5.c28.. raises the vote; ch6.s5.c01 lowers it again
+//   task('tally-column', i)  ch6.s2, three units: Tobb's hopper table on an easel right of the tally table, a chalk bar a
+//                   unit (the capital's forty days, the rich ports' thirty, the small lights' nine, in coral)
+//   task('hatch', i)         ch6.s5, three units: the head-house's roof hatches thrown off one at a time, the moon coming down
+//   setback()       the hall shouts: every lantern is shaken up at the table for a second and a half (also as passLamp)
+//   The core's 'interior' builds 'night'.
 //   marks.coil      the coil of rope the Tribune is given to sit on { pos, face }; marks.table, marks.focus (the lamp)
 // low: true drops the far crowd to half, the roof shafts in the walk, the bunting and the motes.
 
@@ -24,7 +29,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { rayMesh } from '../fx.js';
 import { PAL, pickLight, planks, ropeCoil, bunting, crowd, sack } from './kit.js';
-import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, norm3, cask, plankWall, truss, shaft, patch, hurricaneLamp, ropeJack, tallyBoard, trestle, hank, openBook, bar } from './kit-ch6.js';
+import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, coreLight, taskUnit, pulse, norm3, cask, plankWall, truss, shaft, patch, hurricaneLamp, ropeJack, tallyBoard, trestle, hank, openBook, bar } from './kit-ch6.js';
 
 const HW = 6.5, BACK = -4.6, FRONT = 4, EAVE = 4.5, RISE = 2.6, WALK_HW = 2.8, WALK_END = -40, WALK_EAVE = 4.1;
 
@@ -43,6 +48,8 @@ const LIGHTS = {
   vote: { preset: 'night', power: 1.1, vote: 1, env: ENV({ ambient: { sky: '#ffc090', ground: '#6a5ad4', amount: 0.2 } }) },
 };
 
+const CORE = { interior: 'night' };      // the core's light names this set answers (kit-ch6 coreLight)
+
 const CAMERAS = STD_CAMERAS({
   wide: { target: [0.05, 1.85, -0.6], dist: 8.6, yaw: 2, pitch: 3.5, fov: 46, shadowCenter: [0, 0, -1.4], shadowRadius: 8 },
   low: { target: [0.1, 2.1, -0.2], dist: 6.4, yaw: -6, pitch: -12, fov: 56 },
@@ -51,7 +58,7 @@ const CAMERAS = STD_CAMERAS({
 });
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('compact-hall', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('compact-hall', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const M = ch6Materials(), r = rng(6262);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
 
@@ -182,6 +189,42 @@ function build(engine = null, { light, low = false } = {}) {
   for (const p of walkLamps) glows.push({ sprite: sprites.add({ kind: 'glow', pos: p, size: 1.5, color: '#ffb450', alpha: 0 }), base: 0.55 });
   const lampStar = sprites.add({ kind: 'sparkle', pos: LAMP, size: 1.5, color: '#fff6d0', alpha: 0.7 });
 
+  // ---- the live stage's two tasks (see the header): Tobb's hopper table on an easel, and the three roof hatches
+  const EASEL = [2.05, 0, -1.45], BAR_X = [-0.42, 0, 0.42], BAR_H = [0.86, 0.66, 0.2], BAR_COL = [K6.cream, K6.yellow, K6.coral];
+  const easel = group('easel');
+  easel.add(node('easel-frame', merge(
+    tint(place(box(1.56, 1.2, 0.05), 0, 1.5, 0), '#2c4a66'), tint(place(box(1.68, 0.07, 0.09), 0, 2.12, 0), K6.timberDark), tint(place(box(1.68, 0.07, 0.12), 0, 0.88, 0.02), K6.timberDark),
+    tint(place(box(0.07, 2.2, 0.07), -0.7, 1.1, -0.08, -7, 0, 0), K6.timberDark), tint(place(box(0.07, 2.2, 0.07), 0.7, 1.1, -0.08, -7, 0, 0), K6.timberDark), tint(place(box(0.07, 2.0, 0.07), 0, 1.0, -0.42, 16, 0, 0), K6.timberDark),
+    tint(place(box(1.3, 0.02, 0.02), 0, 1.0, 0.035), K6.chalk)), M.prop));
+  const bars = BAR_X.map((bx, i) => { const n = node('easel-bar' + i, setGlow(tint(place(box(0.26, 1, 0.02), 0, 0.5, 0), BAR_COL[i]), 0.5), M.prop, { pos: [bx, 1.02, 0.04] }); n.castShadow = false; n.setScale(1, 0.001, 1); n.visible = false; easel.add(n); return n; });
+  easel.position[0] = EASEL[0]; easel.position[2] = EASEL[2]; easel.setRot(0, -16, 0); easel.visible = false;
+  scene.root.add(easel);
+  const barV = [0, 0, 0];
+  const setBar = (i, v) => { barV[i] = v; bars[i].visible = v > 0.01; bars[i].setScale(1, Math.max(0.001, BAR_H[i] * v), 1); };
+  const HATCH_X = [-2.3, 0.1, 2.4], hatches = HATCH_X.map((hx, i) => {
+    const g = group('hatch' + i);
+    g.add(node('hatch-shaft', place(shaft({ w: 1.1, h: 0.9, dir: [0.16 - 0.1 * i, 0.2, 1], len: 5.6, cards: 2, color: '#b8c8ff', spread: 0.3 }), hx, 5.5, -0.3, 90, 0, 0), M.shaft));
+    g.add(node('hatch-patch', patch({ w: 1.3, d: 1.5, panes: 2, shear: 0, color: '#c4d2ff', glow: 0.6 }), M.flat, { pos: [hx + 0.5 - 0.3 * i, 0.014, 0.75] }));
+    g.visible = false; scene.root.add(g);
+    return { g, glow: sprites.add({ kind: 'glow', pos: [hx, 4.6, -0.2], size: 3.2, color: '#b8c8ff', alpha: 0 }), v: 0 };
+  });
+  const surge = pulse(1.7);
+  const tallyUnits = BAR_X.map((bx, i) => taskUnit({
+    pos: [EASEL[0] + bx, 1.5, EASEL[2] + 0.1], stand: [EASEL[0] - 1.05 + bx * 0.5, 0.25],
+    apply(v, fresh) { if (fresh) { easel.visible = true; for (const h of hatches) h.v = 0; setKey(false); setVote(0); } setBar(i, v); },
+  }));
+  const hatchUnits = HATCH_X.map((hx, i) => taskUnit({
+    pos: [hx, 2.3, 0.3], stand: null,
+    apply(v, fresh) { if (fresh) { easel.visible = true; for (let k = 0; k < 3; k++) setBar(k, 1); setKey(false); setVote(0); } hatches[i].v = v; },
+  }));
+  /** 'tally-column' x3 (ch6.s2: forty days, thirty, nine) and 'hatch' x3 (ch6.s5: the hearing opened). */
+  function task(type, index = 0) {
+    const list = type === 'tally-column' ? tallyUnits : type === 'hatch' ? hatchUnits : null;
+    return list && list[index] ? list[index].arm() : null;
+  }
+  /** The drain: the hall shouts for the strike and four hundred lanterns are shaken at the table. */
+  function setback() { surge.hit(); }
+
   // ---- per frame
   let vote = L.vote, voteNow = L.vote, keyOn = false;
   const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), P = [0, 0, 0], rnd = rng(31);
@@ -206,12 +249,14 @@ function build(engine = null, { light, low = false } = {}) {
     glows[0].sprite.pos[0] = lampStar.pos[0] = LAMP[0]; glows[0].sprite.pos[2] = lampStar.pos[2] = LAMP[2];
     cone.position[0] = LAMP[0] - LAMP_HOOK[0]; cone.position[2] = LAMP[2] - LAMP_HOOK[2]; cone.visible = pw > 0.05;
     lampStar.alpha = 0.6 * Math.min(1, pw) * (0.8 + 0.2 * Math.sin(time * 9)); lampStar.rot = time * 0.2;
-    const carried = 0.16 + 0.5 * voteNow;                      // the lanterns they came with: low and mostly dark until the vote
-    CO.lit = carried * Math.min(1.3, 0.4 + pw); CO.lively = 0.22 + 0.3 * voteNow;
+    const sg = surge.value(dt), shown = Math.min(1, voteNow + 0.3 * sg);
+    const carried = 0.16 + 0.5 * voteNow + 0.5 * sg;           // the lanterns they came with: low and mostly dark until the vote
+    CO.lit = carried * Math.min(1.3, 0.4 + pw); CO.lively = 0.22 + 0.3 * voteNow + 0.7 * sg;
+    for (let i = 0; i < hatches.length; i++) { const h = hatches[i]; h.g.visible = h.v > 0.3; h.glow.alpha = 0.34 * h.v; }
     nearCrowd.update(time, dt, CO); farCrowd.update(time, dt, CO);
     const d = upNode.instances.data;
     for (let i = 0; i < ups.length; i++) {
-      const u = ups[i], k = Math.max(0, Math.min(1, (voteNow * 1.35 - u.at * 0.35) * 4 - 0.0)), e = k * k * (3 - 2 * k), bob = Math.sin(time * 1.7 + u.ph) * 0.05;
+      const u = ups[i], k = Math.max(0, Math.min(1, (shown * 1.35 - u.at * 0.35) * 4 - 0.0)), e = k * k * (3 - 2 * k), bob = Math.sin(time * 1.7 + u.ph) * 0.05;
       P[0] = u.x + Math.sin(time * 0.9 + u.ph) * 0.04; P[1] = u.y - 0.9 * (1 - e) + bob; P[2] = u.z;
       quat.fromEuler(Q, 0, u.ph, Math.sin(time * 1.3 + u.ph) * 0.12); S3[0] = S3[1] = S3[2] = e < 0.02 ? 0.0001 : 0.6 + 0.4 * e;
       m4.fromTRS(Mx, P, Q, S3); d.set(Mx, i * 20);
@@ -219,7 +264,7 @@ function build(engine = null, { light, low = false } = {}) {
       d[i * 20 + 16] = u.col[0] * fl; d[i * 20 + 17] = u.col[1] * fl; d[i * 20 + 18] = u.col[2] * fl;
       u.glow.pos[0] = P[0]; u.glow.pos[1] = P[1] + 0.36; u.glow.pos[2] = P[2]; u.glow.alpha = 0.62 * e * fl * Math.min(1.2, 0.5 + pw * 0.6);
     }
-    upNode.instances.dirty = true; upNode.visible = voteNow > 0.01;
+    upNode.instances.dirty = true; upNode.visible = shown > 0.01;
     keyGlint.alpha = keyOn ? 0.5 + 0.5 * Math.sin(time * 2.4) : 0;
     if (live && voteNow > 0.5 && time > nextSpark) { nextSpark = time + 0.1; const u = ups[Math.floor(rnd() * ups.length)]; sprites.sparkle(u.glow.pos, { count: 1, size: 0.22, spread: 0.4, life: 0.9, color: '#fff0b0' }); }
   }
@@ -228,9 +273,9 @@ function build(engine = null, { light, low = false } = {}) {
     id: 'compact-hall', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue, house: 0.55,
     motes: low ? null : { box: [-4, 4, 0.6, 4.2, -4, 1.5], every: 0.3, color: '#ffd890', size: 0.07, vel: [0.04, 0.05, 0.02], life: 5, alpha: 0.75 },
     marks: { ...STD_MARKS(), coil: { pos: [COIL[0], 0.42, COIL[2]], face: 20 }, table: [TABLE[0], 0.82, TABLE[2]], focus: LAMP },
-    extra: { setVote, setKey, voteLevel: () => voteNow },
+    extra: { setVote, setKey, voteLevel: () => voteNow, task, setback, passLamp: setback },
   });
 }
 
-export const compactHall = { id: 'compact-hall', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const compactHall = { id: 'compact-hall', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default compactHall;

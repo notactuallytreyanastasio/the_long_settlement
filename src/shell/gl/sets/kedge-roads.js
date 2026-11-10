@@ -21,11 +21,11 @@
 
 import { m4, quat, rng, DEG, rgb } from '../math.js';
 import { merge, tint, place, plane, box, tube, curve, cylinder, extrude, setGlow, gradientY, deform, sphere } from '../mesh.js';
-import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
+import { node, group, makeEnv, lerpEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { PAL, anchorAt, pickLight, scatter, quayEdge, cobble, bollard, ropeCoil, lampPost, gangway, cloudBank, gull, crate, sack, bunting } from './kit.js';
-import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, dirFrom, norm3, cask, gantry, hulk, mole, lampHouse, cutterHull, openBoat, oar } from './kit-ch6.js';
+import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, taskUnit, pulse, dirFrom, norm3, cask, gantry, hulk, mole, lampHouse, cutterHull, openBoat, oar } from './kit-ch6.js';
 
 const QUAY_Z = -5.2, WATER = -1.3;
 
@@ -151,10 +151,12 @@ function build(engine = null, { light, low = false } = {}) {
     if (z > MOLE_Z) ridingLights.push(anchorAt(h, 'lamp', [x, WATER, z], yaw));
   });
   // the sea beyond the half-mile, stood up: a long grey-violet wall with a pale crest
-  if (L.wall) {
+  const wallNodes = [];
+  {
     const wave = deform(box(420, 1, 30), (p) => { const u = p[0] / 210; if (p[1] > 0) { p[1] = 16 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6; p[2] *= 0.25; } else p[1] = -1; }, 60);
-    back.add(node('sea-wall', gradientY(wave, dark ? '#20389c' : '#4a58c0', dark ? '#5f7ce8' : '#8f9cf0', 0, 16), M.farFlat, { pos: [0, WATER, -170] }));
-    back.add(node('sea-crest', tint(place(tube(curve(Array.from({ length: 15 }, (_, i) => { const u = (i - 7) / 7; return [u * 210, 16.2 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6, -166]; }), 60), 0.8, 4, { crease: 180 }), 0, WATER, 0), '#ffffff'), M.farFlat));
+    wallNodes.push(node('sea-wall', gradientY(wave, dark ? '#20389c' : '#4a58c0', dark ? '#5f7ce8' : '#8f9cf0', 0, 16), M.farFlat, { pos: [0, WATER, -170] }));
+    wallNodes.push(node('sea-crest', tint(place(tube(curve(Array.from({ length: 15 }, (_, i) => { const u = (i - 7) / 7; return [u * 210, 16.2 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6, -166]; }), 60), 0.8, 4, { crease: 180 }), 0, WATER, 0), '#ffffff'), M.farFlat));
+    for (const n of wallNodes) { n.castShadow = false; n.visible = !!L.wall; }
   }
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
@@ -162,7 +164,10 @@ function build(engine = null, { light, low = false } = {}) {
   env.water.level = WATER;
   env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], [COLLIER[0], COLLIER[2], 3.2, 0.7], [COLLIER[0] - 1.2, COLLIER[2] - 4.6, 3.0, 0.7], [COLLIER[0] + 1.2, COLLIER[2] + 4.6, 2.6, 0.7], [PACKET[0], PACKET[2], 2.6, 0.6], [PACKET[0] + 0.9, PACKET[2] - 3.4, 2.2, 0.6], [PACKET[0] - 0.9, PACKET[2] + 3.4, 2.0, 0.6], [-37, MOLE_Z, 6, 1], [37, MOLE_Z, 6, 1]];
   const setNode = mergeStatic(set, 'set'), farNode = mergeStatic(far, 'far');
-  scene.root.add(setNode, farNode, mergeStatic(back, 'back'));
+  scene.root.add(setNode, farNode, mergeStatic(back, 'back'), ...wallNodes);
+  // 'dawn' can be turned to 'grey' by the script (setGrey / cue): the two environments it goes between
+  const envDawn = light === 'dawn' ? makeEnv(LIGHTS.dawn.preset, LIGHTS.dawn.env) : null, envGrey = light === 'dawn' ? makeEnv(LIGHTS.grey.preset, LIGHTS.grey.env) : null;
+  if (envDawn) { envDawn.sky.sunDir = norm3(envDawn.sky.sunDir); envGrey.sky.sunDir = norm3(envGrey.sky.sunDir); }
 
   // ---- cobbles
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;

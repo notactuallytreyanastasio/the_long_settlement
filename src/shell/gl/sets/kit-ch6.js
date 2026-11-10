@@ -640,6 +640,46 @@ export const STD_MARKS = () => ({
   opposition: [{ pos: [1.05, 0, 0.75], face: -78 }, { pos: [1.85, 0, 1.15], face: -72 }, { pos: [2.55, 0, 0.5], face: -80 }],
 });
 
+// ------------------------------------------------------------------------------------ what the live stage drives
+
+/**
+ * The chapter's content names lights by the core's six (core/stage.js LIGHTS); a set has its own. `map` is
+ * { coreName: ownName }: the own name for `light`, or `light` unchanged. List Object.keys(map) in the set's exported
+ * `lights` too, or app.js lightFor() never passes the core name down.
+ */
+export const coreLight = (light, map) => (light != null && Object.hasOwn(map, light) ? map[light] : light);
+
+/**
+ * A unit for set.task(type, index, count): what the director (stage.js buildUnits) drives with an encounter's progress.
+ *   pos    where a hit lands and where the party looks (world)     stand   [x, z] where a figure goes to work at it, or null
+ *   apply(v, fresh)   v 0..1 of the objective (eased by the director). fresh: the first call of an encounter, when the
+ *                     set must be put in that scene's opening state (two scenes share a set).
+ * EDGE-TRIGGERED on purpose. The director calls set(v) every frame, also all through the cutscene that follows (with
+ * v = 1). The obvious version applies v every call, and then a set's own cue(lineId) loses to it on the next frame:
+ * the vote can never be lowered again, the lamp never dropped by the line that drops it. Here the set is only
+ * touched when v has moved, so once the objective is complete the script's cues own the place.
+ * Call unit.arm() from task(): the next set() is then `fresh`.
+ */
+export function taskUnit({ pos, stand = null, apply }) {
+  let last = -1, armed = true;
+  return {
+    pos, stand,
+    arm() { armed = true; return this; },
+    set(v) {
+      const q = Math.round(v * 500) / 500;
+      if (q === last && !armed) return;
+      const fresh = armed; armed = false; last = q;
+      apply(q, fresh);
+    },
+  };
+}
+
+/** A one-shot timer for a setback: hit() starts it, value(dt) runs it and returns 0..1..0 over `secs` (0 when idle). */
+export function pulse(secs = 1.6) {
+  let t = -1;
+  return { hit() { t = 0; }, value(dt) { if (t < 0) return 0; t += dt; if (t >= secs) { t = -1; return 0; } return Math.sin(t / secs * Math.PI); } };
+}
+
 /** The camera marks most sets start from (portrait 0.46 for wide/two/close/low, 1.95 for the stage band, 1.6 landscape); override per set. */
 export const STD_CAMERAS = (over = {}) => {
   const base = {

@@ -84,7 +84,7 @@ const MARKS = {
 const HOUSE_COATS = ['#3fc0ae', '#3f78e0', '#6f8cf0', '#f4f1ff', '#8a6be0', '#ffd24a', '#ff8fb0', '#27a8c8', '#ffb040', '#e8ecff', '#4fc463', '#ff7a5a'];
 
 function build(engine = null, { light: lightName = 'full', low = false } = {}) {
-  const [light, L] = lightOf('hearing-hall', LIGHTS, lightName);
+  const [light, L] = lightOf('hearing-hall', LIGHTS, ALIAS[lightName] || lightName);
   const M = kitBMaterials(), r = rng(303);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const deco = (n) => { n.castShadow = false; return n; };
@@ -281,5 +281,7 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
   });
 }
 
-export const hearingHall = { id: 'hearing-hall', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+// the core's light names (src/core/stage.js LIGHTS) this set also answers to, so content can say 'interior' / 'day'
+const ALIAS = { interior: 'full' };
+export const hearingHall = { id: 'hearing-hall', lights: [...Object.keys(LIGHTS), ...Object.keys(ALIAS)], cameras: Object.keys(CAMERAS), build };
 export default hearingHall;

@@ -16,6 +16,9 @@
 //   setFlame(0.25..1)   the flame eases there (about four seconds); everything that depends on it follows
 //   shovel()            a shovel of ash goes in: a puff of grey over the bowl
 //   cue(lineId)         ch6.s7.c01..c03 the lamp stands white; c03 the first shovels; from c04 it drops
+//   task('great-lamp')  ch6.s7: white at v 0, a shovel and a grey puff at each half, yellowing to 0.58 at v 1; the
+//                       cutscene's c04 takes it to the quarter. setback(): a puff and a gutter (also passLamp)
+//   The core's 'interior' builds 'white' (where ch6.s7 starts), 'night' builds 'quarter'.
 //   marks.bowl { pos, face } (where a figure stands to put ash in), marks.hatch (by the hopper), marks.focus (the flame)
 // low: true drops the dome ribs, two baskets, the roads' far lights and the motes.
 
@@ -25,7 +28,7 @@ import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh } from '../fx.js';
 import { PAL, pickLight, sack, ropeCoil, railing, flame as flameMesh } from './kit.js';
-import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, norm3, cask, ringWall, greatBowl, lampHood, engineRing, hopperChute, ashBasket, shovel as shovelMesh, shaft, patch, bar } from './kit-ch6.js';
+import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, coreLight, taskUnit, norm3, cask, ringWall, greatBowl, lampHood, engineRing, hopperChute, ashBasket, shovel as shovelMesh, shaft, patch, bar } from './kit-ch6.js';
 
 const C = [0, 0, -3.5], RAD = 7.6, H = 8.2, WATER = -9;
 
@@ -46,6 +49,8 @@ const LIGHTS = {
   white: { preset: 'night', power: 1, flame: 1, env: ENV() },
 };
 
+const CORE = { interior: 'white', night: 'quarter' };      // the core's light names this set answers
+
 const CAMERAS = STD_CAMERAS({
   wide: { target: [0.0, 2.0, -0.6], dist: 8.6, yaw: 2, pitch: 2.5, fov: 46, shadowCenter: [0, 0, -1.6], shadowRadius: 8.5 },
   low: { target: [0.05, 2.2, -0.2], dist: 6.6, yaw: -6, pitch: -13, fov: 56 },
@@ -54,7 +59,7 @@ const CAMERAS = STD_CAMERAS({
 });
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('quarter-flame', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('quarter-flame', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const M = ch6Materials(), r = rng(6767);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir);
@@ -175,11 +180,26 @@ function build(engine = null, { light, low = false } = {}) {
   let nextSpark = 0, nextAsh = 0, nextGlint = 0;
   function setFlame(v, snap = false) { goal = Math.max(0.25, Math.min(1, v)); if (snap) f = goal; }
   function shovel() { shovelT = 0; }
+  // the live stage's task (ch6.s7): the first shovels. The encounter takes the flame from white down into yellow
+  // (0.58) and no further: "It's dropping. Yellow. Grey. There." is Tobb's line (c04), and the cue finishes it.
+  let cut = false, shovels = 0;
+  const lampUnit = taskUnit({
+    pos: FIRE, stand: [-0.7, -0.35],
+    apply(v, fresh) {
+      if (fresh) { setFlame(1, true); cut = true; shovels = 0; }
+      const n = Math.floor(v * 2 + 0.001);
+      if (n > shovels) { shovels = n; shovel(); }
+      setFlame(1 - 0.42 * v);
+    },
+  });
+  const task = (type) => (type === 'great-lamp' ? lampUnit.arm() : null);
+  /** The drain: too much ash at once. A grey puff rolls off the bowl and the flame gutters before it comes back. */
+  function setback() { shovel(); f = Math.max(0.25, f - 0.22); }
   function cue(lineId) {
     const m = typeof lineId === 'string' && /^ch6\.s7\.c(\d+)$/.exec(lineId); if (!m) return false;
     const n = Number(m[1]);
     if (n >= 16) return false;
-    if (n <= 3) { setFlame(1, n === 1); if (n === 3) shovel(); } else setFlame(0.25);
+    if (n <= 3) { if (!cut) setFlame(1, n === 1); if (n === 3) shovel(); } else { setFlame(0.25); cut = false; }   // after the encounter the lamp is already yellowing: c01 does not put it back
     return true;
   }
   function tick(time, dt, pw, live, power) {
@@ -222,10 +242,10 @@ function build(engine = null, { light, low = false } = {}) {
   const set = shell({
     id: 'quarter-flame', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue,
     marks: { ...STD_MARKS(), bowl: { pos: [-1.0, 0.4, C[2] + 2.2], face: 160 }, hatch: { pos: [3.5, 0, -1.2], face: 140 }, focus: FIRE },
-    extra: { setFlame, shovel, flameLevel: () => f },
+    extra: { setFlame, shovel, flameLevel: () => f, task, setback, passLamp: setback },
   });
   return set;
 }
 
-export const quarterFlame = { id: 'quarter-flame', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const quarterFlame = { id: 'quarter-flame', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default quarterFlame;

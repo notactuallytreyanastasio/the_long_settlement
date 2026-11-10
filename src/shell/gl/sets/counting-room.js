@@ -12,6 +12,10 @@
 // Added here:
 //   setKey(on)     the steward's key lying on the desk (on from the start: it fitted)
 //   setLamp(0..1)  the green lamp alone, apart from setPower (0 = turned right down)
+//   task('rope-ledger')  ch6.s3: the sum worked on a slate stood right of the desk, a chalk row a quarter of the
+//                  objective, the green lamp coming up from 0.42 to full; the last figure ringed
+//   setback()      a step on the stair: the lamp turned right down, the stair's glow up, for under two seconds (also passLamp)
+//   The core's 'interior' and 'night' build 'midnight'.
 //   marks.desk { pos, face }  where Tobb stands to work the book;  marks.book (the open ledger), marks.focus (the lamp)
 // low: true drops two shelf bays' contents to plain blocks, the hanks on the rafters, the moths and the motes.
 
@@ -21,7 +25,7 @@ import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh } from '../fx.js';
 import { PAL, pickLight, planks, ropeCoil } from './kit.js';
-import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, norm3, plankWall, shaft, patch, hank, shelfBay, clerkDesk, greenLamp, openBook, gantry, bar, cask } from './kit-ch6.js';
+import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, coreLight, taskUnit, pulse, norm3, plankWall, shaft, patch, hank, shelfBay, clerkDesk, greenLamp, openBook, gantry, bar, cask } from './kit-ch6.js';
 
 const HW = 6.2, BACK = -4.3, FRONT = 4, EAVE = 3.0, RIDGE = 5.9, WATER = -7;
 
@@ -40,6 +44,8 @@ const LIGHTS = {
   },
 };
 
+const CORE = { interior: 'midnight', night: 'midnight' };      // the core's light names this set answers
+
 const CAMERAS = STD_CAMERAS({
   wide: { target: [-0.1, 1.7, -0.5], dist: 8.2, yaw: 2, pitch: 4, fov: 44, shadowCenter: [0, 0, -1.2], shadowRadius: 7.5 },
   low: { target: [0.0, 1.9, 0.0], dist: 6.2, yaw: -8, pitch: -11, fov: 54 },
@@ -47,7 +53,7 @@ const CAMERAS = STD_CAMERAS({
 });
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('counting-room', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('counting-room', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const M = ch6Materials(), r = rng(6363);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir); env.water.shores = [];
@@ -158,12 +164,43 @@ function build(engine = null, { light, low = false } = {}) {
   const lampStar = sprites.add({ kind: 'sparkle', pos: LAMP, size: 0.7, color: '#f0ffd0', alpha: 0.6 });
   const moths = low ? [] : [0, 1].map((i) => ({ s: sprites.add({ kind: 'glow', pos: [LAMP[0], LAMP[1], LAMP[2]], size: 0.07, color: '#fff6e0', alpha: 0.9 }), ph: i * 2.4, sp: 2.6 + i * 0.9 }));
 
+  // ---- the live stage's task: the working of the sum, on a slate stood against the shelves right of the desk
+  const SLATE = [0.55, 0, -2.75], ROW_W = [0.9, 0.7, 0.98, 0.56], ROW_COL = [K6.chalk, K6.chalk, K6.chalk, K6.yellow];
+  const slate = group('slate');
+  slate.add(node('slate-board', merge(tint(place(box(1.3, 1.5, 0.05), 0, 1.35, 0), '#2c4a66'), tint(place(box(1.42, 0.08, 0.08), 0, 2.13, 0), K6.timberRed), tint(place(box(1.42, 0.08, 0.1), 0, 0.57, 0.01), K6.timberRed), tint(place(box(0.08, 1.64, 0.08), -0.69, 1.35, 0), K6.timberRed), tint(place(box(0.08, 1.64, 0.08), 0.69, 1.35, 0), K6.timberRed), tint(place(box(0.5, 0.56, 0.4), 0, 0.28, -0.1), K6.books[2])), M.prop));
+  const rows = ROW_W.map((w, i) => { const n = node('slate-row' + i, setGlow(tint(place(box(1, 0.09, 0.02), 0.5, 0, 0), ROW_COL[i]), 0.55), M.prop, { pos: [-0.5, 1.9 - i * 0.32, 0.04] }); n.castShadow = false; n.visible = false; slate.add(n); return n; });
+  const ring = node('slate-ring', setGlow(tint(place(torus(0.2, 0.025, 14, 5), 0, 0, 0, 90, 0, 0), K6.yellow), 0.8), M.prop, { pos: [0.3, 0.94, 0.05] }); ring.castShadow = false; ring.visible = false; slate.add(ring);
+  slate.position[0] = SLATE[0]; slate.position[2] = SLATE[2]; slate.setRot(-6, -8, 0); slate.visible = false;
+  scene.root.add(slate);
+  const slateGlow = sprites.add({ kind: 'glow', pos: [SLATE[0] + 0.3, 0.95, SLATE[2] + 0.3], size: 1.2, color: '#ffe27a', alpha: 0 });
+  let work = 0;
+  const ledgerUnit = taskUnit({
+    pos: [SLATE[0], 1.4, SLATE[2] + 0.2], stand: [-0.45, -0.95],
+    apply(v, fresh) {
+      if (fresh) { slate.visible = true; setKey(true); }
+      work = v;
+      for (let i = 0; i < 4; i++) { const u = Math.max(0, Math.min(1, v * 4 - i)); rows[i].visible = u > 0.02; rows[i].setScale(Math.max(0.001, ROW_W[i] * u), 1, 1); }
+      ring.visible = v >= 0.999; setLamp(0.42 + 0.58 * v);
+    },
+  });
+  /** 'rope-ledger' (ch6.s3): four rows of the sum chalked a row a letter, the green lamp turned up as they read; ringed at the end. */
+  const task = (type) => (type === 'rope-ledger' ? ledgerUnit.arm() : null);
+  const hush = pulse(1.8);
+  /** The drain: a step on the stair. The lamp is turned right down until it has gone. */
+  function setback() { hush.hit(); }
+  /** The slate is only there once the encounter has put it there; a cutscene reached some other way sees the room as built. */
+  function cue(lineId) { if (lineId === 'ch6.s3.c01' && !slate.visible) { setLamp(1); return true; } return false; }
+
   let lampLevel = 1;
   const rnd = rng(19), P = [0, 0, 0], V = [0, 0, 0];
   let nextMote = 0;
   function setKey(on) { keyNode.visible = !!on; }
   function setLamp(v) { lampLevel = Math.max(0, Math.min(1, v)); }
   function tick(time, dt, pw, live) {
+    const hs = hush.value(dt), lampLevel0 = lampLevel;
+    lampLevel = lampLevel0 * (1 - 0.92 * hs);
+    env.points[2].intensity *= 1 + 0.9 * hs;                   // the stair's light comes up as somebody climbs it
+    slateGlow.alpha = work >= 0.999 ? 0.45 + 0.15 * Math.sin(time * 3) : 0;
     env.points[0].intensity *= lampLevel; env.points[1].intensity *= lampLevel;
     glows[0].sprite.alpha *= lampLevel; cone.visible = pw * lampLevel > 0.05; lampStar.alpha = 0.5 * Math.min(1, pw) * lampLevel; lampStar.rot = time * 0.3;
     keyGlint.alpha = keyNode.visible ? 0.4 + 0.4 * Math.sin(time * 2.2) : 0;
@@ -174,14 +211,15 @@ function build(engine = null, { light, low = false } = {}) {
       nextMote = time + 0.22; const u = rnd(); P[0] = WIN.x + (rnd() - 0.5) * 1.6 + moonDir[0] * u * 5; P[1] = 3.0 + (rnd() - 0.5) * 1.6 + moonDir[1] * u * 4.4; P[2] = BACK + 0.5 + moonDir[2] * u * 5; V[0] = -0.06; V[1] = -0.05; V[2] = 0.08;
       sprites.spawn({ kind: 'glow', pos: P, vel: V, size: 0.05 + rnd() * 0.06, life: 5, color: '#dfe6ff', alpha: 0.8 });
     }
+    lampLevel = lampLevel0;
   }
 
   return shell({
-    id: 'counting-room', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, house: 0.45,
+    id: 'counting-room', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue, house: 0.45,
     marks: { ...STD_MARKS(), desk: { pos: onDesk(0.05, 0, 0.95), face: 180 + DESK_YAW }, book: BOOK, key: KEY, focus: LAMP },
-    extra: { setKey, setLamp },
+    extra: { setKey, setLamp, task, setback, passLamp: setback },
   });
 }
 
-export const countingRoom = { id: 'counting-room', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const countingRoom = { id: 'counting-room', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default countingRoom;

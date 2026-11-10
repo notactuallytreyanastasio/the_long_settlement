@@ -23,7 +23,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, createSprites, rayMaterial, makeInstances,
 } from '../index.js';
 import { PAL, kitMaterials, anchorAt, pickLight, scatter, flame, barrel, sack, crate, ropeCoil, cloudBank, headland, lampPost, boat, cobble, planks, crowd, gull, bush, rock } from './kit.js';
-import { C4, stoneHut, cappedLamp, netPanel, knotNet, netPole, stove, kelp, c4Shell, cams, MARKS4, norm3, dirFrom } from './kit-ch4.js';
+import { C4, stoneHut, cappedLamp, netPanel, knotNet, netPole, stove, kelp, hoodedLantern, c4Shell, cams, MARKS4, norm3, dirFrom, lightNames, ownLight, taskUnit } from './kit-ch4.js';
 
 const HALL_Z = -2.6, HALL_W = 7.8, HALL_D = 4.6, DOOR = 1.8, EAVE = 2.55, PEAK = 4.75, WATER = -3;
 
@@ -68,10 +68,13 @@ const LIGHTS = {
   },
 };
 
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { interior: 'hearing' };
+
 const CAMERAS = cams({ low: { target: [0.1, 1.7, 0.2], dist: 6.4, yaw: -7, pitch: -10, fov: 56 } });
 
 function build(engine = GL0, { light, low = false } = {}) {
-  const picked = pickLight('dark-village', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('dark-village', LIGHTS, ownLight(LIGHTS, ALIAS, light)), L = picked.L; light = picked.name;
   const M = kitMaterials(), r = rng(4204), night = light !== 'day', FAR = low ? M.farFlat : M.far;
   const hw = HALL_W / 2, zb = HALL_Z - HALL_D;
 
@@ -221,14 +224,47 @@ function build(engine = GL0, { light, low = false } = {}) {
     lastT = time;
   }
 
+  // ---- what the live stage asks for (kit-ch4 taskUnit): the objective moves the place
+  //   'torn-net' x3   ch4.s2: three torn nets on drying frames in the yard; each hangs whole once its NET target is down
+  //   'hall-shadow', 'keeper-path'   ch4.s3: where Ren waits, and the keeper's hooded lantern at the head of the cliff path
+  //   'net-hall'      ch4.s5: the hall itself: the island comes in to the benches as the hearing is opened
+  // setback(): half a bench gets up to go (s5); the director calls it (as passLamp) on a drain no ball save covered
+  let dip = 0;
+  const racks = [];
+  function rack(i) {
+    if (racks[i]) return racks[i];
+    const x = 0.72 + i * 0.8, z = 0.2, posts = merge(tint(place(cylinder(0.035, 0.045, 1.5, 6), -0.34, 0.75, 0), '#8a5a4a'), tint(place(cylinder(0.035, 0.045, 1.5, 6), 0.34, 0.75, 0), '#8a5a4a'), tint(place(cylinder(0.03, 0.03, 0.86, 6), 0, 1.47, 0, 0, 0, 90), '#8a5a4a'));
+    const torn = node('rack-torn', merge(posts, place(netPanel({ w: 0.62, h: 0.6, cols: 3, rows: 2, sag: 0.3, belly: 0.16, color: '#a8a4d4' }), 0.02, 1.43, 0.02, 0, 0, -8)), M.prop, { pos: [x, 0, z] });
+    const whole = node('rack-whole', merge(posts, place(netPanel({ w: 0.64, h: 1.1, cols: 5, rows: 5, sag: 0.06, belly: 0.05, floats: [PAL.coral, PAL.yellow, PAL.teal][i % 3] }), 0, 1.44, 0.02)), M.prop, { pos: [x, 0, z] });
+    torn.castShadow = false; whole.castShadow = false; whole.visible = false; scene.root.add(torn, whole);
+    return (racks[i] = taskUnit([x, 1.0, z + 0.08], [x - 0.52, z + 0.5], (v) => { whole.visible = v > 0.55; torn.visible = !whole.visible; if (i === 2) setCrowd(0.12 + 0.14 * v); }));
+  }
+  let pathUnit = null, hallUnit = null, shadowUnit = null;
+  function task(type, i) {
+    if (type === 'torn-net') return rack(i);
+    if (type === 'hall-shadow') return shadowUnit || (shadowUnit = taskUnit([-2.7, 1.0, 0.1], [-2.3, 0.75], () => {}));
+    if (type === 'keeper-path') {
+      if (pathUnit) return pathUnit;
+      const at = [2.12, 1.22, 0.42], lm = hoodedLantern({ s: 0.95, hood: 0.8 });
+      const staff = node('keeper-staff', merge(tint(place(cylinder(0.03, 0.04, 1.3, 6), 0.3, 0.65, 0), '#8a5a4a'), tint(place(cylinder(0.022, 0.022, 0.36, 5), 0.14, 1.24, 0, 0, 0, 90), '#8a5a4a')), M.prop, { pos: [at[0], 0, at[2]] }); staff.castShadow = false;
+      const lant = node('keeper-lantern', lm, M.lantern, { pos: at }); lant.castShadow = false; lant.tint.set([1, 0.8, 0.42, 1]);
+      const gp = [at[0], at[1] + lm.anchors.lamp[1], at[2] + 0.05], g = sprites.add({ kind: 'glow', pos: gp, size: 0.9, color: '#ffa848', alpha: 0 });
+      scene.root.add(staff, lant);
+      return (pathUnit = taskUnit(gp, [1.25, 0.78], (v, time) => { setCrowd(0); g.alpha = (0.3 + 0.5 * v) * (0.92 + 0.08 * Math.sin(time * 9)); g.size[0] = g.size[1] = 0.8 + 0.7 * v; lant.setRot(0, 0, Math.sin(time * 1.2) * 4); }));
+    }
+    if (type === 'net-hall') return hallUnit || (hallUnit = taskUnit([0.3, 1.75, HALL_Z + 0.5], null, (v, time, dt) => { dip = Math.max(0, dip - (dt || 0) / 2.6); setCrowd(0.16 + 0.84 * v - 0.3 * dip); setMood(0.22 + 0.16 * v + 0.5 * dip); }));
+    return null;
+  }
+  const setback = () => { dip = 1; };
+
   return c4Shell({
     id: 'dark-village', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,
     marks: { ...MARKS4, focus: FIRE, net: [NET[0], NET[1] - 1, NET[2]], door: { pos: [0, 0, HALL_Z + 0.5], face: 0 }, tower: anchorAt(tower, 'top', TOWER) },
-    extra: { setCrowd, setMood, cue },
+    extra: { setCrowd, setMood, cue, task, setback, passLamp: setback },
   });
 }
 
 function torus3(R = 0.09, t = 0.02) { return GL0.torus(R, t, 10, 4); }
 
-export const darkVillage = { id: 'dark-village', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const darkVillage = { id: 'dark-village', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default darkVillage;

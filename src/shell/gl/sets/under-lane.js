@@ -27,7 +27,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, createSprites, rayMesh, rayMaterial, makeInstances,
 } from '../index.js';
 import { PAL, kitMaterials, anchorAt, pickLight, barrel, sack, crate, ropeCoil, cloudBank, boat, crowd } from './kit.js';
-import { C4, crag, hoodedLantern, longboat, oar, cutter, blanketRoll, c4Shell, cams, MARKS4, norm3, dirFrom } from './kit-ch4.js';
+import { C4, crag, hoodedLantern, longboat, oar, cutter, blanketRoll, c4Shell, cams, MARKS4, norm3, dirFrom, lightNames, ownLight, taskUnit } from './kit-ch4.js';
 
 const WATER = -0.2, BOAT_Z = 0.55;
 
@@ -60,13 +60,16 @@ const LIGHTS = {
   },
 };
 
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { predawn: 'dawn' };
+
 const CAMERAS = cams({
   wide: { target: [0.1, 1.45, -0.2], dist: 8.4, yaw: 3, pitch: 8 },
   stage: { target: [0, 1.0, 0.5], dist: 9.6, yaw: -13, pitch: 8 },
 });
 
 function build(engine = GL0, { light, low = false } = {}) {
-  const picked = pickLight('under-lane', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('under-lane', LIGHTS, ownLight(LIGHTS, ALIAS, light)), L = picked.L; light = picked.name;
   const M = kitMaterials(), r = rng(4404), night = light === 'night';
 
   // ---- our boat, and everything that rides in it
@@ -142,7 +145,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   const P = [0, 0, 0], V = [0, 0, 0], S3 = [1, 1, 1], Q = quat.create(), Mx = m4.create(), rnd = rng(31);
   const setHood = (v) => { hood = Math.max(0, Math.min(1, v)); }, setCutter = (v) => { cut = Math.max(0, Math.min(1.5, v)); }, setLamps = (n) => { lampsOn = Math.max(0, Math.min(ISLES.length, n | 0)); }, setStroke = (v) => { stroke = Math.max(0, Math.min(1, v)); };
   const CUES = {
-    'ch4.s4.c01': () => { setHood(1); setCutter(0); setLamps(0); setStroke(0.7); }, 'ch4.s4.c05': () => setCutter(1), 'ch4.s4.c09': () => setStroke(0.15), 'ch4.s4.c23': () => setStroke(0.7), 'ch4.s4.c24': () => setCutter(1.3), 'ch4.s4.c26': () => { setCutter(1.5); setStroke(1); },
+    'ch4.s4.c01': () => { setHood(1); setCutter(Math.min(cut, 0.55)); setLamps(0); setStroke(0.7); },   // the encounter leaves the cutter far off to the north: Ren names it at c05 'ch4.s4.c05': () => setCutter(1), 'ch4.s4.c09': () => setStroke(0.15), 'ch4.s4.c23': () => setStroke(0.7), 'ch4.s4.c24': () => setCutter(1.3), 'ch4.s4.c26': () => { setCutter(1.5); setStroke(1); },
     'ch4.epi.01': () => { setHood(1); setCutter(0); setLamps(0); setStroke(0.6); }, 'ch4.epi.09': () => setLamps(1), 'ch4.epi.12': () => setLamps(4), 'ch4.epi.16': () => setStroke(0.8),
     'ch5.pro.02': () => { setHood(1); setCutter(0); setLamps(0); setStroke(0.6); }, 'ch8.mepi.13': () => { setHood(1); setCutter(0); setLamps(0); setStroke(0.6); },
   };
@@ -199,12 +202,23 @@ function build(engine = GL0, { light, low = false } = {}) {
     lastT = time;
   }
 
+  // ---- what the live stage asks for (kit-ch4 taskUnit)
+  //   'search-line'   ch4.s4: the run out along the under-lane: the lantern hooded right down, and as the objective counts
+  //                   up the Audit cutter comes into sight to the north and works its bearing, and the stroke lengthens
+  // setback(): the search lamp comes across the boat (the director calls it, as passLamp, on a drain no ball save covered)
+  let lineUnit = null;
+  function task(type) {
+    if (type !== 'search-line') return null;
+    return lineUnit || (lineUnit = taskUnit([LAMP[0], LAMP[1], LAMP[2]], [0.35, 0.78], (v) => { setHood(1); setLamps(0); setCutter(0.2 + 0.8 * v); setStroke(0.5 + 0.4 * v); }));
+  }
+  const setback = () => { cutNow = 1.5; };
+
   return c4Shell({
     id: 'under-lane', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,
     marks: { ...MARKS4, focus: LAMP, oar: { pos: [B[0] + seats[1][0] + 0.9, 0, B[2] - 0.55], face: 90 }, stern: { pos: [-2.9, 0, 1.0], face: 80 }, bow: { pos: [2.9, 0, 0.9], face: -90 } },
-    extra: { setHood, setCutter, setLamps, setStroke, cue },
+    extra: { setHood, setCutter, setLamps, setStroke, cue, task, setback, passLamp: setback },
   });
 }
 
-export const underLane = { id: 'under-lane', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const underLane = { id: 'under-lane', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default underLane;

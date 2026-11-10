@@ -12356,18 +12356,18 @@
  },
  {
   "path": "src/content/chapter2.js",
-  "bytes": 46029,
-  "lines": 632
+  "bytes": 55704,
+  "lines": 748
  },
  {
   "path": "src/content/chapter3.js",
-  "bytes": 55398,
-  "lines": 674
+  "bytes": 64583,
+  "lines": 789
  },
  {
   "path": "src/content/chapter4.js",
-  "bytes": 53386,
-  "lines": 666
+  "bytes": 62438,
+  "lines": 774
  },
  {
   "path": "src/content/chapter5.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 152709,
-  "lines": 2039
+  "bytes": 186706,
+  "lines": 2388
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/sets/academy-yard.js",
-  "bytes": 27098,
-  "lines": 321
+  "bytes": 27297,
+  "lines": 323
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
@@ -12606,8 +12606,8 @@
  },
  {
   "path": "src/shell/gl/sets/compact-hall.js",
-  "bytes": 22149,
-  "lines": 237
+  "bytes": 26084,
+  "lines": 282
  },
  {
   "path": "src/shell/gl/sets/corvane-study.js",
@@ -12616,8 +12616,8 @@
  },
  {
   "path": "src/shell/gl/sets/counting-room.js",
-  "bytes": 17590,
-  "lines": 188
+  "bytes": 21019,
+  "lines": 226
  },
  {
   "path": "src/shell/gl/sets/court.js",
@@ -12636,18 +12636,18 @@
  },
  {
   "path": "src/shell/gl/sets/cutter-deck.js",
-  "bytes": 17543,
-  "lines": 202
+  "bytes": 18691,
+  "lines": 219
  },
  {
   "path": "src/shell/gl/sets/dark-village.js",
-  "bytes": 24491,
-  "lines": 235
+  "bytes": 27885,
+  "lines": 271
  },
  {
   "path": "src/shell/gl/sets/dormitory.js",
-  "bytes": 23337,
-  "lines": 258
+  "bytes": 23541,
+  "lines": 260
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
@@ -12676,8 +12676,8 @@
  },
  {
   "path": "src/shell/gl/sets/ferry-storm.js",
-  "bytes": 18337,
-  "lines": 187
+  "bytes": 18521,
+  "lines": 190
  },
  {
   "path": "src/shell/gl/sets/fish-dock.js",
@@ -12706,13 +12706,13 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 28171,
-  "lines": 286
+  "bytes": 28372,
+  "lines": 288
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
-  "bytes": 23875,
-  "lines": 245
+  "bytes": 25241,
+  "lines": 259
  },
  {
   "path": "src/shell/gl/sets/index.js",
@@ -12721,8 +12721,8 @@
  },
  {
   "path": "src/shell/gl/sets/kedge-roads.js",
-  "bytes": 25040,
-  "lines": 302
+  "bytes": 25574,
+  "lines": 307
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
@@ -12741,8 +12741,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
-  "bytes": 35737,
-  "lines": 463
+  "bytes": 37074,
+  "lines": 482
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
@@ -12751,8 +12751,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch6.js",
-  "bytes": 54230,
-  "lines": 658
+  "bytes": 56403,
+  "lines": 698
  },
  {
   "path": "src/shell/gl/sets/kit-ch7.js",
@@ -12776,8 +12776,8 @@
  },
  {
   "path": "src/shell/gl/sets/lantern-line.js",
-  "bytes": 15997,
-  "lines": 195
+  "bytes": 17180,
+  "lines": 211
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12796,8 +12796,8 @@
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
-  "bytes": 19601,
-  "lines": 229
+  "bytes": 19802,
+  "lines": 231
  },
  {
   "path": "src/shell/gl/sets/mint-office.js",
@@ -12836,8 +12836,8 @@
  },
  {
   "path": "src/shell/gl/sets/quarter-flame.js",
-  "bytes": 21019,
-  "lines": 232
+  "bytes": 22453,
+  "lines": 252
  },
  {
   "path": "src/shell/gl/sets/quay-break.js",
@@ -12856,8 +12856,8 @@
  },
  {
   "path": "src/shell/gl/sets/under-lane.js",
-  "bytes": 20470,
-  "lines": 211
+  "bytes": 21514,
+  "lines": 225
  },
  {
   "path": "src/shell/gl/sets/underwriting-floor.js",
@@ -12866,8 +12866,8 @@
  },
  {
   "path": "src/shell/gl/sets/wreck-shore.js",
-  "bytes": 17526,
-  "lines": 178
+  "bytes": 19041,
+  "lines": 195
  },
  {
   "path": "src/shell/gl/shaders.js",
@@ -12886,8 +12886,8 @@
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 105089,
-  "lines": 1431
+  "bytes": 107492,
+  "lines": 1455
  },
  {
   "path": "src/shell/input.js",

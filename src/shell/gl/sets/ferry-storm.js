@@ -24,7 +24,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, createSprites, rayMesh, rayMaterial, lerpEnv,
 } from '../index.js';
 import { PAL, kitMaterials, anchorAt, pickLight, barrel, sack, crate, ropeCoil, cloudBank, boat, lighthouse, planks, railing, lifeRing, bollard, bunting } from './kit.js';
-import { C4, crag, hoodedLantern, hatchCover, seaSwells, rainField, c4Shell, cams, MARKS4, norm3, dirFrom } from './kit-ch4.js';
+import { C4, crag, hoodedLantern, hatchCover, seaSwells, rainField, c4Shell, cams, MARKS4, norm3, dirFrom, lightNames, ownLight } from './kit-ch4.js';
 
 const WATER = -1.2, RAIL_Z = -2.6, HALF = 5.8;
 
@@ -56,10 +56,13 @@ const ENVS = {
 };
 const LIGHTS = { storm: { start: 1, power: 1.15 }, calm: { start: 0.06, power: 0.8 } };
 
+// core light names (core/stage.js) this set answers besides its own
+const ALIAS = { dusk: 'calm', day: 'calm', night: 'storm' };
+
 const CAMERAS = cams({ low: { target: [0.1, 1.8, 0.2], dist: 6.2, yaw: -7, pitch: -11, fov: 56 } });
 
 function build(engine = GL0, { light, low = false } = {}) {
-  const picked = pickLight('ferry-storm', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('ferry-storm', LIGHTS, ownLight(LIGHTS, ALIAS, light)), L = picked.L; light = picked.name;
   const M = kitMaterials(), r = rng(4004);
 
   // ---- the deck and what is bolted to it (all of this rolls)
@@ -182,5 +185,5 @@ function build(engine = GL0, { light, low = false } = {}) {
   });
 }
 
-export const ferryStorm = { id: 'ferry-storm', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const ferryStorm = { id: 'ferry-storm', lights: lightNames(LIGHTS, ALIAS), cameras: Object.keys(CAMERAS), build };
 export default ferryStorm;

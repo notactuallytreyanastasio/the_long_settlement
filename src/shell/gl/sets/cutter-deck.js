@@ -13,6 +13,8 @@
 //   sweep()         the search lamp goes once round the roads (about nine seconds) and comes back to its bearing
 //   setLamp(deg)    hold the lamp on a bearing (0 = straight out over the rail, + = toward the stern)
 //   cue(lineId)     ch6.s4.c14: sweep()
+//   task('search-lamp')  ch6.s4: v 0 the lamp turned inboard on the bow (it dazzles), v 1 trained out over the roads;
+//                   Kedge's lamps come on with v. setback(): one sweep across the deck (also passLamp)
 //   marks.rail { pos, face } (a place at the rail, looking at Kedge), marks.focus (the search lamp)
 // low: true drops the far hulls, half the town's lights, the shore's outline, the gulls and the deck clutter.
 
@@ -22,7 +24,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { PAL, anchorAt, pickLight, planks, railing, lifeRing, ropeCoil, townBank, headland, cloudBank, gull, crate } from './kit.js';
-import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, dirFrom, norm3, mastRig, searchLamp, gantry, hulk, mole, lampHouse, cask, bar, oar } from './kit-ch6.js';
+import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, taskUnit, dirFrom, norm3, mastRig, searchLamp, gantry, hulk, mole, lampHouse, cask, bar, oar } from './kit-ch6.js';
 
 const WATER = -2.2, RAIL_Z = -2.9, HALF = 9.5;
 
@@ -156,9 +158,24 @@ function build(engine = null, { light, low = false } = {}) {
   let nextRing = 0.6, nextGust = 1.5, nextGlint = 0;
   function sweep() { sweepT = 0; }
   function setLamp(deg) { hold = deg; }
-  function cue(lineId) { if (lineId === 'ch6.s4.c14') { sweep(); return true; } if (lineId === 'ch6.s4.c01') { clock = 0; sweepT = -1; return true; } return false; }
+  // the live stage's task (ch6.s4, the row out): the search lamp starts turned inboard on whoever is coming over the bow
+  // and is trained back out over the roads as the objective goes; Kedge puts its lamps on with it, not with the clock
+  let rowed = false, auto = true;
+  const CLOCK_FULL = twinkles.reduce((m, t) => Math.max(m, t.on), 0) + 1.2;
+  const rowUnit = taskUnit({
+    pos: LAMP, stand: null,
+    apply(v, fresh) { if (fresh) { sweepT = -1; rowed = true; auto = false; } hold = 150 - 136 * v; clock = CLOCK_FULL * v; },
+  });
+  const task = (type) => (type === 'search-lamp' ? rowUnit.arm() : null);
+  /** The drain: the lamp goes once round, across the deck. */
+  function setback() { if (sweepT < 0) sweep(); }
+  function cue(lineId) {
+    if (lineId === 'ch6.s4.c14') { sweep(); return true; }
+    if (lineId === 'ch6.s4.c01') { auto = true; hold = 14; if (!rowed) { clock = 0; sweepT = -1; } rowed = false; return true; }   // after the encounter the town is already lit: it is not put out again
+    return false;
+  }
   function tick(time, dt, pw, live) {
-    clock += dt;
+    if (auto) clock += dt;
     // the lamp: it looks slowly about its bearing; a sweep takes it once round and back
     let yaw = hold + Math.sin(time * 0.23) * 9;
     if (sweepT >= 0) { sweepT += dt; const u = sweepT / 9; if (u >= 1) sweepT = -1; else yaw += 360 * (u * u * (3 - 2 * u)); }
@@ -193,7 +210,7 @@ function build(engine = null, { light, low = false } = {}) {
   return shell({
     id: 'cutter-deck', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue,
     marks: { ...STD_MARKS(), rail: { pos: [0.6, 0, RAIL_Z + 0.6], face: 180 }, focus: LAMP },
-    extra: { sweep, setLamp },
+    extra: { sweep, setLamp, task, setback, passLamp: setback },
   });
 }
 
