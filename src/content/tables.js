@@ -170,6 +170,9 @@ function vessery() {
       ...lo.rollovers,
     ],
     shots: [
+      // Both gates sit across the lane mouths, not up at the top of the lanes. With the gate at
+      // y = 322 the test bot made the pier 2 times in five minutes and the three-ramp scene took
+      // it 5:00 on average; a ball that gets into the mouth going up has made the shot.
       // the pier ramp carries the ball over the water to the right inlane
       { id: 'pierRamp', a: [28, 398], b: [77, 398], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 140] } },
       { id: 'dockOrbit', a: [mx(77), 398], b: [mx(28), 398], dir: [0, -1] },
@@ -274,6 +277,7 @@ function saltmere() {
       ...lo.rollovers,
     ],
     shots: [
+      // gates across the lane mouths, as on Vessery
       // the causeway returns to the left inlane, so the same flipper can shoot the court
       { id: 'causewayRamp', a: [26, 425], b: [72, 425], dir: [0, -1], exit: { pos: lo.inL, vel: [0, 140] } },
       { id: 'courtOrbit', a: [mx(72), 420], b: [mx(28), 420], dir: [0, -1] },

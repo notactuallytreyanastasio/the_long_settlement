@@ -308,8 +308,8 @@ const s5 = {
   id: 'ch1.s5',
   title: 'The Pier',
   thread: 'duty',
-  hint: 'Get Ilse out along the pier: 3 ramp shots',
-  objective: { kind: 'count', ids: ['pierRamp'], n: 3 },
+  hint: 'Get Ilse out along the pier: 2 ramp shots',
+  objective: { kind: 'count', ids: ['pierRamp'], n: 2 },
   briefing: [
     L('s5.b01', 'crowd', 'Gun! Somebody has a gun! Get down!', { sfx: 'bumper', music: 'tense' }),
     T('s5.b02', 'Move her, Vasker. The pier. Now.'),

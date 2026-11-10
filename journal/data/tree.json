@@ -2761,7 +2761,7 @@
  },
  {
   "path": "src/content/chapter2.js",
-  "bytes": 46396,
+  "bytes": 46388,
   "lines": 652
  },
  {
@@ -2771,8 +2771,8 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 13676,
-  "lines": 314
+  "bytes": 14013,
+  "lines": 318
  },
  {
   "path": "src/core/economy.js",
@@ -2835,6 +2835,11 @@
   "lines": 241
  },
  {
+  "path": "test/content.test.js",
+  "bytes": 7591,
+  "lines": 140
+ },
+ {
   "path": "test/economy.test.js",
   "bytes": 8617,
   "lines": 198
@@ -2851,8 +2856,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 8745,
-  "lines": 191
+  "bytes": 9573,
+  "lines": 199
  },
  {
   "path": "test/rng.test.js",

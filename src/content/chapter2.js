@@ -235,10 +235,10 @@ const scenes = [
     id: 'ch2.s4',
     title: 'The Hearing',
     thread: 'duty',
-    hint: 'Carry the petition: shoot the right orbit 3 times',
-    objective: { kind: 'count', ids: ['courtOrbit'], n: 3 },
+    hint: 'Carry the petition: shoot the right orbit twice',
+    objective: { kind: 'count', ids: ['courtOrbit'], n: 2 },
     briefing: [
-      { id: 'ch2.s4.b01', who: 'ilse', text: 'The right orbit, three times. I need the bench sitting.' },
+      { id: 'ch2.s4.b01', who: 'ilse', text: 'The right orbit, twice. I need the bench sitting.' },
       { id: 'ch2.s4.b02', who: 'tobb', text: "Even money they hear her. I've taken worse." },
     ],
     cutscene: [
