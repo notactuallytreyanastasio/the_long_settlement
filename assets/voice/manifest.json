@@ -7174,6 +7174,5151 @@
    "url": "assets/voice/ch5.s7.c28.m4a",
    "seconds": 3.77,
    "hash": "98b5365c0868c080"
+  },
+  "ch6.bark.aid.1": {
+   "url": "assets/voice/ch6.bark.aid.1.m4a",
+   "seconds": 2.31,
+   "hash": "1583b09a3038fcae"
+  },
+  "ch6.bark.aid.2": {
+   "url": "assets/voice/ch6.bark.aid.2.m4a",
+   "seconds": 3.52,
+   "hash": "37d9bc1cccfec5e3"
+  },
+  "ch6.bark.aid.3": {
+   "url": "assets/voice/ch6.bark.aid.3.m4a",
+   "seconds": 2.33,
+   "hash": "10770e7687939050"
+  },
+  "ch6.bark.aid.4": {
+   "url": "assets/voice/ch6.bark.aid.4.m4a",
+   "seconds": 2.65,
+   "hash": "3c13c4e52644ae9d"
+  },
+  "ch6.bark.aid.5": {
+   "url": "assets/voice/ch6.bark.aid.5.m4a",
+   "seconds": 1.8,
+   "hash": "b72e9e4627c9d2f9"
+  },
+  "ch6.bark.aid.6": {
+   "url": "assets/voice/ch6.bark.aid.6.m4a",
+   "seconds": 3.33,
+   "hash": "272e1921c0a07fda"
+  },
+  "ch6.bark.bumper.1": {
+   "url": "assets/voice/ch6.bark.bumper.1.m4a",
+   "seconds": 2.51,
+   "hash": "0df43237125ce009"
+  },
+  "ch6.bark.bumper.2": {
+   "url": "assets/voice/ch6.bark.bumper.2.m4a",
+   "seconds": 2.38,
+   "hash": "898f7d49c7e757b9"
+  },
+  "ch6.bark.bumper.3": {
+   "url": "assets/voice/ch6.bark.bumper.3.m4a",
+   "seconds": 1.24,
+   "hash": "399eb2f258c0604e"
+  },
+  "ch6.bark.bumper.4": {
+   "url": "assets/voice/ch6.bark.bumper.4.m4a",
+   "seconds": 3.78,
+   "hash": "0e58adba6036a35f"
+  },
+  "ch6.bark.bumper.5": {
+   "url": "assets/voice/ch6.bark.bumper.5.m4a",
+   "seconds": 2.64,
+   "hash": "345ccdddce8302b4"
+  },
+  "ch6.bark.bust.1": {
+   "url": "assets/voice/ch6.bark.bust.1.m4a",
+   "seconds": 2.29,
+   "hash": "ab29b5c642d45daf"
+  },
+  "ch6.bark.bust.2": {
+   "url": "assets/voice/ch6.bark.bust.2.m4a",
+   "seconds": 3.1,
+   "hash": "f497dfa433ba0a8a"
+  },
+  "ch6.bark.bust.3": {
+   "url": "assets/voice/ch6.bark.bust.3.m4a",
+   "seconds": 1.43,
+   "hash": "239da0e72f8fe9cb"
+  },
+  "ch6.bark.bust.4": {
+   "url": "assets/voice/ch6.bark.bust.4.m4a",
+   "seconds": 1.89,
+   "hash": "af19ec4e0037d9ec"
+  },
+  "ch6.bark.bust.5": {
+   "url": "assets/voice/ch6.bark.bust.5.m4a",
+   "seconds": 2.65,
+   "hash": "f1429101a8756f78"
+  },
+  "ch6.bark.drain.1": {
+   "url": "assets/voice/ch6.bark.drain.1.m4a",
+   "seconds": 2.77,
+   "hash": "a17d002ac5196302"
+  },
+  "ch6.bark.drain.2": {
+   "url": "assets/voice/ch6.bark.drain.2.m4a",
+   "seconds": 2.41,
+   "hash": "149d98cd15e3feb5"
+  },
+  "ch6.bark.drain.3": {
+   "url": "assets/voice/ch6.bark.drain.3.m4a",
+   "seconds": 2.87,
+   "hash": "f7e4b36d6f8a8c07"
+  },
+  "ch6.bark.drain.4": {
+   "url": "assets/voice/ch6.bark.drain.4.m4a",
+   "seconds": 1.94,
+   "hash": "33cc70aeb0c45f32"
+  },
+  "ch6.bark.drain.5": {
+   "url": "assets/voice/ch6.bark.drain.5.m4a",
+   "seconds": 2.72,
+   "hash": "611d2bd75d9496b7"
+  },
+  "ch6.bark.drain.6": {
+   "url": "assets/voice/ch6.bark.drain.6.m4a",
+   "seconds": 2.74,
+   "hash": "3f97b3cb78ce84cc"
+  },
+  "ch6.bark.idle.1": {
+   "url": "assets/voice/ch6.bark.idle.1.m4a",
+   "seconds": 2.36,
+   "hash": "7bba3934dfc79a85"
+  },
+  "ch6.bark.idle.2": {
+   "url": "assets/voice/ch6.bark.idle.2.m4a",
+   "seconds": 2.66,
+   "hash": "562ce6538a5ad2fe"
+  },
+  "ch6.bark.idle.3": {
+   "url": "assets/voice/ch6.bark.idle.3.m4a",
+   "seconds": 1.7,
+   "hash": "1ecfcddf469fd2d0"
+  },
+  "ch6.bark.idle.4": {
+   "url": "assets/voice/ch6.bark.idle.4.m4a",
+   "seconds": 2.32,
+   "hash": "c22cd30a4cc571d3"
+  },
+  "ch6.bark.idle.5": {
+   "url": "assets/voice/ch6.bark.idle.5.m4a",
+   "seconds": 2.44,
+   "hash": "ec76d97677fdbd1a"
+  },
+  "ch6.bark.jackpot.1": {
+   "url": "assets/voice/ch6.bark.jackpot.1.m4a",
+   "seconds": 2.02,
+   "hash": "2059be81538f7a66"
+  },
+  "ch6.bark.jackpot.2": {
+   "url": "assets/voice/ch6.bark.jackpot.2.m4a",
+   "seconds": 3.31,
+   "hash": "af91ed939b23f2ee"
+  },
+  "ch6.bark.jackpot.3": {
+   "url": "assets/voice/ch6.bark.jackpot.3.m4a",
+   "seconds": 2.56,
+   "hash": "8085d4fc56b5acad"
+  },
+  "ch6.bark.jackpot.4": {
+   "url": "assets/voice/ch6.bark.jackpot.4.m4a",
+   "seconds": 2.36,
+   "hash": "75e01a717de9bd04"
+  },
+  "ch6.bark.jackpot.5": {
+   "url": "assets/voice/ch6.bark.jackpot.5.m4a",
+   "seconds": 1.99,
+   "hash": "a848e9e053e749da"
+  },
+  "ch6.bark.launch.1": {
+   "url": "assets/voice/ch6.bark.launch.1.m4a",
+   "seconds": 1.79,
+   "hash": "7c142e5ef0b71df9"
+  },
+  "ch6.bark.launch.2": {
+   "url": "assets/voice/ch6.bark.launch.2.m4a",
+   "seconds": 1.96,
+   "hash": "086934a39c41c5db"
+  },
+  "ch6.bark.launch.3": {
+   "url": "assets/voice/ch6.bark.launch.3.m4a",
+   "seconds": 2.64,
+   "hash": "7d45366563817459"
+  },
+  "ch6.bark.launch.4": {
+   "url": "assets/voice/ch6.bark.launch.4.m4a",
+   "seconds": 1.58,
+   "hash": "f07db62070059483"
+  },
+  "ch6.bark.launch.5": {
+   "url": "assets/voice/ch6.bark.launch.5.m4a",
+   "seconds": 2.43,
+   "hash": "764f1832a92cde7b"
+  },
+  "ch6.bark.loan.1": {
+   "url": "assets/voice/ch6.bark.loan.1.m4a",
+   "seconds": 2.92,
+   "hash": "90ee51d4dfdfb06d"
+  },
+  "ch6.bark.loan.2": {
+   "url": "assets/voice/ch6.bark.loan.2.m4a",
+   "seconds": 3.34,
+   "hash": "cf4c63a752876059"
+  },
+  "ch6.bark.loan.3": {
+   "url": "assets/voice/ch6.bark.loan.3.m4a",
+   "seconds": 2.88,
+   "hash": "6bd07a75159eba99"
+  },
+  "ch6.bark.loan.4": {
+   "url": "assets/voice/ch6.bark.loan.4.m4a",
+   "seconds": 3.59,
+   "hash": "d515672043bc9af2"
+  },
+  "ch6.bark.loan.5": {
+   "url": "assets/voice/ch6.bark.loan.5.m4a",
+   "seconds": 1.73,
+   "hash": "2438705584917775"
+  },
+  "ch6.bark.loan.6": {
+   "url": "assets/voice/ch6.bark.loan.6.m4a",
+   "seconds": 2.65,
+   "hash": "e42b2d1a39136991"
+  },
+  "ch6.bark.ramp.1": {
+   "url": "assets/voice/ch6.bark.ramp.1.m4a",
+   "seconds": 1.83,
+   "hash": "a5ef354d880391b8"
+  },
+  "ch6.bark.ramp.2": {
+   "url": "assets/voice/ch6.bark.ramp.2.m4a",
+   "seconds": 0.89,
+   "hash": "74c6a05d979156c2"
+  },
+  "ch6.bark.ramp.3": {
+   "url": "assets/voice/ch6.bark.ramp.3.m4a",
+   "seconds": 2.57,
+   "hash": "853fe5934786b5be"
+  },
+  "ch6.bark.ramp.4": {
+   "url": "assets/voice/ch6.bark.ramp.4.m4a",
+   "seconds": 2.89,
+   "hash": "ac37e1162a09a06e"
+  },
+  "ch6.bark.ramp.5": {
+   "url": "assets/voice/ch6.bark.ramp.5.m4a",
+   "seconds": 2.5,
+   "hash": "ad56caf53291b44e"
+  },
+  "ch6.bark.save.1": {
+   "url": "assets/voice/ch6.bark.save.1.m4a",
+   "seconds": 2.23,
+   "hash": "6b973dd72d834eda"
+  },
+  "ch6.bark.save.2": {
+   "url": "assets/voice/ch6.bark.save.2.m4a",
+   "seconds": 1.83,
+   "hash": "7cfbf87e6e6e1293"
+  },
+  "ch6.bark.save.3": {
+   "url": "assets/voice/ch6.bark.save.3.m4a",
+   "seconds": 2.33,
+   "hash": "2030c36fcad0fc41"
+  },
+  "ch6.bark.save.4": {
+   "url": "assets/voice/ch6.bark.save.4.m4a",
+   "seconds": 0.89,
+   "hash": "ffc178e53e917185"
+  },
+  "ch6.bark.save.5": {
+   "url": "assets/voice/ch6.bark.save.5.m4a",
+   "seconds": 2.76,
+   "hash": "428f1db815d14fbd"
+  },
+  "ch6.epi.01": {
+   "url": "assets/voice/ch6.epi.01.m4a",
+   "seconds": 9.87,
+   "hash": "a839cf1baa6399bb"
+  },
+  "ch6.epi.02": {
+   "url": "assets/voice/ch6.epi.02.m4a",
+   "seconds": 3.59,
+   "hash": "0389abf7f074bac1"
+  },
+  "ch6.epi.03": {
+   "url": "assets/voice/ch6.epi.03.m4a",
+   "seconds": 3.74,
+   "hash": "ea147ceb1208f824"
+  },
+  "ch6.epi.04": {
+   "url": "assets/voice/ch6.epi.04.m4a",
+   "seconds": 8.46,
+   "hash": "0d28dea6388ae96f"
+  },
+  "ch6.epi.05": {
+   "url": "assets/voice/ch6.epi.05.m4a",
+   "seconds": 5.1,
+   "hash": "475160c5534fa6b9"
+  },
+  "ch6.epi.06": {
+   "url": "assets/voice/ch6.epi.06.m4a",
+   "seconds": 9.76,
+   "hash": "4b3c0ee278d5ae25"
+  },
+  "ch6.epi.07": {
+   "url": "assets/voice/ch6.epi.07.m4a",
+   "seconds": 1.3,
+   "hash": "6b7d609c6e49c32c"
+  },
+  "ch6.epi.08": {
+   "url": "assets/voice/ch6.epi.08.m4a",
+   "seconds": 1.78,
+   "hash": "f2c06e32a0d716f9"
+  },
+  "ch6.epi.09": {
+   "url": "assets/voice/ch6.epi.09.m4a",
+   "seconds": 7.95,
+   "hash": "03050c2cdb4a0ca6"
+  },
+  "ch6.epi.10": {
+   "url": "assets/voice/ch6.epi.10.m4a",
+   "seconds": 6.19,
+   "hash": "af408945fe835ff9"
+  },
+  "ch6.epi.11": {
+   "url": "assets/voice/ch6.epi.11.m4a",
+   "seconds": 1.58,
+   "hash": "a8573b9830837392"
+  },
+  "ch6.epi.12": {
+   "url": "assets/voice/ch6.epi.12.m4a",
+   "seconds": 3.22,
+   "hash": "5fd987954ab5bf34"
+  },
+  "ch6.epi.13": {
+   "url": "assets/voice/ch6.epi.13.m4a",
+   "seconds": 10.23,
+   "hash": "ecdc9fe104ef7add"
+  },
+  "ch6.epi.14": {
+   "url": "assets/voice/ch6.epi.14.m4a",
+   "seconds": 9.69,
+   "hash": "d986b8022d9daea2"
+  },
+  "ch6.epi.15": {
+   "url": "assets/voice/ch6.epi.15.m4a",
+   "seconds": 8.46,
+   "hash": "b6432432b31fe673"
+  },
+  "ch6.epi.16": {
+   "url": "assets/voice/ch6.epi.16.m4a",
+   "seconds": 9.18,
+   "hash": "59a63136ecd7f0fa"
+  },
+  "ch6.epi.17": {
+   "url": "assets/voice/ch6.epi.17.m4a",
+   "seconds": 6.45,
+   "hash": "a1fde1fcfc84485f"
+  },
+  "ch6.epi.18": {
+   "url": "assets/voice/ch6.epi.18.m4a",
+   "seconds": 11.09,
+   "hash": "5cf726d1ec27521e"
+  },
+  "ch6.epi.19": {
+   "url": "assets/voice/ch6.epi.19.m4a",
+   "seconds": 3.21,
+   "hash": "c805e3add2c6c7d8"
+  },
+  "ch6.epi.20": {
+   "url": "assets/voice/ch6.epi.20.m4a",
+   "seconds": 5.77,
+   "hash": "38b247aa0c955d85"
+  },
+  "ch6.epi.21": {
+   "url": "assets/voice/ch6.epi.21.m4a",
+   "seconds": 11.62,
+   "hash": "6a830a6cf1bad3b4"
+  },
+  "ch6.epi.22": {
+   "url": "assets/voice/ch6.epi.22.m4a",
+   "seconds": 4.44,
+   "hash": "82820b9e2f6fa39c"
+  },
+  "ch6.epi.23": {
+   "url": "assets/voice/ch6.epi.23.m4a",
+   "seconds": 6.92,
+   "hash": "a49805cc9faa3a62"
+  },
+  "ch6.epi.24": {
+   "url": "assets/voice/ch6.epi.24.m4a",
+   "seconds": 7.26,
+   "hash": "fa03252f5a43305e"
+  },
+  "ch6.pro.01": {
+   "url": "assets/voice/ch6.pro.01.m4a",
+   "seconds": 8.44,
+   "hash": "43c8374b248ca8b3"
+  },
+  "ch6.pro.02": {
+   "url": "assets/voice/ch6.pro.02.m4a",
+   "seconds": 7.93,
+   "hash": "3d861af1a6ab9cd9"
+  },
+  "ch6.pro.03": {
+   "url": "assets/voice/ch6.pro.03.m4a",
+   "seconds": 9.62,
+   "hash": "7fb9d348b75474d2"
+  },
+  "ch6.pro.04": {
+   "url": "assets/voice/ch6.pro.04.m4a",
+   "seconds": 11.39,
+   "hash": "cced1a7dade5cb56"
+  },
+  "ch6.pro.05": {
+   "url": "assets/voice/ch6.pro.05.m4a",
+   "seconds": 6.61,
+   "hash": "dd341320fb084739"
+  },
+  "ch6.pro.06": {
+   "url": "assets/voice/ch6.pro.06.m4a",
+   "seconds": 3.67,
+   "hash": "6e7fcced39b53a5a"
+  },
+  "ch6.pro.07": {
+   "url": "assets/voice/ch6.pro.07.m4a",
+   "seconds": 5.64,
+   "hash": "f2c74766fe48a2ef"
+  },
+  "ch6.pro.08": {
+   "url": "assets/voice/ch6.pro.08.m4a",
+   "seconds": 2.27,
+   "hash": "80edcfb8eb2f0ef6"
+  },
+  "ch6.pro.09": {
+   "url": "assets/voice/ch6.pro.09.m4a",
+   "seconds": 1.82,
+   "hash": "947159b4a389aa68"
+  },
+  "ch6.pro.10": {
+   "url": "assets/voice/ch6.pro.10.m4a",
+   "seconds": 9.4,
+   "hash": "c78bddea94273742"
+  },
+  "ch6.pro.11": {
+   "url": "assets/voice/ch6.pro.11.m4a",
+   "seconds": 6.36,
+   "hash": "397926efb57334f1"
+  },
+  "ch6.pro.12": {
+   "url": "assets/voice/ch6.pro.12.m4a",
+   "seconds": 6.76,
+   "hash": "256761d196330270"
+  },
+  "ch6.pro.13": {
+   "url": "assets/voice/ch6.pro.13.m4a",
+   "seconds": 5.31,
+   "hash": "559a77aad6776900"
+  },
+  "ch6.pro.14": {
+   "url": "assets/voice/ch6.pro.14.m4a",
+   "seconds": 4.33,
+   "hash": "3a46f36232ce5029"
+  },
+  "ch6.pro.15": {
+   "url": "assets/voice/ch6.pro.15.m4a",
+   "seconds": 9.11,
+   "hash": "68c024a2ece47223"
+  },
+  "ch6.pro.16": {
+   "url": "assets/voice/ch6.pro.16.m4a",
+   "seconds": 7.18,
+   "hash": "0d7960ad123bb8e2"
+  },
+  "ch6.pro.17": {
+   "url": "assets/voice/ch6.pro.17.m4a",
+   "seconds": 3.81,
+   "hash": "d9069efaf1330538"
+  },
+  "ch6.pro.18": {
+   "url": "assets/voice/ch6.pro.18.m4a",
+   "seconds": 3.6,
+   "hash": "8569589aed0df2bc"
+  },
+  "ch6.pro.19": {
+   "url": "assets/voice/ch6.pro.19.m4a",
+   "seconds": 4.87,
+   "hash": "af7db470f7d9c3a3"
+  },
+  "ch6.pro.20": {
+   "url": "assets/voice/ch6.pro.20.m4a",
+   "seconds": 9.27,
+   "hash": "a643652c09c7616c"
+  },
+  "ch6.s1.b01": {
+   "url": "assets/voice/ch6.s1.b01.m4a",
+   "seconds": 4.32,
+   "hash": "3620ffdb228b3dea"
+  },
+  "ch6.s1.b02": {
+   "url": "assets/voice/ch6.s1.b02.m4a",
+   "seconds": 3.3,
+   "hash": "64acf44095db9cae"
+  },
+  "ch6.s1.b03": {
+   "url": "assets/voice/ch6.s1.b03.m4a",
+   "seconds": 2.32,
+   "hash": "26b5141e9c46802f"
+  },
+  "ch6.s1.c01": {
+   "url": "assets/voice/ch6.s1.c01.m4a",
+   "seconds": 9.32,
+   "hash": "bc0a668a78fb0088"
+  },
+  "ch6.s1.c02": {
+   "url": "assets/voice/ch6.s1.c02.m4a",
+   "seconds": 4.9,
+   "hash": "a9a42ea4e36060eb"
+  },
+  "ch6.s1.c03": {
+   "url": "assets/voice/ch6.s1.c03.m4a",
+   "seconds": 10.31,
+   "hash": "00443a20408cf17f"
+  },
+  "ch6.s1.c04": {
+   "url": "assets/voice/ch6.s1.c04.m4a",
+   "seconds": 7.16,
+   "hash": "6af45c6ed0d477e0"
+  },
+  "ch6.s1.c05": {
+   "url": "assets/voice/ch6.s1.c05.m4a",
+   "seconds": 11.13,
+   "hash": "b9cba1944f20aee9"
+  },
+  "ch6.s1.c06": {
+   "url": "assets/voice/ch6.s1.c06.m4a",
+   "seconds": 6.38,
+   "hash": "ea4dc3fe8d75e96d"
+  },
+  "ch6.s1.c07": {
+   "url": "assets/voice/ch6.s1.c07.m4a",
+   "seconds": 9.68,
+   "hash": "52b9c17c5fed5853"
+  },
+  "ch6.s1.c08": {
+   "url": "assets/voice/ch6.s1.c08.m4a",
+   "seconds": 7.59,
+   "hash": "9a376dcd7ac7390f"
+  },
+  "ch6.s1.c09": {
+   "url": "assets/voice/ch6.s1.c09.m4a",
+   "seconds": 5.94,
+   "hash": "921ac7d0238c9762"
+  },
+  "ch6.s1.c10": {
+   "url": "assets/voice/ch6.s1.c10.m4a",
+   "seconds": 3.35,
+   "hash": "78eaf2016aefbaeb"
+  },
+  "ch6.s1.c11": {
+   "url": "assets/voice/ch6.s1.c11.m4a",
+   "seconds": 5.11,
+   "hash": "e13ebf0002b02e76"
+  },
+  "ch6.s1.c12": {
+   "url": "assets/voice/ch6.s1.c12.m4a",
+   "seconds": 1.24,
+   "hash": "ff0283dea2e82762"
+  },
+  "ch6.s1.c13": {
+   "url": "assets/voice/ch6.s1.c13.m4a",
+   "seconds": 7.18,
+   "hash": "b40af2a15e0490a6"
+  },
+  "ch6.s1.c14": {
+   "url": "assets/voice/ch6.s1.c14.m4a",
+   "seconds": 5.61,
+   "hash": "c081107afcacc291"
+  },
+  "ch6.s1.c15": {
+   "url": "assets/voice/ch6.s1.c15.m4a",
+   "seconds": 6.88,
+   "hash": "ec5f049cc0e35288"
+  },
+  "ch6.s1.c16": {
+   "url": "assets/voice/ch6.s1.c16.m4a",
+   "seconds": 9.49,
+   "hash": "78a7552a971ab697"
+  },
+  "ch6.s1.c17": {
+   "url": "assets/voice/ch6.s1.c17.m4a",
+   "seconds": 4.43,
+   "hash": "81fcd4a5d6ae0345"
+  },
+  "ch6.s1.c18": {
+   "url": "assets/voice/ch6.s1.c18.m4a",
+   "seconds": 10.05,
+   "hash": "35a039e17bd57746"
+  },
+  "ch6.s1.c19": {
+   "url": "assets/voice/ch6.s1.c19.m4a",
+   "seconds": 13.1,
+   "hash": "eddf57f5d4ca7370"
+  },
+  "ch6.s1.c20": {
+   "url": "assets/voice/ch6.s1.c20.m4a",
+   "seconds": 2.56,
+   "hash": "fd0b6ea19d24b7a7"
+  },
+  "ch6.s1.c21": {
+   "url": "assets/voice/ch6.s1.c21.m4a",
+   "seconds": 5.43,
+   "hash": "34bfd14e048fdb17"
+  },
+  "ch6.s1.c22": {
+   "url": "assets/voice/ch6.s1.c22.m4a",
+   "seconds": 3.85,
+   "hash": "39b805a9fa95a77a"
+  },
+  "ch6.s1.c23": {
+   "url": "assets/voice/ch6.s1.c23.m4a",
+   "seconds": 8.69,
+   "hash": "fae32ff19d6dfbd0"
+  },
+  "ch6.s1.c24": {
+   "url": "assets/voice/ch6.s1.c24.m4a",
+   "seconds": 2.87,
+   "hash": "1babf2fe0dffe860"
+  },
+  "ch6.s1.c25": {
+   "url": "assets/voice/ch6.s1.c25.m4a",
+   "seconds": 3.04,
+   "hash": "9ab793426a46513c"
+  },
+  "ch6.s1.c26": {
+   "url": "assets/voice/ch6.s1.c26.m4a",
+   "seconds": 1.37,
+   "hash": "5da1b3ab91507eba"
+  },
+  "ch6.s1.c27": {
+   "url": "assets/voice/ch6.s1.c27.m4a",
+   "seconds": 6.85,
+   "hash": "61aaf274b596277f"
+  },
+  "ch6.s1.c28": {
+   "url": "assets/voice/ch6.s1.c28.m4a",
+   "seconds": 4.13,
+   "hash": "119b542eb16ced97"
+  },
+  "ch6.s1.c29": {
+   "url": "assets/voice/ch6.s1.c29.m4a",
+   "seconds": 10.8,
+   "hash": "45196e7b620665b7"
+  },
+  "ch6.s2.b01": {
+   "url": "assets/voice/ch6.s2.b01.m4a",
+   "seconds": 3.41,
+   "hash": "a211c380ed261f19"
+  },
+  "ch6.s2.b02": {
+   "url": "assets/voice/ch6.s2.b02.m4a",
+   "seconds": 3,
+   "hash": "bda546d947e2ade3"
+  },
+  "ch6.s2.b03": {
+   "url": "assets/voice/ch6.s2.b03.m4a",
+   "seconds": 2.28,
+   "hash": "22aa9dc2771c87d5"
+  },
+  "ch6.s2.c01": {
+   "url": "assets/voice/ch6.s2.c01.m4a",
+   "seconds": 10.9,
+   "hash": "ab55b106e58e3a13"
+  },
+  "ch6.s2.c02": {
+   "url": "assets/voice/ch6.s2.c02.m4a",
+   "seconds": 9.15,
+   "hash": "b0049c83809e3f8e"
+  },
+  "ch6.s2.c03": {
+   "url": "assets/voice/ch6.s2.c03.m4a",
+   "seconds": 8.93,
+   "hash": "9ad8924b8e626b9a"
+  },
+  "ch6.s2.c04": {
+   "url": "assets/voice/ch6.s2.c04.m4a",
+   "seconds": 7.89,
+   "hash": "9676b38a5ceb7c0c"
+  },
+  "ch6.s2.c05": {
+   "url": "assets/voice/ch6.s2.c05.m4a",
+   "seconds": 3.69,
+   "hash": "715ad12b5892087c"
+  },
+  "ch6.s2.c06": {
+   "url": "assets/voice/ch6.s2.c06.m4a",
+   "seconds": 9.62,
+   "hash": "bc1b6486fa3535c7"
+  },
+  "ch6.s2.c07": {
+   "url": "assets/voice/ch6.s2.c07.m4a",
+   "seconds": 6.9,
+   "hash": "f9928332d62b8520"
+  },
+  "ch6.s2.c08": {
+   "url": "assets/voice/ch6.s2.c08.m4a",
+   "seconds": 4,
+   "hash": "75ee62138c037657"
+  },
+  "ch6.s2.c09": {
+   "url": "assets/voice/ch6.s2.c09.m4a",
+   "seconds": 6.77,
+   "hash": "fc9990482cbaa2b1"
+  },
+  "ch6.s2.c10": {
+   "url": "assets/voice/ch6.s2.c10.m4a",
+   "seconds": 5.74,
+   "hash": "3b8786ceb95c4a3f"
+  },
+  "ch6.s2.c11": {
+   "url": "assets/voice/ch6.s2.c11.m4a",
+   "seconds": 9.32,
+   "hash": "f68559a4004926da"
+  },
+  "ch6.s2.c12": {
+   "url": "assets/voice/ch6.s2.c12.m4a",
+   "seconds": 8.84,
+   "hash": "210567c952d474d6"
+  },
+  "ch6.s2.c13": {
+   "url": "assets/voice/ch6.s2.c13.m4a",
+   "seconds": 8.75,
+   "hash": "bdedb96019770dfa"
+  },
+  "ch6.s2.c14": {
+   "url": "assets/voice/ch6.s2.c14.m4a",
+   "seconds": 5.65,
+   "hash": "0148d0d078ff9955"
+  },
+  "ch6.s2.c15": {
+   "url": "assets/voice/ch6.s2.c15.m4a",
+   "seconds": 8.03,
+   "hash": "2d5cce158b77b4c0"
+  },
+  "ch6.s2.c16": {
+   "url": "assets/voice/ch6.s2.c16.m4a",
+   "seconds": 7.83,
+   "hash": "ce1c89eb55cdaa19"
+  },
+  "ch6.s2.c17": {
+   "url": "assets/voice/ch6.s2.c17.m4a",
+   "seconds": 5.16,
+   "hash": "2c5590775da46abf"
+  },
+  "ch6.s2.c18": {
+   "url": "assets/voice/ch6.s2.c18.m4a",
+   "seconds": 6.29,
+   "hash": "533700d16424c708"
+  },
+  "ch6.s2.c19": {
+   "url": "assets/voice/ch6.s2.c19.m4a",
+   "seconds": 4.73,
+   "hash": "3876e3656d174073"
+  },
+  "ch6.s2.c20": {
+   "url": "assets/voice/ch6.s2.c20.m4a",
+   "seconds": 8.87,
+   "hash": "9a0d3b54767d9ae0"
+  },
+  "ch6.s2.c21": {
+   "url": "assets/voice/ch6.s2.c21.m4a",
+   "seconds": 8.69,
+   "hash": "c82d455a490c45d5"
+  },
+  "ch6.s2.c22": {
+   "url": "assets/voice/ch6.s2.c22.m4a",
+   "seconds": 7.41,
+   "hash": "e908be8bf55ca7f8"
+  },
+  "ch6.s2.c23": {
+   "url": "assets/voice/ch6.s2.c23.m4a",
+   "seconds": 4.18,
+   "hash": "58b348c9775b3b5b"
+  },
+  "ch6.s2.c24": {
+   "url": "assets/voice/ch6.s2.c24.m4a",
+   "seconds": 5.32,
+   "hash": "ce52e61ab20fcac2"
+  },
+  "ch6.s2.c25": {
+   "url": "assets/voice/ch6.s2.c25.m4a",
+   "seconds": 7.36,
+   "hash": "161804e7234ec75f"
+  },
+  "ch6.s2.c26": {
+   "url": "assets/voice/ch6.s2.c26.m4a",
+   "seconds": 9.01,
+   "hash": "05c48bab913d772a"
+  },
+  "ch6.s3.b01": {
+   "url": "assets/voice/ch6.s3.b01.m4a",
+   "seconds": 2.53,
+   "hash": "5ab43313c2178fba"
+  },
+  "ch6.s3.b02": {
+   "url": "assets/voice/ch6.s3.b02.m4a",
+   "seconds": 1.57,
+   "hash": "188ccb28e78d7c09"
+  },
+  "ch6.s3.b03": {
+   "url": "assets/voice/ch6.s3.b03.m4a",
+   "seconds": 3.17,
+   "hash": "c46b80d57a2b692d"
+  },
+  "ch6.s3.c01": {
+   "url": "assets/voice/ch6.s3.c01.m4a",
+   "seconds": 10.38,
+   "hash": "423361e4e6f1b53d"
+  },
+  "ch6.s3.c02": {
+   "url": "assets/voice/ch6.s3.c02.m4a",
+   "seconds": 5.28,
+   "hash": "44052ea333bf1c45"
+  },
+  "ch6.s3.c03": {
+   "url": "assets/voice/ch6.s3.c03.m4a",
+   "seconds": 8.2,
+   "hash": "3127f60cc5260d33"
+  },
+  "ch6.s3.c04": {
+   "url": "assets/voice/ch6.s3.c04.m4a",
+   "seconds": 0.61,
+   "hash": "c2a527ded5d0e886"
+  },
+  "ch6.s3.c05": {
+   "url": "assets/voice/ch6.s3.c05.m4a",
+   "seconds": 5.87,
+   "hash": "0911c6cac468c0d2"
+  },
+  "ch6.s3.c06": {
+   "url": "assets/voice/ch6.s3.c06.m4a",
+   "seconds": 7.3,
+   "hash": "60ddbaf360d11bef"
+  },
+  "ch6.s3.c07": {
+   "url": "assets/voice/ch6.s3.c07.m4a",
+   "seconds": 8.9,
+   "hash": "d8094cfc285a6e32"
+  },
+  "ch6.s3.c08": {
+   "url": "assets/voice/ch6.s3.c08.m4a",
+   "seconds": 7.19,
+   "hash": "2a4c9773ca65b319"
+  },
+  "ch6.s3.c09": {
+   "url": "assets/voice/ch6.s3.c09.m4a",
+   "seconds": 4.7,
+   "hash": "9d6cf92ddcaa1aba"
+  },
+  "ch6.s3.c10": {
+   "url": "assets/voice/ch6.s3.c10.m4a",
+   "seconds": 10.25,
+   "hash": "ccde7ddfd243b744"
+  },
+  "ch6.s3.c11": {
+   "url": "assets/voice/ch6.s3.c11.m4a",
+   "seconds": 8.64,
+   "hash": "602f8002de3c1952"
+  },
+  "ch6.s3.c12": {
+   "url": "assets/voice/ch6.s3.c12.m4a",
+   "seconds": 3.65,
+   "hash": "df1f2678e20e26ba"
+  },
+  "ch6.s3.c13": {
+   "url": "assets/voice/ch6.s3.c13.m4a",
+   "seconds": 6.84,
+   "hash": "507cd8fe6afa215f"
+  },
+  "ch6.s3.c14": {
+   "url": "assets/voice/ch6.s3.c14.m4a",
+   "seconds": 9.37,
+   "hash": "3119f283a64cf86c"
+  },
+  "ch6.s3.c15": {
+   "url": "assets/voice/ch6.s3.c15.m4a",
+   "seconds": 9.64,
+   "hash": "53ab93ea2fa49322"
+  },
+  "ch6.s3.c16": {
+   "url": "assets/voice/ch6.s3.c16.m4a",
+   "seconds": 6.77,
+   "hash": "0b01511b10c7f732"
+  },
+  "ch6.s3.c17": {
+   "url": "assets/voice/ch6.s3.c17.m4a",
+   "seconds": 9.97,
+   "hash": "430d65398cf480d8"
+  },
+  "ch6.s3.c18": {
+   "url": "assets/voice/ch6.s3.c18.m4a",
+   "seconds": 8.97,
+   "hash": "c84b6ba7fdde6c8a"
+  },
+  "ch6.s3.c19": {
+   "url": "assets/voice/ch6.s3.c19.m4a",
+   "seconds": 9.79,
+   "hash": "9aad3701d62e58a6"
+  },
+  "ch6.s3.c20": {
+   "url": "assets/voice/ch6.s3.c20.m4a",
+   "seconds": 0.67,
+   "hash": "34f4f81d4a9f889c"
+  },
+  "ch6.s3.c21": {
+   "url": "assets/voice/ch6.s3.c21.m4a",
+   "seconds": 10.8,
+   "hash": "13900ea13592bd81"
+  },
+  "ch6.s3.c22": {
+   "url": "assets/voice/ch6.s3.c22.m4a",
+   "seconds": 8.54,
+   "hash": "29c01f22e21acbc6"
+  },
+  "ch6.s3.c23": {
+   "url": "assets/voice/ch6.s3.c23.m4a",
+   "seconds": 2.14,
+   "hash": "5aa86d2ca12e8b16"
+  },
+  "ch6.s3.c24": {
+   "url": "assets/voice/ch6.s3.c24.m4a",
+   "seconds": 8.68,
+   "hash": "8e64454d37307715"
+  },
+  "ch6.s3.c25": {
+   "url": "assets/voice/ch6.s3.c25.m4a",
+   "seconds": 9.11,
+   "hash": "b41eb640988671a6"
+  },
+  "ch6.s3.c26": {
+   "url": "assets/voice/ch6.s3.c26.m4a",
+   "seconds": 8.21,
+   "hash": "362138b7c501d3ec"
+  },
+  "ch6.s4.b01": {
+   "url": "assets/voice/ch6.s4.b01.m4a",
+   "seconds": 3.51,
+   "hash": "a13e0a73b6400ecd"
+  },
+  "ch6.s4.b02": {
+   "url": "assets/voice/ch6.s4.b02.m4a",
+   "seconds": 4.06,
+   "hash": "01f92f20aaf09b51"
+  },
+  "ch6.s4.b03": {
+   "url": "assets/voice/ch6.s4.b03.m4a",
+   "seconds": 2.07,
+   "hash": "756f6d7ac0d6eac1"
+  },
+  "ch6.s4.c01": {
+   "url": "assets/voice/ch6.s4.c01.m4a",
+   "seconds": 9.6,
+   "hash": "6809ba23edad0c7f"
+  },
+  "ch6.s4.c02": {
+   "url": "assets/voice/ch6.s4.c02.m4a",
+   "seconds": 9.33,
+   "hash": "8fc047cef64616b7"
+  },
+  "ch6.s4.c03": {
+   "url": "assets/voice/ch6.s4.c03.m4a",
+   "seconds": 12.06,
+   "hash": "bd48cdaf5cfe5084"
+  },
+  "ch6.s4.c04": {
+   "url": "assets/voice/ch6.s4.c04.m4a",
+   "seconds": 0.68,
+   "hash": "8b24a84612b37ff4"
+  },
+  "ch6.s4.c05": {
+   "url": "assets/voice/ch6.s4.c05.m4a",
+   "seconds": 9.72,
+   "hash": "cab7743c2c4876aa"
+  },
+  "ch6.s4.c06": {
+   "url": "assets/voice/ch6.s4.c06.m4a",
+   "seconds": 10.83,
+   "hash": "a0f41f74b0c13716"
+  },
+  "ch6.s4.c07": {
+   "url": "assets/voice/ch6.s4.c07.m4a",
+   "seconds": 9.17,
+   "hash": "02bbed1deb5b57c2"
+  },
+  "ch6.s4.c08": {
+   "url": "assets/voice/ch6.s4.c08.m4a",
+   "seconds": 11.02,
+   "hash": "1205a51d4aeff387"
+  },
+  "ch6.s4.c09": {
+   "url": "assets/voice/ch6.s4.c09.m4a",
+   "seconds": 11.38,
+   "hash": "49a956d24de89109"
+  },
+  "ch6.s4.c10": {
+   "url": "assets/voice/ch6.s4.c10.m4a",
+   "seconds": 3.23,
+   "hash": "8253a72cdd539648"
+  },
+  "ch6.s4.c11": {
+   "url": "assets/voice/ch6.s4.c11.m4a",
+   "seconds": 9.6,
+   "hash": "5666dccc202edb1d"
+  },
+  "ch6.s4.c12": {
+   "url": "assets/voice/ch6.s4.c12.m4a",
+   "seconds": 10.53,
+   "hash": "c0b48e4d719573fa"
+  },
+  "ch6.s4.c13": {
+   "url": "assets/voice/ch6.s4.c13.m4a",
+   "seconds": 5.73,
+   "hash": "ca0edaaea6cec3a7"
+  },
+  "ch6.s4.c14": {
+   "url": "assets/voice/ch6.s4.c14.m4a",
+   "seconds": 4.72,
+   "hash": "6c92bcfa1b960365"
+  },
+  "ch6.s4.c15": {
+   "url": "assets/voice/ch6.s4.c15.m4a",
+   "seconds": 7.38,
+   "hash": "686edc1221e4a824"
+  },
+  "ch6.s4.c16": {
+   "url": "assets/voice/ch6.s4.c16.m4a",
+   "seconds": 6.49,
+   "hash": "e707a2c99e4f5483"
+  },
+  "ch6.s4.c17": {
+   "url": "assets/voice/ch6.s4.c17.m4a",
+   "seconds": 3.04,
+   "hash": "85d17f1c39dab922"
+  },
+  "ch6.s4.c18": {
+   "url": "assets/voice/ch6.s4.c18.m4a",
+   "seconds": 11.77,
+   "hash": "bda050b9eb5cfdda"
+  },
+  "ch6.s4.c19": {
+   "url": "assets/voice/ch6.s4.c19.m4a",
+   "seconds": 3.63,
+   "hash": "b2de732b0c3d00ae"
+  },
+  "ch6.s4.c20": {
+   "url": "assets/voice/ch6.s4.c20.m4a",
+   "seconds": 12.09,
+   "hash": "337dbc8bfd1d0857"
+  },
+  "ch6.s4.c21": {
+   "url": "assets/voice/ch6.s4.c21.m4a",
+   "seconds": 2.16,
+   "hash": "3c57387ab610df78"
+  },
+  "ch6.s4.c22": {
+   "url": "assets/voice/ch6.s4.c22.m4a",
+   "seconds": 10.58,
+   "hash": "ba7bf16c396d896a"
+  },
+  "ch6.s4.c23": {
+   "url": "assets/voice/ch6.s4.c23.m4a",
+   "seconds": 6.89,
+   "hash": "3f9f28bcdd6e5c62"
+  },
+  "ch6.s4.c24": {
+   "url": "assets/voice/ch6.s4.c24.m4a",
+   "seconds": 9.75,
+   "hash": "6f3d4d4150b59a21"
+  },
+  "ch6.s4.c25": {
+   "url": "assets/voice/ch6.s4.c25.m4a",
+   "seconds": 4.01,
+   "hash": "e59ed563e8fd7836"
+  },
+  "ch6.s4.c26": {
+   "url": "assets/voice/ch6.s4.c26.m4a",
+   "seconds": 7.27,
+   "hash": "c549d3e80ecc7dc5"
+  },
+  "ch6.s4.c27": {
+   "url": "assets/voice/ch6.s4.c27.m4a",
+   "seconds": 2.62,
+   "hash": "97db293c04b27f4b"
+  },
+  "ch6.s4.c28": {
+   "url": "assets/voice/ch6.s4.c28.m4a",
+   "seconds": 10.06,
+   "hash": "c293b304f94f147f"
+  },
+  "ch6.s4.c29": {
+   "url": "assets/voice/ch6.s4.c29.m4a",
+   "seconds": 7.64,
+   "hash": "0dbdb4e363559c4b"
+  },
+  "ch6.s5.b01": {
+   "url": "assets/voice/ch6.s5.b01.m4a",
+   "seconds": 3,
+   "hash": "f15f59965b809c4b"
+  },
+  "ch6.s5.b02": {
+   "url": "assets/voice/ch6.s5.b02.m4a",
+   "seconds": 2.76,
+   "hash": "3c7e8444f1a5b697"
+  },
+  "ch6.s5.b03": {
+   "url": "assets/voice/ch6.s5.b03.m4a",
+   "seconds": 3.46,
+   "hash": "af97d6c6c279576a"
+  },
+  "ch6.s5.c01": {
+   "url": "assets/voice/ch6.s5.c01.m4a",
+   "seconds": 9.44,
+   "hash": "7a5e0957b8caaa9d"
+  },
+  "ch6.s5.c02": {
+   "url": "assets/voice/ch6.s5.c02.m4a",
+   "seconds": 8.02,
+   "hash": "c33a952a0ae8d251"
+  },
+  "ch6.s5.c03": {
+   "url": "assets/voice/ch6.s5.c03.m4a",
+   "seconds": 9.41,
+   "hash": "696bb30321fa5993"
+  },
+  "ch6.s5.c04": {
+   "url": "assets/voice/ch6.s5.c04.m4a",
+   "seconds": 3.69,
+   "hash": "981462c05ba24b64"
+  },
+  "ch6.s5.c05": {
+   "url": "assets/voice/ch6.s5.c05.m4a",
+   "seconds": 9.31,
+   "hash": "1583b62c873c8536"
+  },
+  "ch6.s5.c06": {
+   "url": "assets/voice/ch6.s5.c06.m4a",
+   "seconds": 10.37,
+   "hash": "e7e749d76ecd8aaf"
+  },
+  "ch6.s5.c07": {
+   "url": "assets/voice/ch6.s5.c07.m4a",
+   "seconds": 1.9,
+   "hash": "ba598f1406bacfd3"
+  },
+  "ch6.s5.c08": {
+   "url": "assets/voice/ch6.s5.c08.m4a",
+   "seconds": 4.41,
+   "hash": "625cc1055c0e63e5"
+  },
+  "ch6.s5.c09": {
+   "url": "assets/voice/ch6.s5.c09.m4a",
+   "seconds": 8.34,
+   "hash": "2911be43ece120c7"
+  },
+  "ch6.s5.c10": {
+   "url": "assets/voice/ch6.s5.c10.m4a",
+   "seconds": 9.02,
+   "hash": "2265008caa562ba8"
+  },
+  "ch6.s5.c11": {
+   "url": "assets/voice/ch6.s5.c11.m4a",
+   "seconds": 9.94,
+   "hash": "6be17c81637abde0"
+  },
+  "ch6.s5.c12": {
+   "url": "assets/voice/ch6.s5.c12.m4a",
+   "seconds": 3.53,
+   "hash": "cf17dbf12e5c9ebc"
+  },
+  "ch6.s5.c13": {
+   "url": "assets/voice/ch6.s5.c13.m4a",
+   "seconds": 12.24,
+   "hash": "eb773f332bbecc9c"
+  },
+  "ch6.s5.c14": {
+   "url": "assets/voice/ch6.s5.c14.m4a",
+   "seconds": 5.51,
+   "hash": "b4d57d1d9938c0de"
+  },
+  "ch6.s5.c15": {
+   "url": "assets/voice/ch6.s5.c15.m4a",
+   "seconds": 12,
+   "hash": "a30d042ca54fda26"
+  },
+  "ch6.s5.c16": {
+   "url": "assets/voice/ch6.s5.c16.m4a",
+   "seconds": 5.44,
+   "hash": "3f31688060f5c6ed"
+  },
+  "ch6.s5.c17": {
+   "url": "assets/voice/ch6.s5.c17.m4a",
+   "seconds": 6.73,
+   "hash": "a878d7e270eac835"
+  },
+  "ch6.s5.c18": {
+   "url": "assets/voice/ch6.s5.c18.m4a",
+   "seconds": 9.52,
+   "hash": "aa7fafca88f89dda"
+  },
+  "ch6.s5.c19": {
+   "url": "assets/voice/ch6.s5.c19.m4a",
+   "seconds": 7.57,
+   "hash": "64b3b728e9bea2a9"
+  },
+  "ch6.s5.c20": {
+   "url": "assets/voice/ch6.s5.c20.m4a",
+   "seconds": 9.03,
+   "hash": "9aec78ef709d4064"
+  },
+  "ch6.s5.c21": {
+   "url": "assets/voice/ch6.s5.c21.m4a",
+   "seconds": 10.95,
+   "hash": "73afb2262f0615b5"
+  },
+  "ch6.s5.c22": {
+   "url": "assets/voice/ch6.s5.c22.m4a",
+   "seconds": 3.86,
+   "hash": "e50dd2a27195a0d0"
+  },
+  "ch6.s5.c23": {
+   "url": "assets/voice/ch6.s5.c23.m4a",
+   "seconds": 9.67,
+   "hash": "307b971e136c00ca"
+  },
+  "ch6.s5.c24": {
+   "url": "assets/voice/ch6.s5.c24.m4a",
+   "seconds": 10.14,
+   "hash": "71dc65ff6cde36eb"
+  },
+  "ch6.s5.c25": {
+   "url": "assets/voice/ch6.s5.c25.m4a",
+   "seconds": 12.66,
+   "hash": "5c0631961cfc22ab"
+  },
+  "ch6.s5.c26": {
+   "url": "assets/voice/ch6.s5.c26.m4a",
+   "seconds": 2.94,
+   "hash": "2d94a404bfe3c014"
+  },
+  "ch6.s5.c27": {
+   "url": "assets/voice/ch6.s5.c27.m4a",
+   "seconds": 7.54,
+   "hash": "8a14a2c74dd2974a"
+  },
+  "ch6.s5.c28": {
+   "url": "assets/voice/ch6.s5.c28.m4a",
+   "seconds": 5.1,
+   "hash": "356649bc59409d6b"
+  },
+  "ch6.s5.c29": {
+   "url": "assets/voice/ch6.s5.c29.m4a",
+   "seconds": 9.76,
+   "hash": "1f3ed390de842e25"
+  },
+  "ch6.s6.b01": {
+   "url": "assets/voice/ch6.s6.b01.m4a",
+   "seconds": 4.5,
+   "hash": "61bf5a1f4f1554ec"
+  },
+  "ch6.s6.b02": {
+   "url": "assets/voice/ch6.s6.b02.m4a",
+   "seconds": 3.5,
+   "hash": "df233eb441265b1a"
+  },
+  "ch6.s6.b03": {
+   "url": "assets/voice/ch6.s6.b03.m4a",
+   "seconds": 2,
+   "hash": "24b35b7624c97716"
+  },
+  "ch6.s6.c01": {
+   "url": "assets/voice/ch6.s6.c01.m4a",
+   "seconds": 8.71,
+   "hash": "cd8f3a241a8dd17b"
+  },
+  "ch6.s6.c02": {
+   "url": "assets/voice/ch6.s6.c02.m4a",
+   "seconds": 7.14,
+   "hash": "b1af142ae9a04f35"
+  },
+  "ch6.s6.c03": {
+   "url": "assets/voice/ch6.s6.c03.m4a",
+   "seconds": 9.4,
+   "hash": "3f55c695d882c81f"
+  },
+  "ch6.s6.c04": {
+   "url": "assets/voice/ch6.s6.c04.m4a",
+   "seconds": 5.45,
+   "hash": "4753a1e3ff39e092"
+  },
+  "ch6.s6.c05": {
+   "url": "assets/voice/ch6.s6.c05.m4a",
+   "seconds": 10.66,
+   "hash": "8834e055573f5b4c"
+  },
+  "ch6.s6.c06": {
+   "url": "assets/voice/ch6.s6.c06.m4a",
+   "seconds": 7.89,
+   "hash": "5691e4d205b6f150"
+  },
+  "ch6.s6.c07": {
+   "url": "assets/voice/ch6.s6.c07.m4a",
+   "seconds": 6.77,
+   "hash": "42345cda0cfce175"
+  },
+  "ch6.s6.c08": {
+   "url": "assets/voice/ch6.s6.c08.m4a",
+   "seconds": 2.89,
+   "hash": "9a5cc1f8c474a609"
+  },
+  "ch6.s6.c09": {
+   "url": "assets/voice/ch6.s6.c09.m4a",
+   "seconds": 5.43,
+   "hash": "172fc4b411a9264a"
+  },
+  "ch6.s6.c10": {
+   "url": "assets/voice/ch6.s6.c10.m4a",
+   "seconds": 9.29,
+   "hash": "61933a0f0fd54c34"
+  },
+  "ch6.s6.c11": {
+   "url": "assets/voice/ch6.s6.c11.m4a",
+   "seconds": 8.13,
+   "hash": "dd0a45c847a19047"
+  },
+  "ch6.s6.c12": {
+   "url": "assets/voice/ch6.s6.c12.m4a",
+   "seconds": 3.64,
+   "hash": "8c167c11d1e5c9ad"
+  },
+  "ch6.s6.c13": {
+   "url": "assets/voice/ch6.s6.c13.m4a",
+   "seconds": 7.87,
+   "hash": "a0d305712e15a386"
+  },
+  "ch6.s6.c14": {
+   "url": "assets/voice/ch6.s6.c14.m4a",
+   "seconds": 11.23,
+   "hash": "cea6e9694543e517"
+  },
+  "ch6.s6.c15": {
+   "url": "assets/voice/ch6.s6.c15.m4a",
+   "seconds": 5.79,
+   "hash": "4459e6e5133eeb28"
+  },
+  "ch6.s6.c16": {
+   "url": "assets/voice/ch6.s6.c16.m4a",
+   "seconds": 1.72,
+   "hash": "6cd4c881a9b51215"
+  },
+  "ch6.s6.c17": {
+   "url": "assets/voice/ch6.s6.c17.m4a",
+   "seconds": 1.45,
+   "hash": "069262c5f4076846"
+  },
+  "ch6.s6.c18": {
+   "url": "assets/voice/ch6.s6.c18.m4a",
+   "seconds": 9.83,
+   "hash": "6b7b4a9e0ef466c9"
+  },
+  "ch6.s6.c19": {
+   "url": "assets/voice/ch6.s6.c19.m4a",
+   "seconds": 8.44,
+   "hash": "0347c2441b1b0375"
+  },
+  "ch6.s6.c20": {
+   "url": "assets/voice/ch6.s6.c20.m4a",
+   "seconds": 6.08,
+   "hash": "88e2c5297296b527"
+  },
+  "ch6.s6.c21": {
+   "url": "assets/voice/ch6.s6.c21.m4a",
+   "seconds": 8.92,
+   "hash": "04a3087a37a81c8b"
+  },
+  "ch6.s6.c22": {
+   "url": "assets/voice/ch6.s6.c22.m4a",
+   "seconds": 1.75,
+   "hash": "ecf30dd22bcda2b7"
+  },
+  "ch6.s6.c23": {
+   "url": "assets/voice/ch6.s6.c23.m4a",
+   "seconds": 5.64,
+   "hash": "ed3e6dd851d634e9"
+  },
+  "ch6.s6.c24": {
+   "url": "assets/voice/ch6.s6.c24.m4a",
+   "seconds": 11.2,
+   "hash": "b715520567e36273"
+  },
+  "ch6.s6.c25": {
+   "url": "assets/voice/ch6.s6.c25.m4a",
+   "seconds": 10.98,
+   "hash": "4a3b95961679a456"
+  },
+  "ch6.s6.c26": {
+   "url": "assets/voice/ch6.s6.c26.m4a",
+   "seconds": 1.79,
+   "hash": "8f33940b65ffd2cf"
+  },
+  "ch6.s6.c27": {
+   "url": "assets/voice/ch6.s6.c27.m4a",
+   "seconds": 1.86,
+   "hash": "ad66a66a765a7878"
+  },
+  "ch6.s6.c28": {
+   "url": "assets/voice/ch6.s6.c28.m4a",
+   "seconds": 8.13,
+   "hash": "08a0e69c3e7a47de"
+  },
+  "ch6.s7.b01": {
+   "url": "assets/voice/ch6.s7.b01.m4a",
+   "seconds": 3.4,
+   "hash": "213f1d76a45eaff8"
+  },
+  "ch6.s7.b02": {
+   "url": "assets/voice/ch6.s7.b02.m4a",
+   "seconds": 2.24,
+   "hash": "a3357a79426d2fb2"
+  },
+  "ch6.s7.b03": {
+   "url": "assets/voice/ch6.s7.b03.m4a",
+   "seconds": 3.92,
+   "hash": "fba97709755e0968"
+  },
+  "ch6.s7.c01": {
+   "url": "assets/voice/ch6.s7.c01.m4a",
+   "seconds": 10.85,
+   "hash": "486bdd06e736dead"
+  },
+  "ch6.s7.c02": {
+   "url": "assets/voice/ch6.s7.c02.m4a",
+   "seconds": 6.89,
+   "hash": "1d007129eb1bcf41"
+  },
+  "ch6.s7.c03": {
+   "url": "assets/voice/ch6.s7.c03.m4a",
+   "seconds": 10.25,
+   "hash": "55d5ef735d832a0b"
+  },
+  "ch6.s7.c04": {
+   "url": "assets/voice/ch6.s7.c04.m4a",
+   "seconds": 9.17,
+   "hash": "ea0c19fab67b2428"
+  },
+  "ch6.s7.c05": {
+   "url": "assets/voice/ch6.s7.c05.m4a",
+   "seconds": 11.2,
+   "hash": "3c7e5ab4817aafb7"
+  },
+  "ch6.s7.c06": {
+   "url": "assets/voice/ch6.s7.c06.m4a",
+   "seconds": 4.42,
+   "hash": "0735363beb16e721"
+  },
+  "ch6.s7.c07": {
+   "url": "assets/voice/ch6.s7.c07.m4a",
+   "seconds": 5.4,
+   "hash": "cc55c4d256e63179"
+  },
+  "ch6.s7.c08": {
+   "url": "assets/voice/ch6.s7.c08.m4a",
+   "seconds": 8.11,
+   "hash": "c308de0b6d0aad59"
+  },
+  "ch6.s7.c09": {
+   "url": "assets/voice/ch6.s7.c09.m4a",
+   "seconds": 7.13,
+   "hash": "30494de1dd74b8d6"
+  },
+  "ch6.s7.c10": {
+   "url": "assets/voice/ch6.s7.c10.m4a",
+   "seconds": 10.44,
+   "hash": "7ace5362a544f1a8"
+  },
+  "ch6.s7.c11": {
+   "url": "assets/voice/ch6.s7.c11.m4a",
+   "seconds": 3.53,
+   "hash": "19b99dfcc1045372"
+  },
+  "ch6.s7.c12": {
+   "url": "assets/voice/ch6.s7.c12.m4a",
+   "seconds": 9.47,
+   "hash": "a13faeea70592377"
+  },
+  "ch6.s7.c13": {
+   "url": "assets/voice/ch6.s7.c13.m4a",
+   "seconds": 8.4,
+   "hash": "5394e09d957353a8"
+  },
+  "ch6.s7.c14": {
+   "url": "assets/voice/ch6.s7.c14.m4a",
+   "seconds": 8.96,
+   "hash": "082c6fca16ea1d98"
+  },
+  "ch6.s7.c15": {
+   "url": "assets/voice/ch6.s7.c15.m4a",
+   "seconds": 6.13,
+   "hash": "a9a9732de6d125e6"
+  },
+  "ch6.s7.c16": {
+   "url": "assets/voice/ch6.s7.c16.m4a",
+   "seconds": 10.73,
+   "hash": "e3d50657b5a3e635"
+  },
+  "ch6.s7.c17": {
+   "url": "assets/voice/ch6.s7.c17.m4a",
+   "seconds": 9.33,
+   "hash": "3a47988dfb217470"
+  },
+  "ch6.s7.c18": {
+   "url": "assets/voice/ch6.s7.c18.m4a",
+   "seconds": 3.88,
+   "hash": "1d17a4e71744f069"
+  },
+  "ch6.s7.c19": {
+   "url": "assets/voice/ch6.s7.c19.m4a",
+   "seconds": 4.23,
+   "hash": "f7031881f3e431cf"
+  },
+  "ch6.s7.c20": {
+   "url": "assets/voice/ch6.s7.c20.m4a",
+   "seconds": 7.47,
+   "hash": "489370f0391c2419"
+  },
+  "ch6.s7.c21": {
+   "url": "assets/voice/ch6.s7.c21.m4a",
+   "seconds": 9.27,
+   "hash": "06bfc5a0754f88f3"
+  },
+  "ch6.s7.c22": {
+   "url": "assets/voice/ch6.s7.c22.m4a",
+   "seconds": 5.73,
+   "hash": "6ce21a37330cd4d7"
+  },
+  "ch6.s7.c23": {
+   "url": "assets/voice/ch6.s7.c23.m4a",
+   "seconds": 10.01,
+   "hash": "da042e0f7b37127b"
+  },
+  "ch6.s7.c24": {
+   "url": "assets/voice/ch6.s7.c24.m4a",
+   "seconds": 8.29,
+   "hash": "01750f03b1006ac3"
+  },
+  "ch6.s7.c25": {
+   "url": "assets/voice/ch6.s7.c25.m4a",
+   "seconds": 6.46,
+   "hash": "79d5ca280bfd0764"
+  },
+  "ch6.s7.c26": {
+   "url": "assets/voice/ch6.s7.c26.m4a",
+   "seconds": 8.9,
+   "hash": "b4d6a1a757e3a9bc"
+  },
+  "ch6.s7.c27": {
+   "url": "assets/voice/ch6.s7.c27.m4a",
+   "seconds": 5.62,
+   "hash": "1a1ffcc6a2c545e3"
+  },
+  "ch7.bark.aid.1": {
+   "url": "assets/voice/ch7.bark.aid.1.m4a",
+   "seconds": 3.11,
+   "hash": "c77586defd67584d"
+  },
+  "ch7.bark.aid.2": {
+   "url": "assets/voice/ch7.bark.aid.2.m4a",
+   "seconds": 3.37,
+   "hash": "07781e133fef23fe"
+  },
+  "ch7.bark.aid.3": {
+   "url": "assets/voice/ch7.bark.aid.3.m4a",
+   "seconds": 2.25,
+   "hash": "1e8fed279eebf02b"
+  },
+  "ch7.bark.aid.4": {
+   "url": "assets/voice/ch7.bark.aid.4.m4a",
+   "seconds": 2.57,
+   "hash": "13c83cb0ff9fa02f"
+  },
+  "ch7.bark.aid.5": {
+   "url": "assets/voice/ch7.bark.aid.5.m4a",
+   "seconds": 2.05,
+   "hash": "84689a390dc12b6b"
+  },
+  "ch7.bark.bumper.1": {
+   "url": "assets/voice/ch7.bark.bumper.1.m4a",
+   "seconds": 2.95,
+   "hash": "2ea867d4c3965b9c"
+  },
+  "ch7.bark.bumper.2": {
+   "url": "assets/voice/ch7.bark.bumper.2.m4a",
+   "seconds": 1.76,
+   "hash": "55c4d13881d6853a"
+  },
+  "ch7.bark.bumper.3": {
+   "url": "assets/voice/ch7.bark.bumper.3.m4a",
+   "seconds": 2.22,
+   "hash": "bb563f90196bd3df"
+  },
+  "ch7.bark.bumper.4": {
+   "url": "assets/voice/ch7.bark.bumper.4.m4a",
+   "seconds": 3.4,
+   "hash": "34d3073b5354b4ca"
+  },
+  "ch7.bark.bumper.5": {
+   "url": "assets/voice/ch7.bark.bumper.5.m4a",
+   "seconds": 3.13,
+   "hash": "0df0bafb7dda5782"
+  },
+  "ch7.bark.bust.1": {
+   "url": "assets/voice/ch7.bark.bust.1.m4a",
+   "seconds": 2.77,
+   "hash": "f92b707f659468e2"
+  },
+  "ch7.bark.bust.2": {
+   "url": "assets/voice/ch7.bark.bust.2.m4a",
+   "seconds": 1.96,
+   "hash": "e696343c1d525dda"
+  },
+  "ch7.bark.bust.3": {
+   "url": "assets/voice/ch7.bark.bust.3.m4a",
+   "seconds": 1.89,
+   "hash": "af19ec4e0037d9ec"
+  },
+  "ch7.bark.bust.4": {
+   "url": "assets/voice/ch7.bark.bust.4.m4a",
+   "seconds": 2.8,
+   "hash": "c9cbb19859de18e3"
+  },
+  "ch7.bark.bust.5": {
+   "url": "assets/voice/ch7.bark.bust.5.m4a",
+   "seconds": 3.05,
+   "hash": "328d0d6c7af3d2c4"
+  },
+  "ch7.bark.drain.1": {
+   "url": "assets/voice/ch7.bark.drain.1.m4a",
+   "seconds": 2.2,
+   "hash": "fc42c6264c2ab1a5"
+  },
+  "ch7.bark.drain.2": {
+   "url": "assets/voice/ch7.bark.drain.2.m4a",
+   "seconds": 3.14,
+   "hash": "bb5ad33d51d76a94"
+  },
+  "ch7.bark.drain.3": {
+   "url": "assets/voice/ch7.bark.drain.3.m4a",
+   "seconds": 2.44,
+   "hash": "6f74cf094238c4b2"
+  },
+  "ch7.bark.drain.4": {
+   "url": "assets/voice/ch7.bark.drain.4.m4a",
+   "seconds": 1.6,
+   "hash": "a878677765f9905c"
+  },
+  "ch7.bark.drain.5": {
+   "url": "assets/voice/ch7.bark.drain.5.m4a",
+   "seconds": 3.05,
+   "hash": "4884079c9f5a5568"
+  },
+  "ch7.bark.drain.6": {
+   "url": "assets/voice/ch7.bark.drain.6.m4a",
+   "seconds": 2.58,
+   "hash": "e6fdf9931cde022c"
+  },
+  "ch7.bark.idle.1": {
+   "url": "assets/voice/ch7.bark.idle.1.m4a",
+   "seconds": 3.39,
+   "hash": "b1a68062fd32d27f"
+  },
+  "ch7.bark.idle.2": {
+   "url": "assets/voice/ch7.bark.idle.2.m4a",
+   "seconds": 2.15,
+   "hash": "cdc0f0db43c7859b"
+  },
+  "ch7.bark.idle.3": {
+   "url": "assets/voice/ch7.bark.idle.3.m4a",
+   "seconds": 2.57,
+   "hash": "756ddac9f30c14cb"
+  },
+  "ch7.bark.idle.4": {
+   "url": "assets/voice/ch7.bark.idle.4.m4a",
+   "seconds": 2.82,
+   "hash": "ec4096a7b37f7e01"
+  },
+  "ch7.bark.idle.5": {
+   "url": "assets/voice/ch7.bark.idle.5.m4a",
+   "seconds": 4.03,
+   "hash": "7a164570a33bcd11"
+  },
+  "ch7.bark.idle.6": {
+   "url": "assets/voice/ch7.bark.idle.6.m4a",
+   "seconds": 2.42,
+   "hash": "14683187b5925f35"
+  },
+  "ch7.bark.jackpot.1": {
+   "url": "assets/voice/ch7.bark.jackpot.1.m4a",
+   "seconds": 2.12,
+   "hash": "c91bc3f5eb65d177"
+  },
+  "ch7.bark.jackpot.2": {
+   "url": "assets/voice/ch7.bark.jackpot.2.m4a",
+   "seconds": 2.76,
+   "hash": "b7db32a37a4eb637"
+  },
+  "ch7.bark.jackpot.3": {
+   "url": "assets/voice/ch7.bark.jackpot.3.m4a",
+   "seconds": 2.78,
+   "hash": "4c14ff18bcff658b"
+  },
+  "ch7.bark.jackpot.4": {
+   "url": "assets/voice/ch7.bark.jackpot.4.m4a",
+   "seconds": 3.21,
+   "hash": "a9c9eba27fe5e309"
+  },
+  "ch7.bark.jackpot.5": {
+   "url": "assets/voice/ch7.bark.jackpot.5.m4a",
+   "seconds": 2.55,
+   "hash": "088010051a4f2a47"
+  },
+  "ch7.bark.jackpot.6": {
+   "url": "assets/voice/ch7.bark.jackpot.6.m4a",
+   "seconds": 3.05,
+   "hash": "115104945f0e0a04"
+  },
+  "ch7.bark.launch.1": {
+   "url": "assets/voice/ch7.bark.launch.1.m4a",
+   "seconds": 2.26,
+   "hash": "d110c2683adffad3"
+  },
+  "ch7.bark.launch.2": {
+   "url": "assets/voice/ch7.bark.launch.2.m4a",
+   "seconds": 2.3,
+   "hash": "9ad14bddbead9a26"
+  },
+  "ch7.bark.launch.3": {
+   "url": "assets/voice/ch7.bark.launch.3.m4a",
+   "seconds": 2.23,
+   "hash": "d451f4a34e52708e"
+  },
+  "ch7.bark.launch.4": {
+   "url": "assets/voice/ch7.bark.launch.4.m4a",
+   "seconds": 3.03,
+   "hash": "9a529ccc546a68f6"
+  },
+  "ch7.bark.launch.5": {
+   "url": "assets/voice/ch7.bark.launch.5.m4a",
+   "seconds": 2.4,
+   "hash": "a2526e5e7c8bc839"
+  },
+  "ch7.bark.launch.6": {
+   "url": "assets/voice/ch7.bark.launch.6.m4a",
+   "seconds": 2.93,
+   "hash": "1cb26a41dcda9d58"
+  },
+  "ch7.bark.loan.1": {
+   "url": "assets/voice/ch7.bark.loan.1.m4a",
+   "seconds": 3.77,
+   "hash": "15d98d82f34d3107"
+  },
+  "ch7.bark.loan.2": {
+   "url": "assets/voice/ch7.bark.loan.2.m4a",
+   "seconds": 3.4,
+   "hash": "09e8bbce45838494"
+  },
+  "ch7.bark.loan.3": {
+   "url": "assets/voice/ch7.bark.loan.3.m4a",
+   "seconds": 1.97,
+   "hash": "274357ce636839f0"
+  },
+  "ch7.bark.loan.4": {
+   "url": "assets/voice/ch7.bark.loan.4.m4a",
+   "seconds": 3.2,
+   "hash": "438e995e6fe3cc13"
+  },
+  "ch7.bark.loan.5": {
+   "url": "assets/voice/ch7.bark.loan.5.m4a",
+   "seconds": 2.99,
+   "hash": "b1fe78d2da62c35a"
+  },
+  "ch7.bark.loan.6": {
+   "url": "assets/voice/ch7.bark.loan.6.m4a",
+   "seconds": 3.02,
+   "hash": "6414500171170431"
+  },
+  "ch7.bark.ramp.1": {
+   "url": "assets/voice/ch7.bark.ramp.1.m4a",
+   "seconds": 1.92,
+   "hash": "e401acca82f8e8a8"
+  },
+  "ch7.bark.ramp.2": {
+   "url": "assets/voice/ch7.bark.ramp.2.m4a",
+   "seconds": 2.41,
+   "hash": "04d78965d2e49b8b"
+  },
+  "ch7.bark.ramp.3": {
+   "url": "assets/voice/ch7.bark.ramp.3.m4a",
+   "seconds": 2.29,
+   "hash": "0738fa3620b1ff65"
+  },
+  "ch7.bark.ramp.4": {
+   "url": "assets/voice/ch7.bark.ramp.4.m4a",
+   "seconds": 2.23,
+   "hash": "be8a7e6a2c9e4cf0"
+  },
+  "ch7.bark.ramp.5": {
+   "url": "assets/voice/ch7.bark.ramp.5.m4a",
+   "seconds": 2.74,
+   "hash": "89f92f04d0565b8b"
+  },
+  "ch7.bark.save.1": {
+   "url": "assets/voice/ch7.bark.save.1.m4a",
+   "seconds": 2.81,
+   "hash": "e69b7aed646382f6"
+  },
+  "ch7.bark.save.2": {
+   "url": "assets/voice/ch7.bark.save.2.m4a",
+   "seconds": 1.18,
+   "hash": "1da4aee5971ca149"
+  },
+  "ch7.bark.save.3": {
+   "url": "assets/voice/ch7.bark.save.3.m4a",
+   "seconds": 0.63,
+   "hash": "39830dcb74d57ea2"
+  },
+  "ch7.bark.save.4": {
+   "url": "assets/voice/ch7.bark.save.4.m4a",
+   "seconds": 2.41,
+   "hash": "06d1705d84be2bc2"
+  },
+  "ch7.bark.save.5": {
+   "url": "assets/voice/ch7.bark.save.5.m4a",
+   "seconds": 2.52,
+   "hash": "00df745a7f169046"
+  },
+  "ch7.epi.01": {
+   "url": "assets/voice/ch7.epi.01.m4a",
+   "seconds": 10.71,
+   "hash": "78226c4a27581dc3"
+  },
+  "ch7.epi.02": {
+   "url": "assets/voice/ch7.epi.02.m4a",
+   "seconds": 9.56,
+   "hash": "5bbaf0274bc26f19"
+  },
+  "ch7.epi.03": {
+   "url": "assets/voice/ch7.epi.03.m4a",
+   "seconds": 2.6,
+   "hash": "a1f70ce1a18671da"
+  },
+  "ch7.epi.04": {
+   "url": "assets/voice/ch7.epi.04.m4a",
+   "seconds": 0.47,
+   "hash": "c3f8db957f11cd58"
+  },
+  "ch7.epi.05": {
+   "url": "assets/voice/ch7.epi.05.m4a",
+   "seconds": 7.5,
+   "hash": "bd07e5ab34e64826"
+  },
+  "ch7.epi.06": {
+   "url": "assets/voice/ch7.epi.06.m4a",
+   "seconds": 7.33,
+   "hash": "0ef05270832e3b47"
+  },
+  "ch7.epi.07": {
+   "url": "assets/voice/ch7.epi.07.m4a",
+   "seconds": 9.66,
+   "hash": "409a98f8b3e3bd7d"
+  },
+  "ch7.epi.08": {
+   "url": "assets/voice/ch7.epi.08.m4a",
+   "seconds": 8.47,
+   "hash": "0707918a8849e48c"
+  },
+  "ch7.epi.09": {
+   "url": "assets/voice/ch7.epi.09.m4a",
+   "seconds": 7.78,
+   "hash": "5a43d483311e385e"
+  },
+  "ch7.epi.10": {
+   "url": "assets/voice/ch7.epi.10.m4a",
+   "seconds": 4.11,
+   "hash": "7eb5d70d21104632"
+  },
+  "ch7.epi.11": {
+   "url": "assets/voice/ch7.epi.11.m4a",
+   "seconds": 3.72,
+   "hash": "3c243e1b5896c9f7"
+  },
+  "ch7.epi.12": {
+   "url": "assets/voice/ch7.epi.12.m4a",
+   "seconds": 3.92,
+   "hash": "348186ea0760c641"
+  },
+  "ch7.epi.13": {
+   "url": "assets/voice/ch7.epi.13.m4a",
+   "seconds": 10.58,
+   "hash": "ae0d0af2420ac8b2"
+  },
+  "ch7.epi.14": {
+   "url": "assets/voice/ch7.epi.14.m4a",
+   "seconds": 8.2,
+   "hash": "5efc090903a5968e"
+  },
+  "ch7.epi.15": {
+   "url": "assets/voice/ch7.epi.15.m4a",
+   "seconds": 3.53,
+   "hash": "25f653212af5406d"
+  },
+  "ch7.epi.16": {
+   "url": "assets/voice/ch7.epi.16.m4a",
+   "seconds": 10.8,
+   "hash": "bd6dca53f7ca9aa4"
+  },
+  "ch7.epi.17": {
+   "url": "assets/voice/ch7.epi.17.m4a",
+   "seconds": 12.71,
+   "hash": "9f36e6785cab2562"
+  },
+  "ch7.epi.18": {
+   "url": "assets/voice/ch7.epi.18.m4a",
+   "seconds": 6.46,
+   "hash": "04ee5939ae10a8e7"
+  },
+  "ch7.epi.19": {
+   "url": "assets/voice/ch7.epi.19.m4a",
+   "seconds": 9.55,
+   "hash": "b0ce8e75fffb6f9f"
+  },
+  "ch7.epi.20": {
+   "url": "assets/voice/ch7.epi.20.m4a",
+   "seconds": 7.25,
+   "hash": "928f1cac12140166"
+  },
+  "ch7.epi.21": {
+   "url": "assets/voice/ch7.epi.21.m4a",
+   "seconds": 7.54,
+   "hash": "660507c52fdc7f30"
+  },
+  "ch7.epi.22": {
+   "url": "assets/voice/ch7.epi.22.m4a",
+   "seconds": 8.14,
+   "hash": "cd4c14307c247c42"
+  },
+  "ch7.epi.23": {
+   "url": "assets/voice/ch7.epi.23.m4a",
+   "seconds": 9.21,
+   "hash": "ce5b3b483c92e3f3"
+  },
+  "ch7.epi.24": {
+   "url": "assets/voice/ch7.epi.24.m4a",
+   "seconds": 9.32,
+   "hash": "c4e9bf4924a8ae5b"
+  },
+  "ch7.epi.25": {
+   "url": "assets/voice/ch7.epi.25.m4a",
+   "seconds": 3.64,
+   "hash": "de672785c26ae38c"
+  },
+  "ch7.pro.01": {
+   "url": "assets/voice/ch7.pro.01.m4a",
+   "seconds": 7.99,
+   "hash": "f80a525b67cb3b43"
+  },
+  "ch7.pro.02": {
+   "url": "assets/voice/ch7.pro.02.m4a",
+   "seconds": 7.5,
+   "hash": "90483137bbd40212"
+  },
+  "ch7.pro.03": {
+   "url": "assets/voice/ch7.pro.03.m4a",
+   "seconds": 9.99,
+   "hash": "3dfdf5bf70a46a1a"
+  },
+  "ch7.pro.04": {
+   "url": "assets/voice/ch7.pro.04.m4a",
+   "seconds": 10.15,
+   "hash": "a4093026d0c4019f"
+  },
+  "ch7.pro.05": {
+   "url": "assets/voice/ch7.pro.05.m4a",
+   "seconds": 7.9,
+   "hash": "3f7acb4cf9cfe3b5"
+  },
+  "ch7.pro.06": {
+   "url": "assets/voice/ch7.pro.06.m4a",
+   "seconds": 9.71,
+   "hash": "81e61995bd01ab92"
+  },
+  "ch7.pro.07": {
+   "url": "assets/voice/ch7.pro.07.m4a",
+   "seconds": 11.53,
+   "hash": "b256b4d60b353110"
+  },
+  "ch7.pro.08": {
+   "url": "assets/voice/ch7.pro.08.m4a",
+   "seconds": 6.54,
+   "hash": "243553d2e2b8a58c"
+  },
+  "ch7.pro.09": {
+   "url": "assets/voice/ch7.pro.09.m4a",
+   "seconds": 8.17,
+   "hash": "b41f344326711b5a"
+  },
+  "ch7.pro.10": {
+   "url": "assets/voice/ch7.pro.10.m4a",
+   "seconds": 4.55,
+   "hash": "9f9060deff2c6afc"
+  },
+  "ch7.pro.11": {
+   "url": "assets/voice/ch7.pro.11.m4a",
+   "seconds": 7.49,
+   "hash": "523ca4c5a238c4ab"
+  },
+  "ch7.pro.12": {
+   "url": "assets/voice/ch7.pro.12.m4a",
+   "seconds": 8.24,
+   "hash": "6c886472e5c55b8f"
+  },
+  "ch7.pro.13": {
+   "url": "assets/voice/ch7.pro.13.m4a",
+   "seconds": 7.5,
+   "hash": "88a0cdd983882bc9"
+  },
+  "ch7.pro.14": {
+   "url": "assets/voice/ch7.pro.14.m4a",
+   "seconds": 5.15,
+   "hash": "ca5d75b1341f375b"
+  },
+  "ch7.pro.15": {
+   "url": "assets/voice/ch7.pro.15.m4a",
+   "seconds": 7.17,
+   "hash": "dcaf5b41437f0ed2"
+  },
+  "ch7.pro.16": {
+   "url": "assets/voice/ch7.pro.16.m4a",
+   "seconds": 7.85,
+   "hash": "2e7bcc95f0108628"
+  },
+  "ch7.pro.17": {
+   "url": "assets/voice/ch7.pro.17.m4a",
+   "seconds": 5.51,
+   "hash": "b9496f8b416117f4"
+  },
+  "ch7.pro.18": {
+   "url": "assets/voice/ch7.pro.18.m4a",
+   "seconds": 7.39,
+   "hash": "c9d0a18cc844233c"
+  },
+  "ch7.pro.19": {
+   "url": "assets/voice/ch7.pro.19.m4a",
+   "seconds": 5.06,
+   "hash": "bc8d135d313fe342"
+  },
+  "ch7.pro.20": {
+   "url": "assets/voice/ch7.pro.20.m4a",
+   "seconds": 3.12,
+   "hash": "d2766eafd71c539f"
+  },
+  "ch7.pro.21": {
+   "url": "assets/voice/ch7.pro.21.m4a",
+   "seconds": 7.34,
+   "hash": "fc581ce4e47617cd"
+  },
+  "ch7.s1.b01": {
+   "url": "assets/voice/ch7.s1.b01.m4a",
+   "seconds": 4.74,
+   "hash": "ac749213ecda93bb"
+  },
+  "ch7.s1.b02": {
+   "url": "assets/voice/ch7.s1.b02.m4a",
+   "seconds": 2.26,
+   "hash": "e3cccb79d5ffdcb2"
+  },
+  "ch7.s1.b03": {
+   "url": "assets/voice/ch7.s1.b03.m4a",
+   "seconds": 4.38,
+   "hash": "5730f5658a9d1f74"
+  },
+  "ch7.s1.c01": {
+   "url": "assets/voice/ch7.s1.c01.m4a",
+   "seconds": 8.86,
+   "hash": "0e6324f758156109"
+  },
+  "ch7.s1.c02": {
+   "url": "assets/voice/ch7.s1.c02.m4a",
+   "seconds": 5.95,
+   "hash": "3b44a397e8613e2d"
+  },
+  "ch7.s1.c03": {
+   "url": "assets/voice/ch7.s1.c03.m4a",
+   "seconds": 3.93,
+   "hash": "639f239c24016176"
+  },
+  "ch7.s1.c04": {
+   "url": "assets/voice/ch7.s1.c04.m4a",
+   "seconds": 10.39,
+   "hash": "a5b31b6f3f859e12"
+  },
+  "ch7.s1.c05": {
+   "url": "assets/voice/ch7.s1.c05.m4a",
+   "seconds": 6.23,
+   "hash": "6887a9eaf0b9608b"
+  },
+  "ch7.s1.c06": {
+   "url": "assets/voice/ch7.s1.c06.m4a",
+   "seconds": 5.36,
+   "hash": "5941b46e05ca9eb7"
+  },
+  "ch7.s1.c07": {
+   "url": "assets/voice/ch7.s1.c07.m4a",
+   "seconds": 8.24,
+   "hash": "ae6ebb1f74d4666b"
+  },
+  "ch7.s1.c08": {
+   "url": "assets/voice/ch7.s1.c08.m4a",
+   "seconds": 9.93,
+   "hash": "d8c3352b072b46de"
+  },
+  "ch7.s1.c09": {
+   "url": "assets/voice/ch7.s1.c09.m4a",
+   "seconds": 2.72,
+   "hash": "f0f6e1b50fe174ff"
+  },
+  "ch7.s1.c10": {
+   "url": "assets/voice/ch7.s1.c10.m4a",
+   "seconds": 6.17,
+   "hash": "42bce1164d6d8692"
+  },
+  "ch7.s1.c11": {
+   "url": "assets/voice/ch7.s1.c11.m4a",
+   "seconds": 6.67,
+   "hash": "3eac594ae2f84f3a"
+  },
+  "ch7.s1.c12": {
+   "url": "assets/voice/ch7.s1.c12.m4a",
+   "seconds": 10.06,
+   "hash": "5a15c7ed14cb54d8"
+  },
+  "ch7.s1.c13": {
+   "url": "assets/voice/ch7.s1.c13.m4a",
+   "seconds": 8.7,
+   "hash": "3205a67662766ff0"
+  },
+  "ch7.s1.c14": {
+   "url": "assets/voice/ch7.s1.c14.m4a",
+   "seconds": 3.78,
+   "hash": "47f0e5c38ede3621"
+  },
+  "ch7.s1.c15": {
+   "url": "assets/voice/ch7.s1.c15.m4a",
+   "seconds": 7.63,
+   "hash": "09218fb60d14fcf7"
+  },
+  "ch7.s1.c16": {
+   "url": "assets/voice/ch7.s1.c16.m4a",
+   "seconds": 8.07,
+   "hash": "ab1739366ca9c6fe"
+  },
+  "ch7.s1.c17": {
+   "url": "assets/voice/ch7.s1.c17.m4a",
+   "seconds": 8.67,
+   "hash": "865a2facc1f132ec"
+  },
+  "ch7.s1.c18": {
+   "url": "assets/voice/ch7.s1.c18.m4a",
+   "seconds": 11.43,
+   "hash": "aa4ef7203e7cbdef"
+  },
+  "ch7.s1.c19": {
+   "url": "assets/voice/ch7.s1.c19.m4a",
+   "seconds": 6.17,
+   "hash": "c27914320d0a3d7b"
+  },
+  "ch7.s1.c20": {
+   "url": "assets/voice/ch7.s1.c20.m4a",
+   "seconds": 8.02,
+   "hash": "4b12c24f3fc3f26d"
+  },
+  "ch7.s1.c21": {
+   "url": "assets/voice/ch7.s1.c21.m4a",
+   "seconds": 10.95,
+   "hash": "2b8a7d18177dbbca"
+  },
+  "ch7.s1.c22": {
+   "url": "assets/voice/ch7.s1.c22.m4a",
+   "seconds": 9.2,
+   "hash": "c924ff0c537a66b4"
+  },
+  "ch7.s1.c23": {
+   "url": "assets/voice/ch7.s1.c23.m4a",
+   "seconds": 7.91,
+   "hash": "9ad615e6315caea8"
+  },
+  "ch7.s1.c24": {
+   "url": "assets/voice/ch7.s1.c24.m4a",
+   "seconds": 5.25,
+   "hash": "30819c88c2b0b5de"
+  },
+  "ch7.s1.c25": {
+   "url": "assets/voice/ch7.s1.c25.m4a",
+   "seconds": 10.83,
+   "hash": "07684be56814e874"
+  },
+  "ch7.s1.c26": {
+   "url": "assets/voice/ch7.s1.c26.m4a",
+   "seconds": 11.11,
+   "hash": "34371b881fc33a1a"
+  },
+  "ch7.s1.c27": {
+   "url": "assets/voice/ch7.s1.c27.m4a",
+   "seconds": 7.97,
+   "hash": "0b060849b467eea9"
+  },
+  "ch7.s1.c28": {
+   "url": "assets/voice/ch7.s1.c28.m4a",
+   "seconds": 8.55,
+   "hash": "033ad2079357bfb8"
+  },
+  "ch7.s2.b01": {
+   "url": "assets/voice/ch7.s2.b01.m4a",
+   "seconds": 3.77,
+   "hash": "11f2dabb6ec6fcf4"
+  },
+  "ch7.s2.b02": {
+   "url": "assets/voice/ch7.s2.b02.m4a",
+   "seconds": 2.56,
+   "hash": "81de4a21fe4e1e29"
+  },
+  "ch7.s2.b03": {
+   "url": "assets/voice/ch7.s2.b03.m4a",
+   "seconds": 2.89,
+   "hash": "b08144b0a466445a"
+  },
+  "ch7.s2.c01": {
+   "url": "assets/voice/ch7.s2.c01.m4a",
+   "seconds": 8.18,
+   "hash": "ba5366b69e6b21ac"
+  },
+  "ch7.s2.c02": {
+   "url": "assets/voice/ch7.s2.c02.m4a",
+   "seconds": 6.63,
+   "hash": "a1668605bd8cc9c4"
+  },
+  "ch7.s2.c03": {
+   "url": "assets/voice/ch7.s2.c03.m4a",
+   "seconds": 6.99,
+   "hash": "019196a9d2a97b3b"
+  },
+  "ch7.s2.c04": {
+   "url": "assets/voice/ch7.s2.c04.m4a",
+   "seconds": 7.91,
+   "hash": "25c0fd86b6346c54"
+  },
+  "ch7.s2.c05": {
+   "url": "assets/voice/ch7.s2.c05.m4a",
+   "seconds": 1.63,
+   "hash": "c8abd163fe3b0e68"
+  },
+  "ch7.s2.c06": {
+   "url": "assets/voice/ch7.s2.c06.m4a",
+   "seconds": 8.3,
+   "hash": "f7492eacb80c8e96"
+  },
+  "ch7.s2.c07": {
+   "url": "assets/voice/ch7.s2.c07.m4a",
+   "seconds": 7.84,
+   "hash": "909c7e9dd85ce029"
+  },
+  "ch7.s2.c08": {
+   "url": "assets/voice/ch7.s2.c08.m4a",
+   "seconds": 2.76,
+   "hash": "2e5f58acb387d42e"
+  },
+  "ch7.s2.c09": {
+   "url": "assets/voice/ch7.s2.c09.m4a",
+   "seconds": 10.67,
+   "hash": "bae03d9ec1707d93"
+  },
+  "ch7.s2.c10": {
+   "url": "assets/voice/ch7.s2.c10.m4a",
+   "seconds": 7.33,
+   "hash": "c789aeea4d862b71"
+  },
+  "ch7.s2.c11": {
+   "url": "assets/voice/ch7.s2.c11.m4a",
+   "seconds": 6.73,
+   "hash": "819f905da0554ace"
+  },
+  "ch7.s2.c12": {
+   "url": "assets/voice/ch7.s2.c12.m4a",
+   "seconds": 3.42,
+   "hash": "fd9eb35e4452b19c"
+  },
+  "ch7.s2.c13": {
+   "url": "assets/voice/ch7.s2.c13.m4a",
+   "seconds": 6.79,
+   "hash": "6259a86d84e7d795"
+  },
+  "ch7.s2.c14": {
+   "url": "assets/voice/ch7.s2.c14.m4a",
+   "seconds": 6.33,
+   "hash": "8560f303d4ef8f9c"
+  },
+  "ch7.s2.c15": {
+   "url": "assets/voice/ch7.s2.c15.m4a",
+   "seconds": 9.75,
+   "hash": "5f0ffc940f528793"
+  },
+  "ch7.s2.c16": {
+   "url": "assets/voice/ch7.s2.c16.m4a",
+   "seconds": 9.4,
+   "hash": "b82497d6322c949b"
+  },
+  "ch7.s2.c17": {
+   "url": "assets/voice/ch7.s2.c17.m4a",
+   "seconds": 6.7,
+   "hash": "62a3bb8364ecbe51"
+  },
+  "ch7.s2.c18": {
+   "url": "assets/voice/ch7.s2.c18.m4a",
+   "seconds": 10.98,
+   "hash": "db18214b954ffaf3"
+  },
+  "ch7.s2.c19": {
+   "url": "assets/voice/ch7.s2.c19.m4a",
+   "seconds": 7.66,
+   "hash": "7e1be854ec09b5ba"
+  },
+  "ch7.s2.c20": {
+   "url": "assets/voice/ch7.s2.c20.m4a",
+   "seconds": 7.58,
+   "hash": "399c2a42225c2ade"
+  },
+  "ch7.s2.c21": {
+   "url": "assets/voice/ch7.s2.c21.m4a",
+   "seconds": 8.26,
+   "hash": "0b8bc3a3f550c7e5"
+  },
+  "ch7.s2.c22": {
+   "url": "assets/voice/ch7.s2.c22.m4a",
+   "seconds": 9.81,
+   "hash": "91de421c1961d8b9"
+  },
+  "ch7.s2.c23": {
+   "url": "assets/voice/ch7.s2.c23.m4a",
+   "seconds": 9.54,
+   "hash": "78e4e1bf783528dd"
+  },
+  "ch7.s2.c24": {
+   "url": "assets/voice/ch7.s2.c24.m4a",
+   "seconds": 4.64,
+   "hash": "0b4516bc8aa8b541"
+  },
+  "ch7.s2.c25": {
+   "url": "assets/voice/ch7.s2.c25.m4a",
+   "seconds": 7.87,
+   "hash": "4827f5d194578d08"
+  },
+  "ch7.s2.c26": {
+   "url": "assets/voice/ch7.s2.c26.m4a",
+   "seconds": 6.31,
+   "hash": "5c46f1de8b2b2b92"
+  },
+  "ch7.s2.c27": {
+   "url": "assets/voice/ch7.s2.c27.m4a",
+   "seconds": 5.96,
+   "hash": "1658bead886d9253"
+  },
+  "ch7.s2.c28": {
+   "url": "assets/voice/ch7.s2.c28.m4a",
+   "seconds": 6.78,
+   "hash": "d39f38ca96d81153"
+  },
+  "ch7.s2.c29": {
+   "url": "assets/voice/ch7.s2.c29.m4a",
+   "seconds": 9.33,
+   "hash": "217d68385ccd1aa8"
+  },
+  "ch7.s3.b01": {
+   "url": "assets/voice/ch7.s3.b01.m4a",
+   "seconds": 3.88,
+   "hash": "5b824a879697e919"
+  },
+  "ch7.s3.b02": {
+   "url": "assets/voice/ch7.s3.b02.m4a",
+   "seconds": 2.42,
+   "hash": "faba30fca971b874"
+  },
+  "ch7.s3.b03": {
+   "url": "assets/voice/ch7.s3.b03.m4a",
+   "seconds": 1.65,
+   "hash": "89f4221cc98bf20f"
+  },
+  "ch7.s3.c01": {
+   "url": "assets/voice/ch7.s3.c01.m4a",
+   "seconds": 7.91,
+   "hash": "5d837de9efdf267b"
+  },
+  "ch7.s3.c02": {
+   "url": "assets/voice/ch7.s3.c02.m4a",
+   "seconds": 10.47,
+   "hash": "d991d7281e18b326"
+  },
+  "ch7.s3.c03": {
+   "url": "assets/voice/ch7.s3.c03.m4a",
+   "seconds": 7.73,
+   "hash": "e8e17688bd6569f8"
+  },
+  "ch7.s3.c04": {
+   "url": "assets/voice/ch7.s3.c04.m4a",
+   "seconds": 11.97,
+   "hash": "09d025b468d22209"
+  },
+  "ch7.s3.c05": {
+   "url": "assets/voice/ch7.s3.c05.m4a",
+   "seconds": 2.08,
+   "hash": "3201777cebc2eed4"
+  },
+  "ch7.s3.c06": {
+   "url": "assets/voice/ch7.s3.c06.m4a",
+   "seconds": 9.79,
+   "hash": "5cea07ee6a951f96"
+  },
+  "ch7.s3.c07": {
+   "url": "assets/voice/ch7.s3.c07.m4a",
+   "seconds": 10.12,
+   "hash": "fc7ed552b714c569"
+  },
+  "ch7.s3.c08": {
+   "url": "assets/voice/ch7.s3.c08.m4a",
+   "seconds": 7.81,
+   "hash": "b23191fa95c85598"
+  },
+  "ch7.s3.c09": {
+   "url": "assets/voice/ch7.s3.c09.m4a",
+   "seconds": 3.99,
+   "hash": "20f768e4971c0104"
+  },
+  "ch7.s3.c10": {
+   "url": "assets/voice/ch7.s3.c10.m4a",
+   "seconds": 7.94,
+   "hash": "88b953cc7e90c415"
+  },
+  "ch7.s3.c11": {
+   "url": "assets/voice/ch7.s3.c11.m4a",
+   "seconds": 8.82,
+   "hash": "fc708412923b1bda"
+  },
+  "ch7.s3.c12": {
+   "url": "assets/voice/ch7.s3.c12.m4a",
+   "seconds": 6.72,
+   "hash": "0ef1191d51e94fb2"
+  },
+  "ch7.s3.c13": {
+   "url": "assets/voice/ch7.s3.c13.m4a",
+   "seconds": 8.28,
+   "hash": "a3a127d7699691e4"
+  },
+  "ch7.s3.c14": {
+   "url": "assets/voice/ch7.s3.c14.m4a",
+   "seconds": 7.65,
+   "hash": "92e9ed8c6ed99e56"
+  },
+  "ch7.s3.c15": {
+   "url": "assets/voice/ch7.s3.c15.m4a",
+   "seconds": 9.05,
+   "hash": "4d03b3f83fddf77a"
+  },
+  "ch7.s3.c16": {
+   "url": "assets/voice/ch7.s3.c16.m4a",
+   "seconds": 8.16,
+   "hash": "c6daa30fc7b6285a"
+  },
+  "ch7.s3.c17": {
+   "url": "assets/voice/ch7.s3.c17.m4a",
+   "seconds": 8.74,
+   "hash": "2c6286ceb4462431"
+  },
+  "ch7.s3.c18": {
+   "url": "assets/voice/ch7.s3.c18.m4a",
+   "seconds": 3.43,
+   "hash": "239d5c07234c7a12"
+  },
+  "ch7.s3.c19": {
+   "url": "assets/voice/ch7.s3.c19.m4a",
+   "seconds": 7.38,
+   "hash": "298dba2dcfc71246"
+  },
+  "ch7.s3.c20": {
+   "url": "assets/voice/ch7.s3.c20.m4a",
+   "seconds": 7.84,
+   "hash": "431d29e4733eac86"
+  },
+  "ch7.s3.c21": {
+   "url": "assets/voice/ch7.s3.c21.m4a",
+   "seconds": 6.24,
+   "hash": "168a5096f9399e56"
+  },
+  "ch7.s3.c22": {
+   "url": "assets/voice/ch7.s3.c22.m4a",
+   "seconds": 6.05,
+   "hash": "a277095c5c9a4b1b"
+  },
+  "ch7.s3.c23": {
+   "url": "assets/voice/ch7.s3.c23.m4a",
+   "seconds": 7.51,
+   "hash": "e490c45e36c206b6"
+  },
+  "ch7.s3.c24": {
+   "url": "assets/voice/ch7.s3.c24.m4a",
+   "seconds": 10.34,
+   "hash": "7d4c34d536f5025d"
+  },
+  "ch7.s3.c25": {
+   "url": "assets/voice/ch7.s3.c25.m4a",
+   "seconds": 2.72,
+   "hash": "cf60edee9066ef2f"
+  },
+  "ch7.s3.c26": {
+   "url": "assets/voice/ch7.s3.c26.m4a",
+   "seconds": 5.25,
+   "hash": "35a540c7d2db3f20"
+  },
+  "ch7.s3.c27": {
+   "url": "assets/voice/ch7.s3.c27.m4a",
+   "seconds": 12.24,
+   "hash": "d046b560e36588e6"
+  },
+  "ch7.s3.c28": {
+   "url": "assets/voice/ch7.s3.c28.m4a",
+   "seconds": 8.28,
+   "hash": "bef61dd997fa2556"
+  },
+  "ch7.s3.c29": {
+   "url": "assets/voice/ch7.s3.c29.m4a",
+   "seconds": 5.01,
+   "hash": "4e17135781f3b40b"
+  },
+  "ch7.s3.c30": {
+   "url": "assets/voice/ch7.s3.c30.m4a",
+   "seconds": 7.22,
+   "hash": "ca65e64077f49f58"
+  },
+  "ch7.s4.b01": {
+   "url": "assets/voice/ch7.s4.b01.m4a",
+   "seconds": 4.05,
+   "hash": "cb094bccb8db7e14"
+  },
+  "ch7.s4.b02": {
+   "url": "assets/voice/ch7.s4.b02.m4a",
+   "seconds": 3.17,
+   "hash": "39bf22ce21fedf8c"
+  },
+  "ch7.s4.b03": {
+   "url": "assets/voice/ch7.s4.b03.m4a",
+   "seconds": 3.94,
+   "hash": "fe94650e1620baa2"
+  },
+  "ch7.s4.c01": {
+   "url": "assets/voice/ch7.s4.c01.m4a",
+   "seconds": 8.31,
+   "hash": "49f0b29f258f2bdf"
+  },
+  "ch7.s4.c02": {
+   "url": "assets/voice/ch7.s4.c02.m4a",
+   "seconds": 10.08,
+   "hash": "e1447b9c0d3bdec8"
+  },
+  "ch7.s4.c03": {
+   "url": "assets/voice/ch7.s4.c03.m4a",
+   "seconds": 10.33,
+   "hash": "742770ddb64175e6"
+  },
+  "ch7.s4.c04": {
+   "url": "assets/voice/ch7.s4.c04.m4a",
+   "seconds": 10.89,
+   "hash": "13ffa96e75a0ecec"
+  },
+  "ch7.s4.c05": {
+   "url": "assets/voice/ch7.s4.c05.m4a",
+   "seconds": 10.6,
+   "hash": "bf99a7a76b6f7ec6"
+  },
+  "ch7.s4.c06": {
+   "url": "assets/voice/ch7.s4.c06.m4a",
+   "seconds": 6.22,
+   "hash": "84c20533671a68f0"
+  },
+  "ch7.s4.c07": {
+   "url": "assets/voice/ch7.s4.c07.m4a",
+   "seconds": 11.1,
+   "hash": "89b9d45cc3ad8e02"
+  },
+  "ch7.s4.c08": {
+   "url": "assets/voice/ch7.s4.c08.m4a",
+   "seconds": 8.72,
+   "hash": "99cd27db198d1403"
+  },
+  "ch7.s4.c09": {
+   "url": "assets/voice/ch7.s4.c09.m4a",
+   "seconds": 6.94,
+   "hash": "cb758da9abb30f08"
+  },
+  "ch7.s4.c10": {
+   "url": "assets/voice/ch7.s4.c10.m4a",
+   "seconds": 3.65,
+   "hash": "483ce8c088f6a6b6"
+  },
+  "ch7.s4.c11": {
+   "url": "assets/voice/ch7.s4.c11.m4a",
+   "seconds": 8.79,
+   "hash": "1628517c5d24451b"
+  },
+  "ch7.s4.c12": {
+   "url": "assets/voice/ch7.s4.c12.m4a",
+   "seconds": 8.51,
+   "hash": "bea49b55d783f7fb"
+  },
+  "ch7.s4.c13": {
+   "url": "assets/voice/ch7.s4.c13.m4a",
+   "seconds": 7.4,
+   "hash": "875b8f807228b3d0"
+  },
+  "ch7.s4.c14": {
+   "url": "assets/voice/ch7.s4.c14.m4a",
+   "seconds": 5.46,
+   "hash": "177175ff706f363a"
+  },
+  "ch7.s4.c15": {
+   "url": "assets/voice/ch7.s4.c15.m4a",
+   "seconds": 8.79,
+   "hash": "d78db8b39905d8ee"
+  },
+  "ch7.s4.c16": {
+   "url": "assets/voice/ch7.s4.c16.m4a",
+   "seconds": 7.88,
+   "hash": "21cd63c6531a8b70"
+  },
+  "ch7.s4.c17": {
+   "url": "assets/voice/ch7.s4.c17.m4a",
+   "seconds": 5.33,
+   "hash": "1d94acb75de36831"
+  },
+  "ch7.s4.c18": {
+   "url": "assets/voice/ch7.s4.c18.m4a",
+   "seconds": 8.75,
+   "hash": "cd83599e75873e70"
+  },
+  "ch7.s4.c19": {
+   "url": "assets/voice/ch7.s4.c19.m4a",
+   "seconds": 7,
+   "hash": "023c66bf3e53bf53"
+  },
+  "ch7.s4.c20": {
+   "url": "assets/voice/ch7.s4.c20.m4a",
+   "seconds": 9.25,
+   "hash": "eda0885d678a7a20"
+  },
+  "ch7.s4.c21": {
+   "url": "assets/voice/ch7.s4.c21.m4a",
+   "seconds": 9.8,
+   "hash": "d165ba2efb1dee31"
+  },
+  "ch7.s4.c22": {
+   "url": "assets/voice/ch7.s4.c22.m4a",
+   "seconds": 4.68,
+   "hash": "92efccbf35516581"
+  },
+  "ch7.s4.c23": {
+   "url": "assets/voice/ch7.s4.c23.m4a",
+   "seconds": 9.52,
+   "hash": "2d122f039a41c9a9"
+  },
+  "ch7.s4.c24": {
+   "url": "assets/voice/ch7.s4.c24.m4a",
+   "seconds": 4.58,
+   "hash": "a6eae206dd2d5a61"
+  },
+  "ch7.s4.c25": {
+   "url": "assets/voice/ch7.s4.c25.m4a",
+   "seconds": 4.49,
+   "hash": "08cdb4a05b9c9b1e"
+  },
+  "ch7.s4.c26": {
+   "url": "assets/voice/ch7.s4.c26.m4a",
+   "seconds": 7.13,
+   "hash": "023e10cc2b1260c8"
+  },
+  "ch7.s5.b01": {
+   "url": "assets/voice/ch7.s5.b01.m4a",
+   "seconds": 4.07,
+   "hash": "02552f83947fd9f3"
+  },
+  "ch7.s5.b02": {
+   "url": "assets/voice/ch7.s5.b02.m4a",
+   "seconds": 2.64,
+   "hash": "4023a27733a3c1c6"
+  },
+  "ch7.s5.b03": {
+   "url": "assets/voice/ch7.s5.b03.m4a",
+   "seconds": 2.31,
+   "hash": "b4c8c00a6a89ab18"
+  },
+  "ch7.s5.c01": {
+   "url": "assets/voice/ch7.s5.c01.m4a",
+   "seconds": 8.55,
+   "hash": "449f2e0001a57f09"
+  },
+  "ch7.s5.c02": {
+   "url": "assets/voice/ch7.s5.c02.m4a",
+   "seconds": 8.46,
+   "hash": "e17b9f643154fc82"
+  },
+  "ch7.s5.c03": {
+   "url": "assets/voice/ch7.s5.c03.m4a",
+   "seconds": 10.28,
+   "hash": "9e61626aa570b014"
+  },
+  "ch7.s5.c04": {
+   "url": "assets/voice/ch7.s5.c04.m4a",
+   "seconds": 3.17,
+   "hash": "8ab69165df272219"
+  },
+  "ch7.s5.c05": {
+   "url": "assets/voice/ch7.s5.c05.m4a",
+   "seconds": 9.08,
+   "hash": "7e97593d532e576d"
+  },
+  "ch7.s5.c06": {
+   "url": "assets/voice/ch7.s5.c06.m4a",
+   "seconds": 3.61,
+   "hash": "71916218fb21b145"
+  },
+  "ch7.s5.c07": {
+   "url": "assets/voice/ch7.s5.c07.m4a",
+   "seconds": 4.29,
+   "hash": "44fc512498886b99"
+  },
+  "ch7.s5.c08": {
+   "url": "assets/voice/ch7.s5.c08.m4a",
+   "seconds": 8.32,
+   "hash": "b5a10ce5afc72b7f"
+  },
+  "ch7.s5.c09": {
+   "url": "assets/voice/ch7.s5.c09.m4a",
+   "seconds": 7.68,
+   "hash": "a4f859079dfe1bbd"
+  },
+  "ch7.s5.c10": {
+   "url": "assets/voice/ch7.s5.c10.m4a",
+   "seconds": 9.79,
+   "hash": "164cd4dcb056296a"
+  },
+  "ch7.s5.c11": {
+   "url": "assets/voice/ch7.s5.c11.m4a",
+   "seconds": 10.72,
+   "hash": "c7bac309c70e9ba1"
+  },
+  "ch7.s5.c12": {
+   "url": "assets/voice/ch7.s5.c12.m4a",
+   "seconds": 11.62,
+   "hash": "029c04df4297c499"
+  },
+  "ch7.s5.c13": {
+   "url": "assets/voice/ch7.s5.c13.m4a",
+   "seconds": 0.91,
+   "hash": "7a017a01c6a67e3b"
+  },
+  "ch7.s5.c14": {
+   "url": "assets/voice/ch7.s5.c14.m4a",
+   "seconds": 10.35,
+   "hash": "6be8f085c24418fb"
+  },
+  "ch7.s5.c15": {
+   "url": "assets/voice/ch7.s5.c15.m4a",
+   "seconds": 8.47,
+   "hash": "bfd4cc59b539eb1a"
+  },
+  "ch7.s5.c16": {
+   "url": "assets/voice/ch7.s5.c16.m4a",
+   "seconds": 7.16,
+   "hash": "c921ced877800178"
+  },
+  "ch7.s5.c17": {
+   "url": "assets/voice/ch7.s5.c17.m4a",
+   "seconds": 11.76,
+   "hash": "b67ab7f0385113af"
+  },
+  "ch7.s5.c18": {
+   "url": "assets/voice/ch7.s5.c18.m4a",
+   "seconds": 9.62,
+   "hash": "7e36461f98d327fc"
+  },
+  "ch7.s5.c19": {
+   "url": "assets/voice/ch7.s5.c19.m4a",
+   "seconds": 8.99,
+   "hash": "879f48d8cdf5b46a"
+  },
+  "ch7.s5.c20": {
+   "url": "assets/voice/ch7.s5.c20.m4a",
+   "seconds": 8.77,
+   "hash": "755fcad974b12e56"
+  },
+  "ch7.s5.c21": {
+   "url": "assets/voice/ch7.s5.c21.m4a",
+   "seconds": 9.42,
+   "hash": "182e2f65c1913bc8"
+  },
+  "ch7.s5.c22": {
+   "url": "assets/voice/ch7.s5.c22.m4a",
+   "seconds": 9.26,
+   "hash": "0dd66be7b85b9bde"
+  },
+  "ch7.s5.c23": {
+   "url": "assets/voice/ch7.s5.c23.m4a",
+   "seconds": 1.67,
+   "hash": "4026e16c57dd0d3b"
+  },
+  "ch7.s5.c24": {
+   "url": "assets/voice/ch7.s5.c24.m4a",
+   "seconds": 8.43,
+   "hash": "d8c80f9edd799205"
+  },
+  "ch7.s5.c25": {
+   "url": "assets/voice/ch7.s5.c25.m4a",
+   "seconds": 7.3,
+   "hash": "86f68d99951775b8"
+  },
+  "ch7.s5.c26": {
+   "url": "assets/voice/ch7.s5.c26.m4a",
+   "seconds": 9.1,
+   "hash": "dcdca94180601f2f"
+  },
+  "ch7.s5.c27": {
+   "url": "assets/voice/ch7.s5.c27.m4a",
+   "seconds": 7.12,
+   "hash": "f3fe4442678d3a72"
+  },
+  "ch7.s6.b01": {
+   "url": "assets/voice/ch7.s6.b01.m4a",
+   "seconds": 4.32,
+   "hash": "43c4eb5c38f2ae00"
+  },
+  "ch7.s6.b02": {
+   "url": "assets/voice/ch7.s6.b02.m4a",
+   "seconds": 2.34,
+   "hash": "f7ea3c63b2be14af"
+  },
+  "ch7.s6.b03": {
+   "url": "assets/voice/ch7.s6.b03.m4a",
+   "seconds": 2,
+   "hash": "56c69adbb415a64c"
+  },
+  "ch7.s6.c01": {
+   "url": "assets/voice/ch7.s6.c01.m4a",
+   "seconds": 9.78,
+   "hash": "86a23894323a3cf7"
+  },
+  "ch7.s6.c02": {
+   "url": "assets/voice/ch7.s6.c02.m4a",
+   "seconds": 9.41,
+   "hash": "92d2fc98d0d0e81f"
+  },
+  "ch7.s6.c03": {
+   "url": "assets/voice/ch7.s6.c03.m4a",
+   "seconds": 10.12,
+   "hash": "9e0778ce6dca0dcd"
+  },
+  "ch7.s6.c04": {
+   "url": "assets/voice/ch7.s6.c04.m4a",
+   "seconds": 6,
+   "hash": "e8ec5d84f4b1a7df"
+  },
+  "ch7.s6.c05": {
+   "url": "assets/voice/ch7.s6.c05.m4a",
+   "seconds": 8.31,
+   "hash": "e8d3e7e9286fcdb4"
+  },
+  "ch7.s6.c06": {
+   "url": "assets/voice/ch7.s6.c06.m4a",
+   "seconds": 11.14,
+   "hash": "b8ca645e66fdd4aa"
+  },
+  "ch7.s6.c07": {
+   "url": "assets/voice/ch7.s6.c07.m4a",
+   "seconds": 7.89,
+   "hash": "a2a0b151cbe96eee"
+  },
+  "ch7.s6.c08": {
+   "url": "assets/voice/ch7.s6.c08.m4a",
+   "seconds": 9.86,
+   "hash": "e21824368c0f006a"
+  },
+  "ch7.s6.c09": {
+   "url": "assets/voice/ch7.s6.c09.m4a",
+   "seconds": 7.43,
+   "hash": "b6225bfb515cea32"
+  },
+  "ch7.s6.c10": {
+   "url": "assets/voice/ch7.s6.c10.m4a",
+   "seconds": 9.56,
+   "hash": "c4949888b721c8c2"
+  },
+  "ch7.s6.c11": {
+   "url": "assets/voice/ch7.s6.c11.m4a",
+   "seconds": 10.77,
+   "hash": "2fc793af51613d4d"
+  },
+  "ch7.s6.c12": {
+   "url": "assets/voice/ch7.s6.c12.m4a",
+   "seconds": 6.7,
+   "hash": "7315945c9276f46d"
+  },
+  "ch7.s6.c13": {
+   "url": "assets/voice/ch7.s6.c13.m4a",
+   "seconds": 9.2,
+   "hash": "b56862f06b92639b"
+  },
+  "ch7.s6.c14": {
+   "url": "assets/voice/ch7.s6.c14.m4a",
+   "seconds": 6.76,
+   "hash": "77d9ef0d1423105f"
+  },
+  "ch7.s6.c15": {
+   "url": "assets/voice/ch7.s6.c15.m4a",
+   "seconds": 8.85,
+   "hash": "99451fc82a188c2d"
+  },
+  "ch7.s6.c16": {
+   "url": "assets/voice/ch7.s6.c16.m4a",
+   "seconds": 7.9,
+   "hash": "d72e59deee43caaf"
+  },
+  "ch7.s6.c17": {
+   "url": "assets/voice/ch7.s6.c17.m4a",
+   "seconds": 3.04,
+   "hash": "97cc80dcce60f08b"
+  },
+  "ch7.s6.c18": {
+   "url": "assets/voice/ch7.s6.c18.m4a",
+   "seconds": 9.11,
+   "hash": "8fd0dcbf78c18909"
+  },
+  "ch7.s6.c19": {
+   "url": "assets/voice/ch7.s6.c19.m4a",
+   "seconds": 9.32,
+   "hash": "65f1e247834182cc"
+  },
+  "ch7.s6.c20": {
+   "url": "assets/voice/ch7.s6.c20.m4a",
+   "seconds": 5.71,
+   "hash": "790afe0b376d86e2"
+  },
+  "ch7.s6.c21": {
+   "url": "assets/voice/ch7.s6.c21.m4a",
+   "seconds": 7.35,
+   "hash": "3bf422b0bad48873"
+  },
+  "ch7.s6.c22": {
+   "url": "assets/voice/ch7.s6.c22.m4a",
+   "seconds": 4.29,
+   "hash": "0ca4311d5ec4eb90"
+  },
+  "ch7.s6.c23": {
+   "url": "assets/voice/ch7.s6.c23.m4a",
+   "seconds": 9.04,
+   "hash": "ebb53ae56795e6db"
+  },
+  "ch7.s6.c24": {
+   "url": "assets/voice/ch7.s6.c24.m4a",
+   "seconds": 12.14,
+   "hash": "cd7efb2de6d19b1e"
+  },
+  "ch7.s6.c25": {
+   "url": "assets/voice/ch7.s6.c25.m4a",
+   "seconds": 8.69,
+   "hash": "548416e0c4d784f9"
+  },
+  "ch7.s6.c26": {
+   "url": "assets/voice/ch7.s6.c26.m4a",
+   "seconds": 12.02,
+   "hash": "b41f95ded0f86f63"
+  },
+  "ch7.s6.c27": {
+   "url": "assets/voice/ch7.s6.c27.m4a",
+   "seconds": 12.53,
+   "hash": "d7d61fde3dbc6c68"
+  },
+  "ch7.s6.c28": {
+   "url": "assets/voice/ch7.s6.c28.m4a",
+   "seconds": 1.41,
+   "hash": "b98fa6a621762173"
+  },
+  "ch7.s6.c29": {
+   "url": "assets/voice/ch7.s6.c29.m4a",
+   "seconds": 9.94,
+   "hash": "205492122e37626e"
+  },
+  "ch7.s6.c30": {
+   "url": "assets/voice/ch7.s6.c30.m4a",
+   "seconds": 8.58,
+   "hash": "09611f6051fe54e5"
+  },
+  "ch7.s7.b01": {
+   "url": "assets/voice/ch7.s7.b01.m4a",
+   "seconds": 3.31,
+   "hash": "dae98a3f44d206bb"
+  },
+  "ch7.s7.b02": {
+   "url": "assets/voice/ch7.s7.b02.m4a",
+   "seconds": 3.9,
+   "hash": "fdcc203a753f438e"
+  },
+  "ch7.s7.b03": {
+   "url": "assets/voice/ch7.s7.b03.m4a",
+   "seconds": 2.79,
+   "hash": "8affa44bf2767045"
+  },
+  "ch7.s7.c01": {
+   "url": "assets/voice/ch7.s7.c01.m4a",
+   "seconds": 9.95,
+   "hash": "5af6abcde46e55cb"
+  },
+  "ch7.s7.c02": {
+   "url": "assets/voice/ch7.s7.c02.m4a",
+   "seconds": 8.84,
+   "hash": "8eb51d0f4ae09d38"
+  },
+  "ch7.s7.c03": {
+   "url": "assets/voice/ch7.s7.c03.m4a",
+   "seconds": 10.11,
+   "hash": "12c47875de40fe7a"
+  },
+  "ch7.s7.c04": {
+   "url": "assets/voice/ch7.s7.c04.m4a",
+   "seconds": 3.57,
+   "hash": "35a41c1f002d7480"
+  },
+  "ch7.s7.c05": {
+   "url": "assets/voice/ch7.s7.c05.m4a",
+   "seconds": 7.82,
+   "hash": "adc125c9e230d12f"
+  },
+  "ch7.s7.c06": {
+   "url": "assets/voice/ch7.s7.c06.m4a",
+   "seconds": 10.48,
+   "hash": "3f918cc9dfc0d2a5"
+  },
+  "ch7.s7.c07": {
+   "url": "assets/voice/ch7.s7.c07.m4a",
+   "seconds": 3.34,
+   "hash": "bc757da6782f3db7"
+  },
+  "ch7.s7.c08": {
+   "url": "assets/voice/ch7.s7.c08.m4a",
+   "seconds": 8.38,
+   "hash": "1db58092aaab9494"
+  },
+  "ch7.s7.c09": {
+   "url": "assets/voice/ch7.s7.c09.m4a",
+   "seconds": 4.18,
+   "hash": "9198b5e4be5c9b8d"
+  },
+  "ch7.s7.c10": {
+   "url": "assets/voice/ch7.s7.c10.m4a",
+   "seconds": 8.72,
+   "hash": "427e001cc12cd9d3"
+  },
+  "ch7.s7.c11": {
+   "url": "assets/voice/ch7.s7.c11.m4a",
+   "seconds": 10.67,
+   "hash": "0726132fb0804183"
+  },
+  "ch7.s7.c12": {
+   "url": "assets/voice/ch7.s7.c12.m4a",
+   "seconds": 3.67,
+   "hash": "100ce4a1769f3807"
+  },
+  "ch7.s7.c13": {
+   "url": "assets/voice/ch7.s7.c13.m4a",
+   "seconds": 5.9,
+   "hash": "8075062f0a685b81"
+  },
+  "ch7.s7.c14": {
+   "url": "assets/voice/ch7.s7.c14.m4a",
+   "seconds": 9.67,
+   "hash": "9feecf9229f77536"
+  },
+  "ch7.s7.c15": {
+   "url": "assets/voice/ch7.s7.c15.m4a",
+   "seconds": 10.65,
+   "hash": "4bd4ac55dba05774"
+  },
+  "ch7.s7.c16": {
+   "url": "assets/voice/ch7.s7.c16.m4a",
+   "seconds": 4.46,
+   "hash": "c5a834841b664c25"
+  },
+  "ch7.s7.c17": {
+   "url": "assets/voice/ch7.s7.c17.m4a",
+   "seconds": 10.72,
+   "hash": "b5f02526ac69c326"
+  },
+  "ch7.s7.c18": {
+   "url": "assets/voice/ch7.s7.c18.m4a",
+   "seconds": 12.53,
+   "hash": "b9895971c78ad608"
+  },
+  "ch7.s7.c19": {
+   "url": "assets/voice/ch7.s7.c19.m4a",
+   "seconds": 6.83,
+   "hash": "0c81e1e643751047"
+  },
+  "ch7.s7.c20": {
+   "url": "assets/voice/ch7.s7.c20.m4a",
+   "seconds": 5.92,
+   "hash": "319d1a569a8c7dba"
+  },
+  "ch7.s7.c21": {
+   "url": "assets/voice/ch7.s7.c21.m4a",
+   "seconds": 3.46,
+   "hash": "ad1a19d755486bb9"
+  },
+  "ch7.s7.c22": {
+   "url": "assets/voice/ch7.s7.c22.m4a",
+   "seconds": 9.39,
+   "hash": "c8cb185f91f8ce9b"
+  },
+  "ch7.s7.c23": {
+   "url": "assets/voice/ch7.s7.c23.m4a",
+   "seconds": 8.37,
+   "hash": "2910ff6fc789c0a3"
+  },
+  "ch7.s7.c24": {
+   "url": "assets/voice/ch7.s7.c24.m4a",
+   "seconds": 7.68,
+   "hash": "4d9a29bc12fd7ca3"
+  },
+  "ch7.s7.c25": {
+   "url": "assets/voice/ch7.s7.c25.m4a",
+   "seconds": 11.1,
+   "hash": "bd8aca480d0eaa1d"
+  },
+  "ch7.s7.c26": {
+   "url": "assets/voice/ch7.s7.c26.m4a",
+   "seconds": 3.87,
+   "hash": "4ca8430c44432192"
+  },
+  "ch7.s7.c27": {
+   "url": "assets/voice/ch7.s7.c27.m4a",
+   "seconds": 4.14,
+   "hash": "7dd27ed67f2a75ea"
+  },
+  "ch7.s7.c28": {
+   "url": "assets/voice/ch7.s7.c28.m4a",
+   "seconds": 7.37,
+   "hash": "6e61f29b832cbfc0"
+  },
+  "ch8.bark.aid.1": {
+   "url": "assets/voice/ch8.bark.aid.1.m4a",
+   "seconds": 2.75,
+   "hash": "8914de4928fc6557"
+  },
+  "ch8.bark.aid.2": {
+   "url": "assets/voice/ch8.bark.aid.2.m4a",
+   "seconds": 3.06,
+   "hash": "3daec04053e4247e"
+  },
+  "ch8.bark.aid.3": {
+   "url": "assets/voice/ch8.bark.aid.3.m4a",
+   "seconds": 2.46,
+   "hash": "d2c94b2ed08d0ee9"
+  },
+  "ch8.bark.aid.4": {
+   "url": "assets/voice/ch8.bark.aid.4.m4a",
+   "seconds": 3.32,
+   "hash": "22a39a3a749e54b8"
+  },
+  "ch8.bark.aid.5": {
+   "url": "assets/voice/ch8.bark.aid.5.m4a",
+   "seconds": 2.11,
+   "hash": "2e3af9226194f5c7"
+  },
+  "ch8.bark.bumper.1": {
+   "url": "assets/voice/ch8.bark.bumper.1.m4a",
+   "seconds": 2.44,
+   "hash": "d25dd8a93bce3a3a"
+  },
+  "ch8.bark.bumper.2": {
+   "url": "assets/voice/ch8.bark.bumper.2.m4a",
+   "seconds": 2.73,
+   "hash": "9c1ff570d7f2a8da"
+  },
+  "ch8.bark.bumper.3": {
+   "url": "assets/voice/ch8.bark.bumper.3.m4a",
+   "seconds": 1.03,
+   "hash": "e99e2917f8c0d5d4"
+  },
+  "ch8.bark.bumper.4": {
+   "url": "assets/voice/ch8.bark.bumper.4.m4a",
+   "seconds": 3.26,
+   "hash": "db87c9bef05a0beb"
+  },
+  "ch8.bark.bust.1": {
+   "url": "assets/voice/ch8.bark.bust.1.m4a",
+   "seconds": 2.59,
+   "hash": "21d5890329fc6c60"
+  },
+  "ch8.bark.bust.2": {
+   "url": "assets/voice/ch8.bark.bust.2.m4a",
+   "seconds": 2.91,
+   "hash": "4b9ddf39eccb17da"
+  },
+  "ch8.bark.bust.3": {
+   "url": "assets/voice/ch8.bark.bust.3.m4a",
+   "seconds": 2.03,
+   "hash": "4d92b7438bd3a083"
+  },
+  "ch8.bark.bust.4": {
+   "url": "assets/voice/ch8.bark.bust.4.m4a",
+   "seconds": 2.24,
+   "hash": "db6131efaf6efda9"
+  },
+  "ch8.bark.drain.1": {
+   "url": "assets/voice/ch8.bark.drain.1.m4a",
+   "seconds": 2.62,
+   "hash": "c4bc4646dc1d4014"
+  },
+  "ch8.bark.drain.2": {
+   "url": "assets/voice/ch8.bark.drain.2.m4a",
+   "seconds": 3.62,
+   "hash": "65506e62c7f4f0d6"
+  },
+  "ch8.bark.drain.3": {
+   "url": "assets/voice/ch8.bark.drain.3.m4a",
+   "seconds": 1.9,
+   "hash": "4e29a0d6688c0d3c"
+  },
+  "ch8.bark.drain.4": {
+   "url": "assets/voice/ch8.bark.drain.4.m4a",
+   "seconds": 1.84,
+   "hash": "1f5b57790236234e"
+  },
+  "ch8.bark.drain.5": {
+   "url": "assets/voice/ch8.bark.drain.5.m4a",
+   "seconds": 3.49,
+   "hash": "8865c9c466a21216"
+  },
+  "ch8.bark.idle.1": {
+   "url": "assets/voice/ch8.bark.idle.1.m4a",
+   "seconds": 3.01,
+   "hash": "8dffd2918f011301"
+  },
+  "ch8.bark.idle.2": {
+   "url": "assets/voice/ch8.bark.idle.2.m4a",
+   "seconds": 1.68,
+   "hash": "481f6e3ec74d32ae"
+  },
+  "ch8.bark.idle.3": {
+   "url": "assets/voice/ch8.bark.idle.3.m4a",
+   "seconds": 3.26,
+   "hash": "2c4d92763d82560c"
+  },
+  "ch8.bark.idle.4": {
+   "url": "assets/voice/ch8.bark.idle.4.m4a",
+   "seconds": 2.23,
+   "hash": "18791f1e07586c50"
+  },
+  "ch8.bark.jackpot.1": {
+   "url": "assets/voice/ch8.bark.jackpot.1.m4a",
+   "seconds": 3.02,
+   "hash": "69f1c835bfd409f8"
+  },
+  "ch8.bark.jackpot.2": {
+   "url": "assets/voice/ch8.bark.jackpot.2.m4a",
+   "seconds": 3.06,
+   "hash": "d404a350e7c62ff6"
+  },
+  "ch8.bark.jackpot.3": {
+   "url": "assets/voice/ch8.bark.jackpot.3.m4a",
+   "seconds": 2.56,
+   "hash": "8085d4fc56b5acad"
+  },
+  "ch8.bark.jackpot.4": {
+   "url": "assets/voice/ch8.bark.jackpot.4.m4a",
+   "seconds": 3.26,
+   "hash": "8c431e1d96f051c5"
+  },
+  "ch8.bark.launch.1": {
+   "url": "assets/voice/ch8.bark.launch.1.m4a",
+   "seconds": 1.42,
+   "hash": "e971f45fa4d926cd"
+  },
+  "ch8.bark.launch.2": {
+   "url": "assets/voice/ch8.bark.launch.2.m4a",
+   "seconds": 2.5,
+   "hash": "ce81f3b40b544c1d"
+  },
+  "ch8.bark.launch.3": {
+   "url": "assets/voice/ch8.bark.launch.3.m4a",
+   "seconds": 1.79,
+   "hash": "a0d9d3e7a9a39c62"
+  },
+  "ch8.bark.launch.4": {
+   "url": "assets/voice/ch8.bark.launch.4.m4a",
+   "seconds": 2.73,
+   "hash": "ebb298cfc44a0443"
+  },
+  "ch8.bark.launch.5": {
+   "url": "assets/voice/ch8.bark.launch.5.m4a",
+   "seconds": 2.18,
+   "hash": "94263626379754e7"
+  },
+  "ch8.bark.loan.1": {
+   "url": "assets/voice/ch8.bark.loan.1.m4a",
+   "seconds": 3.28,
+   "hash": "050075ff09f2b9d2"
+  },
+  "ch8.bark.loan.2": {
+   "url": "assets/voice/ch8.bark.loan.2.m4a",
+   "seconds": 3.25,
+   "hash": "dc5ea2f238a90885"
+  },
+  "ch8.bark.loan.3": {
+   "url": "assets/voice/ch8.bark.loan.3.m4a",
+   "seconds": 2.74,
+   "hash": "9db5e496ba4a0d72"
+  },
+  "ch8.bark.loan.4": {
+   "url": "assets/voice/ch8.bark.loan.4.m4a",
+   "seconds": 2.79,
+   "hash": "8a83769850f6d661"
+  },
+  "ch8.bark.loan.5": {
+   "url": "assets/voice/ch8.bark.loan.5.m4a",
+   "seconds": 1.95,
+   "hash": "50793f11cd5a176b"
+  },
+  "ch8.bark.ramp.1": {
+   "url": "assets/voice/ch8.bark.ramp.1.m4a",
+   "seconds": 1.83,
+   "hash": "b7e98be437f79a73"
+  },
+  "ch8.bark.ramp.2": {
+   "url": "assets/voice/ch8.bark.ramp.2.m4a",
+   "seconds": 0.77,
+   "hash": "2e6925054322dca6"
+  },
+  "ch8.bark.ramp.3": {
+   "url": "assets/voice/ch8.bark.ramp.3.m4a",
+   "seconds": 3.09,
+   "hash": "3efb730af71cc5f2"
+  },
+  "ch8.bark.ramp.4": {
+   "url": "assets/voice/ch8.bark.ramp.4.m4a",
+   "seconds": 1.7,
+   "hash": "f585d81490cce61f"
+  },
+  "ch8.bark.save.1": {
+   "url": "assets/voice/ch8.bark.save.1.m4a",
+   "seconds": 1.42,
+   "hash": "31f06ddb361a51a6"
+  },
+  "ch8.bark.save.2": {
+   "url": "assets/voice/ch8.bark.save.2.m4a",
+   "seconds": 3.02,
+   "hash": "74b2f0206ec4391b"
+  },
+  "ch8.bark.save.3": {
+   "url": "assets/voice/ch8.bark.save.3.m4a",
+   "seconds": 0.89,
+   "hash": "ffc178e53e917185"
+  },
+  "ch8.bark.save.4": {
+   "url": "assets/voice/ch8.bark.save.4.m4a",
+   "seconds": 2.79,
+   "hash": "b94ec7de827c9d16"
+  },
+  "ch8.end.01": {
+   "url": "assets/voice/ch8.end.01.m4a",
+   "seconds": 6.65,
+   "hash": "fe36d0f4356d483a"
+  },
+  "ch8.epi.01": {
+   "url": "assets/voice/ch8.epi.01.m4a",
+   "seconds": 10.61,
+   "hash": "33f078ec19322aeb"
+  },
+  "ch8.epi.02": {
+   "url": "assets/voice/ch8.epi.02.m4a",
+   "seconds": 12.48,
+   "hash": "d45d21fc77d8acd8"
+  },
+  "ch8.epi.03": {
+   "url": "assets/voice/ch8.epi.03.m4a",
+   "seconds": 9.26,
+   "hash": "43990b6013937cf8"
+  },
+  "ch8.epi.04": {
+   "url": "assets/voice/ch8.epi.04.m4a",
+   "seconds": 8.95,
+   "hash": "45192c1e9ee62e23"
+  },
+  "ch8.epi.05": {
+   "url": "assets/voice/ch8.epi.05.m4a",
+   "seconds": 12.64,
+   "hash": "c1ef5f368bce3cac"
+  },
+  "ch8.epi.06": {
+   "url": "assets/voice/ch8.epi.06.m4a",
+   "seconds": 11,
+   "hash": "0bbdd7e0bc9767f8"
+  },
+  "ch8.epi.07": {
+   "url": "assets/voice/ch8.epi.07.m4a",
+   "seconds": 13.7,
+   "hash": "828a8f7db29543f8"
+  },
+  "ch8.epi.08": {
+   "url": "assets/voice/ch8.epi.08.m4a",
+   "seconds": 9.65,
+   "hash": "d60b47e924e0d2f3"
+  },
+  "ch8.epi.09": {
+   "url": "assets/voice/ch8.epi.09.m4a",
+   "seconds": 10.41,
+   "hash": "aac46417ff0b162d"
+  },
+  "ch8.epi.10": {
+   "url": "assets/voice/ch8.epi.10.m4a",
+   "seconds": 1.43,
+   "hash": "4d64bd3cf2e82e06"
+  },
+  "ch8.epi.11": {
+   "url": "assets/voice/ch8.epi.11.m4a",
+   "seconds": 4.95,
+   "hash": "e1515db1bce30717"
+  },
+  "ch8.epi.12": {
+   "url": "assets/voice/ch8.epi.12.m4a",
+   "seconds": 11.81,
+   "hash": "53dc93f60b6923ba"
+  },
+  "ch8.epi.13": {
+   "url": "assets/voice/ch8.epi.13.m4a",
+   "seconds": 0.59,
+   "hash": "122c5b90fee588d7"
+  },
+  "ch8.epi.14": {
+   "url": "assets/voice/ch8.epi.14.m4a",
+   "seconds": 7.27,
+   "hash": "97dfd1edff413d53"
+  },
+  "ch8.epi.15": {
+   "url": "assets/voice/ch8.epi.15.m4a",
+   "seconds": 9.91,
+   "hash": "c74726db656b44d4"
+  },
+  "ch8.epi.16": {
+   "url": "assets/voice/ch8.epi.16.m4a",
+   "seconds": 3.98,
+   "hash": "37965465cea09733"
+  },
+  "ch8.epi.17": {
+   "url": "assets/voice/ch8.epi.17.m4a",
+   "seconds": 8.04,
+   "hash": "696ece351194006e"
+  },
+  "ch8.epi.18": {
+   "url": "assets/voice/ch8.epi.18.m4a",
+   "seconds": 1.56,
+   "hash": "ce48c89f4c660447"
+  },
+  "ch8.epi.19": {
+   "url": "assets/voice/ch8.epi.19.m4a",
+   "seconds": 7.73,
+   "hash": "7e6341e69a8449cc"
+  },
+  "ch8.epi.20": {
+   "url": "assets/voice/ch8.epi.20.m4a",
+   "seconds": 6.82,
+   "hash": "09b9e3b931b3de02"
+  },
+  "ch8.epi.21": {
+   "url": "assets/voice/ch8.epi.21.m4a",
+   "seconds": 6.52,
+   "hash": "3aecdea3671624f6"
+  },
+  "ch8.epi.22": {
+   "url": "assets/voice/ch8.epi.22.m4a",
+   "seconds": 2.74,
+   "hash": "0b5793faf51068ad"
+  },
+  "ch8.epi.23": {
+   "url": "assets/voice/ch8.epi.23.m4a",
+   "seconds": 11.1,
+   "hash": "7ce8980d0e9795a2"
+  },
+  "ch8.epi.24": {
+   "url": "assets/voice/ch8.epi.24.m4a",
+   "seconds": 4.91,
+   "hash": "dcf37eec3b7825cd"
+  },
+  "ch8.epi.25": {
+   "url": "assets/voice/ch8.epi.25.m4a",
+   "seconds": 3.17,
+   "hash": "f697cbca93f8509c"
+  },
+  "ch8.epi.26": {
+   "url": "assets/voice/ch8.epi.26.m4a",
+   "seconds": 9.35,
+   "hash": "0168bc4f2ea7a2d7"
+  },
+  "ch8.epi.27": {
+   "url": "assets/voice/ch8.epi.27.m4a",
+   "seconds": 2.02,
+   "hash": "ca3c00acb126c908"
+  },
+  "ch8.epi.28": {
+   "url": "assets/voice/ch8.epi.28.m4a",
+   "seconds": 12.1,
+   "hash": "5e53d749c1661842"
+  },
+  "ch8.epi.29": {
+   "url": "assets/voice/ch8.epi.29.m4a",
+   "seconds": 9.51,
+   "hash": "8d69699adb17a75c"
+  },
+  "ch8.m6.b01": {
+   "url": "assets/voice/ch8.m6.b01.m4a",
+   "seconds": 3.72,
+   "hash": "4bbb0712fdbd011e"
+  },
+  "ch8.m6.b02": {
+   "url": "assets/voice/ch8.m6.b02.m4a",
+   "seconds": 2.07,
+   "hash": "c290594efa82a787"
+  },
+  "ch8.m6.b03": {
+   "url": "assets/voice/ch8.m6.b03.m4a",
+   "seconds": 2.02,
+   "hash": "0667784607e79832"
+  },
+  "ch8.m6.c01": {
+   "url": "assets/voice/ch8.m6.c01.m4a",
+   "seconds": 10.43,
+   "hash": "110ed4643d0ea8b6"
+  },
+  "ch8.m6.c02": {
+   "url": "assets/voice/ch8.m6.c02.m4a",
+   "seconds": 7.15,
+   "hash": "697fedd7bc8c1906"
+  },
+  "ch8.m6.c03": {
+   "url": "assets/voice/ch8.m6.c03.m4a",
+   "seconds": 6.2,
+   "hash": "17faa94164651663"
+  },
+  "ch8.m6.c04": {
+   "url": "assets/voice/ch8.m6.c04.m4a",
+   "seconds": 10.09,
+   "hash": "0f048cc518680e0c"
+  },
+  "ch8.m6.c05": {
+   "url": "assets/voice/ch8.m6.c05.m4a",
+   "seconds": 7.27,
+   "hash": "604738cc815f4c0f"
+  },
+  "ch8.m6.c06": {
+   "url": "assets/voice/ch8.m6.c06.m4a",
+   "seconds": 1.76,
+   "hash": "a3f94eb70a6a6279"
+  },
+  "ch8.m6.c07": {
+   "url": "assets/voice/ch8.m6.c07.m4a",
+   "seconds": 5.04,
+   "hash": "fc46406f397a6670"
+  },
+  "ch8.m6.c08": {
+   "url": "assets/voice/ch8.m6.c08.m4a",
+   "seconds": 6.46,
+   "hash": "fc7ff22660b7cb05"
+  },
+  "ch8.m6.c09": {
+   "url": "assets/voice/ch8.m6.c09.m4a",
+   "seconds": 8.68,
+   "hash": "a311ce8cff5d6db8"
+  },
+  "ch8.m6.c10": {
+   "url": "assets/voice/ch8.m6.c10.m4a",
+   "seconds": 5.57,
+   "hash": "43dfacda77388417"
+  },
+  "ch8.m6.c11": {
+   "url": "assets/voice/ch8.m6.c11.m4a",
+   "seconds": 8.09,
+   "hash": "693b2da56ce2d06b"
+  },
+  "ch8.m6.c12": {
+   "url": "assets/voice/ch8.m6.c12.m4a",
+   "seconds": 7.76,
+   "hash": "9c971a6f43482821"
+  },
+  "ch8.m6.c13": {
+   "url": "assets/voice/ch8.m6.c13.m4a",
+   "seconds": 8.17,
+   "hash": "f066f21b548d6269"
+  },
+  "ch8.m6.c14": {
+   "url": "assets/voice/ch8.m6.c14.m4a",
+   "seconds": 9.71,
+   "hash": "3f9b5aed32bb7101"
+  },
+  "ch8.m6.c15": {
+   "url": "assets/voice/ch8.m6.c15.m4a",
+   "seconds": 8.21,
+   "hash": "3642c9526642dd8d"
+  },
+  "ch8.m6.c16": {
+   "url": "assets/voice/ch8.m6.c16.m4a",
+   "seconds": 8.19,
+   "hash": "94a372818c113cc4"
+  },
+  "ch8.m6.c17": {
+   "url": "assets/voice/ch8.m6.c17.m4a",
+   "seconds": 6.08,
+   "hash": "829ba9e047604626"
+  },
+  "ch8.m6.c18": {
+   "url": "assets/voice/ch8.m6.c18.m4a",
+   "seconds": 8.03,
+   "hash": "879417b8c174a590"
+  },
+  "ch8.m6.c19": {
+   "url": "assets/voice/ch8.m6.c19.m4a",
+   "seconds": 6.69,
+   "hash": "71e5decb5ff36d84"
+  },
+  "ch8.m6.c20": {
+   "url": "assets/voice/ch8.m6.c20.m4a",
+   "seconds": 12.93,
+   "hash": "95f93d9b5dbfb7ab"
+  },
+  "ch8.m6.c21": {
+   "url": "assets/voice/ch8.m6.c21.m4a",
+   "seconds": 10.42,
+   "hash": "a4cb64419c8c2c72"
+  },
+  "ch8.m6.c22": {
+   "url": "assets/voice/ch8.m6.c22.m4a",
+   "seconds": 4.72,
+   "hash": "bddeacab7e205f26"
+  },
+  "ch8.m6.c23": {
+   "url": "assets/voice/ch8.m6.c23.m4a",
+   "seconds": 11.03,
+   "hash": "238c70dbe59b078b"
+  },
+  "ch8.m6.c24": {
+   "url": "assets/voice/ch8.m6.c24.m4a",
+   "seconds": 8.89,
+   "hash": "e3abcdad8ee32578"
+  },
+  "ch8.m6.c25": {
+   "url": "assets/voice/ch8.m6.c25.m4a",
+   "seconds": 12.08,
+   "hash": "b5f7e1d54de63a5c"
+  },
+  "ch8.m6.c26": {
+   "url": "assets/voice/ch8.m6.c26.m4a",
+   "seconds": 5.62,
+   "hash": "e02c112e1cb77982"
+  },
+  "ch8.m6.c27": {
+   "url": "assets/voice/ch8.m6.c27.m4a",
+   "seconds": 6.81,
+   "hash": "5f40ed57b90c721e"
+  },
+  "ch8.m6.c28": {
+   "url": "assets/voice/ch8.m6.c28.m4a",
+   "seconds": 7.16,
+   "hash": "12b56e25f2c991b9"
+  },
+  "ch8.m6.c29": {
+   "url": "assets/voice/ch8.m6.c29.m4a",
+   "seconds": 10.5,
+   "hash": "f4baf80b254a0c2c"
+  },
+  "ch8.m7.b01": {
+   "url": "assets/voice/ch8.m7.b01.m4a",
+   "seconds": 3.73,
+   "hash": "eddd8875cb6f75e3"
+  },
+  "ch8.m7.b02": {
+   "url": "assets/voice/ch8.m7.b02.m4a",
+   "seconds": 2.91,
+   "hash": "f95399db0108828f"
+  },
+  "ch8.m7.b03": {
+   "url": "assets/voice/ch8.m7.b03.m4a",
+   "seconds": 2.03,
+   "hash": "bb7966b816b07bfd"
+  },
+  "ch8.m7.c01": {
+   "url": "assets/voice/ch8.m7.c01.m4a",
+   "seconds": 9.66,
+   "hash": "fcad0d08cea9a3f8"
+  },
+  "ch8.m7.c02": {
+   "url": "assets/voice/ch8.m7.c02.m4a",
+   "seconds": 11.71,
+   "hash": "6fa6dca45ba43c2c"
+  },
+  "ch8.m7.c03": {
+   "url": "assets/voice/ch8.m7.c03.m4a",
+   "seconds": 10.49,
+   "hash": "4be77a1b118131b1"
+  },
+  "ch8.m7.c04": {
+   "url": "assets/voice/ch8.m7.c04.m4a",
+   "seconds": 3.87,
+   "hash": "be3a2a2a1f46bffd"
+  },
+  "ch8.m7.c05": {
+   "url": "assets/voice/ch8.m7.c05.m4a",
+   "seconds": 4.31,
+   "hash": "2dd6c9e197ee1167"
+  },
+  "ch8.m7.c06": {
+   "url": "assets/voice/ch8.m7.c06.m4a",
+   "seconds": 10.05,
+   "hash": "fc0d9585da1d01bc"
+  },
+  "ch8.m7.c07": {
+   "url": "assets/voice/ch8.m7.c07.m4a",
+   "seconds": 12.07,
+   "hash": "73575eb7f73fbd4d"
+  },
+  "ch8.m7.c08": {
+   "url": "assets/voice/ch8.m7.c08.m4a",
+   "seconds": 10.49,
+   "hash": "72af03128559c5da"
+  },
+  "ch8.m7.c09": {
+   "url": "assets/voice/ch8.m7.c09.m4a",
+   "seconds": 10.38,
+   "hash": "bf109e22dc467dd8"
+  },
+  "ch8.m7.c10": {
+   "url": "assets/voice/ch8.m7.c10.m4a",
+   "seconds": 4.96,
+   "hash": "df157bbf5d49fce9"
+  },
+  "ch8.m7.c11": {
+   "url": "assets/voice/ch8.m7.c11.m4a",
+   "seconds": 10.68,
+   "hash": "812ebccbbc3e3565"
+  },
+  "ch8.m7.c12": {
+   "url": "assets/voice/ch8.m7.c12.m4a",
+   "seconds": 9.69,
+   "hash": "6245404f5550fa02"
+  },
+  "ch8.m7.c13": {
+   "url": "assets/voice/ch8.m7.c13.m4a",
+   "seconds": 11.74,
+   "hash": "456c6e41d57f0ec3"
+  },
+  "ch8.m7.c14": {
+   "url": "assets/voice/ch8.m7.c14.m4a",
+   "seconds": 2.06,
+   "hash": "e7a93c1c30abd299"
+  },
+  "ch8.m7.c15": {
+   "url": "assets/voice/ch8.m7.c15.m4a",
+   "seconds": 8.25,
+   "hash": "0c70779144da2bc6"
+  },
+  "ch8.m7.c16": {
+   "url": "assets/voice/ch8.m7.c16.m4a",
+   "seconds": 9.54,
+   "hash": "021ca79075bfac1e"
+  },
+  "ch8.m7.c17": {
+   "url": "assets/voice/ch8.m7.c17.m4a",
+   "seconds": 8.13,
+   "hash": "37dab13426fd443b"
+  },
+  "ch8.m7.c18": {
+   "url": "assets/voice/ch8.m7.c18.m4a",
+   "seconds": 9.15,
+   "hash": "69f6ea522f361d46"
+  },
+  "ch8.m7.c19": {
+   "url": "assets/voice/ch8.m7.c19.m4a",
+   "seconds": 7.63,
+   "hash": "6f24089a9d309469"
+  },
+  "ch8.m7.c20": {
+   "url": "assets/voice/ch8.m7.c20.m4a",
+   "seconds": 2.45,
+   "hash": "0e139c1040665027"
+  },
+  "ch8.m7.c21": {
+   "url": "assets/voice/ch8.m7.c21.m4a",
+   "seconds": 9.88,
+   "hash": "9d135e1172df474f"
+  },
+  "ch8.m7.c22": {
+   "url": "assets/voice/ch8.m7.c22.m4a",
+   "seconds": 9.6,
+   "hash": "2fa1e10a135b18c1"
+  },
+  "ch8.m7.c23": {
+   "url": "assets/voice/ch8.m7.c23.m4a",
+   "seconds": 2.72,
+   "hash": "3e67f667e696648c"
+  },
+  "ch8.m7.c24": {
+   "url": "assets/voice/ch8.m7.c24.m4a",
+   "seconds": 2.31,
+   "hash": "6d59419a1afbba7c"
+  },
+  "ch8.m7.c25": {
+   "url": "assets/voice/ch8.m7.c25.m4a",
+   "seconds": 8.25,
+   "hash": "2762b98979168ba7"
+  },
+  "ch8.m7.c26": {
+   "url": "assets/voice/ch8.m7.c26.m4a",
+   "seconds": 0.65,
+   "hash": "1f3ab2dc4e829a0d"
+  },
+  "ch8.m7.c27": {
+   "url": "assets/voice/ch8.m7.c27.m4a",
+   "seconds": 11.49,
+   "hash": "6253850270d8532b"
+  },
+  "ch8.m7.c28": {
+   "url": "assets/voice/ch8.m7.c28.m4a",
+   "seconds": 4.57,
+   "hash": "b18f5fbdcdfb85f6"
+  },
+  "ch8.mepi.01": {
+   "url": "assets/voice/ch8.mepi.01.m4a",
+   "seconds": 6.41,
+   "hash": "c7215cd6c7da76b4"
+  },
+  "ch8.mepi.02": {
+   "url": "assets/voice/ch8.mepi.02.m4a",
+   "seconds": 9.71,
+   "hash": "0cb99df777fbc082"
+  },
+  "ch8.mepi.03": {
+   "url": "assets/voice/ch8.mepi.03.m4a",
+   "seconds": 6.73,
+   "hash": "05d9f52213ded71d"
+  },
+  "ch8.mepi.04": {
+   "url": "assets/voice/ch8.mepi.04.m4a",
+   "seconds": 9.47,
+   "hash": "dd9371a21bda0ec8"
+  },
+  "ch8.mepi.05": {
+   "url": "assets/voice/ch8.mepi.05.m4a",
+   "seconds": 5.8,
+   "hash": "75f4f80dc30a7f24"
+  },
+  "ch8.mepi.06": {
+   "url": "assets/voice/ch8.mepi.06.m4a",
+   "seconds": 9.8,
+   "hash": "7b83b9df38530e17"
+  },
+  "ch8.mepi.07": {
+   "url": "assets/voice/ch8.mepi.07.m4a",
+   "seconds": 7.99,
+   "hash": "b6f45e2a31cb900c"
+  },
+  "ch8.mepi.08": {
+   "url": "assets/voice/ch8.mepi.08.m4a",
+   "seconds": 12.5,
+   "hash": "d74e5ec7f92748c0"
+  },
+  "ch8.mepi.09": {
+   "url": "assets/voice/ch8.mepi.09.m4a",
+   "seconds": 8.03,
+   "hash": "bdbbe7213e9cd31f"
+  },
+  "ch8.mepi.10": {
+   "url": "assets/voice/ch8.mepi.10.m4a",
+   "seconds": 10.05,
+   "hash": "66cb579ca7bb7c30"
+  },
+  "ch8.mepi.11": {
+   "url": "assets/voice/ch8.mepi.11.m4a",
+   "seconds": 11.89,
+   "hash": "44406bbf2e08ff88"
+  },
+  "ch8.mepi.12": {
+   "url": "assets/voice/ch8.mepi.12.m4a",
+   "seconds": 4.64,
+   "hash": "47e7244ea59a1814"
+  },
+  "ch8.mepi.13": {
+   "url": "assets/voice/ch8.mepi.13.m4a",
+   "seconds": 11.36,
+   "hash": "9fc519d2a0f89904"
+  },
+  "ch8.mepi.14": {
+   "url": "assets/voice/ch8.mepi.14.m4a",
+   "seconds": 13.56,
+   "hash": "f38b9797c7547d01"
+  },
+  "ch8.mepi.15": {
+   "url": "assets/voice/ch8.mepi.15.m4a",
+   "seconds": 10.61,
+   "hash": "4228a98f515f9da8"
+  },
+  "ch8.mepi.16": {
+   "url": "assets/voice/ch8.mepi.16.m4a",
+   "seconds": 15.13,
+   "hash": "7780d90fb2796147"
+  },
+  "ch8.mepi.17": {
+   "url": "assets/voice/ch8.mepi.17.m4a",
+   "seconds": 12.81,
+   "hash": "2897d1da63297708"
+  },
+  "ch8.mepi.18": {
+   "url": "assets/voice/ch8.mepi.18.m4a",
+   "seconds": 9.38,
+   "hash": "0a2b35efa28386e7"
+  },
+  "ch8.mepi.19": {
+   "url": "assets/voice/ch8.mepi.19.m4a",
+   "seconds": 10.2,
+   "hash": "6abb2e096c5aec4b"
+  },
+  "ch8.mepi.20": {
+   "url": "assets/voice/ch8.mepi.20.m4a",
+   "seconds": 0.55,
+   "hash": "122c5b90fee588d7"
+  },
+  "ch8.mepi.21": {
+   "url": "assets/voice/ch8.mepi.21.m4a",
+   "seconds": 10.04,
+   "hash": "054e957bd1b930d1"
+  },
+  "ch8.mepi.22": {
+   "url": "assets/voice/ch8.mepi.22.m4a",
+   "seconds": 6.83,
+   "hash": "f572551d88de5a36"
+  },
+  "ch8.mepi.23": {
+   "url": "assets/voice/ch8.mepi.23.m4a",
+   "seconds": 6.88,
+   "hash": "bc0436d62108a8fd"
+  },
+  "ch8.mepi.24": {
+   "url": "assets/voice/ch8.mepi.24.m4a",
+   "seconds": 6.36,
+   "hash": "9d71ea0623f53e7a"
+  },
+  "ch8.mepi.25": {
+   "url": "assets/voice/ch8.mepi.25.m4a",
+   "seconds": 4.91,
+   "hash": "dcf37eec3b7825cd"
+  },
+  "ch8.mepi.26": {
+   "url": "assets/voice/ch8.mepi.26.m4a",
+   "seconds": 5.13,
+   "hash": "74787407ad420228"
+  },
+  "ch8.mepi.27": {
+   "url": "assets/voice/ch8.mepi.27.m4a",
+   "seconds": 8.99,
+   "hash": "d34b1c818b95ffca"
+  },
+  "ch8.mepi.28": {
+   "url": "assets/voice/ch8.mepi.28.m4a",
+   "seconds": 12.58,
+   "hash": "2bf664441036fa6e"
+  },
+  "ch8.mepi.29": {
+   "url": "assets/voice/ch8.mepi.29.m4a",
+   "seconds": 12.6,
+   "hash": "2c7bd343b4e6dbbc"
+  },
+  "ch8.pro.01": {
+   "url": "assets/voice/ch8.pro.01.m4a",
+   "seconds": 8.5,
+   "hash": "f05c0ca91eec587c"
+  },
+  "ch8.pro.02": {
+   "url": "assets/voice/ch8.pro.02.m4a",
+   "seconds": 8.72,
+   "hash": "3d608c6099a452e2"
+  },
+  "ch8.pro.03": {
+   "url": "assets/voice/ch8.pro.03.m4a",
+   "seconds": 8.67,
+   "hash": "6e5742f9923caae2"
+  },
+  "ch8.pro.04": {
+   "url": "assets/voice/ch8.pro.04.m4a",
+   "seconds": 9.53,
+   "hash": "2758e382f9bcdd2b"
+  },
+  "ch8.pro.05": {
+   "url": "assets/voice/ch8.pro.05.m4a",
+   "seconds": 10.23,
+   "hash": "632d9300cba86376"
+  },
+  "ch8.pro.06": {
+   "url": "assets/voice/ch8.pro.06.m4a",
+   "seconds": 6.2,
+   "hash": "827a901dd1dc7791"
+  },
+  "ch8.pro.07": {
+   "url": "assets/voice/ch8.pro.07.m4a",
+   "seconds": 5.57,
+   "hash": "23ed609c09cc95cc"
+  },
+  "ch8.pro.08": {
+   "url": "assets/voice/ch8.pro.08.m4a",
+   "seconds": 10.48,
+   "hash": "7ef0a9e8957719c0"
+  },
+  "ch8.pro.09": {
+   "url": "assets/voice/ch8.pro.09.m4a",
+   "seconds": 6.02,
+   "hash": "2b34d33b9e81dcad"
+  },
+  "ch8.pro.10": {
+   "url": "assets/voice/ch8.pro.10.m4a",
+   "seconds": 2.15,
+   "hash": "04803f4fad5de367"
+  },
+  "ch8.pro.11": {
+   "url": "assets/voice/ch8.pro.11.m4a",
+   "seconds": 4.5,
+   "hash": "a284db02a2b00251"
+  },
+  "ch8.pro.12": {
+   "url": "assets/voice/ch8.pro.12.m4a",
+   "seconds": 0.91,
+   "hash": "4b504c1f45b6085b"
+  },
+  "ch8.pro.13": {
+   "url": "assets/voice/ch8.pro.13.m4a",
+   "seconds": 9.27,
+   "hash": "48200c9713c90baf"
+  },
+  "ch8.pro.14": {
+   "url": "assets/voice/ch8.pro.14.m4a",
+   "seconds": 9.25,
+   "hash": "762e9e3b89feec86"
+  },
+  "ch8.pro.15": {
+   "url": "assets/voice/ch8.pro.15.m4a",
+   "seconds": 9.19,
+   "hash": "8a9678808431baf0"
+  },
+  "ch8.pro.16": {
+   "url": "assets/voice/ch8.pro.16.m4a",
+   "seconds": 9.49,
+   "hash": "6a4989ec67536cd8"
+  },
+  "ch8.s1.b01": {
+   "url": "assets/voice/ch8.s1.b01.m4a",
+   "seconds": 3.91,
+   "hash": "6c76437d19e7190f"
+  },
+  "ch8.s1.b02": {
+   "url": "assets/voice/ch8.s1.b02.m4a",
+   "seconds": 3.99,
+   "hash": "96eb863ca53ff797"
+  },
+  "ch8.s1.b03": {
+   "url": "assets/voice/ch8.s1.b03.m4a",
+   "seconds": 1.89,
+   "hash": "7e95aa6ac4846719"
+  },
+  "ch8.s1.c01": {
+   "url": "assets/voice/ch8.s1.c01.m4a",
+   "seconds": 8.92,
+   "hash": "d1abc788f5c7c5c5"
+  },
+  "ch8.s1.c02": {
+   "url": "assets/voice/ch8.s1.c02.m4a",
+   "seconds": 7.02,
+   "hash": "c293917a97b088e5"
+  },
+  "ch8.s1.c03": {
+   "url": "assets/voice/ch8.s1.c03.m4a",
+   "seconds": 9.5,
+   "hash": "275017a35cb42983"
+  },
+  "ch8.s1.c04": {
+   "url": "assets/voice/ch8.s1.c04.m4a",
+   "seconds": 10.32,
+   "hash": "30d913efb51339a1"
+  },
+  "ch8.s1.c05": {
+   "url": "assets/voice/ch8.s1.c05.m4a",
+   "seconds": 11.03,
+   "hash": "2028b7fd3ed9096c"
+  },
+  "ch8.s1.c06": {
+   "url": "assets/voice/ch8.s1.c06.m4a",
+   "seconds": 1.91,
+   "hash": "8bbd4c3c792f4729"
+  },
+  "ch8.s1.c07": {
+   "url": "assets/voice/ch8.s1.c07.m4a",
+   "seconds": 8.25,
+   "hash": "a1814ba9d855cba5"
+  },
+  "ch8.s1.c08": {
+   "url": "assets/voice/ch8.s1.c08.m4a",
+   "seconds": 11.34,
+   "hash": "ccb2d80925a68869"
+  },
+  "ch8.s1.c09": {
+   "url": "assets/voice/ch8.s1.c09.m4a",
+   "seconds": 9.18,
+   "hash": "65190c0873448c45"
+  },
+  "ch8.s1.c10": {
+   "url": "assets/voice/ch8.s1.c10.m4a",
+   "seconds": 3.41,
+   "hash": "ced41513181a6117"
+  },
+  "ch8.s1.c11": {
+   "url": "assets/voice/ch8.s1.c11.m4a",
+   "seconds": 4.11,
+   "hash": "1d329045bdf8ad66"
+  },
+  "ch8.s1.c12": {
+   "url": "assets/voice/ch8.s1.c12.m4a",
+   "seconds": 4.36,
+   "hash": "3186ba4eaf0caa1b"
+  },
+  "ch8.s1.c13": {
+   "url": "assets/voice/ch8.s1.c13.m4a",
+   "seconds": 5.31,
+   "hash": "06a0a6e7a257645a"
+  },
+  "ch8.s1.c14": {
+   "url": "assets/voice/ch8.s1.c14.m4a",
+   "seconds": 4.62,
+   "hash": "5426bff35d7d9d35"
+  },
+  "ch8.s1.c15": {
+   "url": "assets/voice/ch8.s1.c15.m4a",
+   "seconds": 8.79,
+   "hash": "bf99eeb8fa58a0c6"
+  },
+  "ch8.s1.c16": {
+   "url": "assets/voice/ch8.s1.c16.m4a",
+   "seconds": 8.25,
+   "hash": "80e1fa4ddda35cae"
+  },
+  "ch8.s1.c17": {
+   "url": "assets/voice/ch8.s1.c17.m4a",
+   "seconds": 8.21,
+   "hash": "0572c12d439a6931"
+  },
+  "ch8.s1.c18": {
+   "url": "assets/voice/ch8.s1.c18.m4a",
+   "seconds": 8.84,
+   "hash": "5a80b816cb64533c"
+  },
+  "ch8.s1.c19": {
+   "url": "assets/voice/ch8.s1.c19.m4a",
+   "seconds": 8.83,
+   "hash": "9d58ed6814168861"
+  },
+  "ch8.s1.c20": {
+   "url": "assets/voice/ch8.s1.c20.m4a",
+   "seconds": 3.95,
+   "hash": "0a4fc9ac308debbe"
+  },
+  "ch8.s1.c21": {
+   "url": "assets/voice/ch8.s1.c21.m4a",
+   "seconds": 10.67,
+   "hash": "902f610fd0a7e24e"
+  },
+  "ch8.s1.c22": {
+   "url": "assets/voice/ch8.s1.c22.m4a",
+   "seconds": 9.88,
+   "hash": "c8640f2f26c9278c"
+  },
+  "ch8.s1.c23": {
+   "url": "assets/voice/ch8.s1.c23.m4a",
+   "seconds": 9.92,
+   "hash": "2141f07baa52e142"
+  },
+  "ch8.s1.c24": {
+   "url": "assets/voice/ch8.s1.c24.m4a",
+   "seconds": 4.24,
+   "hash": "6d2e3a57c063e0ac"
+  },
+  "ch8.s1.c25": {
+   "url": "assets/voice/ch8.s1.c25.m4a",
+   "seconds": 8.39,
+   "hash": "cbab53434f562395"
+  },
+  "ch8.s1.c26": {
+   "url": "assets/voice/ch8.s1.c26.m4a",
+   "seconds": 7.69,
+   "hash": "d5c07865995ed277"
+  },
+  "ch8.s1.c27": {
+   "url": "assets/voice/ch8.s1.c27.m4a",
+   "seconds": 0.9,
+   "hash": "457827ae21a3b00e"
+  },
+  "ch8.s1.c28": {
+   "url": "assets/voice/ch8.s1.c28.m4a",
+   "seconds": 4.29,
+   "hash": "24bf7741e1e6ef4c"
+  },
+  "ch8.s1.c29": {
+   "url": "assets/voice/ch8.s1.c29.m4a",
+   "seconds": 9.94,
+   "hash": "3a981c250ff4e075"
+  },
+  "ch8.s1.c30": {
+   "url": "assets/voice/ch8.s1.c30.m4a",
+   "seconds": 6.31,
+   "hash": "276fcef00a9400e3"
+  },
+  "ch8.s2.b01": {
+   "url": "assets/voice/ch8.s2.b01.m4a",
+   "seconds": 3.44,
+   "hash": "76ea55389e3080ea"
+  },
+  "ch8.s2.b02": {
+   "url": "assets/voice/ch8.s2.b02.m4a",
+   "seconds": 3.22,
+   "hash": "eb19215bbd7f98ad"
+  },
+  "ch8.s2.b03": {
+   "url": "assets/voice/ch8.s2.b03.m4a",
+   "seconds": 1.54,
+   "hash": "a165d2698e7c5962"
+  },
+  "ch8.s2.c01": {
+   "url": "assets/voice/ch8.s2.c01.m4a",
+   "seconds": 9.71,
+   "hash": "5988589013fdcee5"
+  },
+  "ch8.s2.c02": {
+   "url": "assets/voice/ch8.s2.c02.m4a",
+   "seconds": 10.18,
+   "hash": "93d5044c0c80aaed"
+  },
+  "ch8.s2.c03": {
+   "url": "assets/voice/ch8.s2.c03.m4a",
+   "seconds": 11.04,
+   "hash": "7480611a6d6418e4"
+  },
+  "ch8.s2.c04": {
+   "url": "assets/voice/ch8.s2.c04.m4a",
+   "seconds": 5.85,
+   "hash": "890eed442503f5b0"
+  },
+  "ch8.s2.c05": {
+   "url": "assets/voice/ch8.s2.c05.m4a",
+   "seconds": 8.97,
+   "hash": "4062418288320020"
+  },
+  "ch8.s2.c06": {
+   "url": "assets/voice/ch8.s2.c06.m4a",
+   "seconds": 8.79,
+   "hash": "69bd9c6b54f13a0d"
+  },
+  "ch8.s2.c07": {
+   "url": "assets/voice/ch8.s2.c07.m4a",
+   "seconds": 12,
+   "hash": "fc16aa87bcb4dffd"
+  },
+  "ch8.s2.c08": {
+   "url": "assets/voice/ch8.s2.c08.m4a",
+   "seconds": 6.83,
+   "hash": "83b2cb23abb745d7"
+  },
+  "ch8.s2.c09": {
+   "url": "assets/voice/ch8.s2.c09.m4a",
+   "seconds": 2.61,
+   "hash": "2484aff8d25092d0"
+  },
+  "ch8.s2.c10": {
+   "url": "assets/voice/ch8.s2.c10.m4a",
+   "seconds": 5.74,
+   "hash": "8edda97363520a3b"
+  },
+  "ch8.s2.c11": {
+   "url": "assets/voice/ch8.s2.c11.m4a",
+   "seconds": 8.83,
+   "hash": "5ef4e4c6182ad3b7"
+  },
+  "ch8.s2.c12": {
+   "url": "assets/voice/ch8.s2.c12.m4a",
+   "seconds": 7.42,
+   "hash": "605a2558bd0c9e5e"
+  },
+  "ch8.s2.c13": {
+   "url": "assets/voice/ch8.s2.c13.m4a",
+   "seconds": 7.27,
+   "hash": "fb93e65d4d8e471a"
+  },
+  "ch8.s2.c14": {
+   "url": "assets/voice/ch8.s2.c14.m4a",
+   "seconds": 4.59,
+   "hash": "1c1bee533fbc7c40"
+  },
+  "ch8.s2.c15": {
+   "url": "assets/voice/ch8.s2.c15.m4a",
+   "seconds": 6.43,
+   "hash": "55d837d03c734d6a"
+  },
+  "ch8.s2.c16": {
+   "url": "assets/voice/ch8.s2.c16.m4a",
+   "seconds": 8.55,
+   "hash": "0ba46dde48fd90d9"
+  },
+  "ch8.s2.c17": {
+   "url": "assets/voice/ch8.s2.c17.m4a",
+   "seconds": 8.72,
+   "hash": "dcdd409a4d5123d2"
+  },
+  "ch8.s2.c18": {
+   "url": "assets/voice/ch8.s2.c18.m4a",
+   "seconds": 9.65,
+   "hash": "750a5be8fcbbb918"
+  },
+  "ch8.s2.c19": {
+   "url": "assets/voice/ch8.s2.c19.m4a",
+   "seconds": 7.72,
+   "hash": "aabbf7f962082667"
+  },
+  "ch8.s2.c20": {
+   "url": "assets/voice/ch8.s2.c20.m4a",
+   "seconds": 8.1,
+   "hash": "c27993ea85e0dcd2"
+  },
+  "ch8.s2.c21": {
+   "url": "assets/voice/ch8.s2.c21.m4a",
+   "seconds": 10.88,
+   "hash": "bc5eeb72e71a7f0d"
+  },
+  "ch8.s2.c22": {
+   "url": "assets/voice/ch8.s2.c22.m4a",
+   "seconds": 7.63,
+   "hash": "faae7fb6d30ae444"
+  },
+  "ch8.s2.c23": {
+   "url": "assets/voice/ch8.s2.c23.m4a",
+   "seconds": 7.73,
+   "hash": "c0bede4dc290d029"
+  },
+  "ch8.s2.c24": {
+   "url": "assets/voice/ch8.s2.c24.m4a",
+   "seconds": 5.67,
+   "hash": "8a67af2b3f253a78"
+  },
+  "ch8.s2.c25": {
+   "url": "assets/voice/ch8.s2.c25.m4a",
+   "seconds": 7.03,
+   "hash": "121f8168ed7e3bab"
+  },
+  "ch8.s2.c26": {
+   "url": "assets/voice/ch8.s2.c26.m4a",
+   "seconds": 9.68,
+   "hash": "b80a8c30bcc760ea"
+  },
+  "ch8.s2.c27": {
+   "url": "assets/voice/ch8.s2.c27.m4a",
+   "seconds": 10.06,
+   "hash": "616f73e33ca8ec5c"
+  },
+  "ch8.s3.b01": {
+   "url": "assets/voice/ch8.s3.b01.m4a",
+   "seconds": 3.28,
+   "hash": "1175b6976ebc8f1c"
+  },
+  "ch8.s3.b02": {
+   "url": "assets/voice/ch8.s3.b02.m4a",
+   "seconds": 3.83,
+   "hash": "e021716ba2bb9d98"
+  },
+  "ch8.s3.b03": {
+   "url": "assets/voice/ch8.s3.b03.m4a",
+   "seconds": 2.58,
+   "hash": "3cd647040bae973d"
+  },
+  "ch8.s3.c01": {
+   "url": "assets/voice/ch8.s3.c01.m4a",
+   "seconds": 8.48,
+   "hash": "62bb556914bf12aa"
+  },
+  "ch8.s3.c02": {
+   "url": "assets/voice/ch8.s3.c02.m4a",
+   "seconds": 2.7,
+   "hash": "daa07e8c9cf60b0f"
+  },
+  "ch8.s3.c03": {
+   "url": "assets/voice/ch8.s3.c03.m4a",
+   "seconds": 2.66,
+   "hash": "c00face01d60dc09"
+  },
+  "ch8.s3.c04": {
+   "url": "assets/voice/ch8.s3.c04.m4a",
+   "seconds": 0.36,
+   "hash": "244fa585da5d7fc4"
+  },
+  "ch8.s3.c05": {
+   "url": "assets/voice/ch8.s3.c05.m4a",
+   "seconds": 10.84,
+   "hash": "6269a1bf0346b00d"
+  },
+  "ch8.s3.c06": {
+   "url": "assets/voice/ch8.s3.c06.m4a",
+   "seconds": 7.71,
+   "hash": "72f2bec6a24d7936"
+  },
+  "ch8.s3.c07": {
+   "url": "assets/voice/ch8.s3.c07.m4a",
+   "seconds": 11.2,
+   "hash": "4f5dcaef5857e691"
+  },
+  "ch8.s3.c08": {
+   "url": "assets/voice/ch8.s3.c08.m4a",
+   "seconds": 1.4,
+   "hash": "2669ecab6462d332"
+  },
+  "ch8.s3.c09": {
+   "url": "assets/voice/ch8.s3.c09.m4a",
+   "seconds": 6.98,
+   "hash": "6a222cbdf6bf9ba6"
+  },
+  "ch8.s3.c10": {
+   "url": "assets/voice/ch8.s3.c10.m4a",
+   "seconds": 6.28,
+   "hash": "13fc6a2f37faf228"
+  },
+  "ch8.s3.c11": {
+   "url": "assets/voice/ch8.s3.c11.m4a",
+   "seconds": 11.3,
+   "hash": "d23ce0e95d1118ad"
+  },
+  "ch8.s3.c12": {
+   "url": "assets/voice/ch8.s3.c12.m4a",
+   "seconds": 7.36,
+   "hash": "1067467dc625a6c7"
+  },
+  "ch8.s3.c13": {
+   "url": "assets/voice/ch8.s3.c13.m4a",
+   "seconds": 10.53,
+   "hash": "58fe593eb4f062b4"
+  },
+  "ch8.s3.c14": {
+   "url": "assets/voice/ch8.s3.c14.m4a",
+   "seconds": 6.51,
+   "hash": "f5e371b9cf6f60cf"
+  },
+  "ch8.s3.c15": {
+   "url": "assets/voice/ch8.s3.c15.m4a",
+   "seconds": 9.44,
+   "hash": "bcf057c850eea448"
+  },
+  "ch8.s3.c16": {
+   "url": "assets/voice/ch8.s3.c16.m4a",
+   "seconds": 6.32,
+   "hash": "7baa37b1b916c617"
+  },
+  "ch8.s3.c17": {
+   "url": "assets/voice/ch8.s3.c17.m4a",
+   "seconds": 8.7,
+   "hash": "088ac6724ca6d897"
+  },
+  "ch8.s3.c18": {
+   "url": "assets/voice/ch8.s3.c18.m4a",
+   "seconds": 8.85,
+   "hash": "aa9722fb28e0507c"
+  },
+  "ch8.s3.c19": {
+   "url": "assets/voice/ch8.s3.c19.m4a",
+   "seconds": 7.08,
+   "hash": "442b6bcdebae6f1e"
+  },
+  "ch8.s3.c20": {
+   "url": "assets/voice/ch8.s3.c20.m4a",
+   "seconds": 8.19,
+   "hash": "9d30a99acd136f37"
+  },
+  "ch8.s3.c21": {
+   "url": "assets/voice/ch8.s3.c21.m4a",
+   "seconds": 5.58,
+   "hash": "611097d49e74628e"
+  },
+  "ch8.s3.c22": {
+   "url": "assets/voice/ch8.s3.c22.m4a",
+   "seconds": 8.61,
+   "hash": "0a14baa77598ff35"
+  },
+  "ch8.s3.c23": {
+   "url": "assets/voice/ch8.s3.c23.m4a",
+   "seconds": 7.82,
+   "hash": "fc6c1ad5ff54507b"
+  },
+  "ch8.s3.c24": {
+   "url": "assets/voice/ch8.s3.c24.m4a",
+   "seconds": 9.87,
+   "hash": "7d8d3176088d8072"
+  },
+  "ch8.s3.c25": {
+   "url": "assets/voice/ch8.s3.c25.m4a",
+   "seconds": 1.83,
+   "hash": "5263f76f55b5a514"
+  },
+  "ch8.s3.c26": {
+   "url": "assets/voice/ch8.s3.c26.m4a",
+   "seconds": 10.23,
+   "hash": "e6ab6c5df6c307d4"
+  },
+  "ch8.s3.c27": {
+   "url": "assets/voice/ch8.s3.c27.m4a",
+   "seconds": 6.34,
+   "hash": "8efa41016a9e1218"
+  },
+  "ch8.s3.c28": {
+   "url": "assets/voice/ch8.s3.c28.m4a",
+   "seconds": 8.63,
+   "hash": "00ee0ee604918a27"
+  },
+  "ch8.s4.b01": {
+   "url": "assets/voice/ch8.s4.b01.m4a",
+   "seconds": 4.07,
+   "hash": "fe3920ff13ce6972"
+  },
+  "ch8.s4.b02": {
+   "url": "assets/voice/ch8.s4.b02.m4a",
+   "seconds": 2.22,
+   "hash": "78a3323be3ec2300"
+  },
+  "ch8.s4.b03": {
+   "url": "assets/voice/ch8.s4.b03.m4a",
+   "seconds": 2.33,
+   "hash": "35eca8ac91ad031b"
+  },
+  "ch8.s4.c01": {
+   "url": "assets/voice/ch8.s4.c01.m4a",
+   "seconds": 9.46,
+   "hash": "022ab13ce6cfe900"
+  },
+  "ch8.s4.c02": {
+   "url": "assets/voice/ch8.s4.c02.m4a",
+   "seconds": 10.33,
+   "hash": "342f9557904e61da"
+  },
+  "ch8.s4.c03": {
+   "url": "assets/voice/ch8.s4.c03.m4a",
+   "seconds": 8.62,
+   "hash": "8a650df4a7166f11"
+  },
+  "ch8.s4.c04": {
+   "url": "assets/voice/ch8.s4.c04.m4a",
+   "seconds": 10.88,
+   "hash": "963984f365cc7b60"
+  },
+  "ch8.s4.c05": {
+   "url": "assets/voice/ch8.s4.c05.m4a",
+   "seconds": 11.81,
+   "hash": "e1117c13b6f7ade4"
+  },
+  "ch8.s4.c06": {
+   "url": "assets/voice/ch8.s4.c06.m4a",
+   "seconds": 10.66,
+   "hash": "944867eb8207bb53"
+  },
+  "ch8.s4.c07": {
+   "url": "assets/voice/ch8.s4.c07.m4a",
+   "seconds": 8.05,
+   "hash": "35c439034f9ccd78"
+  },
+  "ch8.s4.c08": {
+   "url": "assets/voice/ch8.s4.c08.m4a",
+   "seconds": 3.29,
+   "hash": "b2cf4c04b0457c9a"
+  },
+  "ch8.s4.c09": {
+   "url": "assets/voice/ch8.s4.c09.m4a",
+   "seconds": 6.97,
+   "hash": "74dc4c87baa55555"
+  },
+  "ch8.s4.c10": {
+   "url": "assets/voice/ch8.s4.c10.m4a",
+   "seconds": 12.94,
+   "hash": "ae5186eba89f0be4"
+  },
+  "ch8.s4.c11": {
+   "url": "assets/voice/ch8.s4.c11.m4a",
+   "seconds": 6.88,
+   "hash": "60d7f0b4c9fd1521"
+  },
+  "ch8.s4.c12": {
+   "url": "assets/voice/ch8.s4.c12.m4a",
+   "seconds": 7.03,
+   "hash": "375abe26289e1b71"
+  },
+  "ch8.s4.c13": {
+   "url": "assets/voice/ch8.s4.c13.m4a",
+   "seconds": 4.99,
+   "hash": "31148fef581c5446"
+  },
+  "ch8.s4.c14": {
+   "url": "assets/voice/ch8.s4.c14.m4a",
+   "seconds": 7.7,
+   "hash": "ef62acd2a1bf3b58"
+  },
+  "ch8.s4.c15": {
+   "url": "assets/voice/ch8.s4.c15.m4a",
+   "seconds": 8.64,
+   "hash": "3fb7c7ca3dd7ae15"
+  },
+  "ch8.s4.c16": {
+   "url": "assets/voice/ch8.s4.c16.m4a",
+   "seconds": 7.69,
+   "hash": "a46297d77d51dd8e"
+  },
+  "ch8.s4.c17": {
+   "url": "assets/voice/ch8.s4.c17.m4a",
+   "seconds": 11.15,
+   "hash": "7eca28823271da30"
+  },
+  "ch8.s4.c18": {
+   "url": "assets/voice/ch8.s4.c18.m4a",
+   "seconds": 6.78,
+   "hash": "1d5d5f7022d0b4c3"
+  },
+  "ch8.s4.c19": {
+   "url": "assets/voice/ch8.s4.c19.m4a",
+   "seconds": 5.59,
+   "hash": "a83de2f32cb33744"
+  },
+  "ch8.s4.c20": {
+   "url": "assets/voice/ch8.s4.c20.m4a",
+   "seconds": 2.61,
+   "hash": "59fff59ff1e1400d"
+  },
+  "ch8.s4.c21": {
+   "url": "assets/voice/ch8.s4.c21.m4a",
+   "seconds": 12.82,
+   "hash": "0c4531e0a2ce36cd"
+  },
+  "ch8.s4.c22": {
+   "url": "assets/voice/ch8.s4.c22.m4a",
+   "seconds": 7.84,
+   "hash": "878c3a01bca37c2b"
+  },
+  "ch8.s4.c23": {
+   "url": "assets/voice/ch8.s4.c23.m4a",
+   "seconds": 1.69,
+   "hash": "1a9858d2fe47db4a"
+  },
+  "ch8.s4.c24": {
+   "url": "assets/voice/ch8.s4.c24.m4a",
+   "seconds": 8.98,
+   "hash": "f77b8c9bc3ed2728"
+  },
+  "ch8.s4.c25": {
+   "url": "assets/voice/ch8.s4.c25.m4a",
+   "seconds": 10.88,
+   "hash": "f40718c81b240e0f"
+  },
+  "ch8.s4.c26": {
+   "url": "assets/voice/ch8.s4.c26.m4a",
+   "seconds": 3.93,
+   "hash": "20a8218511991dc0"
+  },
+  "ch8.s4.c27": {
+   "url": "assets/voice/ch8.s4.c27.m4a",
+   "seconds": 11.67,
+   "hash": "4ddfe24e7777ab9d"
+  },
+  "ch8.s4.c28": {
+   "url": "assets/voice/ch8.s4.c28.m4a",
+   "seconds": 8.81,
+   "hash": "5171763d0b5ad76b"
+  },
+  "ch8.s4.c29": {
+   "url": "assets/voice/ch8.s4.c29.m4a",
+   "seconds": 10.37,
+   "hash": "40485e6ba3cd53c9"
+  },
+  "ch8.s4.c30": {
+   "url": "assets/voice/ch8.s4.c30.m4a",
+   "seconds": 10.17,
+   "hash": "064065c4e8e7a310"
+  },
+  "ch8.s5.b01": {
+   "url": "assets/voice/ch8.s5.b01.m4a",
+   "seconds": 4.05,
+   "hash": "8f6b2c4095ac41dd"
+  },
+  "ch8.s5.b02": {
+   "url": "assets/voice/ch8.s5.b02.m4a",
+   "seconds": 2.28,
+   "hash": "71cd90198928270a"
+  },
+  "ch8.s5.b03": {
+   "url": "assets/voice/ch8.s5.b03.m4a",
+   "seconds": 2.5,
+   "hash": "bfd8fe571d9db8e7"
+  },
+  "ch8.s5.c01": {
+   "url": "assets/voice/ch8.s5.c01.m4a",
+   "seconds": 9.21,
+   "hash": "af981042408af5dd"
+  },
+  "ch8.s5.c02": {
+   "url": "assets/voice/ch8.s5.c02.m4a",
+   "seconds": 13.43,
+   "hash": "a2896af26e9237b9"
+  },
+  "ch8.s5.c03": {
+   "url": "assets/voice/ch8.s5.c03.m4a",
+   "seconds": 8.92,
+   "hash": "4a578f310fd784fc"
+  },
+  "ch8.s5.c04": {
+   "url": "assets/voice/ch8.s5.c04.m4a",
+   "seconds": 6.85,
+   "hash": "176153dc1c0caee1"
+  },
+  "ch8.s5.c05": {
+   "url": "assets/voice/ch8.s5.c05.m4a",
+   "seconds": 8.79,
+   "hash": "6186bf820b83aaa2"
+  },
+  "ch8.s5.c06": {
+   "url": "assets/voice/ch8.s5.c06.m4a",
+   "seconds": 4.7,
+   "hash": "349bb8dc4d67a447"
+  },
+  "ch8.s5.c07": {
+   "url": "assets/voice/ch8.s5.c07.m4a",
+   "seconds": 9.92,
+   "hash": "efec6fb881e55022"
+  },
+  "ch8.s5.c08": {
+   "url": "assets/voice/ch8.s5.c08.m4a",
+   "seconds": 10.25,
+   "hash": "f5b776766f1fbadf"
+  },
+  "ch8.s5.c09": {
+   "url": "assets/voice/ch8.s5.c09.m4a",
+   "seconds": 9.2,
+   "hash": "b437caf01d0ec545"
+  },
+  "ch8.s5.c10": {
+   "url": "assets/voice/ch8.s5.c10.m4a",
+   "seconds": 3.72,
+   "hash": "c8f5f9c4e1dc9b3f"
+  },
+  "ch8.s5.c11": {
+   "url": "assets/voice/ch8.s5.c11.m4a",
+   "seconds": 11.04,
+   "hash": "cef67b3ab1dd6ab7"
+  },
+  "ch8.s5.c12": {
+   "url": "assets/voice/ch8.s5.c12.m4a",
+   "seconds": 9.95,
+   "hash": "2211dea06175f326"
+  },
+  "ch8.s5.c13": {
+   "url": "assets/voice/ch8.s5.c13.m4a",
+   "seconds": 6.54,
+   "hash": "0f0af4c24935def0"
+  },
+  "ch8.s5.c14": {
+   "url": "assets/voice/ch8.s5.c14.m4a",
+   "seconds": 8.74,
+   "hash": "46aeaf0c96e3527a"
+  },
+  "ch8.s5.c15": {
+   "url": "assets/voice/ch8.s5.c15.m4a",
+   "seconds": 7.97,
+   "hash": "91f6184f2ad880a4"
+  },
+  "ch8.s5.c16": {
+   "url": "assets/voice/ch8.s5.c16.m4a",
+   "seconds": 7.72,
+   "hash": "eb508bc8e96fa021"
+  },
+  "ch8.s5.c17": {
+   "url": "assets/voice/ch8.s5.c17.m4a",
+   "seconds": 11.03,
+   "hash": "1bfaafd9b14645c5"
+  },
+  "ch8.s5.c18": {
+   "url": "assets/voice/ch8.s5.c18.m4a",
+   "seconds": 7.85,
+   "hash": "a8cc3e82faf95141"
+  },
+  "ch8.s5.c19": {
+   "url": "assets/voice/ch8.s5.c19.m4a",
+   "seconds": 5.96,
+   "hash": "770e92a51bd9e251"
+  },
+  "ch8.s5.c20": {
+   "url": "assets/voice/ch8.s5.c20.m4a",
+   "seconds": 5.66,
+   "hash": "98f20f166e084523"
+  },
+  "ch8.s5.c21": {
+   "url": "assets/voice/ch8.s5.c21.m4a",
+   "seconds": 3.8,
+   "hash": "8aeab0c43f557285"
+  },
+  "ch8.s5.c22": {
+   "url": "assets/voice/ch8.s5.c22.m4a",
+   "seconds": 9.61,
+   "hash": "ec3aab1532a59028"
+  },
+  "ch8.s5.c23": {
+   "url": "assets/voice/ch8.s5.c23.m4a",
+   "seconds": 5.79,
+   "hash": "08e23a2e822e2e78"
+  },
+  "ch8.s5.c24": {
+   "url": "assets/voice/ch8.s5.c24.m4a",
+   "seconds": 6.05,
+   "hash": "bc3ca9c0e9540fdc"
+  },
+  "ch8.s5.c25": {
+   "url": "assets/voice/ch8.s5.c25.m4a",
+   "seconds": 10.74,
+   "hash": "6943d27261ed8ec2"
+  },
+  "ch8.s6.b01": {
+   "url": "assets/voice/ch8.s6.b01.m4a",
+   "seconds": 3.09,
+   "hash": "c5a5548815184900"
+  },
+  "ch8.s6.b02": {
+   "url": "assets/voice/ch8.s6.b02.m4a",
+   "seconds": 2.73,
+   "hash": "46ad8ba2d2da74b9"
+  },
+  "ch8.s6.b03": {
+   "url": "assets/voice/ch8.s6.b03.m4a",
+   "seconds": 1.65,
+   "hash": "4d687f43fc65c883"
+  },
+  "ch8.s6.c01": {
+   "url": "assets/voice/ch8.s6.c01.m4a",
+   "seconds": 10.13,
+   "hash": "4acfa2706f935f40"
+  },
+  "ch8.s6.c02": {
+   "url": "assets/voice/ch8.s6.c02.m4a",
+   "seconds": 10.94,
+   "hash": "f13f04880c78236d"
+  },
+  "ch8.s6.c03": {
+   "url": "assets/voice/ch8.s6.c03.m4a",
+   "seconds": 6.25,
+   "hash": "26529d53122f704a"
+  },
+  "ch8.s6.c04": {
+   "url": "assets/voice/ch8.s6.c04.m4a",
+   "seconds": 7.93,
+   "hash": "3e1a05a006028961"
+  },
+  "ch8.s6.c05": {
+   "url": "assets/voice/ch8.s6.c05.m4a",
+   "seconds": 5.03,
+   "hash": "214037a682259640"
+  },
+  "ch8.s6.c06": {
+   "url": "assets/voice/ch8.s6.c06.m4a",
+   "seconds": 11.94,
+   "hash": "0df38fd52412b2a1"
+  },
+  "ch8.s6.c07": {
+   "url": "assets/voice/ch8.s6.c07.m4a",
+   "seconds": 8.28,
+   "hash": "ba2737d23688e07a"
+  },
+  "ch8.s6.c08": {
+   "url": "assets/voice/ch8.s6.c08.m4a",
+   "seconds": 9.83,
+   "hash": "bf514693dbc2fd6f"
+  },
+  "ch8.s6.c09": {
+   "url": "assets/voice/ch8.s6.c09.m4a",
+   "seconds": 13.06,
+   "hash": "fcdf7b8163a51727"
+  },
+  "ch8.s6.c10": {
+   "url": "assets/voice/ch8.s6.c10.m4a",
+   "seconds": 5.46,
+   "hash": "0805df2bf9d4f924"
+  },
+  "ch8.s6.c11": {
+   "url": "assets/voice/ch8.s6.c11.m4a",
+   "seconds": 7.02,
+   "hash": "ebd782ea26e04f85"
+  },
+  "ch8.s6.c12": {
+   "url": "assets/voice/ch8.s6.c12.m4a",
+   "seconds": 5.98,
+   "hash": "b802a7d69788ab87"
+  },
+  "ch8.s6.c13": {
+   "url": "assets/voice/ch8.s6.c13.m4a",
+   "seconds": 12.38,
+   "hash": "4bae107640db8a85"
+  },
+  "ch8.s6.c14": {
+   "url": "assets/voice/ch8.s6.c14.m4a",
+   "seconds": 12.65,
+   "hash": "ef297c977153a240"
+  },
+  "ch8.s6.c15": {
+   "url": "assets/voice/ch8.s6.c15.m4a",
+   "seconds": 6.51,
+   "hash": "c7ac7e8267b30154"
+  },
+  "ch8.s6.c16": {
+   "url": "assets/voice/ch8.s6.c16.m4a",
+   "seconds": 6.87,
+   "hash": "bbb7493bc7f3a913"
+  },
+  "ch8.s6.c17": {
+   "url": "assets/voice/ch8.s6.c17.m4a",
+   "seconds": 9.36,
+   "hash": "e059d02f3c274471"
+  },
+  "ch8.s6.c18": {
+   "url": "assets/voice/ch8.s6.c18.m4a",
+   "seconds": 2.75,
+   "hash": "6c1abe235f8696d6"
+  },
+  "ch8.s6.c19": {
+   "url": "assets/voice/ch8.s6.c19.m4a",
+   "seconds": 12.03,
+   "hash": "711571c226c656de"
+  },
+  "ch8.s6.c20": {
+   "url": "assets/voice/ch8.s6.c20.m4a",
+   "seconds": 11.2,
+   "hash": "52760fc3a18b3b03"
+  },
+  "ch8.s6.c21": {
+   "url": "assets/voice/ch8.s6.c21.m4a",
+   "seconds": 8.09,
+   "hash": "42338649d081cf2a"
+  },
+  "ch8.s6.c22": {
+   "url": "assets/voice/ch8.s6.c22.m4a",
+   "seconds": 8.5,
+   "hash": "994f4ca668c9862d"
+  },
+  "ch8.s6.c23": {
+   "url": "assets/voice/ch8.s6.c23.m4a",
+   "seconds": 6.26,
+   "hash": "badce8c53312bc47"
+  },
+  "ch8.s6.c24": {
+   "url": "assets/voice/ch8.s6.c24.m4a",
+   "seconds": 7.84,
+   "hash": "7ccd75c4e4d019b6"
+  },
+  "ch8.s6.c25": {
+   "url": "assets/voice/ch8.s6.c25.m4a",
+   "seconds": 7.77,
+   "hash": "348e73ae0aa9f1c2"
+  },
+  "ch8.s6.c26": {
+   "url": "assets/voice/ch8.s6.c26.m4a",
+   "seconds": 6.31,
+   "hash": "ced24f0eb8b49d28"
+  },
+  "ch8.s6.c27": {
+   "url": "assets/voice/ch8.s6.c27.m4a",
+   "seconds": 3.69,
+   "hash": "4123c70b346065c5"
+  },
+  "ch8.s6.c28": {
+   "url": "assets/voice/ch8.s6.c28.m4a",
+   "seconds": 11.25,
+   "hash": "7849e7b41f5e7ece"
+  },
+  "ch8.s7.b01": {
+   "url": "assets/voice/ch8.s7.b01.m4a",
+   "seconds": 3.14,
+   "hash": "f4d815b40fe37571"
+  },
+  "ch8.s7.b02": {
+   "url": "assets/voice/ch8.s7.b02.m4a",
+   "seconds": 2.9,
+   "hash": "c14a4b55857b6010"
+  },
+  "ch8.s7.b03": {
+   "url": "assets/voice/ch8.s7.b03.m4a",
+   "seconds": 1.9,
+   "hash": "04cabc8f5410cedf"
+  },
+  "ch8.s7.c01": {
+   "url": "assets/voice/ch8.s7.c01.m4a",
+   "seconds": 8.28,
+   "hash": "0f0df1edcee4310e"
+  },
+  "ch8.s7.c02": {
+   "url": "assets/voice/ch8.s7.c02.m4a",
+   "seconds": 9.57,
+   "hash": "bf366912c4c32ab1"
+  },
+  "ch8.s7.c03": {
+   "url": "assets/voice/ch8.s7.c03.m4a",
+   "seconds": 11.12,
+   "hash": "6c750824a54d9ff9"
+  },
+  "ch8.s7.c04": {
+   "url": "assets/voice/ch8.s7.c04.m4a",
+   "seconds": 5.44,
+   "hash": "89a0cda772d36216"
+  },
+  "ch8.s7.c05": {
+   "url": "assets/voice/ch8.s7.c05.m4a",
+   "seconds": 5.18,
+   "hash": "6a487a9e66878430"
+  },
+  "ch8.s7.c06": {
+   "url": "assets/voice/ch8.s7.c06.m4a",
+   "seconds": 8.83,
+   "hash": "6d41b5dc92d333be"
+  },
+  "ch8.s7.c07": {
+   "url": "assets/voice/ch8.s7.c07.m4a",
+   "seconds": 7.8,
+   "hash": "9032ee0b4cb8d917"
+  },
+  "ch8.s7.c08": {
+   "url": "assets/voice/ch8.s7.c08.m4a",
+   "seconds": 8.69,
+   "hash": "147dfebbde2c7b2d"
+  },
+  "ch8.s7.c09": {
+   "url": "assets/voice/ch8.s7.c09.m4a",
+   "seconds": 6.87,
+   "hash": "ebea8c8533330c86"
+  },
+  "ch8.s7.c10": {
+   "url": "assets/voice/ch8.s7.c10.m4a",
+   "seconds": 6.13,
+   "hash": "da65842e7cb3c5fd"
+  },
+  "ch8.s7.c11": {
+   "url": "assets/voice/ch8.s7.c11.m4a",
+   "seconds": 10.04,
+   "hash": "9c4d94d8b11d33db"
+  },
+  "ch8.s7.c12": {
+   "url": "assets/voice/ch8.s7.c12.m4a",
+   "seconds": 7.55,
+   "hash": "acb93ce5067f0287"
+  },
+  "ch8.s7.c13": {
+   "url": "assets/voice/ch8.s7.c13.m4a",
+   "seconds": 10.83,
+   "hash": "6964a6576f3aa0ed"
+  },
+  "ch8.s7.c14": {
+   "url": "assets/voice/ch8.s7.c14.m4a",
+   "seconds": 9.75,
+   "hash": "a9a8fd857f52093d"
+  },
+  "ch8.s7.c15": {
+   "url": "assets/voice/ch8.s7.c15.m4a",
+   "seconds": 1.75,
+   "hash": "ec5f480ed81e4259"
+  },
+  "ch8.s7.c16": {
+   "url": "assets/voice/ch8.s7.c16.m4a",
+   "seconds": 7.47,
+   "hash": "007977f37cdf6d8c"
+  },
+  "ch8.s7.c17": {
+   "url": "assets/voice/ch8.s7.c17.m4a",
+   "seconds": 2.72,
+   "hash": "3e67f667e696648c"
+  },
+  "ch8.s7.c18": {
+   "url": "assets/voice/ch8.s7.c18.m4a",
+   "seconds": 2.31,
+   "hash": "6d59419a1afbba7c"
+  },
+  "ch8.s7.c19": {
+   "url": "assets/voice/ch8.s7.c19.m4a",
+   "seconds": 8.25,
+   "hash": "2762b98979168ba7"
+  },
+  "ch8.s7.c20": {
+   "url": "assets/voice/ch8.s7.c20.m4a",
+   "seconds": 0.65,
+   "hash": "1f3ab2dc4e829a0d"
+  },
+  "ch8.s7.c21": {
+   "url": "assets/voice/ch8.s7.c21.m4a",
+   "seconds": 0.91,
+   "hash": "12f62541329ebabd"
+  },
+  "ch8.s7.c22": {
+   "url": "assets/voice/ch8.s7.c22.m4a",
+   "seconds": 6.29,
+   "hash": "6b76491e59458934"
+  },
+  "ch8.s7.c23": {
+   "url": "assets/voice/ch8.s7.c23.m4a",
+   "seconds": 10.53,
+   "hash": "3cc01ac697828627"
+  },
+  "ch8.s7.c24": {
+   "url": "assets/voice/ch8.s7.c24.m4a",
+   "seconds": 2.28,
+   "hash": "7069819cdaac81e3"
+  },
+  "ch8.s7.c25": {
+   "url": "assets/voice/ch8.s7.c25.m4a",
+   "seconds": 9.97,
+   "hash": "4fefb398b80cb71e"
+  },
+  "ch8.s7.c26": {
+   "url": "assets/voice/ch8.s7.c26.m4a",
+   "seconds": 12.1,
+   "hash": "b7dc20622f0b7289"
   }
  }
 }
