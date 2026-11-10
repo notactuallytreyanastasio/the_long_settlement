@@ -12405,6 +12405,11 @@
   "lines": 264
  },
  {
+  "path": "src/core/fray.js",
+  "bytes": 28420,
+  "lines": 599
+ },
+ {
   "path": "src/core/game.js",
   "bytes": 41812,
   "lines": 865
