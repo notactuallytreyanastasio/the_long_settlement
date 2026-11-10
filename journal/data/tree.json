@@ -7316,8 +7316,8 @@
  },
  {
   "path": "test/content.test.js",
-  "bytes": 9674,
-  "lines": 177
+  "bytes": 13516,
+  "lines": 237
  },
  {
   "path": "test/economy.test.js",
@@ -7346,13 +7346,13 @@
  },
  {
   "path": "test/slot.test.js",
-  "bytes": 7311,
-  "lines": 156
+  "bytes": 12680,
+  "lines": 240
  },
  {
   "path": "test/story.test.js",
-  "bytes": 9014,
-  "lines": 163
+  "bytes": 12121,
+  "lines": 203
  },
  {
   "path": "test/tables.test.js",
