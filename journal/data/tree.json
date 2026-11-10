@@ -7201,8 +7201,8 @@
  },
  {
   "path": "src/content/cast.js",
-  "bytes": 8264,
-  "lines": 225
+  "bytes": 10302,
+  "lines": 268
  },
  {
   "path": "src/content/chapter1.js",
@@ -7235,14 +7235,24 @@
   "lines": 702
  },
  {
+  "path": "src/content/chapter7.js",
+  "bytes": 63278,
+  "lines": 716
+ },
+ {
+  "path": "src/content/chapter8.js",
+  "bytes": 83236,
+  "lines": 902
+ },
+ {
   "path": "src/content/index.js",
   "bytes": 505,
   "lines": 16
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 28722,
-  "lines": 630
+  "bytes": 40195,
+  "lines": 903
  },
  {
   "path": "src/core/economy.js",
@@ -7301,13 +7311,13 @@
  },
  {
   "path": "src/shell/cinema/backdrops-c.js",
-  "bytes": 51273,
-  "lines": 630
+  "bytes": 52481,
+  "lines": 637
  },
  {
   "path": "src/shell/cinema/backdrops-d.js",
-  "bytes": 30846,
-  "lines": 388
+  "bytes": 59479,
+  "lines": 712
  },
  {
   "path": "src/shell/cinema/figures.js",
@@ -7406,13 +7416,13 @@
  },
  {
   "path": "test/tables.test.js",
-  "bytes": 20318,
-  "lines": 381
+  "bytes": 29019,
+  "lines": 522
  },
  {
   "path": "tools/render-voices.mjs",
-  "bytes": 14151,
-  "lines": 310
+  "bytes": 16827,
+  "lines": 353
  },
  {
   "path": "tools/serve.mjs",

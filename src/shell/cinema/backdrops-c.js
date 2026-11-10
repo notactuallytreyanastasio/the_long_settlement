@@ -257,7 +257,7 @@ def('kedge-roads', L_ROADS, (ctx, t, px) => {
   ink(ctx, 5, QD); ctx.beginPath(); ctx.moveTo(626, 636); ctx.quadraticCurveTo(820, 700, 1000, 560); ctx.stroke();
   ctx = A();
   const o = px * 0.05;
-  spark(ctx, sx + o, sy, 96, t, 1);
+  spark(ctx, sx + o, sy, 72, t, 1);
   shimmer(ctx, 8, sx - 220, sx + 220, hy + 8, hy + 300, 22, '#fff0c0', t);
   gulls(ctx, [[430, 110, 15, 1], [860, 150, 12, 2], [760, 70, 10, 3], [250, 190, 12, 4], [1060, 200, 11, 5]], t, '#2a1850');
 });
@@ -293,9 +293,15 @@ def('compact-hall', L_ROPEWALK, (ctx, t, px) => {
     for (let j = 0; j < (r > 2 ? 2 + (r % 2) : 5 + r); j++) { ctx.moveTo(bx + 96 + j * 6.5, y - 8); ctx.lineTo(bx + 95 + j * 6.5, y + 4); }
     ctx.stroke();
   }
-  // the door at the far end, barred for the meeting
-  box(ctx, 470, 210, 120, b[1] - 210, '#2a1626', L, { off: 0, shadow: false, ink: II });
-  stroke(ctx, 530, 210, 530, b[1], II); box(ctx, 462, 300, 136, 12, WOOD, L, { off: 3, ink: II });
+  // the jack at the head of the walk: the great wheel that lays the strands, its hooks idle for the meeting
+  const jx = 522, jy = 258;
+  box(ctx, jx - 12, jy, 24, b[1] - jy, WOOD, L, { off: 0, shadow: false, ink: II }); box(ctx, jx - 70, b[1] - 16, 140, 16, WOOD, L, { off: 0, shadow: false, ink: II });
+  ink(ctx, 14); ctx.beginPath(); ctx.arc(jx, jy, 66, 0, TAU); ctx.stroke(); ink(ctx, 9, '#a8623a'); ctx.beginPath(); ctx.arc(jx, jy, 66, 0, TAU); ctx.stroke();
+  ink(ctx, 3, '#e8a868'); ctx.beginPath(); ctx.arc(jx, jy, 69, Math.PI * 1.55, Math.PI * 2.1); ctx.stroke();
+  for (let i = 0; i < 8; i++) { const an = i * TAU / 8 + 0.2; stroke(ctx, jx, jy, jx + Math.cos(an) * 62, jy + Math.sin(an) * 62, 7); stroke(ctx, jx, jy, jx + Math.cos(an) * 62, jy + Math.sin(an) * 62, 3.4, '#a8623a'); }
+  cel(ctx, cp(jx, jy, 13), C.brass, L, { off: 4, ink: II });
+  stroke(ctx, jx, jy, jx - 40, jy + 30, 6); stroke(ctx, jx - 40, jy + 30, jx - 58, jy + 30, 8, '#3a2030');                                  // the crank
+  for (const [cx2, r2] of [[430, 30], [476, 22], [852, 26]]) coil(ctx, cx2, b[1] - r2 * 0.6, r2, L, 0.25);                             // finished line, coiled down against the gable
   // roof frames, far to near: a tie-beam, a king post, two rafters
   ctx = S(0.4);
   for (const k of [0.5, 0.72, 1.06]) {
@@ -344,7 +350,7 @@ def('compact-hall', L_ROPEWALK, (ctx, t, px) => {
   ctx = A();
   const o = px * 0.4;
   fire(ctx, lx + o, ly + 20, 8, t, 3);
-  spark(ctx, lx + o, ly + 2, 40, t, 2);
+  spark(ctx, lx + o, ly + 2, 27, t, 2);
 });
 
 // ── counting-room: the Commons' books shelved between coils of real rope, after midnight. Key light: a green-shaded desk lamp ──
@@ -408,7 +414,7 @@ def('counting-room', L_COUNTING, (ctx, t, px) => {
   ink(ctx, 7, INK); ctx.beginPath(); ctx.arc(kx, ky, 9, 0, TAU); ctx.moveTo(kx + 9, ky); ctx.lineTo(kx + 42, ky + 3); ctx.moveTo(kx + 34, ky + 3); ctx.lineTo(kx + 34, ky + 12); ctx.moveTo(kx + 41, ky + 3); ctx.lineTo(kx + 41, ky + 11); ctx.stroke();
   ink(ctx, 3.4, C.brass); ctx.beginPath(); ctx.arc(kx, ky, 9, 0, TAU); ctx.moveTo(kx + 9, ky); ctx.lineTo(kx + 42, ky + 3); ctx.moveTo(kx + 34, ky + 3); ctx.lineTo(kx + 34, ky + 12); ctx.moveTo(kx + 41, ky + 3); ctx.lineTo(kx + 41, ky + 11); ctx.stroke();
   // the lamp: a brass arm off the back of the desk, a green glass shade, the light thrown straight down
-  shaft(ctx, lx, ly + 6, Math.PI / 2, 300, 1.5, L.col, 0.16);
+  shaft(ctx, lx, ly + 6, Math.PI / 2, 138, 1.5, L.col, 0.16);
   bloom(ctx, lx, ly + 12, 170, L.col, 0.9);
   ink(ctx, 9, INK); ctx.beginPath(); ctx.moveTo(dx + 200, dy - 28); ctx.lineTo(dx + 200, 96); ctx.quadraticCurveTo(dx + 200, 60, dx + 160, 60); ctx.lineTo(lx, 60); ctx.lineTo(lx, ly - 40); ctx.stroke();
   ink(ctx, 4.6, C.brass); ctx.beginPath(); ctx.moveTo(dx + 200, dy - 28); ctx.lineTo(dx + 200, 96); ctx.quadraticCurveTo(dx + 200, 60, dx + 160, 60); ctx.lineTo(lx, 60); ctx.lineTo(lx, ly - 40); ctx.stroke();
@@ -422,7 +428,7 @@ def('counting-room', L_COUNTING, (ctx, t, px) => {
   coil(ctx, 1210, 250, 84, L, 0.62); coil(ctx, 1250, 430, 64, L, 0.7);
   ctx = A();
   const o = px * 0.35;
-  spark(ctx, lx + o, ly + 8, 34, t, 4);
+  spark(ctx, lx + o, ly + 9, 25, t, 4);
   glint(ctx, kx + o, ky - 2, 13 + 4 * Math.sin(t * 3.3), C.white, 0.95, 0);
   { const a = t * 2.3, mx = lx + o + Math.cos(a) * 60 + Math.cos(a * 2.7) * 14, my = ly + 40 + Math.sin(a * 1.3) * 22; rect(ctx, mx - 3, my - 2, 6, 4, '#f6f2cc'); rect(ctx, mx - 1, my - 1, 2, 2, INK); }   // a moth
 });
@@ -438,7 +444,7 @@ def('cutter-deck', L_CUTTER, (ctx, t, px) => {
   // Kedge on the horizon: the mole, the cranes, a town putting its lamps on
   town(ctx, 13, X0, 1560, hy + 2, 12, 46, 20, 50, '#1c1444', L, { win: '#ffc65a', winP: 0.3 });
   for (const [x, s, dir] of [[150, 0.3, 1], [300, 0.26, -1], [430, 0.3, 1], [930, 0.28, -1], [1060, 0.3, 1], [1200, 0.26, 1]]) quayCrane(ctx, x, hy - 6, s, dir, '#1c1444', '#1c1444', L);
-  bloom(ctx, 560, hy - 60, 60, '#bfe8ff', 0.8); rect(ctx, 554, hy - 66, 12, 60, '#1c1444'); glint(ctx, 560, hy - 66, 12, C.white, 1);   // Kedge's own lamp, still whole
+  bloom(ctx, 452, hy - 60, 60, '#bfe8ff', 0.8); rect(ctx, 446, hy - 66, 12, 60, '#1c1444'); glint(ctx, 452, hy - 66, 12, C.white, 1);   // Kedge's own lamp, still whole
   bands(ctx, X0, hy, XW, 700, ['#a8525c', '#4a2c66', '#231c50', '#141238'], [0.03, 0.1, 0.3, 1]);
   lozenges(ctx, 21, X0, X0 + XW, hy + 4, hy + 36, 44, '#f09a5a');
   for (let i = 0; i < 9; i++) { const x = -160 + i * 190 + rnd(i * 3) * 80; anchoredHull(ctx, x, hy + 30 + rnd(i * 7) * 30, 0.4, '#141238', '#9c3e62', i * 2.7 + 5); }
@@ -472,8 +478,8 @@ def('cutter-deck', L_CUTTER, (ctx, t, px) => {
   for (const y of [40, 260, 430]) { box(ctx, mx - 26, y, 52, 14, STEEL, L, { off: 0, shadow: false, ink: II }); }
   // boom, with the mainsail furled along it
   box(ctx, mx + 10, 396, 720, 16, '#5a3a4a', L, { off: 0, shadow: false, ink: II });
-  cel(ctx, (c) => { c.moveTo(mx + 30, 396); for (let i = 0; i < 8; i++) c.quadraticCurveTo(mx + 70 + i * 84, 340 + (i % 2) * 8, mx + 114 + i * 84, 396); c.closePath(); }, '#c8c0d0', L, { off: 10, ink: IW, shadow: '#6a628c' });
-  for (let i = 0; i < 8; i++) stroke(ctx, mx + 114 + i * 84, 360, mx + 114 + i * 84, 412, 3.4, DK);
+  cel(ctx, (c) => { c.moveTo(mx + 26, 398); c.quadraticCurveTo(mx + 22, 366, mx + 60, 364); for (let i = 0; i < 8; i++) c.quadraticCurveTo(mx + 102 + i * 84, 352 + (i % 2) * 5, mx + 144 + i * 84, 364); c.lineTo(mx + 740, 398); c.closePath(); }, '#b8b4d0', L, { off: 0, ink: IW, shadow: rp(mx, 382, 800, 30) });
+  for (let i = 0; i < 9; i++) stroke(ctx, mx + 60 + i * 84, 362, mx + 60 + i * 84, 412, 4, DK);
   // the search lamp, on its bracket at the hounds
   stroke(ctx, mx + 22, ly + 30, lx + 10, ly + 30, 12); stroke(ctx, mx + 22, ly + 30, lx + 10, ly + 30, 6, STEEL);
   stroke(ctx, lx + 10, ly + 34, lx + 10, ly + 10, 10); stroke(ctx, lx + 10, ly + 34, lx + 10, ly + 10, 5, STEEL);
@@ -485,11 +491,11 @@ def('cutter-deck', L_CUTTER, (ctx, t, px) => {
   ctx.restore();
   ctx = A();
   const o = px * 0.5;
-  spark(ctx, lx - 30 + o, ly + 16, 54, t, 5);
+  spark(ctx, lx - 30 + o, ly + 16, 44, t, 5);
   shimmer(ctx, 23, 20, 300, hy + 84, hy + 112, 8, C.white, t);
-  glint(ctx, 560 + px * 0.05, hy - 66, 12 + 3 * Math.sin(t * 2.1), C.white, 1, 0);
+  glint(ctx, 452 + px * 0.05, hy - 66, 12 + 3 * Math.sin(t * 2.1), C.white, 1, 0);
   // the Audit's pennant at the yard-arm: black, one white bar
-  { const fx = 930 + o, fy = 70; ctx.beginPath(); ctx.moveTo(fx, fy);
+  { const fx = 884 + o, fy = 112; ctx.beginPath(); ctx.moveTo(fx, fy);
     for (let i = 1; i <= 8; i++) ctx.lineTo(fx + i * 15, fy + Math.sin(i * 0.9 - t * 4) * 5 * (i / 8) + i * 2);
     for (let i = 8; i >= 0; i--) ctx.lineTo(fx + i * 15, fy + 26 - i * 1.6 + Math.sin(i * 0.9 - t * 4 + 0.4) * 5 * (i / 8) + i * 2);
     ctx.closePath(); ink(ctx, 4.4, '#5a6aa8'); ctx.stroke(); ctx.fillStyle = '#080818'; ctx.fill();
@@ -517,14 +523,15 @@ function lanternBearer(ctx, x, y, s, sd, col, seed) {
   rect(ctx, lx - s * 0.28, lyy - s * 0.86, s * 0.56, s * 0.18, INK);
 }
 def('lantern-line', L_FILES, (ctx, t, px) => {
-  const L = L_FILES, vx = 640, vy = 128, WALL = '#100c30';
+  const L = L_FILES, vx = 640, vy = 170, WALL = '#100c30';
   ctx = S(0.08);
   sky(ctx, 330, ['#06081e', '#0c1034', '#141a4c', '#1c2664'], [0.4, 0.66, 0.86, 1]);
   starsFlat(ctx, 19, 40, 200);
   // the lamp-house at the end of the quay, its great lamp still whole: where the walk is going
-  bloom(ctx, vx, 44, 150, '#9fd8ff', 0.8);
-  flat(ctx, pp([[vx - 26, vy + 6], [vx - 18, 60], [vx + 18, 60], [vx + 26, vy + 6]]), '#0a0c2c'); rect(ctx, vx - 24, 54, 48, 7, '#0a0c2c');
-  rect(ctx, vx - 13, 30, 26, 24, '#e6f6ff'); flat(ctx, pp([[vx - 20, 30], [vx, 10], [vx + 20, 30]]), '#0a0c2c');
+  bloom(ctx, vx, 84, 170, '#9fd8ff', 0.8);
+  flat(ctx, pp([[vx - 34, vy + 6], [vx - 22, 104], [vx + 22, 104], [vx + 34, vy + 6]]), '#0a0c2c'); rect(ctx, vx - 30, 98, 60, 8, '#0a0c2c');
+  rect(ctx, vx - 16, 68, 32, 30, '#e6f6ff'); flat(ctx, pp([[vx - 25, 68], [vx, 44], [vx + 25, 68]]), '#0a0c2c');
+  for (const sd of [-1, 1]) town(ctx, 77 + sd, vx + (sd < 0 ? -420 : 60), vx + (sd < 0 ? -60 : 420), vy + 10, 14, 40, 18, 40, '#0a0c2c', L, { win: '#ffc65a', winP: 0.2 });
   // warehouses down both sides, their faces lit from the lane
   ctx = S(0.2);
   for (const sd of [-1, 1]) {
@@ -555,9 +562,9 @@ def('lantern-line', L_FILES, (ctx, t, px) => {
   const o = px * 0.3;
   for (const [i, sd] of [[0, -1], [0, 1], [1, -1], [1, 1], [2, -1], [2, 1], [3, 1], [4, -1]]) {
     const d = 1 / (0.74 + i * 0.36), s = 30 * d, x = vx + sd * (30 + 400 * d) - sd * s * 1.25 + o, y = vy + 16 + 196 * d - s * 1.2 + s * 2.2;
-    glint(ctx, x, y, s * (0.8 + 0.22 * Math.sin(t * (3 + i * 0.7) + i * 5 + sd)), C.white, 0.95, 0);
+    glint(ctx, x, y, s * (0.52 + 0.16 * Math.sin(t * (3 + i * 0.7) + i * 5 + sd)), C.white, 0.95, 0);
   }
-  spark(ctx, vx + px * 0.08, 42, 30, t, 6);
+  spark(ctx, vx + px * 0.08, 83, 30, t, 6);
 });
 
 // ── quarter-flame: Kedge's lamp-house, the great lamp cut with ash to a quarter, night. Key light: the grey-violet flame itself ──
@@ -619,8 +626,8 @@ def('quarter-flame', L_QUARTER, (ctx, t, px) => {
   cel(ctx, pp([[1010, 300], [1070, 250], [1076, 262], [1016, 312]]), '#5a4660', L, { off: 0, shadow: false, ink: II });
   ctx = A();
   const o = px * 0.3;
-  fire(ctx, fx + o, fy + 2, 17, t * 0.55, 7, DIM_FIRE);
-  spark(ctx, fx + o, fy - 20, 40, t * 0.6, 8);
+  fire(ctx, fx + o, fy + 4, 25, t * 0.55, 7, DIM_FIRE);
+  spark(ctx, fx + o, fy - 14, 17, t * 0.6, 8);
   for (let i = 0; i < 3; i++) { const ph = mod(t * 0.07 + i / 3, 1); curl(ctx, fx + o + Math.sin(ph * 5 + i * 2) * 26, fy - 50 - ph * 150, 9 + ph * 13, 1.4, i % 2 ? 1 : -1, 6, blend('#b8b0cc', '#1a1228', ph * 0.85), II); }   // it smokes, and it stinks
 }, (ctx, t, px) => {
   // close to the lens: a rail of the gallery, at the edges of the wide film

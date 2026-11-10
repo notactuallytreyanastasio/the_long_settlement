@@ -8,6 +8,12 @@
 // the manifest already holds the same hash, so a re-run only renders what
 // changed. The radio effect is applied at playback, not baked in.
 //
+// Both endings are rendered. A line marked lean: 'commons' or lean: 'mint' is
+// heard by only one kind of ledger, but which kind is not known until someone
+// plays, so this tool reads the content and never a game: every line of every
+// prologue, briefing, cutscene, epilogue and bark, whatever its lean. The
+// totals it prints say how many lines and seconds each ending adds.
+//
 // The output directory is made to match the content exactly. After a run the
 // only .m4a files in it are those of lines that exist now, saying what those
 // lines say now:
@@ -32,7 +38,7 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -117,6 +123,26 @@ async function loadContent(path) {
   return content;
 }
 
+const LEANS = ['commons', 'mint'];
+
+/**
+ * What the run amounts to, from the lines and the finished manifest: how many lines and
+ * seconds of speech there are in all, how many belong to one ending only, and per speaker.
+ * A line with no manifest entry (it failed to render) counts as a line with no seconds.
+ */
+export function totals(lines, manifestLines, voiceOf = {}) {
+  const zero = () => ({ lines: 0, seconds: 0 });
+  const out = { all: zero(), shared: zero(), commons: zero(), mint: zero(), missing: [], speakers: {} };
+  for (const line of lines) {
+    const entry = manifestLines[line.id];
+    const seconds = entry ? entry.seconds : 0;
+    if (!entry) out.missing.push(line.id);
+    const who = out.speakers[line.who] || (out.speakers[line.who] = { ...zero(), voice: voiceOf[line.who] ?? null });
+    for (const bucket of [out.all, out[line.lean ?? 'shared'], who]) { bucket.lines += 1; bucket.seconds += seconds; }
+  }
+  return out;
+}
+
 /** Every Line in the content, in story order, with where it came from. */
 export function collectLines(content) {
   if (!Array.isArray(content.chapters)) throw new Error('content.chapters is not an array');
@@ -143,6 +169,9 @@ export function collectLines(content) {
     seen.set(line.id, where);
     if (typeof line.text !== 'string' || line.text.trim() === '') throw new Error(`${where}: line "${line.id}" has no text`);
     if (!content.cast[line.who]) throw new Error(`${where}: line "${line.id}" has unknown speaker "${line.who}"`);
+    if (line.lean !== undefined && !LEANS.includes(line.lean)) {
+      throw new Error(`${where}: line "${line.id}" has lean ${JSON.stringify(line.lean)}; it must be one of ${LEANS.join(', ')} or absent`);
+    }
   }
   return found.map((f) => f.line);
 }
@@ -254,7 +283,9 @@ async function main() {
     }
   }
 
-  log(`${lines.length} lines, ${skipped} up to date, ${jobs.length} to render with ${converter}, ${opts.concurrency} at a time`);
+  const leanCount = (k) => lines.filter((l) => l.lean === k).length;
+  log(`${lines.length} lines (${leanCount('commons')} only in the commons ending, ${leanCount('mint')} only in the mint ending), `
+    + `${skipped} up to date, ${jobs.length} to render with ${converter}, ${opts.concurrency} at a time`);
   for (const [id, v] of Object.entries(voiceOf)) log(`  ${id.padEnd(9)} ${v} @ ${content.cast[id].rate} wpm`);
 
   // Everything in the directory that is not an up-to-date line goes now, before
@@ -294,7 +325,19 @@ async function main() {
   await rename(`${manifestPath}.tmp`, manifestPath);
 
   const wall = (performance.now() - t0) / 1000;
-  log(`rendered ${jobs.length - errors.length} lines (${audio.toFixed(1)}s of speech) in ${wall.toFixed(2)}s; manifest: ${manifestPath}`);
+  log(`rendered ${jobs.length - errors.length} lines (${audio.toFixed(1)}s of speech) in ${wall.toFixed(2)}s, skipped ${skipped} unchanged; manifest: ${manifestPath}`);
+  const sum = totals(lines, manifest.lines, voiceOf);
+  const mmss = (sec) => `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`;
+  const row = (label, b) => `  ${label.padEnd(22)} ${String(b.lines).padStart(5)} lines  ${mmss(b.seconds).padStart(7)}`;
+  log('totals (lines, speech):');
+  log(row('everything', sum.all));
+  log(row('heard in both endings', sum.shared));
+  log(row('commons ending only', sum.commons));
+  log(row('mint ending only', sum.mint));
+  for (const [id, b] of Object.entries(sum.speakers).sort((a, b) => b[1].seconds - a[1].seconds)) log(`${row(id, b)}  ${b.voice}`);
+  let bytes = 0;
+  for (const line of lines) if (manifest.lines[line.id]) bytes += (await stat(join(opts.out, `${line.id}.m4a`))).size;
+  log(`  ${(bytes / 1048576).toFixed(1)} MB in ${lines.length - sum.missing.length} files${sum.missing.length ? `; ${sum.missing.length} lines have no file` : ''}`);
   if (errors.length) {
     for (const e of errors) console.error(`FAILED: ${e.message}`);
     throw new Error(`${errors.length} of ${jobs.length} lines failed to render`);

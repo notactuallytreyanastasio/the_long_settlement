@@ -16,12 +16,18 @@ const BIBLE = {
     'tideL', 'tideC', 'tideR', 'breakwaterRamp', 'underlaneOrbit', 'hearth', ...COMMON],
   tallis: ['pit1', 'pit2', 'pit3', 'queueA', 'queueB', 'queueC', 'noteM', 'noteA', 'noteR', 'noteK',
     'bellL', 'bellC', 'bellR', 'stepsRamp', 'clearingOrbit', 'strongroom', ...COMMON],
+  kedge: ['crane1', 'crane2', 'crane3', 'tallyA', 'tallyB', 'tallyC', 'ropeR', 'ropeO', 'ropeP', 'ropeE',
+    'hatchL', 'hatchC', 'hatchR', 'gangwayRamp', 'roadsOrbit', 'hopper', ...COMMON],
+  fishdock: ['pawl1', 'pawl2', 'pawl3', 'stallA', 'stallB', 'stallC', 'nameN', 'nameA', 'nameM', 'nameE',
+    'rollL', 'rollC', 'rollR', 'hallRamp', 'quayOrbit', 'drum', ...COMMON],
+  cresset: ['ring1', 'ring2', 'ring3', 'benchA', 'benchB', 'benchC', 'calmC', 'calmA', 'calmL', 'calmM',
+    'seatL', 'seatC', 'seatR', 'moleRamp', 'assemblyOrbit', 'lamp', ...COMMON],
 };
 
 const elementIds = (t) => [...t.bumpers, ...t.slings, ...t.targets, ...t.rollovers, ...t.shots, ...t.saucers].map((e) => e.id);
 
-test('tables export exactly the five the chapters name', () => {
-  assert.deepEqual(Object.keys(tables).sort(), ['brand', 'halcyon', 'saltmere', 'tallis', 'vessery']);
+test('tables export exactly the eight the chapters name', () => {
+  assert.deepEqual(Object.keys(tables).sort(), ['brand', 'cresset', 'fishdock', 'halcyon', 'kedge', 'saltmere', 'tallis', 'vessery']);
 });
 
 for (const id of Object.keys(BIBLE)) {
@@ -94,7 +100,7 @@ const luminance = (hex) => {
 };
 const centreX = (t) => (t.flippers[0].pivot[0] + t.flippers[1].pivot[0]) / 2;
 
-test('the five layouts are five different tables', () => {
+test('the eight layouts are eight different tables', () => {
   const ids = Object.keys(BIBLE);
   const shape = (t) => ({
     bumpers: t.bumpers.map((b) => b.pos), lanes: t.rollovers.slice(0, 3).map((r) => r.pos),
@@ -175,6 +181,141 @@ test('Tallis is the dense one', () => {
     const m = [(tg.a[0] + tg.b[0]) / 2, (tg.a[1] + tg.b[1]) / 2];
     const d = Math.min(...t.bumpers.map((b) => Math.hypot(b.pos[0] - m[0], b.pos[1] - m[1]) - b.r));
     assert.ok(d < 70, `${tg.id} is ${d.toFixed(0)} from the nearest pit`);
+  }
+});
+
+// ───────────────────────── the three tables of part two ─────────────────────────
+
+// A wall that passes over the point (x, y), no more than `within` above it.
+const roofed = (t, [x, y], within) => t.walls.some((w) => {
+  if (w.a[0] === w.b[0]) return false;
+  const [p, q] = w.a[0] < w.b[0] ? [w.a, w.b] : [w.b, w.a];
+  if (x < p[0] || x > q[0]) return false;
+  const wy = p[1] + (q[1] - p[1]) * (x - p[0]) / (q[0] - p[0]);
+  return wy < y && wy > y - within;
+});
+const PART_TWO = ['kedge', 'fishdock', 'cresset'];
+
+test('Kedge: the cranes stand in one row, the hopper is hooded and open below, the gangway loads the hatches', () => {
+  const k = tables.kedge;
+  assert.equal(new Set(k.bumpers.map((b) => b.pos[1])).size, 1, 'three cranes on one line');
+  for (const id of Object.keys(BIBLE)) {
+    if (id !== 'kedge') assert.ok(new Set(tables[id].bumpers.map((b) => b.pos[1])).size > 1, `${id}'s bumpers are not a row`);
+  }
+  const h = k.saucers[0];
+  assert.ok(roofed(k, h.pos, 60), 'a roof over the hopper');
+  // a cheek either side: vertical walls within two ball widths, spanning the hole's height
+  for (const side of [-1, 1]) {
+    assert.ok(k.walls.some((w) => w.a[0] === w.b[0] && (w.a[0] - h.pos[0]) * side > 0 && Math.abs(w.a[0] - h.pos[0]) < 32
+      && Math.min(w.a[1], w.b[1]) < h.pos[1] && Math.max(w.a[1], w.b[1]) > h.pos[1]), `a cheek on side ${side}`);
+  }
+  assert.ok(!k.walls.some((w) => Math.min(w.a[1], w.b[1]) > h.pos[1] && Math.max(w.a[1], w.b[1]) < h.pos[1] + 60
+    && Math.min(w.a[0], w.b[0]) < h.pos[0] + 20 && Math.max(w.a[0], w.b[0]) > h.pos[0] - 20), 'nothing closes it underneath');
+  // open from below means between two cranes: the hole stands over a gap, not over a crane
+  assert.ok(k.bumpers.every((b) => Math.abs(b.pos[0] - h.pos[0]) > b.r + k.ballRadius), 'the hopper is over a gap in the row');
+  const ramp = k.shots.find((s) => s.exit);
+  const hatches = k.rollovers.slice(0, 3);
+  assert.ok(ramp.exit.pos[1] < Math.min(...hatches.map((r) => r.pos[1])), 'the gangway sets the ball down above the hatches');
+  assert.ok(ramp.exit.pos[0] > hatches[0].pos[0] - 20 && ramp.exit.pos[0] < hatches[2].pos[0] + 20);
+});
+
+test('Fishdock: the drum is the widest hole in the game and has no roof; the pawls fall in a line; it is daylight', () => {
+  const f = tables.fishdock;
+  const d = f.saucers[0];
+  for (const id of Object.keys(BIBLE)) {
+    if (id === 'fishdock') continue;
+    assert.ok(d.r > tables[id].saucers[0].r, `wider than ${id}'s hole`);
+    assert.ok(mean(f.theme.bg.map(luminance)) > mean(tables[id].theme.bg.map(luminance)), `lighter than ${id}`);
+  }
+  assert.ok(!roofed(f, d.pos, 100), 'nothing over the drum');
+  assert.ok(d.pos[0] < 120 && d.pos[1] < 260, 'upper left, where chapter one kept the bench');
+  const [a, b, c] = f.bumpers.map((x) => x.pos);
+  assert.ok(Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) < 1e-6, 'the three pawls are on one line');
+  assert.ok(a[1] < b[1] && b[1] < c[1] && a[0] > b[0] && b[0] > c[0], 'falling toward the drum side');
+});
+
+test('Cresset: the mole ends in the lamp, the lamp is capped, and the Full Bench sits on a curve', () => {
+  const c = tables.cresset;
+  const lamp = c.saucers[0];
+  const mole = c.shots.find((s) => s.exit);
+  assert.ok(Math.hypot(mole.exit.pos[0] - lamp.pos[0], mole.exit.pos[1] - lamp.pos[1]) < lamp.r, 'the ramp sets the ball down inside the lamp');
+  for (const id of Object.keys(BIBLE)) {
+    if (id === 'cresset') continue;
+    const t = tables[id];
+    const r = t.shots.find((s) => s.exit);
+    assert.ok(Math.hypot(r.exit.pos[0] - t.saucers[0].pos[0], r.exit.pos[1] - t.saucers[0].pos[1]) > 60, `${id}'s ramp does not end in its hole`);
+  }
+  assert.ok(roofed(c, lamp.pos, 40), 'the brass cap');
+  assert.ok(Math.abs(lamp.pos[0] - c.rollovers[1].pos[0]) < 4, 'the lamp is under the centre seat');
+  // made mole shot -> lamp, in the physics and not only on paper
+  let phys = { ...initPhys(c), balls: [{ id: 1, pos: [(mole.a[0] + mole.b[0]) / 2, mole.a[1] + 6], vel: [0, -500], state: 'live', inside: [] }], nextBallId: 2 };
+  const seen = [];
+  for (let i = 0; i < 60; i++) {
+    const r = stepPhysics(c, phys, { left: false, right: false, plunge: false, nudge: null }, STEP);
+    phys = r.phys;
+    seen.push(...r.events.map((e) => `${e.type}:${e.id}`));
+  }
+  assert.deepEqual(seen.filter((s) => /^(shot|saucer)/.test(s)), ['shot:moleRamp', 'saucer:lamp']);
+  const bench = c.targets.filter((t) => t.group === 'bench');
+  assert.equal(bench.length, 3);
+  const mids = bench.map((t) => [(t.a[0] + t.b[0]) / 2, (t.a[1] + t.b[1]) / 2]);
+  const bend = (mids[1][0] - mids[0][0]) * (mids[2][1] - mids[0][1]) - (mids[1][1] - mids[0][1]) * (mids[2][0] - mids[0][0]);
+  assert.ok(Math.abs(bend) > 200, 'three seats that are not in a line');
+});
+
+test('part two: a ramp is roofed at its head, so a ball never comes down it backwards into the drain', () => {
+  // Found on Kedge: crane 1 threw balls into the top of the gangway, they ran down it the wrong
+  // way and left its mouth on one line, between the flippers: 22 of 41 centre drains in an hour.
+  for (const id of PART_TWO) {
+    const t = tables[id];
+    const ramp = t.shots.find((s) => s.exit);
+    const x = Math.min(ramp.a[0], ramp.b[0]) < 100 ? 25 : 349;
+    // dropped into the lane's line from the top of the table, a ball never reaches the gate from above
+    let phys = { ...initPhys(t), balls: [{ id: 1, pos: [x, 216], vel: [0, 0], state: 'live', inside: [] }], nextBallId: 2 };
+    let below = false;
+    for (let i = 0; i < 240 && phys.balls.length; i++) {
+      phys = stepPhysics(t, phys, { left: false, right: false, plunge: false, nudge: null }, STEP).phys;
+      const b = phys.balls[0];
+      if (b && Math.abs(b.pos[0] - x) < 17 && b.pos[1] > ramp.a[1] - 60 && b.pos[1] < ramp.a[1]) below = true;
+    }
+    assert.ok(!below, `${id}: a ball got into the ramp lane from the top`);
+  }
+});
+
+test('part two: every plunge leaves the lane or comes back to the plunger, and a kickback lands on a flipper', () => {
+  for (const id of PART_TWO) {
+    const t = tables[id];
+    const first = {};
+    for (let hold = 10; hold <= 130; hold += 3) {
+      let phys = addBall(t, initPhys(t));
+      let out = null;
+      for (let i = 0; i < 720 && !out; i++) {
+        const r = stepPhysics(t, phys, { left: false, right: false, plunge: i < hold, nudge: null }, STEP);
+        phys = r.phys;
+        const b = phys.balls[0];
+        if (!b) out = 'drained';
+        else if (i > hold + 5 && b.state === 'plunger') out = 'back';
+        else if (b.state === 'live' && b.pos[0] < 366 && b.pos[1] > 130) out = 'field';
+        const lane = r.events.find((e) => e.type === 'rollover' && t.reels.fill.includes(e.id));
+        if (lane && first[hold] === undefined) first[hold] = lane.id;
+      }
+      assert.ok(out === 'back' || out === 'field', `${id}: a plunge held ${hold} steps ended ${out}`);
+    }
+    // the plunger alone can reach each of the three fill lanes
+    assert.deepEqual([...new Set(Object.values(first))].sort(), [...t.reels.fill].sort(), `${id}: lanes a plunge reaches first`);
+    // game.js sets a kicked-back ball down 12 above the inlane sensor, moving down at 120
+    for (const side of ['inL', 'inR']) {
+      const lane = t.rollovers.find((r) => r.id === side);
+      const f = t.flippers.find((x) => x.side === (side === 'inL' ? 'left' : 'right'));
+      let phys = { ...initPhys(t), balls: [{ id: 1, pos: [lane.pos[0], lane.pos[1] - 12], vel: [0, 120], state: 'live', inside: [] }], nextBallId: 2 };
+      let onFlipper = false;
+      for (let i = 0; i < 240 && phys.balls.length; i++) {
+        phys = stepPhysics(t, phys, { left: false, right: false, plunge: false, nudge: null }, STEP).phys;
+        const b = phys.balls[0];
+        if (b && Math.abs(b.pos[0] - f.pivot[0]) < f.length && Math.abs(b.pos[1] - f.pivot[1]) < 30) onFlipper = true;
+      }
+      assert.ok(onFlipper, `${id}: a ball set down in ${side} rolls onto the ${f.side} flipper`);
+    }
   }
 });
 

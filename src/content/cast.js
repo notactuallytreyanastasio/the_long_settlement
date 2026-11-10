@@ -17,6 +17,19 @@
 // has Grandma (US): the same family of voice, a different accent, and a
 // quicker rate.
 //
+// Foss and Tamsin (chapters 6 to 8) were cast the same way, from what was
+// installed and not yet anyone's voice. Median pitch of one sentence at 150
+// wpm: Flo (UK) 250 Hz, Kathy 211, Tara 198, Shelley 188 (Karen 188, Tessa
+// 186, Samantha 178, the Grandmas 121, for comparison). Foss is twenty-one,
+// level and exact: Flo (UK), the youngest natural voice left, and nobody she
+// shares a scene with is near it but Ansel, a child, in one epilogue. Tamsin
+// is Ren's mother and "has the accent Ren filed down": Ren is Aman, the
+// Indian English voice, so she has Tara, its sister voice, slower, and the
+// lowest natural woman's voice that was free. Tara used to stand second in
+// Nan's list, where it was never reached; it was taken out of it, since no
+// name may be in two lists. Chosen by measurement and by the accent's name:
+// nobody has listened to either.
+//
 // `rate` is words per minute for `say`; `pitch` (0..2) is only used by the
 // in-browser speechSynthesis fallback when a line has no rendered file.
 //
@@ -167,7 +180,7 @@ export const cast = {
     name: 'Nan Okerby',
     role: 'Lantern-maker, Vessery docks',
     color: '#f0a060',
-    say: ['Grandma (English (UK))', 'Tara', 'Kathy'],
+    say: ['Grandma (English (UK))', 'Kathy'],
     rate: 150,
     pitch: 1.1,
     look: {
@@ -204,6 +217,36 @@ export const cast = {
       skin: '#9c6a48', hair: '#e4e4e0', hairStyle: 'braid',
       coat: '#2f4a44', trim: '#d9c27a', build: 'slim', age: 'old',
       mark: "her sister Nan's face, weathered harder; white braid down the back tied off with net twine; patched sea-green oilskin over a fisherman's jersey; kelp-ash grey on the fingertips; one eyebrow always raised",
+    },
+  },
+
+  foss: {
+    id: 'foss',
+    name: 'Linnet Foss',
+    role: 'Surety of Halcyon, contract 418',
+    color: '#8ea0b4',
+    say: ['Allison (Enhanced)', 'Stephanie (Enhanced)', 'Flo (English (UK))'],
+    rate: 170,
+    pitch: 1.15,
+    look: {
+      skin: '#d8b08c', hair: '#23202a', hairStyle: 'cropped',
+      coat: '#5d6672', trim: '#c8a24a', build: 'slim', age: 'young',
+      mark: 'Halcyon grey Surety coat cut like a uniform and buttoned to the throat; three brass writ-tags at the collar; dark regulation crop; a plumb-weight signet on the right hand; stands at ease as if measured for it',
+    },
+  },
+
+  tamsin: {
+    id: 'tamsin',
+    name: 'Tamsin Lowrie',
+    role: 'Lamp-keeper, Carrow',
+    color: '#8fae7a',
+    say: ['Susan (Enhanced)', 'Tara'],
+    rate: 140,
+    pitch: 0.85,
+    look: {
+      skin: '#c8956c', hair: '#77777d', hairStyle: 'bun',
+      coat: '#8a8272', trim: '#8fae7a', build: 'slim', age: 'mid',
+      mark: "her son's brow and jaw; dark hair gone grey, up in a kelp-cutter's knot; undyed goat-wool shawl over a patched work dress; lamp-black to the right elbow; says little, and is usually holding a bowl out to somebody",
     },
   },
 

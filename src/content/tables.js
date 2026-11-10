@@ -1,4 +1,4 @@
-// The five playfields. Plain data, built once at module load by small pure helpers.
+// The eight playfields. Plain data, built once at module load by small pure helpers.
 //
 // Shared conventions (every table): the field is 400 x 800, y grows downward. The
 // outer left wall is x = 8. The plunger lane is the strip 366 < x < 392 on the right,
@@ -90,7 +90,7 @@ function lower(o) {
   return { walls, slings, flippers, rollovers, inR: [mx(inX), o.divTop + 4], inL: [inX, o.divTop + 4] };
 }
 
-/** Outer shell shared by all five: side walls, plunger lane, its floor, the top-right arc. */
+/** Outer shell shared by all eight: side walls, plunger lane, its floor, the top-right arc. */
 function shell(arcR, topY) {
   const cy = topY + arcR;
   return {
@@ -626,4 +626,277 @@ function tallis() {
   };
 }
 
-export const tables = { vessery: vessery(), saltmere: saltmere(), halcyon: halcyon(), brand: brand(), tallis: tallis() };
+// ═════════════════════════ KEDGE ═════════════════════════
+// The salt quays. The three cranes stand in one line across the middle of the field, the
+// only bumpers in the game that are not a triangle: a ball that gets among them is handed
+// along the line and thrown up at the hopper, a hooded hole high on the right that is open
+// only from below. The gangway does not come down to an inlane: it loads the hatches.
+
+function kedge() {
+  const sh = shell(98, 8);
+  const lo = lower({
+    divX: 31, divTop: 596, elbow: 662, pivot: [120, 700],
+    sling: [[71, 572], [71, 650], [108, 666]], slingKick: 330,
+    flipLen: 56, rest: 0.5, active: 0.62, guard: [15, 15], guardY: 554,
+  });
+  const gangway = sideLane(256, 340, 436, 34, 68);                  // left: the gangway ramp
+  const roads = mirrorLane(sideLane(232, 330, 432, 34, 68));        // right: the roadstead orbit
+  const hatches = topLanes(['hatchL', 'hatchC', 'hatchR'], [100, 140, 180, 220], 70, 116, 'hatches');
+
+  const walls = [
+    ...sh.walls, ...lo.walls,
+    // ceiling, then the bollard that stops a launch over the hatches
+    { a: sh.arcEnd, b: [92, 8] },
+    { a: [92, 8], b: [100, 70], bounce: 0.3 },
+    ...poly([[100, 116], [50, 146], [L, 196]]),
+    { a: [L, 196], b: gangway.outer[0] }, ...poly(gangway.outer), { a: gangway.outer[2], b: [L, 800] },
+    ...poly(gangway.inner),
+    // the gangway is roofed at its head: a ball goes up it, never down it
+    { a: [L, 232], b: gangway.inner[0] },
+    ...poly(roads.outer), ...poly(roads.inner),
+    ...hatches.walls,
+    // the hopper's hood: a peaked roof and two cheeks, open underneath
+    ...poly([[202, 208], [202, 174], [226, 150], [250, 174], [250, 208]]),
+  ];
+
+  return {
+    id: 'kedge',
+    name: 'Kedge Salt Quays',
+    width: 400,
+    height: 800,
+    gravity: 1250,
+    ballRadius: R,
+    walls,
+    oneWays: [sh.gate],
+    flippers: lo.flippers,
+    bumpers: [
+      { id: 'crane1', pos: [110, 262], r: 18, kick: 450 },
+      { id: 'crane2', pos: [187, 262], r: 18, kick: 450 },
+      { id: 'crane3', pos: [264, 262], r: 18, kick: 450 },
+    ],
+    slings: lo.slings,
+    targets: [
+      // the tally bank stands free under the first crane, leaning in
+      ...bank(['tallyA', 'tallyB', 'tallyC'], [98, 356], [72, 298], 'tally'),
+      // ROPE is made fast along the roadstead's wall, beside the third crane
+      ...bank(['ropeR', 'ropeO', 'ropeP', 'ropeE'], [302, 296], [276, 362], 'rope', 0.06),
+    ],
+    rollovers: [...hatches.rollovers, ...lo.rollovers],
+    shots: [
+      { id: 'gangwayRamp', a: gangway.gate(416)[0], b: gangway.gate(416)[1], dir: [0, -1], exit: { pos: [196, 44], vel: [20, 0] } },
+      { id: 'roadsOrbit', a: roads.gate(412)[0], b: roads.gate(412)[1], dir: [0, -1] },
+    ],
+    saucers: [
+      { id: 'hopper', pos: [226, 188], r: 14, eject: [70, 190], holdMs: 1100 },
+    ],
+    reels: { fill: ['hatchL', 'hatchC', 'hatchR'], spin: ['hopper', 'gangwayRamp', 'roadsOrbit'] },
+    plunger: { pos: [379, 770], maxSpeed: 2000 },
+    drainY: 792,
+    theme: {
+      bg: ['#0c1420', '#1b3040', '#3a5560'],
+      accent: '#e8d9a0',
+      glow: '#fff3cf',
+      motif: 'quay',
+    },
+    decor: [
+      { text: 'KEDGE', pos: [187, 486], size: 30 },
+      { text: 'THE SALT QUAYS', pos: [187, 512], size: 11 },
+      { text: 'GANGWAY', pos: [25, 300], size: 9, angle: -1.5708 },
+      { text: 'ROADSTEAD', pos: [mx(24), 290], size: 9, angle: 1.5708 },
+      { text: 'GENERAL AVERAGE', pos: [187, 566], size: 8 },
+    ],
+    labels: {
+      crane1: 'CRANE', crane2: 'CRANE', crane3: 'CRANE',
+      tallyA: 'A', tallyB: 'B', tallyC: 'C',
+      ropeR: 'R', ropeO: 'O', ropeP: 'P', ropeE: 'E',
+      hatchL: 'HATCH', hatchC: 'HATCH', hatchR: 'HATCH',
+      gangwayRamp: 'GANGWAY', roadsOrbit: 'ROADS', hopper: 'HOPPER',
+      inL: 'IN', inR: 'IN', outL: 'OUT', outR: 'OUT',
+      slingL: 'CASK', slingR: 'CASK',
+    },
+  };
+}
+
+// ═════════════════════════ FISHDOCK ═════════════════════════
+// Vessery again, by day, from the dock side. The roll is called under the launch on the
+// right; the opened drum lies where chapter one kept the magistrate's chamber, and it is the
+// widest hole in the game with no roof and no rail: anything that crosses it is counted. The
+// three pawls stand in a falling line that points at it, like a ratchet.
+
+function fishdock() {
+  const sh = shell(90, 8);
+  const lo = lower({
+    divX: 30, divTop: 598, elbow: 664, pivot: [121, 701],
+    sling: [[72, 576], [72, 652], [108, 668]], slingKick: 340,
+    flipLen: 56, rest: 0.5, active: 0.62, guard: [11, 13], guardY: 556,
+  });
+  const hall = sideLane(290, 366, 456, 34, 70);                     // left: the hall steps
+  const quay = mirrorLane(sideLane(250, 344, 440, 33, 70));         // right: the quay orbit
+  const roll = topLanes(['rollL', 'rollC', 'rollR'], [196, 240, 284, 328], 78, 120, 'roll');
+
+  const walls = [
+    ...sh.walls, ...lo.walls,
+    // ceiling and the round top-left corner
+    { a: sh.arcEnd, b: [100, 8] },
+    ...poly(arc(100, 100, 92, -90, -180, 10)),
+    { a: [L, 100], b: hall.outer[0] }, ...poly(hall.outer), { a: hall.outer[2], b: [L, 800] },
+    ...poly(hall.inner),
+    { a: [L, 266], b: hall.inner[0] },
+    ...poly(quay.outer), ...poly(quay.inner),
+    // the crier's post: stops a launch over the roll
+    { a: [186, 8], b: [196, 78], bounce: 0.3 },
+    ...roll.walls,
+  ];
+
+  return {
+    id: 'fishdock',
+    name: 'Vessery Fish Dock',
+    width: 400,
+    height: 800,
+    gravity: 1180,
+    ballRadius: R,
+    walls,
+    oneWays: [sh.gate],
+    flippers: lo.flippers,
+    bumpers: [
+      { id: 'pawl1', pos: [250, 172], r: 17, kick: 450 },
+      { id: 'pawl2', pos: [202, 232], r: 17, kick: 450 },
+      { id: 'pawl3', pos: [154, 292], r: 17, kick: 450 },
+    ],
+    slings: lo.slings,
+    targets: [
+      ...bank(['stallA', 'stallB', 'stallC'], [112, 344], [92, 282], 'stall'),
+      ...bank(['nameN', 'nameA', 'nameM', 'nameE'], [288, 222], [308, 300], 'name', 0.06),
+    ],
+    rollovers: [...roll.rollovers, ...lo.rollovers],
+    shots: [
+      { id: 'hallRamp', a: hall.gate(436)[0], b: hall.gate(436)[1], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 130] } },
+      { id: 'quayOrbit', a: quay.gate(420)[0], b: quay.gate(420)[1], dir: [0, -1] },
+    ],
+    saucers: [
+      { id: 'drum', pos: [84, 212], r: 17, eject: [230, 40], holdMs: 1300 },
+    ],
+    reels: { fill: ['rollL', 'rollC', 'rollR'], spin: ['drum', 'hallRamp', 'quayOrbit'] },
+    plunger: { pos: [379, 770], maxSpeed: 1950 },
+    drainY: 792,
+    theme: {
+      bg: ['#1c3350', '#3a6a8a', '#8fb8c0'],
+      accent: '#ffe08a',
+      glow: '#fffbe6',
+      motif: 'daylight',
+    },
+    decor: [
+      { text: 'VESSERY', pos: [187, 492], size: 28 },
+      { text: 'THE DOCK QUARTER, BY DAY', pos: [187, 518], size: 9 },
+      { text: 'HALL STEPS', pos: [25, 328], size: 9, angle: -1.5708 },
+      { text: 'QUAY', pos: [mx(24), 300], size: 10, angle: 1.5708 },
+      { text: 'COUNTED IN THE OPEN', pos: [187, 568], size: 8 },
+    ],
+    labels: {
+      pawl1: 'PAWL', pawl2: 'PAWL', pawl3: 'PAWL',
+      stallA: 'A', stallB: 'B', stallC: 'C',
+      nameN: 'N', nameA: 'A', nameM: 'M', nameE: 'E',
+      rollL: 'ROLL', rollC: 'ROLL', rollR: 'ROLL',
+      hallRamp: 'HALL STEPS', quayOrbit: 'QUAY', drum: 'DRUM',
+      inL: 'IN', inR: 'IN', outL: 'OUT', outR: 'OUT',
+      slingL: 'CHALK', slingR: 'CHALK',
+    },
+  };
+}
+
+// ═════════════════════════ CRESSET ═════════════════════════
+// The capital. The Founders' Lamp stands at the head of the table under a brass cap: what
+// falls through the centre seat lands on the cap and is turned aside, so the lamp is reached
+// from underneath, off the rings, or by walking the mole, which is the only ramp in the game
+// that ends in a hole. The Full Bench sits in a curve on the left, each judge a target of
+// his own.
+
+function cresset() {
+  const sh = shell(94, 8);
+  const lo = lower({
+    divX: 30, divTop: 600, elbow: 664, pivot: [120, 702],
+    sling: [[70, 570], [70, 652], [107, 668]], slingKick: 390,
+    flipLen: 57, rest: 0.52, active: 0.63, guard: [15, 15], guardY: 556,
+  });
+  const mole = sideLane(250, 344, 442, 34, 70);                     // left: the mole
+  const assembly = mirrorLane(sideLane(214, 330, 430, 34, 70));     // right: the Assembly orbit
+  const seats = topLanes(['seatL', 'seatC', 'seatR'], [136, 178, 220, 262], 66, 108, 'seats');
+
+  const walls = [
+    ...sh.walls, ...lo.walls,
+    { a: sh.arcEnd, b: [126, 8] },
+    { a: [126, 8], b: [136, 66], bounce: 0.3 },
+    ...poly([[136, 108], [60, 144], [L, 196]]),
+    { a: [L, 196], b: mole.outer[0] }, ...poly(mole.outer), { a: mole.outer[2], b: [L, 800] },
+    ...poly(mole.inner),
+    { a: [L, 226], b: mole.inner[0] },
+    ...poly(assembly.outer), ...poly(assembly.inner),
+    ...seats.walls,
+    // the brass cap over the lamp
+    ...poly([[176, 144], [199, 128], [222, 144]]),
+  ];
+
+  return {
+    id: 'cresset',
+    name: 'Cresset',
+    width: 400,
+    height: 800,
+    gravity: 1380,
+    ballRadius: R,
+    walls,
+    oneWays: [sh.gate],
+    flippers: lo.flippers,
+    bumpers: [
+      { id: 'ring1', pos: [138, 216], r: 18, kick: 510 },
+      { id: 'ring2', pos: [260, 216], r: 18, kick: 510 },
+      { id: 'ring3', pos: [207, 270], r: 18, kick: 510 },
+    ],
+    slings: lo.slings,
+    targets: [
+      // the Full Bench: three seats on a curve
+      { id: 'benchA', a: [112, 334], b: [98, 304], group: 'bench' },
+      { id: 'benchB', a: [94, 294], b: [86, 262], group: 'bench' },
+      { id: 'benchC', a: [84, 252], b: [86, 220], group: 'bench' },
+      ...bank(['calmC', 'calmA', 'calmL', 'calmM'], [300, 250], [276, 320], 'calm', 0.06),
+    ],
+    rollovers: [...seats.rollovers, ...lo.rollovers],
+    shots: [
+      // the mole ends at the lamp
+      { id: 'moleRamp', a: mole.gate(422)[0], b: mole.gate(422)[1], dir: [0, -1], exit: { pos: [199, 152], vel: [0, 60] } },
+      { id: 'assemblyOrbit', a: assembly.gate(410)[0], b: assembly.gate(410)[1], dir: [0, -1] },
+    ],
+    saucers: [
+      { id: 'lamp', pos: [199, 162], r: 14, eject: [-110, 120], holdMs: 1500 },
+    ],
+    reels: { fill: ['seatL', 'seatC', 'seatR'], spin: ['lamp', 'moleRamp', 'assemblyOrbit'] },
+    plunger: { pos: [379, 770], maxSpeed: 2100 },
+    drainY: 792,
+    theme: {
+      bg: ['#161230', '#2c2458', '#6a5a8a'],
+      accent: '#fff0b8',
+      glow: '#ffffff',
+      motif: 'founders',
+    },
+    decor: [
+      { text: 'CRESSET', pos: [187, 490], size: 30 },
+      { text: 'THREE DAYS TO RENEWAL', pos: [187, 516], size: 10 },
+      { text: 'THE MOLE', pos: [25, 296], size: 9, angle: -1.5708 },
+      { text: 'ASSEMBLY', pos: [mx(24), 272], size: 9, angle: 1.5708 },
+      { text: 'PAYABLE IN CALM', pos: [187, 568], size: 9 },
+    ],
+    labels: {
+      ring1: 'RING', ring2: 'RING', ring3: 'RING',
+      benchA: 'A', benchB: 'B', benchC: 'C',
+      calmC: 'C', calmA: 'A', calmL: 'L', calmM: 'M',
+      seatL: 'SEAT', seatC: 'SEAT', seatR: 'SEAT',
+      moleRamp: 'MOLE', assemblyOrbit: 'ASSEMBLY', lamp: 'LAMP',
+      inL: 'IN', inR: 'IN', outL: 'OUT', outR: 'OUT',
+      slingL: 'AYE', slingR: 'NO',
+    },
+  };
+}
+
+export const tables = {
+  vessery: vessery(), saltmere: saltmere(), halcyon: halcyon(), brand: brand(), tallis: tallis(),
+  kedge: kedge(), fishdock: fishdock(), cresset: cresset(),
+};

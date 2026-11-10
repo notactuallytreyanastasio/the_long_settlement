@@ -163,7 +163,7 @@ const NIGHT_HARBOUR = /^ch8\.s3\./;
 const L_CRESSET = keyLight('#eef8ff', -Math.PI * 0.4, { depth: 0.72, tint: '#17366e' });
 const L_CRESSET_W = keyLight('#eef8ff', -Math.PI * 0.74, { depth: 0.72, tint: '#17366e' });   // for what stands to the right of the lamp
 def('cresset-harbour', L_CRESSET, (ctx, t, px, info) => {
-  const L = L_CRESSET, LW = L_CRESSET_W, hy = 250, lx = 730, ly = 92, night = NIGHT_HARBOUR.test(idOf(info));
+  const L = L_CRESSET, LW = L_CRESSET_W, hy = 250, lx = 730, ly = 104, night = NIGHT_HARBOUR.test(idOf(info));
   ctx = S(0.04);
   sky(ctx, hy, ['#2a6fbc', '#3f8fd0', '#6cb6e0', '#a8dcec', '#dcf4f0'], [0.3, 0.52, 0.72, 0.9, 1]);
   // the sun, on the other side of the sky, and outshone
@@ -223,22 +223,23 @@ def('cresset-harbour', L_CRESSET, (ctx, t, px, info) => {
 // ── mole-dark: the harbour with the Lamp out and the sea standing up beyond the mole. Dusk. Key: the last daylight on the horizon ──
 const L_MOLE = keyLight('#ffb27a', -Math.PI * 0.88, { depth: 0.9, tint: '#12103e' });
 def('mole-dark', L_MOLE, (ctx, t, px) => {
-  const L = L_MOLE, hy = 214, tx = 800, DARK = '#100e34';
+  const L = L_MOLE, hy = 176, tx = 800, DARK = '#100e34';
   ctx = S(0.03);
   sky(ctx, hy, ['#0e0c30', '#1e1a54', '#47306e', '#9a4868', '#e8825a', '#ffd9a0'], [0.3, 0.52, 0.7, 0.84, 0.95, 1]);
-  starsFlat(ctx, 61, 26, 60);
+  starsFlat(ctx, 61, 26, 40);
   rings(ctx, 452, hy + 6, 150, [alpha('#ffd9a0', 0.18), alpha('#ffe8bc', 0.34), '#fff3d6'], [1, 0.56, 0.2]);   // where the sun went
-  for (const [x, y, w, c] of [[300, 150, 260, '#47306e'], [640, 176, 200, '#9a4868'], [1040, 140, 320, '#47306e'], [520, 110, 150, '#1e1a54']]) { rect(ctx, x - w / 2, y, w, 9, c); rect(ctx, x - w / 2 + 24, y - 7, w - 70, 8, c); }
+  for (const [x, y, w, c] of [[300, 112, 260, '#47306e'], [640, 138, 200, '#9a4868'], [1040, 104, 320, '#47306e'], [520, 76, 150, '#1e1a54']]) { rect(ctx, x - w / 2, y, w, 9, c); rect(ctx, x - w / 2 + 24, y - 7, w - 70, 8, c); }
   rect(ctx, X0, hy, XW, 60, '#5a3a72'); rect(ctx, X0, hy, XW, 4, '#ffd9a0');
   // the sea, standing up: nothing is laying it flat now
   ctx = A();
   const o = px * 0.06;
-  waves(ctx, X0 - 200 + o, hy + 4 + Math.sin(t * 0.9) * 3, XW + 400, 60, { len: 150, amp: 17, phase: t * 0.16, col: '#3a2a66', foam: '#ffc89a', every: 2, L });
-  waves(ctx, X0 - 200 + o, hy + 22 + Math.sin(t * 0.9 + 1.4) * 4, XW + 400, 60, { len: 210, amp: 24, phase: -t * 0.13 + 0.3, col: '#241c54', foam: '#ffc89a', every: 2, L, ink: II });
+  waves(ctx, X0 - 200 + o, hy - 26 + Math.sin(t * 0.9) * 4, XW + 400, 90, { len: 190, amp: 22, phase: t * 0.13, col: '#4a2e6a', foam: '#ffc89a', every: 2, L });
+  waves(ctx, X0 - 200 + o, hy - 8 + Math.sin(t * 0.9 + 1.4) * 5, XW + 400, 90, { len: 260, amp: 30, phase: -t * 0.11 + 0.3, col: '#2e2058', foam: '#ffd9b4', every: 1, L, ink: II });
+  waves(ctx, X0 - 200 + o, hy + 16 + Math.sin(t * 0.9 + 2.6) * 4, XW + 400, 60, { len: 170, amp: 18, phase: t * 0.1 + 0.6, col: '#1c164a', foam: '#ffc89a', every: 3, L });
   // the mole, the Lamp capped at the head of it, and the still water it kept
   ctx = S(0.1);
   const m = px * 0.1;
-  lampTower(ctx, tx + m, 78, hy + 50, 30, '#2a2456', L, { shade: DARK, rim: 4, dome: '#3a2c5c', capped: true, capRim: '#ffb27a' });
+  lampTower(ctx, tx + m, 100, hy + 50, 30, '#2a2456', L, { shade: DARK, rim: 4, dome: '#3a2c5c', capped: true, capRim: '#ffb27a' });
   sil(ctx, pp([[X0, hy + 34], [tx + 70 + m, hy + 34], [tx + 86 + m, hy + 64], [X0, hy + 64]]), DARK, L, 4, 0);
   rect(ctx, X0, hy + 34, tx + 70 + m - X0, 3, '#ffb27a');
   for (let i = 0; i < 18; i++) flat(ctx, archP(tx + 20 + m - i * 58, hy + 66, 32, 18), '#221a50');
@@ -251,7 +252,8 @@ def('mole-dark', L_MOLE, (ctx, t, px) => {
     for (let k = 0; k < 3; k++) {
       const ph = mod(t * 0.23 + k * 0.37, 1), bx = [560, 880, 250][k] + m, up = Math.sin(ph * Math.PI);
       if (ph > 0.9) continue;
-      for (let i = 0; i < 3; i++) curl(ctx, bx + (i - 1) * 26, hy + 30 - up * (26 + i * 12), 9 + i * 3 + up * 5, 1.3, i % 2 ? 1 : -1, 6, '#ffe2c4', II);
+      for (let i = 0; i < 2; i++) curl(ctx, bx + (i ? 20 : -14), hy + 30 - up * (18 + i * 12), 6 + i * 3 + up * 4, 1.2, i ? 1 : -1, 4.5, '#ffe2c4', II);
+      rect(ctx, bx - 30, hy + 34, 60, 3, '#ffe2c4');
     }
     shimmer(ctx, 66, 280, 640, hy + 70, 520, 10, '#e8825a', t);
   }
@@ -269,11 +271,11 @@ const L_BYHAND = keyLight(VIOLET, -Math.PI * 0.36, { depth: 0.85, tint: '#0c0a36
 const L_BYHAND_E = keyLight(VIOLET, -Math.PI * 0.12), L_BYHAND_W = keyLight(VIOLET, -Math.PI * 0.88);   // the oarsman each side of a pan
 /** where boat i of n sits in the chain, far to near: [x, y, scale] */
 function chainAt(i, n) {
-  const u = i / (n - 1), k = Math.pow(u, 1.7);
-  return [470 + Math.sin(u * 2.5 + 0.2) * 250 + u * 150, 118 + k * 520, 0.16 + k * 1.05];
+  const u = i / (n - 1), k = Math.pow(u, 1.5);
+  return [450 + Math.sin(u * 2.5 + 0.2) * 250 + u * 150, 122 + k * 520, 0.24 + k * 1.0];
 }
 def('lane-by-hand', L_BYHAND, (ctx, t, px) => {
-  const L = L_BYHAND, hy = 88, N = 13, SEA = '#0d1140';
+  const L = L_BYHAND, hy = 96, N = 13, SEA = '#0d1140';
   ctx = S(0.05);
   sky(ctx, hy, ['#06061e', '#0a0c30', '#121646', '#1c2260'], [0.4, 0.7, 0.92, 1]);
   starsFlat(ctx, 71, 60, hy - 6);
@@ -383,5 +385,327 @@ def('quay-break', L_BREAK, (ctx, t, px) => {
   rect(ctx, X0, 468, 150 + q - X0, 4, '#e87a3a');
   cel(ctx, rp(40 + q, 520, 110, 70), '#8a5a3a', L, { off: 12, ink: IW, rim: 4 }); stroke(ctx, 40 + q, 544, 150 + q, 544, II); cel(ctx, ep(250 + q, 560, 40, 28), '#c9b48e', L, { off: 10, ink: IW, rim: 3, shadow: '#5a4a7a' });
   busts(ctx, Array.from({ length: 9 }, (_, i) => [-230 + i * 62 + rnd(i * 5) * 20 + q, 420 + rnd(i * 3) * 30, 26]), DARK, L, 4, 0, '#e87a3a');
-  { const arms = (c) => { for (let i = 0; i < 9; i += 2) { const x = -230 + i * 62 + rnd(i * 5) * 20 + q, y = 420 + rnd(i * 3) * 30; c.moveTo(x + 16, y + 40); c.lineTo(x + 44, y - 44); c.lineTo(x + 60, y - 40); c.lineTo(x + 40, y + 44); c.closePath(); } }; sil(ctx, arms, DARK, L, 4, 0, '#e87a3a'); }
+  { const arms = (c) => { for (let i = 0; i < 9; i += 2) { const x = -230 + i * 62 + rnd(i * 5) * 20 + q, y = 420 + rnd(i * 3) * 30; c.moveTo(x + 14, y + 40); c.lineTo(x + 40, y - 50); c.lineTo(x + 52, y - 47); c.lineTo(x + 34, y + 44); c.closePath(); } }; sil(ctx, arms, DARK, L, 4, 0, '#e87a3a'); }
 });
+
+// ── full-bench: three magistrates under a high window. Morning. Key: the window, behind them ──
+const L_FULL = keyLight('#fff2cc', -Math.PI * 0.56, { depth: 0.88, tint: '#1a1848' });
+const L_FULL_E = keyLight('#fff2cc', -Math.PI * 0.3, { depth: 0.88, tint: '#1a1848' }), L_FULL_W = keyLight('#fff2cc', -Math.PI * 0.7, { depth: 0.88, tint: '#1a1848' });
+const FILE_COLS = ['#f3e3bb', '#d9c08a', '#bfd0cc', '#8fb4b8', '#e8cf9a', '#c9a868'];
+/** a stack of files lying flat, bottom at y; returns the top */
+function files(ctx, x, y, w, n, seed, dim = 0) {
+  for (let i = 0; i < n; i++) {
+    const h = 9 + rnd(seed + i) * 7, off = (rnd(seed * 3 + i) - 0.5) * 14, ww = w + (rnd(seed * 5 + i) - 0.5) * 16;
+    y -= h;
+    rect(ctx, x + off, y, ww, h, shade(FILE_COLS[Math.floor(rnd(seed * 7 + i) * FILE_COLS.length)], dim));
+    if (rnd(seed * 11 + i) < 0.4) rect(ctx, x + off + ww * 0.3, y, 6, h, shade(C.crimson, dim * 0.8));
+    ink(ctx, 1.6, alpha(INK, 0.9)); ctx.strokeRect(x + off, y, ww, h);
+  }
+  return y;
+}
+def('full-bench', L_FULL, (ctx, t, px) => {
+  const L = L_FULL, WALL = '#2e2a4e', DARK = '#131028', wy = 180, R = 126;
+  ctx = S(0.35);
+  const wx = 640 + px * 0.35;
+  fillAll(ctx, WALL);
+  // a poor court: plaster gone in a patch, a stain under the cornice, one crack nobody has had mended
+  flat(ctx, pp([[wx + 250, -40], [wx + 420, -60], [wx + 470, 60], [wx + 400, 150], [wx + 290, 120], [wx + 240, 40]]), '#3c3660');
+  ink(ctx, 1.6, alpha(INK, 0.6)); ctx.beginPath(); for (let r = 0; r < 6; r++) { ctx.moveTo(wx + 260, -20 + r * 28); ctx.lineTo(wx + 450, -20 + r * 28); } ctx.stroke();
+  flat(ctx, pp([[wx - 520, -180], [wx - 330, -180], [wx - 350, 60], [wx - 390, 130], [wx - 420, 70], [wx - 470, 96], [wx - 500, 20]]), '#262244');
+  taperPath(ctx, [[wx - 260, -180], [wx - 236, -60], [wx - 262, 20], [wx - 230, 110], [wx - 250, 170]], 4, 0.5, INK);
+  rect(ctx, X0, 300, XW, 700, '#221d3c'); rect(ctx, X0, 296, XW, 8, '#4a4266');
+  for (const k of [-1, 1]) box(ctx, wx + k * 356 - 24, -180, 48, 480, '#3c3660', k < 0 ? L_FULL_E : L_FULL_W, { off: 14, ink: II, rim: 4 });
+  // the window: a great half-round, with one pane boarded
+  const fan = (r0, r1, a0, a1) => (c) => { c.moveTo(wx + Math.cos(a0) * r0, wy + Math.sin(a0) * r0); c.arc(wx, wy, r0, a0, a1); c.lineTo(wx + Math.cos(a1) * r1, wy + Math.sin(a1) * r1); c.arc(wx, wy, r1, a1, a0, true); c.closePath(); };
+  bloom(ctx, wx, wy - 46, 360, L.col, 0.8);
+  flat(ctx, fan(0, R + 16, Math.PI, TAU), DARK);
+  flat(ctx, fan(0, R, Math.PI, TAU), '#d6eef2'); flat(ctx, fan(0, R * 0.78, Math.PI, TAU), '#fffbea'); flat(ctx, fan(0, R * 0.46, Math.PI, TAU), '#ffffff');
+  flat(ctx, fan(R * 0.5, R, Math.PI * 1.667, Math.PI * 1.833), '#8a6a4a'); stroke(ctx, wx + Math.cos(Math.PI * 1.7) * R * 0.56, wy + Math.sin(Math.PI * 1.7) * R * 0.56, wx + Math.cos(Math.PI * 1.8) * R * 0.94, wy + Math.sin(Math.PI * 1.8) * R * 0.94, II);
+  ink(ctx, 6, DARK); ctx.beginPath();
+  for (let i = 1; i < 6; i++) { const a = Math.PI * (1 + i / 6); ctx.moveTo(wx, wy); ctx.lineTo(wx + Math.cos(a) * R, wy + Math.sin(a) * R); }
+  ctx.moveTo(wx - R * 0.5, wy); ctx.arc(wx, wy, R * 0.5, Math.PI, TAU); ctx.stroke();
+  outline(ctx, fan(0, R, Math.PI, TAU), IW);
+  box(ctx, wx - R - 34, wy, R * 2 + 68, 14, '#5a5078', L, { off: 0, shadow: false, ink: II, rim: 3 });
+  // what it throws into the room: two hard slabs, toward us
+  flat(ctx, pp([[wx - R, wy + 14], [wx + R, wy + 14], [wx + R + 380, 980], [wx - R - 380, 980]]), alpha(L.col, 0.09));
+  flat(ctx, pp([[wx - 54, wy + 14], [wx + 54, wy + 14], [wx + 190, 980], [wx - 190, 980]]), alpha(L.col, 0.1));
+  // the Full Bench: three chairs with their backs to the light, and all three sitting
+  ctx = S(0.45);
+  const bx = 640 + px * 0.45;
+  for (const i of [-1, 1, 0]) {
+    const x = bx + i * 196, top = i ? 124 : 104, LL = i < 0 ? L_FULL_E : i > 0 ? L_FULL_W : L;
+    sil(ctx, (c) => { c.moveTo(x - 46, 260); c.lineTo(x - 46, top + 30); c.quadraticCurveTo(x - 42, top + 4, x, top); c.quadraticCurveTo(x + 42, top + 4, x + 46, top + 30); c.lineTo(x + 46, 260); c.closePath(); }, '#43203a', LL, 4, II);
+    flat(ctx, cp(x, top + 22, 7), C.brass);
+    busts(ctx, [[x, 178 - (i ? 0 : 6), 21]], '#17132e', LL, 3.4, II);
+    rect(ctx, x - 6, 200 - (i ? 0 : 6), 5, 15, C.cream); rect(ctx, x + 1, 200 - (i ? 0 : 6), 5, 15, C.cream);
+  }
+  // the bench itself: good oak, the cloth darned
+  box(ctx, bx - 420, 232, 840, 12, '#8a5a3a', L, { off: 0, shadow: false, ink: II, rim: 3 });
+  box(ctx, bx - 400, 244, 800, 110, '#1f5a50', L, { off: 0, shadow: false, ink: II });
+  rect(ctx, bx - 400, 244, 800, 12, alpha(C.night, 0.5));
+  rect(ctx, bx + 120, 280, 70, 46, '#2c7a62'); ink(ctx, 1.6, C.cream); ctx.setLineDash([5, 5]); ctx.strokeRect(bx + 120, 280, 70, 46); ctx.setLineDash([]);
+  rect(ctx, bx - 310, 300, 44, 30, '#18463e'); ink(ctx, 1.6, C.cream); ctx.setLineDash([5, 5]); ctx.strokeRect(bx - 310, 300, 44, 30); ctx.setLineDash([]);
+  files(ctx, bx - 330, 232, 64, 6, 5, 0.25); files(ctx, bx + 262, 232, 70, 9, 8, 0.25); files(ctx, bx - 110, 232, 54, 3, 11, 0.25); files(ctx, bx + 76, 232, 50, 4, 14, 0.25);
+  box(ctx, bx - 470, 354, 940, 30, '#4a2a40', L, { off: 8, ink: II, rim: 3 }); box(ctx, bx - 520, 384, 1040, 30, '#3a2034', L, { off: 8, ink: II, rim: 3 });
+  // floor, the dock rail, the public
+  rect(ctx, X0, 414, XW, 600, '#1a1734');
+  flat(ctx, pp([[bx - 150, 414], [bx + 150, 414], [bx + 330, 980], [bx - 330, 980]]), '#8a7e84'); flat(ctx, pp([[bx - 60, 414], [bx + 60, 414], [bx + 150, 980], [bx - 150, 980]]), '#cfc0a4');
+  stroke(ctx, X0, 414, X0 + XW, 414, IW);
+  box(ctx, bx + 300, 470, 330, 16, '#8a5a3a', L, { off: 0, shadow: false, ink: II, rim: 3 });
+  for (let i = 0; i < 9; i++) { box(ctx, bx + 310 + i * 38, 486, 9, 200, '#5a3a34', L, { off: 0, shadow: false, ink: 1.6 }); }
+  busts(ctx, Array.from({ length: 22 }, (_, i) => [X0 + 40 + i * 84 + rnd(i * 3) * 30 + px * 0.6, 610 + rnd(i * 7) * 30, 30]), '#0e0c26', L, 4, 0);
+}, (ctx, t, px) => {
+  dust(ctx, 17, 22, t, 380 + px, 200, 520, 460, '#fff6dc', 5, 4, 5);
+});
+
+// ── assembly: a horseshoe of forty seats, twelve draped in grey. Noon. Key: the oculus overhead ──
+const L_ASM = keyLight('#fff4d0', -Math.PI * 0.54, { depth: 0.85, tint: '#1a1a50' });
+/** the forty seats, far to near: [x, y, scale, draped] */
+const ASM_SEATS = (() => {
+  const out = [];
+  for (let tier = 0; tier < 2; tier++) for (let j = 0; j < 20; j++) {
+    const a = lerp(Math.PI * 0.94, Math.PI * 2.06, (j + 0.5) / 20), s = Math.sin(a);
+    out.push([640 + Math.cos(a) * (tier ? 400 : 560), 296 + s * (tier ? 92 : 136) + (tier ? 8 : 0), 0.74 + 0.5 * (1 + s) + tier * 0.1, (j * 7 + tier * 3) % 10 < 3]);
+  }
+  return out.sort((p, q) => p[1] - q[1]);
+})();
+def('assembly', L_ASM, (ctx, t, px) => {
+  const L = L_ASM, oy = 100;
+  ctx = S(0.3);
+  const ox = 640 + px * 0.3;
+  fillAll(ctx, '#1a1842');
+  // the dome from below: rings of coffers stepping in to the eye
+  for (const [rx, ry, c] of [[980, 360, '#211e4c'], [760, 276, '#2a2860'], [560, 200, '#363878'], [380, 132, '#4a509a'], [220, 74, '#6e7aba']]) { flat(ctx, ep(ox, oy, rx, ry), c); outline(ctx, ep(ox, oy, rx, ry), II, alpha(INK, 0.7)); }
+  ink(ctx, II, alpha(INK, 0.55)); ctx.beginPath();
+  for (let i = 0; i < 28; i++) { const a = (i / 28) * TAU + 0.11, c = Math.cos(a), s = Math.sin(a); ctx.moveTo(ox + c * 130, oy + s * 44); ctx.lineTo(ox + c * 980, oy + s * 360); }
+  ctx.stroke();
+  bloom(ctx, ox, oy, 250, L.col, 0.85);
+  flat(ctx, ep(ox, oy, 116, 40), '#8f8aa8'); outline(ctx, ep(ox, oy, 116, 40), IW);
+  flat(ctx, ep(ox, oy + 3, 96, 30), '#9fd6f0'); flat(ctx, ep(ox + 4, oy + 8, 78, 21), '#ffffff'); outline(ctx, ep(ox, oy + 3, 96, 30), II);
+  // the drum: a cornice, pilasters, niches
+  rect(ctx, X0, 176, XW, 900, '#2c2a5e');
+  box(ctx, X0, 164, XW, 16, '#8f8aa8', L, { off: 0, shadow: false, ink: II, rim: 4 });
+  for (let i = -5; i <= 5; i++) {
+    const x = ox + i * 150;
+    box(ctx, x - 14, 180, 28, 240, '#44427c', L, { off: 0, shadow: pp([[x + 2, 180], [x + 14, 180], [x + 14, 420], [x + 2, 420]]), ink: II });
+    if (i < 5) flat(ctx, archP(x + 40, 420, 70, 200), '#201e4a');
+  }
+  // the floor, and the day standing on it
+  rect(ctx, X0, 300, XW, 800, '#1c1a44');
+  flat(ctx, ep(640 + px * 0.5, 470, 330, 80), '#4a4674'); flat(ctx, ep(640 + px * 0.5, 470, 230, 54), '#a39c98'); flat(ctx, ep(640 + px * 0.5, 470, 130, 30), '#f1e6cc');
+  // the far half of the horseshoe; then the shaft; then the near arms
+  ctx = S(0.5);
+  const q = px * 0.5;
+  const seat = (p) => {
+    const x = p[0] + q, y = p[1], s = p[2];
+    if (p[3]) {   // draped: a dark island's seat, under grey cloth
+      cel(ctx, (c) => { c.moveTo(x - 21 * s, y + 46 * s); c.lineTo(x - 16 * s, y - 16 * s); c.quadraticCurveTo(x, y - 30 * s, x + 16 * s, y - 16 * s); c.lineTo(x + 21 * s, y + 46 * s); c.closePath(); }, '#b9b7cc', L, { off: 7 * s, ink: II, rim: 2.5 * s, rimCol: '#ffffff', shadow: '#77759a' });
+      stroke(ctx, x - 5 * s, y - 14 * s, x - 9 * s, y + 44 * s, 1.6, alpha(INK, 0.6)); stroke(ctx, x + 7 * s, y - 10 * s, x + 11 * s, y + 44 * s, 1.6, alpha(INK, 0.6));
+    } else {
+      sil(ctx, archP(x - 15 * s, y + 44 * s, 30 * s, 68 * s), '#5a2238', L, 2.5 * s, II);
+      busts(ctx, [[x, y, 11.5 * s]], '#17153a', L, 2.6 * s, 0);
+    }
+    rect(ctx, x - 21 * s, y + 28 * s, 42 * s, 20 * s, '#4a3050'); rect(ctx, x - 22 * s, y + 26 * s, 44 * s, 4 * s, '#c9a070'); ink(ctx, 1.6); ctx.strokeRect(x - 21 * s, y + 28 * s, 42 * s, 20 * s);
+  };
+  for (const p of ASM_SEATS) if (p[1] < 300) seat(p);
+  flat(ctx, pp([[640 - 92 + px * 0.3, oy + 6], [640 + 92 + px * 0.3, oy + 6], [640 + 250 + q, 470], [640 - 250 + q, 470]]), alpha(L.col, 0.13));
+  flat(ctx, pp([[640 - 44 + px * 0.3, oy + 6], [640 + 44 + px * 0.3, oy + 6], [640 + 120 + q, 470], [640 - 120 + q, 470]]), alpha(L.col, 0.13));
+  // the table, and on it two schedules
+  cel(ctx, ep(640 + q, 438, 150, 30), '#8a5a3a', L, { off: 0, shadow: false, ink: IW, rim: 4 });
+  rect(ctx, 640 + q - 110, 440, 220, 60, '#4a2a40'); stroke(ctx, 640 + q - 110, 440, 640 + q - 110, 500, II); stroke(ctx, 640 + q + 110, 440, 640 + q + 110, 500, II);
+  flat(ctx, pp([[570 + q, 428], [626 + q, 424], [632 + q, 444], [574 + q, 448]]), C.cream); outline(ctx, pp([[570 + q, 428], [626 + q, 424], [632 + q, 444], [574 + q, 448]]), 1.6); flat(ctx, cp(616 + q, 440, 6), C.crimson);
+  flat(ctx, pp([[654 + q, 424], [712 + q, 428], [708 + q, 448], [650 + q, 444]]), C.cream); outline(ctx, pp([[654 + q, 424], [712 + q, 428], [708 + q, 448], [650 + q, 444]]), 1.6); rect(ctx, 676 + q, 425, 6, 22, C.sea);
+  for (const p of ASM_SEATS) if (p[1] >= 300) seat(p);
+}, (ctx, t, px) => {
+  dust(ctx, 23, 20, t, 500 + px * 0.5, 110, 280, 360, '#fff6dc', 5, 3, 6);
+  spark(ctx, 640 + px * 0.3 + 60, 96, 16, t, 3, '#ffffff');
+});
+
+// ── founders-lamp: the lamp-house at Cresset, rings twice the size of Saltmere's, a brass cap hanging on its chain. Night. Key: the cold white flame ──
+const L_FOUND = keyLight('#dff4ff', -Math.PI * 0.6, { depth: 0.9, tint: '#0a0e3c' });
+const L_FOUND_E = keyLight('#dff4ff', -Math.PI * 0.1, { depth: 0.9, tint: '#0a0e3c' }), L_FOUND_W = keyLight('#dff4ff', -Math.PI * 0.9, { depth: 0.9, tint: '#0a0e3c' });
+const L_FOUND_UP = keyLight('#dff4ff', Math.PI * 0.5, { depth: 0.9, tint: '#0a0e3c' });   // for the cap: it is lit from underneath
+const F_RINGS = [[250, 0.34, -0.2, 13], [356, 0.52, 0.3, 15], [470, 0.24, 0.08, 18]];   // rx, tilt, turn, width
+def('founders-lamp', L_FOUND, (ctx, t, px) => {
+  const L = L_FOUND, cx = 640 + px * 0.25, fy = 182, hy = 348, wy = 520, STONE = '#2c3676', DARK = '#090b2a', ry0 = fy - 34;
+  // night, the roads, and Cresset's roofs a long way down
+  ctx = S(0);
+  sky(ctx, hy, ['#05061e', '#0a1040', '#122262', '#1c3c84'], [0.4, 0.68, 0.9, 1]);
+  starsFlat(ctx, 51, 50, hy - 60);
+  rect(ctx, X0, hy, XW, wy - hy + 4, '#102a66');
+  flat(ctx, pp([[540, hy], [740, hy], [1000, wy], [280, wy]]), '#2e6eb0'); flat(ctx, pp([[604, hy], [676, hy], [780, wy], [500, wy]]), '#7cc4ee');
+  lozenges(ctx, 53, 560, 720, hy + 4, wy - 10, 18, '#ffffff');
+  stroke(ctx, X0, hy, X0 + XW, hy, 2, '#9fdcff');
+  cityTier(ctx, 15, X0, 1560, hy + 100, 16, 46, 22, 44, '#1a2a6a', L, { shade: '#101c50', roof: '#3a5aa0', win: '#ffd27a', winP: 0.3 });
+  // the arcade: piers lit on the side that faces the flame
+  ctx = S(0.15);
+  const ax = cx - px * 0.1;
+  for (let i = 0; i < 6; i++) {
+    const side = i % 2 ? 1 : -1, d = Math.floor(i / 2), x = ax + side * (252 + d * 200), w = 44 + d * 16;
+    box(ctx, x - w / 2, -180, w, wy + 180 + d * 14, STONE, side < 0 ? L_FOUND_E : L_FOUND_W, { off: w * 0.42, ink: II, rim: 5, shadow: DARK });
+    box(ctx, x - w / 2 - 8, wy + d * 14 - 14, w + 16, 17, STONE, side < 0 ? L_FOUND_E : L_FOUND_W, { off: 6, ink: II, shadow: DARK });
+  }
+  rect(ctx, X0, -180, XW, 204, DARK); rect(ctx, X0, 20, XW, 6, STONE); stroke(ctx, X0, 27, X0 + XW, 27, II);
+  // the standing order, nailed where the watch will see it
+  { const x = ax - 270, y = 112;
+    cel(ctx, pp([[x, y], [x + 34, y + 2], [x + 33, y + 50], [x - 1, y + 48]]), C.cream, L_FOUND_E, { off: 5, ink: II });
+    for (let r = 0; r < 4; r++) rect(ctx, x + 5, y + 9 + r * 7, 22 - (r % 2) * 6, 2.4, alpha(INK, 0.7));
+    flat(ctx, cp(x + 24, y + 41, 5.5), C.crimson); flat(ctx, cp(x + 17, y + 3, 2.4), INK); }
+  // the flame's reach, in flat steps; the three rings; the hopper and its chute
+  ctx = S(0.25);
+  rings(ctx, cx, ry0, 380, [alpha(L.col, 0.08), alpha(L.col, 0.13), alpha(L.col, 0.22)], [1, 0.64, 0.36]);
+  for (const [rx, tilt, turn, w] of F_RINGS) {
+    const e = (r, a0, a1) => { ctx.beginPath(); ctx.ellipse(cx, ry0, r, r * tilt, turn, a0, a1); ctx.stroke(); };
+    ink(ctx, w + 5.5, INK); e(rx, 0, TAU);
+    ink(ctx, w, C.brass); e(rx, 0, TAU);
+    ink(ctx, w * 0.5, '#8a4a34'); e(rx + w * 0.2, Math.PI * 0.12, Math.PI * 0.88);     // the near limb, turned from the flame
+    ink(ctx, w * 0.36, '#ffffff'); e(rx - w * 0.24, Math.PI * 1.14, Math.PI * 1.86);   // the far limb, facing it
+  }
+  const hx = cx - 208;
+  stroke(ctx, hx + 20, 230, cx - 40, fy + 14, 15); stroke(ctx, hx + 20, 230, cx - 40, fy + 14, 9, '#8a4a34'); stroke(ctx, hx + 20, 226, cx - 40, fy + 10, 2.4, C.brass);
+  stroke(ctx, hx + 14, 236, hx + 14, wy, 12); stroke(ctx, hx + 14, 236, hx + 14, wy, 6, '#8a4a34');
+  cel(ctx, pp([[hx - 44, 150], [hx + 52, 150], [hx + 30, 238], [hx + 2, 238]]), C.brass, L_FOUND_E, { off: 14, ink: IW, rim: 4 });
+  box(ctx, hx - 50, 142, 108, 11, C.brass, L_FOUND_E, { off: 0, shadow: false, ink: II });
+  // the pedestal and the cup
+  cel(ctx, pp([[cx - 54, wy], [cx - 30, fy + 44], [cx + 30, fy + 44], [cx + 54, wy]]), '#8a4a34', L, { off: 0, ink: IW, shadow: pp([[cx + 4, fy + 44], [cx + 30, fy + 44], [cx + 54, wy], [cx + 12, wy]]), rim: 0 });
+  rect(ctx, cx - 20, fy + 46, 5, wy - fy - 48, C.brass);
+  cel(ctx, pp([[cx - 200, wy + 2], [cx + 200, wy + 2], [cx + 168, wy - 20], [cx - 168, wy - 20]]), '#8a4a34', L, { off: 0, shadow: false, ink: II, rim: 3 });
+  ink(ctx, 3);
+  ctx.beginPath(); ctx.moveTo(cx - 50, fy + 4); ctx.quadraticCurveTo(cx - 42, fy + 42, cx - 10, fy + 46); ctx.lineTo(cx + 10, fy + 46); ctx.quadraticCurveTo(cx + 42, fy + 42, cx + 50, fy + 4); ctx.closePath();
+  ctx.fillStyle = C.brass; ctx.fill(); ctx.stroke();
+  flat(ctx, ep(cx, fy + 4, 50, 9), '#ffffff'); outline(ctx, ep(cx, fy + 4, 50, 9), 3);
+  // the cap, on its chain: a brass bell wide enough to shut the cup, lit from underneath
+  ink(ctx, 2.6, INK); for (let y = -176; y < 44; y += 15) { ctx.beginPath(); ctx.ellipse(cx, y + 7, 4.5, 8.5, 0, 0, TAU); ctx.stroke(); }
+  ink(ctx, 1.6, C.brass); for (let y = -176; y < 44; y += 30) { ctx.beginPath(); ctx.ellipse(cx, y + 7, 4.5, 8.5, 0, 0, TAU); ctx.stroke(); }
+  outline(ctx, cp(cx, 50, 9), 5); outline(ctx, cp(cx, 50, 9), 2, C.brass);
+  cel(ctx, (c) => { c.moveTo(cx - 70, 112); c.quadraticCurveTo(cx - 62, 66, cx - 22, 58); c.lineTo(cx + 22, 58); c.quadraticCurveTo(cx + 62, 66, cx + 70, 112); c.closePath(); }, C.brass, L_FOUND_UP, { off: 16, ink: IW, rim: 5, rimCol: '#ffffff', shadow: '#7a4a3a' });
+  rect(ctx, cx - 74, 108, 148, 9, '#ffffff'); outline(ctx, rp(cx - 74, 108, 148, 9), II);
+  ctx = A();
+  fire(ctx, cx, fy + 2, 30, t * 0.36, 3, COLD);
+  spark(ctx, cx, fy - 26, 30, t, 4, '#ffffff');
+  glint(ctx, cx - 40, 113, 9 + 3 * Math.sin(t * 1.7), '#ffffff', 1, 0);
+  // each ring carries a shutter-lens, going round
+  for (let i = 0; i < 3; i++) {
+    const [rx, tilt, turn] = F_RINGS[i], a = t * (0.16 + i * 0.05) * (i % 2 ? 1 : -1) + i * 2.1, ex = Math.cos(a) * rx, ey = Math.sin(a) * rx * tilt;
+    const lx = cx + ex * Math.cos(turn) - ey * Math.sin(turn), ly = ry0 + ex * Math.sin(turn) + ey * Math.cos(turn);
+    rect(ctx, lx - 12, ly - 16, 24, 32, INK); rect(ctx, lx - 9, ly - 13, 18, 26, C.brass); rect(ctx, lx - 5.5, ly - 9.5, 11, 19, Math.sin(a) > 0 ? '#ffffff' : '#5fb4f4');
+  }
+  // the lamp-house floor: the flame lying in polished stone; the head of the stair
+  ctx = S(0);
+  rect(ctx, X0, wy, XW, 500, '#070a28');
+  flat(ctx, ep(640, wy + 96, 430, 80), '#101e52'); flat(ctx, ep(640, wy + 78, 270, 48), '#1e4690'); flat(ctx, ep(640, wy + 62, 120, 20), '#7cc4ee'); flat(ctx, ep(640, wy + 56, 44, 7), '#ffffff');
+  rect(ctx, X0, wy, XW, 3, '#9fdcff'); stroke(ctx, X0, wy + 4, X0 + XW, wy + 4, II);
+  for (let i = 0; i < 5; i++) { const x = 1010 + i * 62, y = wy + 40 + i * 34; rect(ctx, x, y - 92, 9, 92 + i * 6, DARK); rect(ctx, x, y - 92, 3, 92 + i * 6, '#9fdcff'); }
+  stroke(ctx, 1000, wy - 54, 1290, wy + 104, 9, DARK); stroke(ctx, 1000, wy - 57, 1290, wy + 101, 2.4, '#9fdcff');
+}, (ctx, t, px) => {
+  dust(ctx, 29, 14, t, 380 + px, 60, 520, 440, '#cfeaff', 4.5, 2, 7);
+});
+
+// ───────────────────────── Carrow ─────────────────────────
+/** Carrow's lamp-house: a squat stone tower with a slate hat. (x, base) is the middle of its foot. Returns where its flame stands. */
+function carrowLamp(ctx, x, base, s, col, sh, L, o = {}) {
+  const top = base - s * 1.3;
+  cel(ctx, pp([[x - s * 0.52, base], [x - s * 0.4, top], [x + s * 0.4, top], [x + s * 0.52, base]]), col, L, { off: s * 0.26, ink: II, rim: o.rim || 0, shadow: sh });
+  for (let i = 0; i < 7; i++) rect(ctx, x - s * 0.3 + rnd(i * 3.3) * s * 0.5, top + s * (0.14 + i * 0.15), s * 0.16, 2, alpha(INK, 0.4));
+  box(ctx, x - s * 0.5, top - s * 0.1, s, s * 0.11, col, L, { off: 0, shadow: false, ink: II });
+  rect(ctx, x - s * 0.4, top - s * 0.48, s * 0.8, s * 0.4, o.room || alpha(INK, 0.9));
+  for (const k of [-1, 0, 1]) rect(ctx, x + k * s * 0.36 - s * 0.05, top - s * 0.5, s * 0.1, s * 0.42, k * L.dx > 0 ? col : sh);
+  cel(ctx, pp([[x - s * 0.56, top - s * 0.48], [x, top - s * 0.98], [x + s * 0.56, top - s * 0.48]]), o.hat || '#3a4470', L, { off: s * 0.2, ink: II, rim: o.rim || 0 });
+  flat(ctx, archP(x - s * 0.17, base, s * 0.34, s * 0.58), o.door || alpha(INK, 0.92)); outline(ctx, archP(x - s * 0.17, base, s * 0.34, s * 0.58), II);
+  return [x, top - s * 0.14];
+}
+/** a goat standing at (x, y), s its height at the shoulder; dir 1 faces right */
+function goat(ctx, x, y, s, col, L, dir = 1) {
+  sil(ctx, (c) => {
+    c.moveTo(x + s * 0.62, y - s * 0.7); c.ellipse(x, y - s * 0.7, s * 0.62, s * 0.34, 0, 0, TAU); c.closePath();
+    for (const k of [-0.46, -0.3, 0.3, 0.46]) c.rect(x + k * s - s * 0.05, y - s * 0.6, s * 0.1, s * 0.6);
+    c.moveTo(x + dir * s * 0.4, y - s * 0.8); c.lineTo(x + dir * s * 0.72, y - s * 1.36); c.lineTo(x + dir * s * 1.12, y - s * 1.22); c.lineTo(x + dir * s * 1.08, y - s * 1.06); c.lineTo(x + dir * s * 0.86, y - s * 1.02); c.lineTo(x + dir * s * 0.7, y - s * 0.62); c.closePath();
+    c.moveTo(x + dir * s * 0.74, y - s * 1.34); c.lineTo(x + dir * s * 0.52, y - s * 1.72); c.lineTo(x + dir * s * 0.86, y - s * 1.36); c.closePath();
+    c.moveTo(x - dir * s * 0.56, y - s * 0.86); c.lineTo(x - dir * s * 0.78, y - s * 1.04); c.lineTo(x - dir * s * 0.6, y - s * 0.72); c.closePath();
+  }, col, L, Math.max(1.4, s * 0.09), 0);
+}
+/** a kelp rack: two trestles and a pole, the weed hung over it to dry. (x, y) is the left foot; the pole is h above */
+function kelpRack(ctx, x, y, w, h, L, cols, seed) {
+  const top = y - h;
+  for (const k of [0.06, 0.94]) { const px0 = x + w * k; stroke(ctx, px0 - h * 0.16, y, px0, top - 8, 7, INK); stroke(ctx, px0 + h * 0.16, y, px0, top - 8, 7, INK); stroke(ctx, px0 - h * 0.16, y, px0, top - 8, 3, '#7a5a4a'); stroke(ctx, px0 + h * 0.16, y, px0, top - 8, 3, '#7a5a4a'); }
+  const n = Math.floor(w / 13);
+  for (let i = 0; i < n; i++) {
+    const kx = x + w * 0.04 + (i + 0.5) * (w * 0.92 / n), len = h * (0.34 + 0.4 * rnd(seed + i * 1.7)), wig = (rnd(seed * 3 + i) - 0.5) * 9;
+    taperPath(ctx, [[kx, top - 2], [kx + wig, top + len * 0.35], [kx - wig * 0.7, top + len * 0.7], [kx + wig * 0.4, top + len]], 11, 3, INK);
+    taperPath(ctx, [[kx, top], [kx + wig, top + len * 0.35], [kx - wig * 0.7, top + len * 0.7], [kx + wig * 0.4, top + len - 3]], 7, 1, cols[i % cols.length]);
+  }
+  stroke(ctx, x - 8, top, x + w + 8, top - 3, 8, INK); stroke(ctx, x - 8, top, x + w + 8, top - 3, 4, '#a8846a');
+  rect(ctx, x, top - 3 + L.dy * 2, w, 1.6, L.rim);
+}
+const CARROW_SLOPE = [[652, 232], [684, 152], [736, 132], [800, 124], [900, 116], [1000, 108], [1250, 94], [1560, 84]];
+function slopeY(x) { const P = CARROW_SLOPE; for (let i = 1; i < P.length; i++) if (x <= P[i][0]) return lerp(P[i - 1][1], P[i][1], (x - P[i - 1][0]) / (P[i][0] - P[i - 1][0])); return P[P.length - 1][1]; }
+const L_CARM = keyLight('#ffd9a0', -Math.PI * 0.9, { depth: 0.7, tint: '#2a2a70' });
+const L_CARD = keyLight('#ffb45a', -Math.PI * 0.3, { depth: 0.9, tint: '#10103c' });
+/** the beach at Carrow: shingle, kelp racks, goats, the stone lamp-house on its rise. Morning (the lane held) or dusk (the sum) */
+function carrow(ctx, t, px, dusk) {
+  const L = dusk ? L_CARD : L_CARM, hy = 152, sx = 540, lhx = 840;
+  const K = dusk
+    ? { sky: ['#0c0c30', '#191a50', '#2c2a6c', '#4a3a7c', '#7a4a7a'], sea: '#1a1c56', sea1: '#15164a', sea2: '#10113c', foam: '#5a5a9a', land: '#14163e', stone: '#2a2c5c', stoneSh: '#14143a', shingle: '#232450', peb: ['#2e3064', '#191a44'], pebHi: '#5a5a9a', kelp: ['#1c2a40', '#262a4a', '#16223a'], goat: '#1c1c48', turf: '#1c2a44', wash: '#8a8ac0' }
+    : { sky: ['#3a4a9a', '#6a6ab0', '#b47aa8', '#f09a78', '#ffd9a0'], sea: '#3a6aa8', sea1: '#2f5c9c', sea2: '#264c8a', foam: '#fff3d6', land: '#2a3068', stone: '#4a4a86', stoneSh: '#23235a', shingle: '#5c5690', peb: ['#746ea6', '#40407a'], pebHi: '#ffd9a0', kelp: ['#3a5a3a', '#5a5a2a', '#2c4a44'], goat: '#262860', turf: '#3a5a5a', wash: '#fff3d6' };
+  ctx = S(0.04);
+  sky(ctx, hy, K.sky, [0.36, 0.6, 0.8, 0.93, 1]);
+  if (dusk) { starsFlat(ctx, 33, 44, hy - 30); rect(ctx, X0, hy - 5, XW, 5, '#c46a7a'); }
+  else {
+    rings(ctx, sx, hy - 6, 200, [alpha('#ffd9a0', 0.2), alpha('#ffe8bc', 0.34), alpha('#fff3d6', 0.7), '#fffdf2'], [1, 0.62, 0.34, 0.14]);   // the sun, an hour up
+    for (const [x, y, w, c] of [[330, 84, 240, '#b47aa8'], [760, 60, 300, '#6a6ab0'], [1110, 110, 260, '#b47aa8'], [150, 124, 150, '#f09a78']]) { rect(ctx, x - w / 2, y, w, 8, c); rect(ctx, x - w / 2 + 26, y - 6, w - 80, 7, c); }
+  }
+  rect(ctx, X0, hy, XW, 400, K.sea); rect(ctx, X0, hy, XW, 3.5, dusk ? '#c46a7a' : '#fff3d6');
+  if (!dusk) {
+    for (let i = 0; i < 7; i++) rect(ctx, sx - 80 + i * 9, hy + 10 + i * 13, 160 - i * 18, 5, '#ffd9a0');   // the light coming across the water in dashes
+    // the boat they came in: one hull wide, a lug sail, the sun behind it
+    const bx = sx + 6, by = hy + 14;
+    sil(ctx, (c) => { c.moveTo(bx - 40, by - 9); c.quadraticCurveTo(bx, by + 2, bx + 44, by - 12); c.lineTo(bx + 30, by + 6); c.lineTo(bx - 30, by + 6); c.closePath(); c.moveTo(bx - 4, by - 8); c.lineTo(bx - 20, by - 62); c.lineTo(bx + 22, by - 74); c.lineTo(bx + 30, by - 14); c.closePath(); }, '#2a2466', L, 2.4, II, '#fff3d6');
+    stroke(ctx, bx + 2, by - 6, bx + 2, by - 82, 3, '#2a2466');
+    busts(ctx, [[bx - 24, by - 20, 5.5], [bx + 34, by - 22, 5.5], [bx + 20, by - 21, 5]], '#1c1a50', L, 1.4, 0, '#fff3d6');
+  }
+  ctx = A();
+  waves(ctx, X0 - 160 + px * 0.05, hy + 62, XW + 320, 70, { len: 100, amp: 7, phase: t * 0.2, col: K.sea1, foam: K.foam, L });
+  waves(ctx, X0 - 160 + px * 0.05, hy + 120, XW + 320, 240, { len: 160, amp: 11, phase: -t * 0.16 + 0.4, col: K.sea2, foam: K.foam, L, ink: II });
+  // the rise, the lamp-house, two roofs, the goats
+  ctx = S(0.25);
+  const o = px * 0.25;
+  sil(ctx, (c) => { const P = CARROW_SLOPE; c.moveTo(P[0][0] + o, 420); c.lineTo(P[0][0] + o, P[0][1]); c.quadraticCurveTo(P[0][0] + 4 + o, P[1][1] + 20, P[1][0] + o, P[1][1]); for (let i = 2; i < P.length; i++) c.lineTo(P[i][0] + o, P[i][1]); c.lineTo(1600, 420); c.closePath(); }, K.land, L, 4, IW, dusk ? '#4a3a7c' : '#ffd9a0');
+  for (const [x, w, h] of [[1010, 84, 30], [1130, 70, 26]]) {
+    const y = slopeY(x) + 4, xx = x + o;
+    box(ctx, xx - w / 2, y - h, w, h + 6, K.stone, L, { off: 8, ink: II, shadow: K.stoneSh });
+    cel(ctx, pp([[xx - w / 2 - 7, y - h + 2], [xx - w / 2 + 10, y - h - 20], [xx + w / 2 - 10, y - h - 20], [xx + w / 2 + 7, y - h + 2]]), K.turf, L, { off: 6, ink: II });
+    rect(ctx, xx - 6, y - h + 10, 12, 12, alpha(INK, 0.85));
+  }
+  if (dusk) {   // one small lamp, in the lamp-house door: it lights the step and a wedge of the hill and nothing else
+    bloom(ctx, lhx + o, slopeY(lhx) - 10, 150, L.col, 0.9);
+    flat(ctx, pp([[lhx - 10 + o, slopeY(lhx) + 2], [lhx + 10 + o, slopeY(lhx) + 2], [lhx - 20 + o, 260], [lhx - 150 + o, 260]]), alpha(L.col, 0.28));
+  }
+  const fl = carrowLamp(ctx, lhx + o, slopeY(lhx) + 4, 62, K.stone, K.stoneSh, L, { rim: dusk ? 0 : 3, hat: dusk ? '#1c1c4c' : '#3a4480', door: dusk ? '#ffe2a0' : undefined, room: dusk ? undefined : '#3a3470' });
+  if (dusk) { flat(ctx, ep(lhx + o, slopeY(lhx) - 8, 5, 9), '#ffffff'); bloom(ctx, lhx + o, slopeY(lhx) - 10, 40, '#ffe2a0', 0.9); }
+  goat(ctx, 716 + o, slopeY(716) + 3, 20, K.goat, L, -1); goat(ctx, 930 + o, slopeY(930) + 3, 17, K.goat, L, 1); goat(ctx, 958 + o, slopeY(958) + 3, 12, K.goat, L, -1); goat(ctx, 1220 + o, slopeY(1220) + 3, 19, K.goat, L, -1);
+  ctx = A();
+  if (dusk) spark(ctx, lhx + o, slopeY(lhx) - 10, 13, t, 5, '#fff3d6');
+  else { fire(ctx, fl[0], fl[1] + 8, 6, t * 0.5, 2, DIM, 0); glint(ctx, fl[0], fl[1], 9 + 2 * Math.sin(t * 2), '#e6dcff', 0.9, 0); glint(ctx, sx, hy - 6, 40 + 5 * Math.sin(t * 1.3), '#ffffff', 0.9, 0); }
+  // the shingle, the racks, what the tide left
+  ctx = S(0.7);
+  const q = px * 0.7;
+  kelpRack(ctx, 372 + q * 0.6, 392, 120, 300, L, K.kelp, 3);
+  flat(ctx, (c) => { c.moveTo(X0 - 60, 1000); c.lineTo(X0 - 60, 400); c.quadraticCurveTo(300, 356, 640, 372); c.quadraticCurveTo(1000, 388, X0 + XW + 60, 352); c.lineTo(X0 + XW + 60, 1000); c.closePath(); }, K.shingle);
+  ink(ctx, IW); ctx.beginPath(); ctx.moveTo(X0 - 60, 400); ctx.quadraticCurveTo(300, 356, 640, 372); ctx.quadraticCurveTo(1000, 388, X0 + XW + 60, 352); ctx.stroke();
+  for (let i = 0; i < 50; i++) {
+    const x = X0 + rnd(i * 3.1) * XW, y = 410 + rnd(i * 7.7) * 380, r = 9 + rnd(i * 5) * 16;
+    flat(ctx, ep(x, y, r, r * 0.5), K.peb[i % 3 ? 0 : 1]); rect(ctx, x - r * 0.7 + (L.dx > 0 ? r * 0.5 : 0), y - r * 0.5, r * 0.9, 2.5, K.pebHi);
+  }
+  kelpRack(ctx, 960 + q, 560, 300, 190, L, K.kelp, 7); kelpRack(ctx, 60 + q, 520, 220, 150, L, K.kelp, 11);
+  if (dusk) {   // the rowing boat, hauled up above the weed
+    cel(ctx, (c) => { c.moveTo(430 + q, 580); c.quadraticCurveTo(560 + q, 612, 760 + q, 566); c.quadraticCurveTo(700 + q, 640, 560 + q, 646); c.quadraticCurveTo(470 + q, 640, 430 + q, 580); c.closePath(); }, '#3a2a5a', L, { off: 10, ink: IW, rim: 4, shadow: '#16143c' });
+    stroke(ctx, 500 + q, 598, 500 + q, 636, II); stroke(ctx, 620 + q, 602, 620 + q, 640, II); stroke(ctx, 560 + q, 600, 830 + q, 560, 6, INK); stroke(ctx, 560 + q, 599, 830 + q, 559, 2.4, '#8a7a6a');
+  }
+  ctx = A();
+  { const u = 0.5 + 0.5 * Math.sin(t * 0.7), y = 356 + u * 22;   // the wash, up the stones and back
+    waves(ctx, X0 - 160 + px * 0.7, y, XW + 320, 14, { len: 130, amp: 6, phase: 0.2, col: K.wash, foam: false }); }
+}
+// ── carrow-morning: the lane held. Key: a low sun behind the arriving boat ──
+def('carrow-morning', L_CARM, (ctx, t, px) => carrow(ctx, t, px, false));
+// ── carrow-dusk: the sum. Key: the small lamp in the lamp-house door ──
+def('carrow-dusk', L_CARD, (ctx, t, px) => carrow(ctx, t, px, true));
