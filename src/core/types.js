@@ -142,13 +142,16 @@
  * @property {number} trustEarned              lifetime trust, never reset: scene rewards, and
  *                                             TRUST_PER_GIFT for every aid ball accepted. One side of the ending
  * @property {number} loansTaken               lifetime loans from the Mint, never reset: the other side
+ * @property {number} hatsRefused              how many of those loans were drawn while the Commons was passing
+ *                                             the hat (the 'credit' pull). They weigh TRUST_PER_LOAN; the rest,
+ *                                             taken with no gift on offer, weigh TRUST_PER_FORCED_LOAN
  *
  * economy.js
  * export const SPIN_COST: number              marks for one pull of the lever
  * export const LOAN: { marks: number, owed: number, garnish: number }
  *        the Mint advances LOAN.marks, books LOAN.owed of debt, and takes `garnish` (0..1)
  *        of every mark earned until debt is zero
- * export const TRUST_PER_LOAN, TRUST_PER_GIFT, TRUST_PER_AID: number
+ * export const TRUST_PER_LOAN, TRUST_PER_FORCED_LOAN, TRUST_PER_GIFT, TRUST_PER_AID: number
  * export function initEcon(): Econ
  * export function awardPoints(econ: Econ, points: number, mult?: number): Econ
  *        adds score, converts to marks (fractional marks are fine), garnishes for debt
@@ -156,11 +159,13 @@
  * export function paySpin(econ: Econ): Econ
  * export function applyPayout(econ: Econ, payout: Payout, mult?: number): Econ    writs, marks and points
  * export function needsLoan(econ: Econ): boolean           no writs and cannot afford a pull
- * export function takeLoan(econ: Econ): Econ
+ * export function takeLoan(econ: Econ, refusedHat?: boolean): Econ
  * export function spendWrit(econ: Econ): Econ
  * export function addTrust(econ: Econ, n: number): Econ     clamped 0..100
+ * export function ledger(econ: Econ): { trust: number, loans: number }
+ *        the two pans: trustEarned, and hatsRefused * TRUST_PER_LOAN + the other loans * TRUST_PER_FORCED_LOAN
  * export function leaning(econ: Econ): 'commons'|'mint'
- *        which ending the ledger currently describes: 'commons' when trustEarned >= loansTaken * TRUST_PER_LOAN
+ *        which ending the ledger currently describes: 'commons' when ledger(econ).trust >= ledger(econ).loans
  * export function aidAvailable(econ: Econ): boolean
  *        mutual aid: the town covers a lost ball when trust is high enough.
  *        One aid ball per 25 trust, per chapter. The Mint lends at interest; the Commons gives.
@@ -180,6 +185,9 @@
  * @property {string} [music]    switch music mood at this line
  * @property {string} [sfx]      one-shot sound at line start
  * @property {string} [emote]    'smile'|'grim'|'shock'|'tears'|'anger'|'soft'   speaker's face
+ * @property {'commons'|'mint'} [lean]   prologue, briefing, cutscene and epilogue lines only (never barks):
+ *                               spoken only when the ledger leans this way (story.leaningNow). A line
+ *                               without it is always spoken. The only branch in the content
  * @property {number} [minScene] barks only: not eligible until game.scene >= minScene. A bark is also
  *                               held back, with or without it, until its speaker has appeared in a
  *                               cinematic of this chapter or an earlier one (story.metSpeakers)
@@ -219,6 +227,8 @@
  * @property {{play:string, cine:string}} music
  *        play: the table.  cine: the quieter mood a prologue or epilogue falls back to when its
  *        first line names none
+ * @property {{commons:{title:string,text:string}, mint:{title:string,text:string}}} [endings]
+ *        on the last chapter: what the end screen says for each reading of the ledger (story.endingOf)
  *
  * @typedef {Object} CastMember
  * @property {string} id
@@ -239,7 +249,7 @@
 /**
  * @typedef {Object} Cine          a running cinematic
  * @property {'prologue'|'scene'|'epilogue'} kind
- * @property {Line[]} lines
+ * @property {Line[]} lines        the lines that will be played: lean lines of the other ending are already gone
  * @property {number} index
  * @property {number} lineT        seconds the current line has been showing
  * @property {string} bg           resolved backdrop (persisting from earlier lines)
@@ -281,6 +291,8 @@
  *        ballSave: seconds of save remaining.  mult/multT: mark multiplier and its seconds remaining.
  *        kickback: outlane kickbacks held (0..2). The clocks run only while a ball is in play.
  * @property {number} barkCool              seconds until another bark may play
+ * @property {null|'commons'|'mint'} ending  the ledger as read in the final chapter, frozen: null until the
+ *        scene story.readsLeaning names completes (at the latest the last objective of the last chapter)
  * @property {boolean} spunThisChapter      false until the lever has paid once this chapter (the rigged pull, if any)
  * @property {{kind:string,text:string,t:number}[]} toasts   short HUD callouts, shell only reads
  *        kinds: scene, payout, jackpot, bust, loan, aid, save, hint
@@ -292,11 +304,13 @@
  *   {type:'lineDone', id:string}              shell: the voice finished this blocking line
  *   {type:'load', save:Save}
  *
- * @typedef {{v:3, chapter:number, scene:number, econ:Econ, seed:number,
- *            reels:{cells:[Cell,Cell,Cell], source:Source|null, armed:boolean, charge:number}}} Save
+ * @typedef {{v:4, chapter:number, scene:number, econ:Econ, seed:number,
+ *            reels:{cells:[Cell,Cell,Cell], source:Source|null, armed:boolean, charge:number},
+ *            ending:null|'commons'|'mint'}} Save
  *        Loads into 'play' at the start of its scene, with a fresh table and the reels as they
  *        stood when it was written (a line that had just paid is saved as cleared). v:1 and v:2
- *        saves have no `reels` and still load, with fresh reels.
+ *        saves have no `reels` and still load, with fresh reels. v:3 has no `ending` (loads as null) and
+ *        no econ.hatsRefused (loads as 0).
  *
  * THE LEVER. In play, with no ball anywhere and no writs, a press of Input.plunge is the lever
  * (leverStatus says what it will do): the chapter's rigged pull, free; or SPIN_COST marks and a
@@ -315,7 +329,8 @@
  *                                               confirm is also the spin elements lighting; eject also a kickback.
  *   {type:'music', mood:string}                 moods: title, festival, tense, covert, sorrow, hope, march,
  *                                               mine, court, shrine, dread, silence,
- *                                               academy, storm, village, exchange
+ *                                               academy, storm, village, exchange,
+ *                                               capital, lanehold, thesum
  *   {type:'shake', power:number}
  *   {type:'flash', color:string}
  *   {type:'save', save:Save}
@@ -325,12 +340,20 @@
  * export const FILL_SECONDS, PAY_SECONDS, REELS_NEED, AID_WAIT, LEVER_DELAY: number
  * export function init(seedN: number): Game
  * export function update(content: Content, game: Game, msg: Msg): { game: Game, effects: Effect[] }
- * export const SAVE_VERSION: 3
+ * export const SAVE_VERSION: 4
  * export function toSave(game: Game): Save
  * export function leverStatus(content, game): null|'wait'|'free'|'credit'|'pull'|'loan'
  *        what a press of the plunge button would do as the lever; null when it is not the lever
  *
  * story.js  (pure helpers used by game.js and by the renderer)
+ * export const LEANINGS: ['commons','mint']
+ * export function spokenLines(lines: Line[], lean): Line[]   the lines heard when the ledger leans `lean`
+ * export function leaningNow(game): 'commons'|'mint'         game.ending once read, the live economy.leaning until then
+ * export function readsLeaning(content, chapterIndex, sceneIndex): boolean
+ *        whether completing that scene's objective freezes the leaning: only in the final chapter, at its
+ *        last scene, or earlier at the first scene whose cutscene, or any later briefing or cutscene, has a lean line
+ * export function endingOf(content, game): { leaning, title: string|null, text: string|null }
+ *        for the end screen: the last chapter's endings[leaning], nulls when it has none
  * export function currentScene(content, game): Scene|null
  * export function objectiveProgress(scene: Scene, hits, seq): { done:number, total:number, complete:boolean }
  * export function litIds(content, game): string[]      element ids the current objective still needs

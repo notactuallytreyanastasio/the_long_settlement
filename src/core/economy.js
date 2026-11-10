@@ -1,5 +1,5 @@
 // The player's books: score, marks, writs, debt to the Mint, trust with the town,
-// and the two lifetime totals the ending is read from.
+// and the three lifetime totals the ending is read from.
 // Pure: every function returns a new Econ.
 //
 // Tuning (asserted in test/economy.test.js over 200k seeded pulls per skill level, and in
@@ -26,27 +26,48 @@ export const LOAN = Object.freeze({ marks: 200, owed: 250, garnish: 0.3 });
 export const TRUST_PER_AID = 25;
 
 /**
- * How much lifetime trust one loan from the Mint outweighs. The ledger leans to the
- * commons while trustEarned >= loansTaken * TRUST_PER_LOAN.
+ * The ledger the ending is read from (leaning, below). It leans to the commons while
  *
- * trustEarned has two sources. The scenes pay 50, 85, 65, 120 and 50 over the five
- * chapters, 370 in all, and scenes cannot be skipped, so every finished game has that.
- * The rest is TRUST_PER_GIFT for each ball the Commons was allowed to give.
+ *   trustEarned >= hatsRefused * TRUST_PER_LOAN + (loansTaken - hatsRefused) * TRUST_PER_FORCED_LOAN
  *
- * The obvious ledger is scene trust against loans and nothing else. It does not work,
- * and the playthrough bot shows why: over seeds 1 to 16 a bot that took every gift
- * borrowed 0 to 16 times and a bot that took none borrowed 3 to 21 times. Loans counted
- * luck. So the choice itself is entered on both sides: a gift accepted is trust earned
- * (TRUST_PER_GIFT), and a pull of the lever while the hat is still going round is a loan
- * (game.js, leverStatus 'credit').
+ * trustEarned has two sources. The scenes pay 50, 85, 65, 120 and 50 over the first five
+ * chapters, 370 in all, and scenes cannot be skipped, so every finished game has that. The
+ * rest is TRUST_PER_GIFT for each ball the Commons was allowed to give.
  *
- * At 75 a loan and 130 a gift, over seeds 1 to 32 of each bot: the one that waits for the
- * hat took 0-15 loans against 2-9 gifts and its closest book was 12 loans, 900, against
- * 370 + 5 * 130 = 1020; the one that never waits took 7-29 loans and its closest was 7,
- * 525, against 370. All 64 books lean the way their bot chose. A book with no gifts in it
- * turns between the fourth loan and the fifth.
+ * A loan is one of two kinds, and the book keeps them apart (takeLoan's second argument):
+ *   refused  drawn while the Commons was passing the hat (game.js, leverStatus 'credit').
+ *            The player had a gift coming and took the Mint's money instead. TRUST_PER_LOAN.
+ *   forced   drawn with nothing on offer: no trust in this town yet, or its aid already
+ *            given. There was no choice in it. TRUST_PER_FORCED_LOAN.
+ *
+ * The first obvious ledger is scene trust against loans and nothing else. It counts luck:
+ * over seeds 1 to 16 a bot that took every gift borrowed 0 to 16 times and a bot that took
+ * none borrowed 3 to 21 times. So the choice itself went on both sides: a gift accepted is
+ * trust earned, and a pull while the hat is going round is a loan.
+ *
+ * The second obvious ledger weighs every loan the same, 75. It counts skill. A town gives
+ * at most four balls a chapter, so a weak player who waits for every one of them still
+ * borrows for the rest: the mediocre playthrough bot, always waiting, took 6-10 gifts and
+ * 35-79 loans over seeds 1 to 16 and leaned mint on all sixteen, the same book as the same
+ * bot never waiting (47-94 loans, all but a handful of them with the hat going round). The
+ * ending was not a choice for that player. What separates the two is not how many loans
+ * but which kind: the waiting bots refused the hat 0 times in 32 games, the others 7 to 94.
+ *
+ * So a forced loan weighs 10 and a refused hat 75. Over seeds 1 to 16 of each bot, five chapters:
+ *   steady, waits      0-14 forced, 5-8 gifts     closest book 140 against 1020    all commons
+ *   steady, never      7-23 refused               closest 525 against 370          all mint
+ *   mediocre, waits    35-79 forced, 6-10 gifts   closest 580 against 1150         all commons
+ *   mediocre, never    47-94 refused              closest 3525 against 370         all mint
+ * test/playthrough.test.js prints the table and holds all 64 to the side their bot chose.
+ * A forced loan is not free: a player given six balls who borrows 116 times for want of a
+ * choice still ends on the Mint's side. And refusing is not fatal: a gift accepted
+ * outweighs a hat refused and two thirds, so somebody who waits for the hat about one time
+ * in three or better, and collects what the towns have to give, ends with the commons.
  */
 export const TRUST_PER_LOAN = 75;
+
+/** What a loan taken with no gift on offer weighs against lifetime trust. See TRUST_PER_LOAN. */
+export const TRUST_PER_FORCED_LOAN = 10;
 
 /**
  * Lifetime trust earned by letting the Commons cover a ball: a gift taken outweighs a loan
@@ -54,7 +75,7 @@ export const TRUST_PER_LOAN = 75;
  */
 export const TRUST_PER_GIFT = 130;
 
-const FIELDS = ['score', 'marks', 'writs', 'debt', 'trust', 'aidUsed', 'spins', 'trustEarned', 'loansTaken'];
+const FIELDS = ['score', 'marks', 'writs', 'debt', 'trust', 'aidUsed', 'spins', 'trustEarned', 'loansTaken', 'hatsRefused'];
 
 function check(econ, fn) {
   if (!econ || typeof econ !== 'object') {
@@ -84,7 +105,7 @@ function earn(econ, marks) {
 export function initEcon() {
   return {
     score: 0, marks: SPIN_COST * 3, writs: 0, debt: 0, trust: 0, aidUsed: 0, spins: 0,
-    trustEarned: 0, loansTaken: 0,
+    trustEarned: 0, loansTaken: 0, hatsRefused: 0,
   };
 }
 
@@ -145,10 +166,19 @@ export function needsLoan(econ) {
 /**
  * The Mint lends to anyone, at any time, and loans stack. The advance itself is not garnished.
  * Every loan is counted in loansTaken for good: repaying the debt does not take it back.
+ * refusedHat: the loan was drawn while the Commons was passing the hat. It is also counted
+ * in hatsRefused, and weighs more in the ledger (TRUST_PER_LOAN against TRUST_PER_FORCED_LOAN).
  */
-export function takeLoan(econ) {
+export function takeLoan(econ, refusedHat = false) {
   check(econ, 'takeLoan');
-  return { ...econ, marks: econ.marks + LOAN.marks, debt: econ.debt + LOAN.owed, loansTaken: econ.loansTaken + 1 };
+  if (typeof refusedHat !== 'boolean') throw new Error(`economy.takeLoan: refusedHat must be true or false, got ${JSON.stringify(refusedHat)}`);
+  if (refusedHat && !aidAvailable(econ)) {
+    throw new Error(`economy.takeLoan: no hat was going round to refuse (trust ${econ.trust}, ${econ.aidUsed} aid drawn this chapter)`);
+  }
+  return {
+    ...econ, marks: econ.marks + LOAN.marks, debt: econ.debt + LOAN.owed,
+    loansTaken: econ.loansTaken + 1, hatsRefused: econ.hatsRefused + (refusedHat ? 1 : 0),
+  };
 }
 
 /** @param {Econ} econ */
@@ -179,13 +209,29 @@ export function addTrust(econ, n) {
 }
 
 /**
+ * The two pans of the scale leaning() reads, in the same unit (trust): what was done for
+ * people and accepted from them, and what the loans weigh. The HUD's scale draws these.
+ * @param {Econ} econ @returns {{trust:number, loans:number}}
+ */
+export function ledger(econ) {
+  check(econ, 'ledger');
+  if (econ.hatsRefused > econ.loansTaken) {
+    throw new Error(`economy.ledger: ${econ.hatsRefused} hats refused but only ${econ.loansTaken} loans taken; every refusal is a loan`);
+  }
+  return {
+    trust: econ.trustEarned,
+    loans: econ.hatsRefused * TRUST_PER_LOAN + (econ.loansTaken - econ.hatsRefused) * TRUST_PER_FORCED_LOAN,
+  };
+}
+
+/**
  * Which ending the ledger currently describes. A book with nothing in it leans commons:
- * nobody has been borrowed from yet.
+ * nobody has been borrowed from yet. Level is commons.
  * @param {Econ} econ @returns {'commons'|'mint'}
  */
 export function leaning(econ) {
-  check(econ, 'leaning');
-  return econ.trustEarned >= econ.loansTaken * TRUST_PER_LOAN ? 'commons' : 'mint';
+  const { trust, loans } = ledger(econ);
+  return trust >= loans ? 'commons' : 'mint';
 }
 
 /** One aid ball per 25 trust, per chapter (game.js zeroes aidUsed when a chapter begins). */

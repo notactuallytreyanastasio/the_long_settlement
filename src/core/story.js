@@ -1,5 +1,10 @@
 // Story helpers: pure functions over content and game state.
-// Used by game.js (the reducer) and by the renderer. No imports, no DOM.
+// Used by game.js (the reducer) and by the renderer. No DOM; the only import is the ledger's reading.
+
+import { leaning } from './economy.js';
+
+/** The two sides a ledger can lean to, and so the two endings. */
+export const LEANINGS = Object.freeze(['commons', 'mint']);
 
 /**
  * The chapter the game is in. Throws when the index is out of range: there is
@@ -110,6 +115,85 @@ export function litIds(content, game) {
   return [o.ids[game.seq]]; // sequence; other kinds already threw in objectiveProgress
 }
 
+// ───────────────────────── the leaning branch ─────────────────────────
+// A Line of a prologue, briefing, cutscene or epilogue may carry lean: 'commons' | 'mint'.
+// It is spoken only when the ledger leans that way. Nothing else in the content branches.
+
+function checkLean(line) {
+  if (line.lean !== undefined && !LEANINGS.includes(line.lean)) {
+    throw new Error(`story: line ${line.id} has lean ${JSON.stringify(line.lean)}; it must be one of ${LEANINGS.join(', ')} or absent`);
+  }
+  return line.lean;
+}
+
+/**
+ * The lines of `lines` that are spoken when the ledger leans `lean`: every line with no
+ * `lean`, and those whose `lean` equals it, in order. The same array when nothing is dropped.
+ */
+export function spokenLines(lines, lean) {
+  if (!LEANINGS.includes(lean)) throw new Error(`story: spokenLines needs a leaning (${LEANINGS.join(' or ')}), got ${JSON.stringify(lean)}`);
+  if (!Array.isArray(lines)) throw new Error(`story: spokenLines needs a list of lines, got ${JSON.stringify(lines)}`);
+  let dropped = false;
+  const kept = lines.filter((line) => {
+    const l = checkLean(line);
+    if (l === undefined || l === lean) return true;
+    dropped = true;
+    return false;
+  });
+  return dropped ? kept : lines;
+}
+
+/**
+ * Which way the ledger leans for this game, now: the reading that was frozen (game.ending)
+ * once there is one, the live books until then.
+ */
+export function leaningNow(game) {
+  if (game.ending === undefined || game.ending === null) return leaning(game.econ);
+  if (!LEANINGS.includes(game.ending)) throw new Error(`story: game.ending is ${JSON.stringify(game.ending)}; it must be null or one of ${LEANINGS.join(', ')}`);
+  return game.ending;
+}
+
+const hasLean = (lines) => lines.some((line) => checkLean(line) !== undefined);
+
+/**
+ * Is the ledger read (frozen into game.ending) when the objective of this scene completes?
+ * Only in the final chapter, and there at the first scene of which either is true:
+ *   it is the last scene;
+ *   its own cutscene, or the briefing or cutscene of any later scene, carries a lean line.
+ * So the reading is always taken before the first line that depends on it, and an ending
+ * cannot change sides half way through. The obvious rule, "read it at the last objective and
+ * nowhere else", lets a chapter whose sixth scene already branches play one ending's sixth
+ * scene and the other's seventh if a loan falls between them.
+ * A lean line in a prologue, or anywhere in an earlier chapter, is chosen by the live books.
+ */
+export function readsLeaning(content, chapterIndex, sceneIndex) {
+  const chapter = content.chapters[chapterIndex];
+  if (!chapter) throw new Error(`story: no chapter at index ${chapterIndex}`);
+  if (!chapter.scenes[sceneIndex]) throw new Error(`story: chapter ${chapter.id} has no scene at index ${sceneIndex}`);
+  if (chapterIndex !== content.chapters.length - 1) return false;
+  if (sceneIndex === chapter.scenes.length - 1) return true;
+  if (hasLean(chapter.scenes[sceneIndex].cutscene)) return true;
+  return chapter.scenes.slice(sceneIndex + 1).some((sc) => hasLean(sc.briefing) || hasLean(sc.cutscene));
+}
+
+/**
+ * What the end screen says. leaning: the frozen reading (or the live books if none was ever
+ * taken). title and text: the last chapter's `endings[leaning]`, or null when that chapter
+ * has no `endings`, in which case the shell shows its plain end screen.
+ * @returns {{leaning:'commons'|'mint', title:string|null, text:string|null}}
+ */
+export function endingOf(content, game) {
+  const lean = leaningNow(game);
+  const chapter = content.chapters[content.chapters.length - 1];
+  if (!chapter) throw new Error('story: endingOf needs a content with at least one chapter');
+  if (chapter.endings === undefined) return { leaning: lean, title: null, text: null };
+  const e = chapter.endings && chapter.endings[lean];
+  if (!e || typeof e.title !== 'string' || typeof e.text !== 'string') {
+    throw new Error(`story: chapter ${chapter.id} endings.${lean} must be { title, text }, got ${JSON.stringify(e)}`);
+  }
+  return { leaning: lean, title: e.title, text: e.text };
+}
+
 /** Backdrop and cast on stage at lines[index], carrying forward from earlier lines. */
 export function resolveStage(lines, index) {
   if (!Number.isInteger(index) || index < 0 || index >= lines.length) {
@@ -199,6 +283,7 @@ export function eligibleBarks(content, game, key) {
  * Ids of the lines likely to be spoken next, soonest first and without repeats, so the
  * shell can have their audio ready before the core asks for them.
  *   title, card   the opening lines of the chapter's prologue
+ *   (lines of the other ending, by `lean`, are left out everywhere)
  *   cine          the next `ahead` lines; when a scene's cutscene is that close to its end,
  *                 also what follows it without a pause (the next briefing, or the epilogue)
  *   play          the scene's briefing, the opening of its cutscene, every bark eligible now
@@ -206,12 +291,13 @@ export function eligibleBarks(content, game, key) {
  */
 export function preloadIds(content, game, ahead = 3) {
   if (!Number.isInteger(ahead) || ahead < 0) throw new Error(`story: preloadIds ahead must be an integer >= 0, got ${ahead}`);
-  const ids = (lines) => lines.map((line) => line.id);
+  // only the lines this ledger will hear: the other ending's are never asked for
+  const ids = (lines) => spokenLines(lines, leaningNow(game)).map((line) => line.id);
   let out;
   if (game.mode === 'end') {
     out = [];
   } else if (game.mode === 'title' || game.mode === 'card') {
-    out = ids(currentChapter(content, game).prologue.slice(0, ahead));
+    out = ids(currentChapter(content, game).prologue).slice(0, ahead);
   } else if (game.mode === 'cine') {
     const { cine } = game;
     if (!cine) throw new Error('story: preloadIds in mode cine needs game.cine');
@@ -221,7 +307,7 @@ export function preloadIds(content, game, ahead = 3) {
       const chapter = currentChapter(content, game);
       if (cine.kind === 'scene') {
         const following = chapter.scenes[game.scene + 1];
-        out = out.concat(ids(following ? following.briefing : chapter.epilogue.slice(0, ahead)));
+        out = out.concat(following ? ids(following.briefing) : ids(chapter.epilogue).slice(0, ahead));
       } else if (cine.kind === 'prologue' && chapter.scenes[0]) {
         // The table follows a prologue directly now; there is no screen between them.
         out = out.concat(ids(chapter.scenes[0].briefing));
@@ -232,7 +318,7 @@ export function preloadIds(content, game, ahead = 3) {
     const scene = currentScene(content, game);
     out = scene === null ? [] : [
       ...ids(scene.briefing),
-      ...ids(scene.cutscene.slice(0, ahead)),
+      ...ids(scene.cutscene).slice(0, ahead),
       ...Object.keys(chapter.barks).flatMap((key) => ids(eligibleBarks(content, game, key))),
     ];
   } else {

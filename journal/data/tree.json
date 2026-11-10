@@ -7241,13 +7241,13 @@
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 8755,
-  "lines": 207
+  "bytes": 11687,
+  "lines": 253
  },
  {
   "path": "src/core/game.js",
-  "bytes": 37577,
-  "lines": 798
+  "bytes": 39204,
+  "lines": 825
  },
  {
   "path": "src/core/physics.js",
@@ -7266,13 +7266,13 @@
  },
  {
   "path": "src/core/story.js",
-  "bytes": 11054,
-  "lines": 251
+  "bytes": 15643,
+  "lines": 337
  },
  {
   "path": "src/core/types.js",
-  "bytes": 22080,
-  "lines": 348
+  "bytes": 24405,
+  "lines": 371
  },
  {
   "path": "src/shell/audio.js",

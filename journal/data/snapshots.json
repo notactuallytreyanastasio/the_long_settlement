@@ -4199,5 +4199,72 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T08:55:45.363Z",
+  "files": 1482,
+  "lines": 31849,
+  "bytes": 42387398,
+  "linesByDir": {
+   ".": 182,
+   "assets/voice": 7180,
+   "src/content": 4176,
+   "src/core": 2527,
+   "src/shell": 12122,
+   "story/BIBLE.md": 1710,
+   "test/content.test.js": 237,
+   "test/economy.test.js": 312,
+   "test/game.test.js": 1213,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 377,
+   "test/rng.test.js": 102,
+   "test/shell.test.js": 129,
+   "test/slot.test.js": 240,
+   "test/story.test.js": 228,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M src/core/economy.js",
+   "M src/core/game.js",
+   "M src/core/story.js",
+   "M src/core/types.js"
+  ],
+  "tests": {
+   "total": 168,
+   "pass": 154,
+   "fail": 14,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 16960,
+   "failures": [
+    "initEcon affords exactly three spins and nothing else",
+    "leaning: commons while trustEarned >= loansTaken * TRUST_PER_LOAN, mint past it",
+    "the ledger against the five chapters: scene trust covers four loans, and every gift accepted covers one and more",
+    "playthrough: title to end across two chapters, with no slot screen anywhere",
+    "credit: pulling the lever while the hat is going round is a loan and a pull in one press",
+    "load: restores the start of the saved scene, at the table, from any mode",
+    "load: a v:1 save, written at the slot screen that no longer exists, loads into play",
+    "load: a save written by the game round-trips",
+    "load: a save from before the lifetime totals starts them at zero",
+    "load: refuses a save it cannot honour",
+    "save: the reels are kept: what they show, whether the shots are lit, and the charge",
+    "preloadIds: title and card want the opening of the prologue"
+   ]
+  },
+  "nodes": {
+   "goal": 3,
+   "option": 8,
+   "decision": 3,
+   "observation": 2,
+   "action": 5,
+   "revisit": 1,
+   "outcome": 3
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

@@ -17,11 +17,12 @@ import { initPhys, addBall, addLiveBall, releaseHeld, stepPhysics } from './phys
 import { spin, drawSym, payoutFor, SYMBOLS, SOURCES } from './slot.js';
 import {
   initEcon, awardPoints, canSpin, paySpin, applyPayout, needsLoan, takeLoan,
-  spendWrit, addTrust, aidAvailable, takeAid,
+  spendWrit, addTrust, aidAvailable, takeAid, leaning,
 } from './economy.js';
 import { seed, next, pick } from './rng.js';
 import {
   currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
+  spokenLines, leaningNow, readsLeaning, LEANINGS,
 } from './story.js';
 
 // ───────────────────────── tuning ─────────────────────────
@@ -126,6 +127,8 @@ const freshReels = () => ({
  *   idleT       seconds of play since anything scored
  *   emptyT      seconds the table has stood empty with no writ to refill it
  *   plungeWas   input.plunge on the previous play tick (the lever acts on the press, not the hold)
+ * And one that is in it: `ending`, null until the ledger is read in the final chapter
+ * (story.readsLeaning), then 'commons' or 'mint' for good.
  */
 export function init(seedN) {
   return {
@@ -145,6 +148,7 @@ export function init(seedN) {
     barkCool: 0,
     spunThisChapter: false,
     toasts: [],
+    ending: null,
     briefed: false,
     freeBalls: 0,
     paid: [],
@@ -156,9 +160,14 @@ export function init(seedN) {
   };
 }
 
-export const SAVE_VERSION = 3;
-/** Save versions load() accepts. 1 was written at the old slot screen, 2 before the reels were kept. */
-const LOADABLE = [1, 2, SAVE_VERSION];
+export const SAVE_VERSION = 4;
+/** The first version that kept the reels. */
+const REELS_SINCE = 3;
+/**
+ * Save versions load() accepts. 1 was written at the old slot screen, 2 before the reels were
+ * kept, 3 before the ledger could be read (no `ending`, and no econ.hatsRefused).
+ */
+const LOADABLE = [1, 2, 3, SAVE_VERSION];
 
 /**
  * The part of the reels that outlives a session: what each reel shows (or is turning toward),
@@ -173,17 +182,17 @@ function reelsToSave(reels) {
 export function toSave(game) {
   return {
     v: SAVE_VERSION, chapter: game.chapter, scene: game.scene, econ: { ...game.econ }, seed: game.rng.s,
-    reels: reelsToSave(game.reels),
+    reels: reelsToSave(game.reels), ending: game.ending,
   };
 }
 
 /**
  * The reels a save describes. A v:1 or v:2 save has none and gets fresh ones, as it always did.
- * A v:3 save must describe them properly: a reel showing a symbol nobody knows would pay
+ * A v:3 or v:4 save must describe them properly: a reel showing a symbol nobody knows would pay
  * nothing nameable when the line completed, so that is refused here, at the door.
  */
 function reelsFromSave(save) {
-  if (save.v !== SAVE_VERSION) return freshReels();
+  if (save.v < REELS_SINCE) return freshReels();
   const r = save.reels;
   const bad = (why) => new Error(`game: save has bad reels (${why}): ${JSON.stringify(r)}`);
   if (!r || typeof r !== 'object') throw bad('not an object');
@@ -229,8 +238,14 @@ function load(content, save) {
   if (!save.econ || typeof save.econ !== 'object') throw new Error(`game: save has no econ: ${JSON.stringify(save.econ)}`);
   // A save from before the lifetime totals existed has neither: it starts both at zero.
   // (A total that is present but not a number is not excused; economy.js throws on it.)
-  const econ = { trustEarned: 0, loansTaken: 0, ...save.econ };
-  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ, reels: reelsFromSave(save) };
+  // Likewise hatsRefused, which came with v:4: its loans are all read as taken for want of a choice.
+  const econ = { trustEarned: 0, loansTaken: 0, hatsRefused: 0, ...save.econ };
+  // The reading of the ledger, if the save was written after it was taken. Older saves have none.
+  const ending = save.ending === undefined ? null : save.ending;
+  if (ending !== null && !LEANINGS.includes(ending)) {
+    throw new Error(`game: save has ending ${JSON.stringify(save.ending)}; it must be null or one of ${LEANINGS.join(', ')}`);
+  }
+  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ, reels: reelsFromSave(save), ending };
   const game = {
     ...base,
     phys: initPhys(tableOf(content, base)),
@@ -286,8 +301,14 @@ function startChapter(content, game, index) {
 
 // ───────────────────────── cinematics ─────────────────────────
 
-function startCine(content, game, kind, lines) {
+/**
+ * Begin a cinematic. Of `all` its lines, only those this ledger hears are kept (story.spokenLines):
+ * game.cine.lines is what will actually be played, so the stage, the index and the shell's
+ * progress bar are all over the one ending and never see the other.
+ */
+function startCine(content, game, kind, all) {
   const chapter = currentChapter(content, game);
+  const lines = spokenLines(all, leaningNow(game));
   if (lines.length === 0) {
     // Nothing to show: fall straight through to whatever follows this kind.
     return endCine(content, { ...game, cine: { kind, lines, index: 0, lineT: 0, bg: 'black', on: [], t: 0 } });
@@ -525,8 +546,8 @@ export function leverStatus(content, game) {
   throw new Error(`game: an empty table that can neither pay for a spin nor borrow: ${JSON.stringify(game.econ)}`);
 }
 
-const borrow = (content, game, text) => then(
-  ok(toast({ ...game, econ: takeLoan(game.econ) }, 'loan', text), [sfx('loan')]),
+const borrow = (content, game, text, refusedHat = false) => then(
+  ok(toast({ ...game, econ: takeLoan(game.econ, refusedHat) }, 'loan', text), [sfx('loan')]),
   (g) => bark(content, g, 'loan', true),
 );
 
@@ -543,7 +564,7 @@ const LEVER = {
     'lever', currentChapter(content, game).riggedSpin.reels,
   ),
   credit: (content, game) => then(
-    borrow(content, game, 'You would not wait for the hat. The Mint advances the pull, at interest.'),
+    borrow(content, game, 'You would not wait for the hat. The Mint advances the pull, at interest.', true),
     paidPull,
   ),
   pull: (content, game) => paidPull(game),
@@ -576,10 +597,11 @@ function brief(content, game) {
   if (game.briefed || !game.phys.balls.some((b) => b.state !== 'plunger')) return ok(game);
   const scene = currentScene(content, game);
   if (!scene) return ok(game);
-  const spoken = scene.briefing.reduce((s, line) => s + lineSeconds(line), 0);
+  const briefing = spokenLines(scene.briefing, leaningNow(game));
+  const spoken = briefing.reduce((s, line) => s + lineSeconds(line), 0);
   return ok(
     { ...game, briefed: true, barkCool: Math.max(game.barkCool, spoken + 2) },
-    scene.briefing.flatMap((line) => sayEffects(line, false)),
+    briefing.flatMap((line) => sayEffects(line, false)),
   );
 }
 
@@ -689,13 +711,18 @@ function onEvent(content, table, game, ev) {
   return extra ? then(step, (h) => extra(content, table, h, ev)) : step;
 }
 
-/** Objective met: pay the reward, earn the town's trust, and cut to the scene. */
+/**
+ * Objective met: pay the reward, earn the town's trust, and cut to the scene. In the final
+ * chapter this is also where the ledger is read, once (story.readsLeaning says at which scene):
+ * after this scene's own trust is entered, and before the first line that depends on it.
+ */
 function completeScene(content, game, scene) {
   const rewarded = addTrust(
     awardPoints(game.econ, scene.reward.points, game.boons.mult),
     scene.reward.trust || 0,
   );
-  const cleared = toast({ ...game, econ: rewarded }, 'scene', scene.title);
+  const ending = game.ending === null && readsLeaning(content, game.chapter, game.scene) ? leaning(rewarded) : game.ending;
+  const cleared = toast({ ...game, econ: rewarded, ending }, 'scene', scene.title);
   const effects = [sfx('sceneClear'), { type: 'flash', color: '#ffffff' }];
   return then(ok(cleared, effects), (g) => startCine(content, g, 'scene', scene.cutscene));
 }
