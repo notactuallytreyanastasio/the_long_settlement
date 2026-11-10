@@ -39,7 +39,7 @@ import {
   freeCanvas, NULL_CTX, cinemaCache, stillsFor, S, buildStills, stillsReady, warmStills, paintBackdrop, _baked, baked, vignette, waveform, P,
   LINE_LIGHT, LINE_ID, revealCount,
 } from './cinema/kit.js';
-import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures, spriteBounds } from './cinema/figures.js';
+import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures, spriteBounds, ledgerRevealed } from './cinema/figures.js';
 import { BACKDROPS_A } from './cinema/backdrops-a.js';
 import { BACKDROPS_B } from './cinema/backdrops-b.js';
 import { INK, PALETTE, rgbOf, blend, shade, tint, alpha, ink, outline, taper, bloom, glint, bands } from './style.js';
@@ -125,7 +125,9 @@ function stageOf(cast, line, on, F) {
   let crowd = false;
   for (const id of on) {
     if (!cast[id]) throw new Error(`cinema: line ${line.id} puts unknown cast id '${id}' on stage`);
-    if (id === 'narrator') continue;                         // the Ledger is a voice, never a body
+    // The Ledger is a voice: a line she speaks does not put her on stage. Listing her in `on` does, and that is
+    // the reveal at the end of the book: she stands there as Ilse in old age (figures.js ledgerRevealed).
+    // No line of chapters 1 to 5 lists her.
     if (id === 'crowd') { crowd = true; continue; }          // drawn as figures in the dark, behind
     if (line.fx === 'radio' && id === line.who && id === LINE_ID) continue;   // live on the Line: in the ear, not in the room
     if (!ids.includes(id)) ids.push(id);
@@ -134,7 +136,7 @@ function stageOf(cast, line, on, F) {
   const tall = F.kind === 'portrait';
   // A phone shows half the width of the stage, so there the cast stand shoulder behind shoulder instead of in a row.
   const scale = tall ? (n <= 2 ? 1 : n === 3 ? 0.94 : 0.86) : n <= 3 ? 1 : n === 4 ? 0.88 : 0.76;
-  const gap = tall ? (n <= 2 ? 250 : n === 3 ? 200 : 160) : 400;
+  const gap = tall ? (n <= 2 ? 290 : n === 3 ? 236 : n === 4 ? 186 : 150) : 400;
   const span = n <= 1 ? 0 : tall ? gap * (n - 1) : Math.min(780, gap * (n - 1));
   const xs = {};
   ids.forEach((id, i) => { xs[id] = n === 1 ? 640 : 640 - span / 2 + (span * i) / (n - 1); });
@@ -143,7 +145,7 @@ function stageOf(cast, line, on, F) {
   const subject = ids.includes(line.who) ? line.who : null;
   const speaker = line.fx === 'radio' ? null : subject;
   const sx = subject ? xs[subject] : 640;
-  const drop = subject ? lookOf(cast[subject]).drop : 0;     // a child's face is lower: the camera goes down to it
+  const drop = subject ? lookOf(subject === 'narrator' ? ledgerRevealed(cast) : cast[subject]).drop : 0;     // a child's face is lower: the camera goes down to it
   const camName = line.cam === undefined ? 'wide' : line.cam;
   let ox = 640;                                              // for 'two': the nearest other person
   if (subject && n >= 2) {
@@ -160,27 +162,40 @@ function stageOf(cast, line, on, F) {
       default: throw new Error(`cinema: unknown cam '${camName}' on line ${line.id} (wide, close, two, low)`);
     }
   } else {
-    // The same four framings, composed for a tall window. A face must be readable on a phone, so nothing is as
-    // wide as 'wide', and the speaker's whole head is always inside the frame.
+    // The same four framings, composed for a tall window: 637 x 800 stage units of a 1280 x 800 painting.
+    // The painting is the shot and the cast stand in it, so the cast have their own zoom (z, below 1 in every
+    // framing but the face shot) and the painting has its own (bz), and each framing says where in the height of
+    // the frame the subject's eyes are (p, 0 top .. 1 bottom):
+    //   wide   everyone from the waist up, heads in the middle third, the whole painting above and around them
+    //   two    the speaker and whoever is nearest, larger, heads still below the painting's lamp
+    //   close  a face
+    //   low    from below: the cast low in the frame and the painting's upper part standing over them
     const head = 104 * scale;                                 // half the width of a head and its hair, in stage units (the cel heads: about 100, the widest hair 118)
-    let z, cx, low = 0, dropK = 1;
+    let z, cx, low = 0, dropK = 1, p, bz, by;
     switch (camName) {
       case 'wide': {   // everyone, if everyone fits; leaning toward the speaker by whatever room is left over
-        z = clamp(F.vw / (span + head * 2 + 110), 1, 1.32);
+        z = clamp(F.vw / (span + head * 2 + 150), 0.6, 0.78);
         const spare = Math.max(0, F.vw / (2 * z) - span / 2 - head - 6);
         cx = 640 + clamp((sx - 640) * 0.35, -spare, spare);
+        p = 0.53; bz = 1.06; by = 392;
         break;
       }
-      case 'close': z = subject ? 1.8 : 1.25; cx = sx; break;
-      case 'two': z = n >= 2 ? clamp(F.vw / (gap + head * 2 + 60), 1.15, 1.5) : 1.4; cx = n >= 2 ? lerp((sx + ox) / 2, sx, 0.2) : sx; dropK = 0.5; break;
-      case 'low': z = 1.3; cx = lerp(640, sx, 0.6); low = 1; break;
+      case 'close':
+        if (subject) { z = 1.7; cx = sx; p = 0.43; bz = 1.3; by = 386; } else { z = 1.0; cx = 640; p = 0.56; bz = 1.16; by = 390; }
+        break;
+      case 'two':
+        z = n >= 2 ? clamp(F.vw / (gap + head * 2 + 150), 0.86, 1.0) : 1.0;
+        cx = n >= 2 ? lerp((sx + ox) / 2, sx, 0.2) : sx; dropK = 0.5;
+        p = 0.58; bz = 1.12; by = 392;
+        break;
+      case 'low': z = 0.94; cx = lerp(640, sx, 0.6); low = 1; p = 0.66; bz = 1.1; by = 346; break;
       default: throw new Error(`cinema: unknown cam '${camName}' on line ${line.id} (wide, close, two, low)`);
     }
     const room = F.vw / (2 * z) - head - 14;
     if (subject && room > 0) cx = clamp(cx, sx - room, sx + room);
     cx = clamp(cx, 640 - PORTRAIT_REACH, 640 + PORTRAIT_REACH);
     const faceY = STAGE_Y - 118 * FIG * scale + drop * dropK;   // between the eye line (122 figure units above the neck) and the mouth
-    cam = { z, cx, cy: faceY + 0.085 * F.vh / z, low };        // faces sit a little above the middle of the painting
+    cam = { z, cx, cy: faceY + (0.5 - p) * F.vh / z, low, bz, by };
   }
   return { ids, xs, scale, speaker, subject, crowd, cam };
 }
@@ -651,8 +666,10 @@ export function drawCinema(ctx, content, game, fx, layout) {
   const held = !!cfgNow || cinemaCache.holdCamera;
   const z = held ? zc : zc * (1 + 0.03 * ease(lt / 8));
   const low = lerp(c0.low, L1.cam.low, ce);
-  const cx = clamp(lerp(c0.cx, L1.cam.cx, ce), F.vw / 2 / z, W - F.vw / 2 / z);
-  const cy = clamp(lerp(c0.cy, L1.cam.cy, ce), F.vh / 2 / z, H - F.vh / 2 / z);
+  // A wide frame never looks past the edge of the stage. A tall one may: there the cast are smaller than the
+  // painting (z below 1) and the painting has its own zoom, so only the cast's camera is free.
+  const cx = tall ? lerp(c0.cx, L1.cam.cx, ce) : clamp(lerp(c0.cx, L1.cam.cx, ce), F.vw / 2 / z, W - F.vw / 2 / z);
+  const cy = tall ? lerp(c0.cy, L1.cam.cy, ce) : clamp(lerp(c0.cy, L1.cam.cy, ce), F.vh / 2 / z, H - F.vh / 2 / z);
   const px = (held ? 0 : Math.sin(T * 0.07) * 16) + (cx - W / 2) * 0.06;
 
   // whose voice the earpiece last carried: the 'line' backdrop keeps their face up while others answer
@@ -704,8 +721,8 @@ export function drawCinema(ctx, content, game, fx, layout) {
   const ox = art.x + art.w / 2, oy = art.y + art.h / 2;
 
   // backdrop: moves less than the cast does
-  const zb = 1.06 + (z - 1) * 0.4;
-  const bcy = H / 2 + (cy - H / 2) * 0.4 - low * 34;
+  const zb = tall ? lerp(c0.bz, L1.cam.bz, ce) : 1.06 + (z - 1) * 0.4;
+  const bcy = tall ? lerp(c0.by, L1.cam.by, ce) : H / 2 + (cy - H / 2) * 0.4 - low * 34;
   const bcxOf = (key) => panOf(F, key) + (cx - W / 2) * 0.4;
   const cut = !!prevStage && prevStage.bg !== cine.bg;
   const mixBg = cut ? ease(blt / 0.9) : 1;
@@ -728,11 +745,12 @@ export function drawCinema(ctx, content, game, fx, layout) {
   ctx.restore();
 
   const light = bgNow.light;
-  // a little air between the backdrop and the people, and a floor of shadow for them to stand in
-  // A backdrop painted for the cel look declares a style.js Light (it has a direction, dx): its darks are meant to
-  // stay dark and its lamp cores near white, so it gets a third of the wash an old soft backdrop got.
-  const wash = light.dx !== undefined ? 0.06 : 0.16;
-  if (!dark) { ctx.fillStyle = rgba(light.amb, wash); ctx.fillRect(art.x - 20, art.y - 20, art.w + 40, art.h + 40); }
+  // No wash of ambient colour is laid between a cel backdrop and the people. It was 16% once, then 6%: any wash
+  // lifts the painting's darks and pulls its lamp cores down from white by its own strength, and what it was for
+  // (the cast standing off the painting) the ink, the rim and the shadow side now do. A backdrop that declares only
+  // the old { amb, rim, key } light (black, line) keeps a trace of it.
+  const wash = light.dx !== undefined ? 0 : 0.06;
+  if (!dark && wash > 0) { ctx.fillStyle = rgba(light.amb, wash); ctx.fillRect(art.x - 20, art.y - 20, art.w + 40, art.h + 40); }
 
   ctx.save();
   ctx.translate(ox, oy); ctx.scale(F.s0 * z, F.s0 * z); ctx.translate(-cx, -cy);
@@ -761,7 +779,7 @@ export function drawCinema(ctx, content, game, fx, layout) {
   const spk = figs.find((f) => f.id === L1.subject);
   figs.sort((a, b) => a.focus - b.focus);
   for (const f of dark ? [] : figs) {
-    const mem = cast[f.id];
+    const mem = f.id === 'narrator' ? ledgerRevealed(cast) : cast[f.id];
     const isSpk = L1.speaker === f.id;
     let facing;
     if (f === spk) {
@@ -795,9 +813,12 @@ export function drawCinema(ctx, content, game, fx, layout) {
 
   // what hangs in the air in front of them
   if (bgNow.front && ready) {
-    const zf = lerp(zb, z, 0.5);
+    // half way between the painting and the cast; in a tall frame, where the cast are smaller than the painting,
+    // a little nearer than the painting (the still layers end 50 units above the stage: it must not zoom out past them)
+    const zf = tall ? zb * 1.05 : lerp(zb, z, 0.5);
     ctx.save();
-    ctx.translate(ox, oy); ctx.scale(F.s0 * zf, F.s0 * zf); ctx.translate(-lerp(bcxOf(cine.bg), cx, 0.5), -lerp(bcy, cy, 0.5));
+    ctx.translate(ox, oy); ctx.scale(F.s0 * zf, F.s0 * zf);
+    if (tall) ctx.translate(-(panOf(F, cine.bg) + (cx - W / 2) * 0.5), -bcy); else ctx.translate(-lerp(bcxOf(cine.bg), cx, 0.5), -lerp(bcy, cy, 0.5));
     fade(ctx, mixBg, () => paintBackdrop(ctx, cine.bg, 'front', T, px * 1.4, info, cfgNow, rest));
     ctx.restore();
   }

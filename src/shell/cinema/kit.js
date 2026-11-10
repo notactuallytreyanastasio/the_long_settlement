@@ -486,23 +486,24 @@ export function baked(ctx, name, r, alpha, paint) {
   ctx.globalAlpha = ga;
 }
 /**
- * darkened corners over the rectangle r, with the proportions it had on the 1280x800 stage. Three flat steps with
- * hard edges, in the ink's indigo, not a gradient and not black: the frame closes in like an iris.
+ * darkened corners over the rectangle r. Three flat steps with hard edges, in the ink's indigo, not a gradient and
+ * not black: the frame closes in like an iris. The steps are arcs of one true circle about the middle of the
+ * rectangle, each a fraction of its half-diagonal, so in a frame of any shape they cut off the four corners and
+ * nothing else. (They used to be an ellipse in the stage's 1280x800 proportions, which in a tall frame ran down
+ * both sides from top to bottom, through whoever stood there.)
  */
-const VIGNETTE_STEPS = [[560, 0.2], [680, 0.46], [780, 0.8]];   // [radius where the step begins, its darkness] in stage units
+const VIGNETTE_STEPS = [[0.87, 0.22], [0.93, 0.46], [0.975, 0.78]];   // [radius where the step begins, as a fraction of the half-diagonal, its darkness]
 export function vignette(ctx, r, a) {
   baked(ctx, 'vignette', r, a, (g) => {
-    g.save();
-    g.translate(r.x + r.w / 2, r.y + r.h / 2); g.scale(r.w / W, r.h / H);
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2, hd = Math.hypot(r.w, r.h) / 2;
     for (let i = 0; i < VIGNETTE_STEPS.length; i++) {
-      const [r0, al] = VIGNETTE_STEPS[i], next = VIGNETTE_STEPS[i + 1];
+      const [f0, al] = VIGNETTE_STEPS[i], next = VIGNETTE_STEPS[i + 1];
       g.fillStyle = `rgba(14,11,42,${al})`;
       g.beginPath();
-      g.arc(0, 0, r0, 0, TAU);
-      if (next) g.arc(0, 0, next[0], 0, TAU); else g.rect(-W, -H, W * 2, H * 2);
+      g.arc(cx, cy, hd * f0, 0, TAU);
+      if (next) g.arc(cx, cy, hd * next[0], 0, TAU); else g.rect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
       g.fill('evenodd');
     }
-    g.restore();
   });
 }
 

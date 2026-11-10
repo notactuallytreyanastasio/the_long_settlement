@@ -22,6 +22,7 @@ import { preloadIds } from '../core/story.js';
 import { STEP } from '../core/physics.js';
 import { createRenderer } from './render.js';
 import { cinemaCache, warmCinema } from './cinema.js';
+import { FONT_UI, FONT_SERIF, FONT_MONO } from './cinema/kit.js';
 import { createAudio } from './audio.js';
 import { createVoice } from './voice.js';
 import { createInput } from './input.js';
@@ -82,6 +83,45 @@ function writeSave(save) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {
     console.warn(`main: could not save (${e.message})`);
   }
+}
+
+// ───────────────────────── warm ─────────────────────────
+
+/**
+ * Pay, behind the gate, two costs the browser otherwise charges to the first cutscene of a session.
+ *
+ * Found with the Chrome profiler at 4x CPU throttle on the Continue path (a loaded game has no chapter
+ * card to warm a cinematic under): the first cut from the table to a cutscene was one frame of 115-122 ms,
+ * and 70 ms of it was a single ctx.setTransform() in kit.js S(), the first call on the first canvas the page
+ * ever made with { willReadFrequently: true }. Chrome sets up its software canvas path on that call, once per
+ * page, whatever the size of the canvas: the same call on the next backdrop is 4-6 ms. (It looked like script
+ * "outside canvas calls" in the earlier measurement because setTransform was not among the calls it timed.)
+ * The rest was the first measureText and fillText in each of the cinematic's fonts, 8-10 ms each.
+ *
+ * So: one small software canvas, and a word measured and drawn in each font family the cinematics use.
+ * This takes 90 ms at 4x throttle (about 20 ms unthrottled), on the gate where nothing is moving, and the
+ * first cut is then 46-55 ms at 4x: a still layer's ordinary first build step. The sizes below are the
+ * cinematics' common ones; a size not listed still finds its family resolved.
+ */
+function warmCanvasPaths() {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 64;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  if (!g) throw new Error('main: this browser gave no 2D context for a 64 x 64 canvas');
+  g.setTransform(2, 0, 0, 2, 0, 0);
+  const fonts = [
+    `700 20px ${FONT_SERIF}`, `28px ${FONT_SERIF}`, `italic 28px ${FONT_SERIF}`, `italic 17px ${FONT_SERIF}`,
+    `700 22px ${FONT_UI}`, `600 11px ${FONT_UI}`, `600 11px ${FONT_MONO}`,
+  ];
+  for (const font of fonts) {
+    g.font = font;
+    g.measureText('The Long Settlement 0123');
+    g.fillText('The Long Settlement 0123', 2, 20);
+  }
+  g.getImageData(0, 0, 1, 1);      // makes the browser rasterise now what was recorded above
+  c.width = 0;                     // give the backing store back
+  c.height = 0;
 }
 
 // ───────────────────────── boot ─────────────────────────
@@ -158,6 +198,7 @@ async function boot() {
 
   const renderer = createRenderer(canvas);
   cinemaCache.stepped = true;      // frames follow one another here: build a backdrop a layer a frame, never all in one
+  warmCanvasPaths();
   const audio = createAudio();
   const voice = createVoice(audio, content.cast, await fetchManifest());
 

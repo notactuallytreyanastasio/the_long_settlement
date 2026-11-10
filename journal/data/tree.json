@@ -7236,12 +7236,12 @@
  },
  {
   "path": "src/content/chapter7.js",
-  "bytes": 63278,
+  "bytes": 62056,
   "lines": 716
  },
  {
   "path": "src/content/chapter8.js",
-  "bytes": 83236,
+  "bytes": 83241,
   "lines": 902
  },
  {
@@ -7291,13 +7291,13 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 57280,
-  "lines": 1184
+  "bytes": 62600,
+  "lines": 1278
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 49489,
-  "lines": 873
+  "bytes": 51316,
+  "lines": 894
  },
  {
   "path": "src/shell/cinema/backdrops-a.js",
@@ -7316,18 +7316,18 @@
  },
  {
   "path": "src/shell/cinema/backdrops-d.js",
-  "bytes": 59479,
-  "lines": 712
+  "bytes": 60819,
+  "lines": 724
  },
  {
   "path": "src/shell/cinema/figures.js",
-  "bytes": 67630,
-  "lines": 1110
+  "bytes": 78104,
+  "lines": 1250
  },
  {
   "path": "src/shell/cinema/kit.js",
-  "bytes": 38549,
-  "lines": 729
+  "bytes": 38881,
+  "lines": 730
  },
  {
   "path": "src/shell/input.js",
@@ -7341,8 +7341,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 16831,
-  "lines": 375
+  "bytes": 19173,
+  "lines": 416
  },
  {
   "path": "src/shell/render.js",

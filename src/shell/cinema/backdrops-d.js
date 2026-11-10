@@ -234,7 +234,7 @@ def('mole-dark', L_MOLE, (ctx, t, px) => {
   ctx = A();
   const o = px * 0.06;
   waves(ctx, X0 - 200 + o, hy - 26 + Math.sin(t * 0.9) * 4, XW + 400, 90, { len: 190, amp: 22, phase: t * 0.13, col: '#4a2e6a', foam: '#ffc89a', every: 2, L });
-  waves(ctx, X0 - 200 + o, hy - 8 + Math.sin(t * 0.9 + 1.4) * 5, XW + 400, 90, { len: 260, amp: 30, phase: -t * 0.11 + 0.3, col: '#2e2058', foam: '#ffd9b4', every: 1, L, ink: II });
+  waves(ctx, X0 - 200 + o, hy - 8 + Math.sin(t * 0.9 + 1.4) * 5, XW + 400, 90, { len: 260, amp: 30, phase: -t * 0.11 + 0.3, col: '#2e2058', foam: '#ffd9b4', every: 2, L, ink: II });
   waves(ctx, X0 - 200 + o, hy + 16 + Math.sin(t * 0.9 + 2.6) * 4, XW + 400, 60, { len: 170, amp: 18, phase: t * 0.1 + 0.6, col: '#1c164a', foam: '#ffc89a', every: 3, L });
   // the mole, the Lamp capped at the head of it, and the still water it kept
   ctx = S(0.1);
@@ -246,14 +246,15 @@ def('mole-dark', L_MOLE, (ctx, t, px) => {
   rect(ctx, X0, hy + 62, XW, 800, '#1c1a52');
   lozenges(ctx, 63, 300, 620, hy + 68, hy + 150, 20, '#e8825a'); lozenges(ctx, 64, X0, 1540, hy + 70, hy + 240, 26, '#47306e');
   waves(ctx, X0, hy + 170, XW, 700, { len: 120, amp: 6, col: '#15133f', foam: false, phase: 0.3 });
-  hull(ctx, 330 + px * 0.2, 326, 1.0, DARK, L, 2); hull(ctx, 1090 + px * 0.2, 352, 1.3, DARK, L, 2); hull(ctx, 610 + px * 0.16, 300, 0.55, DARK, L, 1);
+  hull(ctx, 330 + px * 0.2, 306, 1.0, DARK, L, 2); hull(ctx, 1090 + px * 0.2, 342, 1.3, DARK, L, 2); hull(ctx, 610 + px * 0.16, 276, 0.55, DARK, L, 1);
+  hull(ctx, 760 + px * 0.3, 452, 1.9, '#0c0a2a', L, 2, '#c46a5a'); hull(ctx, 130 + px * 0.26, 404, 1.5, '#0c0a2a', L, 1); hull(ctx, 930 + px * 0.16, 286, 0.6, DARK, L, 2);
   ctx = A();
   { // it comes over the mole, a sea at a time
     for (let k = 0; k < 3; k++) {
       const ph = mod(t * 0.23 + k * 0.37, 1), bx = [560, 880, 250][k] + m, up = Math.sin(ph * Math.PI);
       if (ph > 0.9) continue;
-      for (let i = 0; i < 2; i++) curl(ctx, bx + (i ? 20 : -14), hy + 30 - up * (18 + i * 12), 6 + i * 3 + up * 4, 1.2, i ? 1 : -1, 4.5, '#ffe2c4', II);
-      rect(ctx, bx - 30, hy + 34, 60, 3, '#ffe2c4');
+      curl(ctx, bx, hy + 30 - up * 22, 7 + up * 5, 1.2, k % 2 ? 1 : -1, 4.5, '#ffe2c4', II);
+      rect(ctx, bx - 34, hy + 34, 68, 3, '#ffe2c4');
     }
     shimmer(ctx, 66, 280, 640, hy + 70, 520, 10, '#e8825a', t);
   }
@@ -404,7 +405,7 @@ function files(ctx, x, y, w, n, seed, dim = 0) {
   return y;
 }
 def('full-bench', L_FULL, (ctx, t, px) => {
-  const L = L_FULL, WALL = '#2e2a4e', DARK = '#131028', wy = 180, R = 126;
+  const L = L_FULL, WALL = '#2e2a4e', DARK = '#131028', wy = 190, R = 126;
   ctx = S(0.35);
   const wx = 640 + px * 0.35;
   fillAll(ctx, WALL);
@@ -432,12 +433,20 @@ def('full-bench', L_FULL, (ctx, t, px) => {
   // the Full Bench: three chairs with their backs to the light, and all three sitting
   ctx = S(0.45);
   const bx = 640 + px * 0.45;
+  // the galleries: Cresset has come to watch three poor men be slow
+  for (const k of [-1, 1]) {
+    const gx = bx + k * 500, x0 = k < 0 ? X0 : gx, w = k < 0 ? gx - X0 : X0 + XW - gx, LL = k < 0 ? L_FULL_E : L_FULL_W;
+    busts(ctx, Array.from({ length: 9 }, (_, i) => [gx + k * (40 + i * 46 + rnd(i * 3 + k) * 14), 196 + rnd(i * 7 + k) * 10, 15]), DARK, LL, 3, 0);
+    box(ctx, x0, 228, w, 54, '#4a2a40', LL, { off: 0, shadow: false, ink: II, rim: 3 }); rect(ctx, x0, 240, w, 5, '#8a5a3a');
+    for (let i = 0; i < 7; i++) rect(ctx, gx + k * (30 + i * 64), 250, 5, 30, alpha(INK, 0.6));
+    box(ctx, gx - 9, 228, 18, 190, '#5a3448', LL, { off: 0, shadow: false, ink: II, rim: 3 });
+  }
   for (const i of [-1, 1, 0]) {
-    const x = bx + i * 196, top = i ? 124 : 104, LL = i < 0 ? L_FULL_E : i > 0 ? L_FULL_W : L;
+    const x = bx + i * 196, top = i ? 132 : 112, LL = i < 0 ? L_FULL_E : i > 0 ? L_FULL_W : L;
     sil(ctx, (c) => { c.moveTo(x - 46, 260); c.lineTo(x - 46, top + 30); c.quadraticCurveTo(x - 42, top + 4, x, top); c.quadraticCurveTo(x + 42, top + 4, x + 46, top + 30); c.lineTo(x + 46, 260); c.closePath(); }, '#43203a', LL, 4, II);
     flat(ctx, cp(x, top + 22, 7), C.brass);
-    busts(ctx, [[x, 178 - (i ? 0 : 6), 21]], '#17132e', LL, 3.4, II);
-    rect(ctx, x - 6, 200 - (i ? 0 : 6), 5, 15, C.cream); rect(ctx, x + 1, 200 - (i ? 0 : 6), 5, 15, C.cream);
+    busts(ctx, [[x, 184 - (i ? 0 : 6), 21]], '#17132e', LL, 3.4, II);
+    rect(ctx, x - 6, 206 - (i ? 0 : 6), 5, 15, C.cream); rect(ctx, x + 1, 206 - (i ? 0 : 6), 5, 15, C.cream);
   }
   // the bench itself: good oak, the cloth darned
   box(ctx, bx - 420, 232, 840, 12, '#8a5a3a', L, { off: 0, shadow: false, ink: II, rim: 3 });
@@ -581,8 +590,8 @@ def('founders-lamp', L_FOUND, (ctx, t, px) => {
   cel(ctx, (c) => { c.moveTo(cx - 70, 112); c.quadraticCurveTo(cx - 62, 66, cx - 22, 58); c.lineTo(cx + 22, 58); c.quadraticCurveTo(cx + 62, 66, cx + 70, 112); c.closePath(); }, C.brass, L_FOUND_UP, { off: 16, ink: IW, rim: 5, rimCol: '#ffffff', shadow: '#7a4a3a' });
   rect(ctx, cx - 74, 108, 148, 9, '#ffffff'); outline(ctx, rp(cx - 74, 108, 148, 9), II);
   ctx = A();
-  fire(ctx, cx, fy + 2, 30, t * 0.36, 3, COLD);
-  spark(ctx, cx, fy - 26, 30, t, 4, '#ffffff');
+  fire(ctx, cx, fy + 2, 37, t * 0.36, 3, COLD);
+  spark(ctx, cx, fy - 30, 34, t, 4, '#ffffff');
   glint(ctx, cx - 40, 113, 9 + 3 * Math.sin(t * 1.7), '#ffffff', 1, 0);
   // each ring carries a shutter-lens, going round
   for (let i = 0; i < 3; i++) {
@@ -637,13 +646,13 @@ function kelpRack(ctx, x, y, w, h, L, cols, seed) {
   stroke(ctx, x - 8, top, x + w + 8, top - 3, 8, INK); stroke(ctx, x - 8, top, x + w + 8, top - 3, 4, '#a8846a');
   rect(ctx, x, top - 3 + L.dy * 2, w, 1.6, L.rim);
 }
-const CARROW_SLOPE = [[652, 232], [684, 152], [736, 132], [800, 124], [900, 116], [1000, 108], [1250, 94], [1560, 84]];
+const CARROW_SLOPE = [[548, 240], [640, 204], [700, 176], [760, 160], [840, 152], [1000, 140], [1250, 124], [1560, 114]];
 function slopeY(x) { const P = CARROW_SLOPE; for (let i = 1; i < P.length; i++) if (x <= P[i][0]) return lerp(P[i - 1][1], P[i][1], (x - P[i - 1][0]) / (P[i][0] - P[i - 1][0])); return P[P.length - 1][1]; }
 const L_CARM = keyLight('#ffd9a0', -Math.PI * 0.9, { depth: 0.7, tint: '#2a2a70' });
 const L_CARD = keyLight('#ffb45a', -Math.PI * 0.3, { depth: 0.9, tint: '#10103c' });
 /** the beach at Carrow: shingle, kelp racks, goats, the stone lamp-house on its rise. Morning (the lane held) or dusk (the sum) */
 function carrow(ctx, t, px, dusk) {
-  const L = dusk ? L_CARD : L_CARM, hy = 152, sx = 540, lhx = 840;
+  const L = dusk ? L_CARD : L_CARM, hy = 178, sx = 492, lhx = 836;
   const K = dusk
     ? { sky: ['#0c0c30', '#191a50', '#2c2a6c', '#4a3a7c', '#7a4a7a'], sea: '#1a1c56', sea1: '#15164a', sea2: '#10113c', foam: '#5a5a9a', land: '#14163e', stone: '#2a2c5c', stoneSh: '#14143a', shingle: '#232450', peb: ['#2e3064', '#191a44'], pebHi: '#5a5a9a', kelp: ['#1c2a40', '#262a4a', '#16223a'], goat: '#1c1c48', turf: '#1c2a44', wash: '#8a8ac0' }
     : { sky: ['#3a4a9a', '#6a6ab0', '#b47aa8', '#f09a78', '#ffd9a0'], sea: '#3a6aa8', sea1: '#2f5c9c', sea2: '#264c8a', foam: '#fff3d6', land: '#2a3068', stone: '#4a4a86', stoneSh: '#23235a', shingle: '#5c5690', peb: ['#746ea6', '#40407a'], pebHi: '#ffd9a0', kelp: ['#3a5a3a', '#5a5a2a', '#2c4a44'], goat: '#262860', turf: '#3a5a5a', wash: '#fff3d6' };
@@ -652,13 +661,13 @@ function carrow(ctx, t, px, dusk) {
   if (dusk) { starsFlat(ctx, 33, 44, hy - 30); rect(ctx, X0, hy - 5, XW, 5, '#c46a7a'); }
   else {
     rings(ctx, sx, hy - 6, 200, [alpha('#ffd9a0', 0.2), alpha('#ffe8bc', 0.34), alpha('#fff3d6', 0.7), '#fffdf2'], [1, 0.62, 0.34, 0.14]);   // the sun, an hour up
-    for (const [x, y, w, c] of [[330, 84, 240, '#b47aa8'], [760, 60, 300, '#6a6ab0'], [1110, 110, 260, '#b47aa8'], [150, 124, 150, '#f09a78']]) { rect(ctx, x - w / 2, y, w, 8, c); rect(ctx, x - w / 2 + 26, y - 6, w - 80, 7, c); }
+    for (const [x, y, w, c] of [[330, 104, 240, '#b47aa8'], [760, 76, 300, '#6a6ab0'], [1110, 96, 260, '#b47aa8'], [150, 144, 150, '#f09a78']]) { rect(ctx, x - w / 2, y, w, 8, c); rect(ctx, x - w / 2 + 26, y - 6, w - 80, 7, c); }
   }
   rect(ctx, X0, hy, XW, 400, K.sea); rect(ctx, X0, hy, XW, 3.5, dusk ? '#c46a7a' : '#fff3d6');
   if (!dusk) {
     for (let i = 0; i < 7; i++) rect(ctx, sx - 80 + i * 9, hy + 10 + i * 13, 160 - i * 18, 5, '#ffd9a0');   // the light coming across the water in dashes
     // the boat they came in: one hull wide, a lug sail, the sun behind it
-    const bx = sx + 6, by = hy + 14;
+    const bx = sx + 44, by = hy + 14;
     sil(ctx, (c) => { c.moveTo(bx - 40, by - 9); c.quadraticCurveTo(bx, by + 2, bx + 44, by - 12); c.lineTo(bx + 30, by + 6); c.lineTo(bx - 30, by + 6); c.closePath(); c.moveTo(bx - 4, by - 8); c.lineTo(bx - 20, by - 62); c.lineTo(bx + 22, by - 74); c.lineTo(bx + 30, by - 14); c.closePath(); }, '#2a2466', L, 2.4, II, '#fff3d6');
     stroke(ctx, bx + 2, by - 6, bx + 2, by - 82, 3, '#2a2466');
     busts(ctx, [[bx - 24, by - 20, 5.5], [bx + 34, by - 22, 5.5], [bx + 20, by - 21, 5]], '#1c1a50', L, 1.4, 0, '#fff3d6');
@@ -669,7 +678,10 @@ function carrow(ctx, t, px, dusk) {
   // the rise, the lamp-house, two roofs, the goats
   ctx = S(0.25);
   const o = px * 0.25;
-  sil(ctx, (c) => { const P = CARROW_SLOPE; c.moveTo(P[0][0] + o, 420); c.lineTo(P[0][0] + o, P[0][1]); c.quadraticCurveTo(P[0][0] + 4 + o, P[1][1] + 20, P[1][0] + o, P[1][1]); for (let i = 2; i < P.length; i++) c.lineTo(P[i][0] + o, P[i][1]); c.lineTo(1600, 420); c.closePath(); }, K.land, L, 4, IW, dusk ? '#4a3a7c' : '#ffd9a0');
+  sil(ctx, (c) => { const P = CARROW_SLOPE; c.moveTo(P[0][0] - 70 + o, 440); c.lineTo(P[0][0] + o, P[0][1]); c.quadraticCurveTo(P[1][0] - 30 + o, P[1][1] + 6, P[1][0] + o, P[1][1]); for (let i = 2; i < P.length; i++) c.lineTo(P[i][0] + o, P[i][1]); c.lineTo(1600, 440); c.closePath(); }, K.land, L, 4, IW, dusk ? '#4a3a7c' : '#ffd9a0');
+  // its seaward face, in the one shadow tone, and a path worn up it
+  flat(ctx, (c) => { c.moveTo(478 + o, 440); c.lineTo(548 + o, 246); c.quadraticCurveTo(640 + o, 250, 700 + o, 300); c.quadraticCurveTo(760 + o, 360, 1000 + o, 380); c.lineTo(1600, 400); c.lineTo(1600, 440); c.closePath(); }, K.stoneSh);
+  taperPath(ctx, [[lhx - 6 + o, slopeY(lhx) + 6], [lhx - 50 + o, 200], [lhx - 20 + o, 250], [lhx - 110 + o, 300], [lhx - 90 + o, 380]], 5, 16, alpha(K.pebHi, dusk ? 0.16 : 0.3));
   for (const [x, w, h] of [[1010, 84, 30], [1130, 70, 26]]) {
     const y = slopeY(x) + 4, xx = x + o;
     box(ctx, xx - w / 2, y - h, w, h + 6, K.stone, L, { off: 8, ink: II, shadow: K.stoneSh });
@@ -678,31 +690,31 @@ function carrow(ctx, t, px, dusk) {
   }
   if (dusk) {   // one small lamp, in the lamp-house door: it lights the step and a wedge of the hill and nothing else
     bloom(ctx, lhx + o, slopeY(lhx) - 10, 150, L.col, 0.9);
-    flat(ctx, pp([[lhx - 10 + o, slopeY(lhx) + 2], [lhx + 10 + o, slopeY(lhx) + 2], [lhx - 20 + o, 260], [lhx - 150 + o, 260]]), alpha(L.col, 0.28));
+    flat(ctx, pp([[lhx - 9 + o, slopeY(lhx) + 3], [lhx + 9 + o, slopeY(lhx) + 3], [lhx - 20 + o, 300], [lhx - 170 + o, 300]]), alpha(L.col, 0.26));
   }
-  const fl = carrowLamp(ctx, lhx + o, slopeY(lhx) + 4, 62, K.stone, K.stoneSh, L, { rim: dusk ? 0 : 3, hat: dusk ? '#1c1c4c' : '#3a4480', door: dusk ? '#ffe2a0' : undefined, room: dusk ? undefined : '#3a3470' });
-  if (dusk) { flat(ctx, ep(lhx + o, slopeY(lhx) - 8, 5, 9), '#ffffff'); bloom(ctx, lhx + o, slopeY(lhx) - 10, 40, '#ffe2a0', 0.9); }
-  goat(ctx, 716 + o, slopeY(716) + 3, 20, K.goat, L, -1); goat(ctx, 930 + o, slopeY(930) + 3, 17, K.goat, L, 1); goat(ctx, 958 + o, slopeY(958) + 3, 12, K.goat, L, -1); goat(ctx, 1220 + o, slopeY(1220) + 3, 19, K.goat, L, -1);
+  const fl = carrowLamp(ctx, lhx + o, slopeY(lhx) + 4, 47, K.stone, K.stoneSh, L, { rim: dusk ? 0 : 3, hat: dusk ? '#1c1c4c' : '#3a4480', door: dusk ? '#ffe2a0' : undefined, room: dusk ? undefined : '#3a3470' });
+  if (dusk) { flat(ctx, ep(lhx + o, slopeY(lhx) - 6, 4, 8), '#ffffff'); bloom(ctx, lhx + o, slopeY(lhx) - 8, 40, '#ffe2a0', 0.9); }
+  goat(ctx, 716 + o, slopeY(716) + 3, 20, K.goat, L, -1); goat(ctx, 930 + o, slopeY(930) + 3, 17, K.goat, L, 1); goat(ctx, 958 + o, slopeY(958) + 3, 12, K.goat, L, -1); goat(ctx, 640 + o, slopeY(640) + 4, 16, K.goat, L, 1); goat(ctx, 1220 + o, slopeY(1220) + 3, 19, K.goat, L, -1);
   ctx = A();
   if (dusk) spark(ctx, lhx + o, slopeY(lhx) - 10, 13, t, 5, '#fff3d6');
-  else { fire(ctx, fl[0], fl[1] + 8, 6, t * 0.5, 2, DIM, 0); glint(ctx, fl[0], fl[1], 9 + 2 * Math.sin(t * 2), '#e6dcff', 0.9, 0); glint(ctx, sx, hy - 6, 40 + 5 * Math.sin(t * 1.3), '#ffffff', 0.9, 0); }
+  else { fire(ctx, fl[0], fl[1] + 8, 6, t * 0.5, 2, DIM, 0); glint(ctx, fl[0], fl[1], 9 + 2 * Math.sin(t * 2), '#e6dcff', 0.9, 0); glint(ctx, sx, hy - 8, 30 + 4 * Math.sin(t * 1.3), '#ffffff', 0.9, 0); }
   // the shingle, the racks, what the tide left
   ctx = S(0.7);
   const q = px * 0.7;
-  kelpRack(ctx, 372 + q * 0.6, 392, 120, 300, L, K.kelp, 3);
-  flat(ctx, (c) => { c.moveTo(X0 - 60, 1000); c.lineTo(X0 - 60, 400); c.quadraticCurveTo(300, 356, 640, 372); c.quadraticCurveTo(1000, 388, X0 + XW + 60, 352); c.lineTo(X0 + XW + 60, 1000); c.closePath(); }, K.shingle);
-  ink(ctx, IW); ctx.beginPath(); ctx.moveTo(X0 - 60, 400); ctx.quadraticCurveTo(300, 356, 640, 372); ctx.quadraticCurveTo(1000, 388, X0 + XW + 60, 352); ctx.stroke();
+  flat(ctx, (c) => { c.moveTo(X0 - 60, 1000); c.lineTo(X0 - 60, 430); c.quadraticCurveTo(300, 386, 640, 402); c.quadraticCurveTo(1000, 418, X0 + XW + 60, 382); c.lineTo(X0 + XW + 60, 1000); c.closePath(); }, K.shingle);
+  ink(ctx, IW); ctx.beginPath(); ctx.moveTo(X0 - 60, 430); ctx.quadraticCurveTo(300, 386, 640, 402); ctx.quadraticCurveTo(1000, 418, X0 + XW + 60, 382); ctx.stroke();
   for (let i = 0; i < 50; i++) {
-    const x = X0 + rnd(i * 3.1) * XW, y = 410 + rnd(i * 7.7) * 380, r = 9 + rnd(i * 5) * 16;
+    const x = X0 + rnd(i * 3.1) * XW, y = 440 + rnd(i * 7.7) * 350, r = 9 + rnd(i * 5) * 16;
     flat(ctx, ep(x, y, r, r * 0.5), K.peb[i % 3 ? 0 : 1]); rect(ctx, x - r * 0.7 + (L.dx > 0 ? r * 0.5 : 0), y - r * 0.5, r * 0.9, 2.5, K.pebHi);
   }
+  kelpRack(ctx, 366 + q, 452, 130, 350, L, K.kelp, 3);
   kelpRack(ctx, 960 + q, 560, 300, 190, L, K.kelp, 7); kelpRack(ctx, 60 + q, 520, 220, 150, L, K.kelp, 11);
   if (dusk) {   // the rowing boat, hauled up above the weed
     cel(ctx, (c) => { c.moveTo(430 + q, 580); c.quadraticCurveTo(560 + q, 612, 760 + q, 566); c.quadraticCurveTo(700 + q, 640, 560 + q, 646); c.quadraticCurveTo(470 + q, 640, 430 + q, 580); c.closePath(); }, '#3a2a5a', L, { off: 10, ink: IW, rim: 4, shadow: '#16143c' });
     stroke(ctx, 500 + q, 598, 500 + q, 636, II); stroke(ctx, 620 + q, 602, 620 + q, 640, II); stroke(ctx, 560 + q, 600, 830 + q, 560, 6, INK); stroke(ctx, 560 + q, 599, 830 + q, 559, 2.4, '#8a7a6a');
   }
   ctx = A();
-  { const u = 0.5 + 0.5 * Math.sin(t * 0.7), y = 356 + u * 22;   // the wash, up the stones and back
+  { const u = 0.5 + 0.5 * Math.sin(t * 0.7), y = 386 + u * 22;   // the wash, up the stones and back
     waves(ctx, X0 - 160 + px * 0.7, y, XW + 320, 14, { len: 130, amp: 6, phase: 0.2, col: K.wash, foam: false }); }
 }
 // ── carrow-morning: the lane held. Key: a low sun behind the arriving boat ──

@@ -5,6 +5,7 @@
 //   drawPortrait(ctx, member, x, y, size, emote, talk, t)
 //   drawCrowdFigures(ctx, light, t, speaking, level)
 //   lookOf(member)                      the resolved look (sizes, colours) of a cast member
+//   ledgerRevealed(cast)                the Ledger with her hood down: Ilse in old age (the engine stages her when a line lists 'narrator' in `on`)
 //   spriteBounds(k, part)               the box, in figure units about the origin, that drawFigure may paint in for part 'body' or 'head'.
 //                                       The engine cuts its sprites of people standing still to this box: paint outside it and it is clipped.
 //
@@ -90,13 +91,17 @@ export function lookOf(member) {
     rgb(L[f]);
   }
   const hs = String(L.hairStyle === undefined ? '' : L.hairStyle).toLowerCase();
-  const hit = HAIR_STYLES.find(([, re]) => re.test(hs));
+  // two cuts are told from the words themselves, in hairStyle or in the mark, before the general keywords are tried
+  const said = `${hs} ; ${markText}`;
+  const hit = /regulation crop/.test(said) ? ['regulation'] : /kelp-?cutter'?s knot|low knot/.test(said) ? ['lowknot'] : HAIR_STYLES.find(([, re]) => re.test(hs));
   if (!hit) throw new Error(`cinema: cast member '${member.id}' has look.hairStyle '${L.hairStyle}' that matches no drawn style (${HAIR_STYLES.map((h) => h[0]).join(', ')})`);
   const mark = markText;
   const has = (re) => re.test(mark);
-  const seed = hashStr(String(member.id));
+  // look.faceOf: another member's id. The face is then drawn with that member's proportions (the set of the eyes,
+  // the brow, the nose, the mouth): a mother with her son's face, the same woman forty years on.
+  const seed = hashStr(String(L.faceOf || member.id));
   // what is worn, decided once
-  const garb = has(/robe|gown|stole|magistrat|judge/) ? 'robe'
+  const garb = has(/surety coat/) ? 'surety' : has(/robe|gown|stole|magistrat|judge/) ? 'robe'
     : has(/uniform|cadet|epaulet|tunic|officer|high[a-z ]{0,14}collar|buttoned to the throat/) ? 'uniform'
       : has(/waistcoat|\bvest\b/) ? 'waistcoat' : 'coat';
   // the eyes take the member's own colour unless the look names one: thirteen people, thirteen irises
@@ -110,7 +115,7 @@ export function lookOf(member) {
     eyeGap: (child ? 24.5 : 25.5) + rnd(seed * 91) * 2.5,
     eyeW: (child ? 1.1 : L.age === 'young' ? 1.0 : 0.94) + rnd(seed * 53) * 0.1,
     noseL: (child ? 0.6 : 0.85) + rnd(seed * 37) * (child ? 0.15 : 0.4),
-    browW: (child ? 0.62 : 0.8) + rnd(seed * 29) * (child ? 0.2 : 0.5) + (L.build === 'broad' ? 0.35 : 0),
+    browW: (child ? 0.62 : 0.8) + rnd(seed * 29) * (child ? 0.2 : 0.5) + (L.build === 'broad' && !L.faceOf ? 0.35 : 0),
     mouthW: (child ? 0.8 : 0.94) + rnd(seed * 71) * (child ? 0.1 : 0.2),
     browUp: /(one|an|left|right) (eye)?brow (always |forever |permanently )?(raised|up|cocked|lifted)|cocked (eye)?brow/.test(mark) ? 9 : 0,
     has,
@@ -160,16 +165,25 @@ function palOf(member, k, F, focus) {
   const id = `${member.id}|${L.id}|${fq}`;
   let C = _pal.get(id);
   if (C) return C;
-  // whoever the scene is not about stands a little further into its air
-  const a = 0.06 + 0.2 * (1 - fq), d = 0.16 * (1 - fq);
-  const tn = (c) => shade(blend(c, L.amb, a), d);
+  // Whoever the scene is not about stands in its shadow, and is still a cel drawing: each colour is darkened by a
+  // quarter with its own hue held (its chroma is pushed out a third first, as a painted shadow tone is), then
+  // taken a tenth of the way to the light's shadow tint. So skin stays skin and one colour still differs from the
+  // next. (They used to be mixed toward the ambient colour and toward ink, which took everything to the same
+  // grey-purple.) The ink and the rim are not dimmed at all.
+  const u = 1 - fq;
+  const dim = (c) => {
+    const v = rgbOf(c), y = 0.3 * v[0] + 0.59 * v[1] + 0.11 * v[2], sat = 1 + 0.35 * u, d = 1 - 0.25 * u;
+    const ch = (x) => Math.round(clamp((y + (x - y) * sat) * d, 0, 255));
+    return blend(`rgb(${ch(v[0])},${ch(v[1])},${ch(v[2])})`, L.shadowTint, 0.1 * u);
+  };
+  const tn = (c) => { const b = blend(c, L.amb, 0.05); return u > 0 ? dim(b) : b; };
   const lift = (c) => (lum(c) < 46 ? blend(c, '#56609c', 0.3) : c);   // black cloth and black hair are drawn as deep slate, so a shadow and a line can show on them
   const skin = tn(k.skin);
   const skinSh = blend(blend(skin, '#5a1e3c', 0.4), L.shadowTint, 0.3 * L.depth);
   const hair = tn(lift(k.hair)), coat = tn(lift(k.coat)), trim = tn(k.trim);
   const shirtBase = tn(blend(k.coat, '#f1e8d6', 0.84));
   const white = tn('#fff6e0');
-  const rimC = blend(L.rim, L.amb, 0.34 * (1 - fq));
+  const rimC = L.rim;
   C = {
     fq, tn,
     skin, skinSh, skinLine: blend(skinSh, INK, 0.5), skinHi: blend(skin, L.rim, 0.45),
@@ -185,7 +199,7 @@ function palOf(member, k, F, focus) {
     tear: tn('#d4f0ff'),
     brass: tn(PALETTE.brass), brassSh: shadowOf(tn(PALETTE.brass), L),
     shade: alpha(blend(L.shadowTint, INK, 0.55), 0.5 * L.depth + 0.14),   // the one translucent shadow laid over whatever is worn
-    rim: rimC, rimK: 0.55 + 0.45 * fq,
+    rim: rimC, rimK: 0.8 + 0.2 * fq,
     glint: fq >= 0.6,
   };
   if (_pal.size > 600) _pal.clear();
@@ -280,7 +294,7 @@ function hairGeo(k, f) {
   const mk = (m, spec) => spec.filter((q) => q !== IN).map((q) => (q.length === 2 ? [m * q[0] * hw, cy + q[1]] : [m * q[0] * hw, cy + q[1], m * q[2] * hw, cy + q[3]]));
   // back: behind the shoulders (body part). top: behind the head but part of it (a bun). front: the mass over the
   // skull, which throws its shadow on the brow. locks: small pieces over that. cloth: a hood, not hair.
-  const g = { back: [], top: [], front: null, outer: null, locks: [], sweep: [], braid: null, pins: null, cloth: false, brim: null };
+  const g = { back: [], top: [], front: null, outer: null, locks: [], sweep: [], braid: null, pins: null, tie: null, cloth: false, brim: null };
   const old = k.lines >= 2;
   const capSmooth = (r, top, line) => [[-r, 2], [-r - 0.04, -32], [-r, -66, -0.5, top + 6], [0, top - 4, 0.5, top + 6], [r, -66, r + 0.04, -32], [r, 2], IN, ...line];
   const setFront = (spec) => { g.front = mk(f, spec); const cut = spec.indexOf(IN); if (cut > 0) g.outer = mk(f, spec.slice(0, cut)); };
@@ -351,6 +365,23 @@ function hairGeo(k, f) {
           [0.9, 0], [0.87, -22], [0.62, -46], [0.42, -54], [0.24, -32], [-0.06, -20], [-0.4, -19], [-0.3, -32], [-0.72, -12], [-0.64, -34], [-0.9, -16], [-0.9, 0]]);
         g.braid = { front: true, x0: -f * (hw + 1), y0: cy + 22, x1: -f * (hw + 16), y1: cy + 176, n: 8 };
       }
+      break;
+    case 'regulation':
+      // cut to the book: a smooth helmet, a fringe ruled straight across the brow with one nick in it, and a panel in
+      // front of each ear cut on a slant to a point on the cheek. No ear shows.
+      setFront([[-1.12, 30], [-1.18, -30], [-1.1, -78, -0.5, -90], [0, -97, 0.5, -90], [1.1, -78, 1.18, -30], [1.12, 30], IN,
+        [0.74, 54], [0.8, -25], [0.42, -27], [0.33, -37], [0.24, -27], [-0.8, -25], [-0.74, 54]]);
+      // the rim's contour takes in the two points, or the light would fill the gap under each
+      g.outer = mk(f, [[-0.74, 54], [-1.12, 30], [-1.18, -30], [-1.1, -78, -0.5, -90], [0, -97, 0.5, -90], [1.1, -78, 1.18, -30], [1.12, 30], [0.74, 54]]);
+      break;
+    case 'lowknot':
+      // drawn back flat off a middle parting and low over the temples, into a heavy knot at the nape that shows
+      // beside the neck on the far side, tied with twine; one strand has come loose in front of the near ear
+      setFront([[-1.08, 8], [-1.15, -28], [-1.08, -72, -0.5, -84], [0, -91, 0.5, -84], [1.08, -72, 1.15, -28], [1.08, 8], IN,
+        [0.9, 10], [0.93, -16], [0.56, -30, 0.1, -58], [0.02, -47], [-0.56, -30, -0.93, -16], [-0.9, 10]]);
+      g.back.push(mk(-f, [[0.5, 34], [0.96, 20, 1.34, 40], [1.68, 66, 1.36, 98], [0.96, 118, 0.6, 90], [0.42, 64, 0.5, 34]]));
+      g.tie = mk(-f, [[0.48, 58], [0.86, 26], [0.6, 72], [0.52, 100], [0.74, 66], [0.78, 96]]);
+      g.locks.push(mk(f, [[0.9, -6], [1.1, -4], [1.2, 30], [1.02, 62], [1.06, 30], [0.92, 14]]));
       break;
     case 'tail':
       // sleek, parted at the side, one sharp lock across the brow; the tail lies on the far shoulder
@@ -438,6 +469,11 @@ function hairBack(ctx, k, g, C, F, W) {
   if (k.style === 'tail') {   // the tie at the nape
     const p = g.back[0][0];
     disc(ctx, p[0] + (p[0] < 0 ? -20 : 20), p[1] + 8, 7, C.trim, 1.6 * W);
+  }
+  if (g.tie) {   // net twine round the neck of the knot, and its two ends
+    const p = g.tie;
+    line(ctx, p[0][0], p[0][1], p[1][0], p[1][1], INK, 8 * W); line(ctx, p[0][0], p[0][1], p[1][0], p[1][1], C.trim, 4);
+    line(ctx, p[2][0], p[2][1], p[3][0], p[3][1], C.trim, 2.6); line(ctx, p[4][0], p[4][1], p[5][0], p[5][1], C.trim, 2.6);
   }
   if (g.braid && !g.braid.front) drawBraid(ctx, k, g, C, W, 0);
 }
@@ -598,6 +634,15 @@ function costume(ctx, k, C, F, W) {
       }
       break;
     }
+    case 'surety': {
+      // closed edge to edge with no button showing, and belted: the cape, the collar and what hangs from them are in collars()
+      line(ctx, 0, -8, 0, 570, INK, li);
+      const leather = C.tn(blend(k.coat, INK, 0.6));
+      flat(ctx, [-sw - 30, 262, sw + 30, 258, sw + 30, 288, -sw - 30, 292], leather, li);
+      flat(ctx, [-15, 255, 15, 254, 15, 295, -15, 296], C.brass, li + 0.4);
+      flat(ctx, [-7, 264, 7, 264, 7, 286, -7, 286], leather, li * 0.8);
+      break;
+    }
     case 'uniform': {
       // buttoned to the throat: a placket, two rows of buttons, straps on the shoulders
       line(ctx, 0, -8, 0, 570, INK, li);
@@ -664,6 +709,17 @@ function costume(ctx, k, C, F, W) {
   }
   // the arms hang at the sides: one line each
   for (const sx of [-1, 1]) curve(ctx, sx * sw * 0.8, 70, sx * sw * 0.73, 200, sx * sw * 0.82, 570, INK, li);
+  if (k.has(/lamp-?black/)) {
+    // sleeves rolled above the elbow; the right forearm (on the left as we look at her) is black from trimming wicks,
+    // up to a ragged line just short of the cuff
+    const soot = C.tn('#2b2833');
+    for (const sx of [-1, 1]) {
+      const x0 = sx * sw * 0.745, x1 = sx * (sw + 26);
+      flat(ctx, [x0 + sx * 3, 250, x1, 244, x1, 572, x0 + sx * 12, 572], sx === key ? C.skin : C.skinSh, li);
+      if (sx < 0) flat(ctx, [x0 + sx * 4, 296, x0 + sx * 12, 286, x0 + sx * 20, 300, x0 + sx * 29, 288, x0 + sx * 38, 302, x1, 290, x1, 572, x0 + sx * 12, 572], soot, 0);
+      flat(ctx, [x0 - sx * 2, 232, x1, 222, x1, 250, x0, 258], sx === key ? C.coatHi : C.coat, li);
+    }
+  }
   if (k.has(/apron/)) {
     const ap = C.tn(blend(k.trim, '#e4dcc8', 0.6));
     flat(ctx, [-sw * 0.42, 76, sw * 0.42, 76, sw * 0.6, 570, -sw * 0.6, 570], ap, li);
@@ -705,7 +761,63 @@ function collars(ctx, k, C, F, W) {
       for (let i = -3; i <= 3; i++) line(ctx, i * (n + 4) / 3.6, -31, i * (n + 4) / 3.6, -17, shadowOf(wool, F.L), 1.8);
     }
   }
-  if (k.has(/shawl/)) {
+  if (k.garb === 'surety') {
+    // The Surety coat: a short cape cut square at the shoulder and to a point on the breast, piped in brass; a
+    // standing collar; three writ-tags hung at the throat; a plumb-weight on a cord from the point of the cape.
+    const a = sw + 18, cape = C.tn(blend(k.coat, '#ffffff', 0.14)), capeSh = shadowOf(cape, F.L), dark = C.tn(blend(k.coat, INK, 0.5));
+    const path = (c) => {
+      c.moveTo(-n - 8, -24); c.lineTo(-a - 12, 2); c.lineTo(-a + 4, 108); c.lineTo(-44, 130); c.lineTo(0, 170);
+      c.lineTo(44, 130); c.lineTo(a - 4, 108); c.lineTo(a + 12, 2); c.lineTo(n + 8, -24); c.lineTo(0, -6); c.closePath();
+    };
+    form(ctx, path, cape, capeSh, F, 30, 3 * W, 4.5 * C.rimK, C.rim, (c) => {
+      c.strokeStyle = C.brass; c.lineWidth = 4.5; c.lineJoin = 'miter';
+      c.beginPath(); c.moveTo(-a + 10, 12); c.lineTo(-a + 14, 98); c.lineTo(-42, 119); c.lineTo(0, 157); c.lineTo(42, 119); c.lineTo(a - 14, 98); c.lineTo(a - 10, 12); c.stroke();
+      c.lineJoin = 'round';
+      line(c, 0, -6, 0, 170, INK, INK_IN * W + 0.4);
+      c.fillStyle = C.shade; c.beginPath(); c.ellipse(-F.dx * 30, -10, k.hw * 1.1, 30, 0, 0, TAU); c.fill();
+    });
+    // the plumb-weight
+    line(ctx, 0, 168, 0, 190, INK, 5 * W); line(ctx, 0, 168, 0, 190, C.brass, 2.4);
+    flat(ctx, [-10, 188, 10, 188, 13, 200, 0, 232, -13, 200], C.brass, 2.4 * W);
+    flat(ctx, [key * 2, 191, key * 8, 191, key * 10, 200, key * 3, 216], C.trimHi, 0);
+    // collar and tags
+    for (const sx of [-1, 1]) flat(ctx, [sx * 1, -20, sx * (n + 10), -42, sx * (n + 14), -8, sx * 1, 6], sx === key ? C.coat : dark, w);
+    for (let i = -1; i <= 1; i++) {
+      flat(ctx, [i * 15 - 6, 2, i * 15 + 6, 2, i * 15 + 6, 24, i * 15, 29, i * 15 - 6, 24], i === key ? C.trimHi : C.brass, 2 * W);
+      disc(ctx, i * 15, 8, 1.8, INK, 0);
+    }
+  }
+  if (k.has(/hood (pushed|thrown|put) back|cowl/)) {
+    // a hood put back: a soft roll of cloth standing round the neck and lying out along each shoulder
+    for (const sx of [-1, 1]) {
+      const path = (c) => {
+        c.moveTo(sx * (n - 3), -4); c.quadraticCurveTo(sx * (n - 2), -66, sx * (n + 26), -62);
+        c.quadraticCurveTo(sx * (n + 70), -52, sx * sw * 0.86, 24); c.quadraticCurveTo(sx * (n + 40), 44, sx * (n + 6), 34); c.closePath();
+      };
+      form(ctx, path, sx === key ? C.trim : C.trimSh, C.trimSh, F, 14, 2.6 * W, sx === key ? 4 * C.rimK : 0, C.rim, (c) => {
+        curve(c, sx * (n + 20), -44, sx * (n + 50), -24, sx * sw * 0.6, 22, sx === key ? C.trimSh : shadowOf(C.trimSh, F.L), 2.6);
+      });
+    }
+  }
+  if (k.has(/goat-?wool/)) {
+    // undyed goat wool, heavy: wrapped right over left and pinned, its hem falling from one shoulder to the other
+    // hip, shaggy at the edge, two woven bands above it. Wider than the shoulders under it.
+    const a = sw + 32, base = k.has(/undyed/) ? C.tn('#d9d0bc') : C.trim, sh = shadowOf(base, F.L), N = 15;
+    const hemY = (u) => lerp(118, 236, u) + Math.sin(u * Math.PI) * 26;
+    const path = (c) => {
+      c.moveTo(-n - 14, -32); c.quadraticCurveTo(-sw * 0.62, -30, -a, 26); c.lineTo(-a - 8, hemY(0));
+      for (let i = 1; i <= N; i++) { const u = i / N, x = lerp(-a - 8, a + 10, u), st = (2 * a + 18) / N; c.lineTo(x - st * 0.62, hemY(u - 0.6 / N) + 20 + (i % 3) * 5); c.lineTo(x, hemY(u)); }
+      c.lineTo(a + 2, 26); c.quadraticCurveTo(sw * 0.62, -30, n + 14, -32); c.lineTo(-20, 66); c.closePath();
+    };
+    form(ctx, path, base, sh, F, 30, 3 * W, 4.5 * C.rimK, C.rim, (c) => {
+      for (const d of [30, 46]) { c.strokeStyle = d === 30 ? sh : C.tn(blend(k.trim, '#6a4a3a', 0.5)); c.lineWidth = d === 30 ? 7 : 4; c.beginPath(); for (let i = 0; i <= N; i++) { const u = i / N, x = lerp(-a - 8, a + 10, u), y = hemY(u) - d; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+      curve(c, -20, 66, sw * 0.2, 120, sw * 0.62, hemY(0.8) - 4, INK, INK_IN * W + 0.6);   // the edge of the upper fold
+      for (let i = 0; i < 9; i++) { const x = (rnd(k.seed * 30 + i) - 0.5) * a * 1.5, y = 20 + rnd(k.seed * 44 + i) * 70; line(c, x, y, x + 3, y + 11, sh, 2.2); }
+      c.fillStyle = C.shade; c.beginPath(); c.ellipse(-F.dx * 30, -6, k.hw * 1.2, 34, 0, 0, TAU); c.fill();
+    });
+    // a bone pin where it crosses
+    line(ctx, -40, 52, -2, 80, INK, 7 * W); line(ctx, -40, 52, -2, 80, C.white, 3.4);
+  } else if (k.has(/shawl/)) {
     // a knitted shawl: wider than the shoulders under it, with a toothed hem
     const base = k.has(/red/) ? C.tn('#c8322e') : C.trim, sh = shadowOf(base, F.L);
     const path = (c) => {
@@ -784,6 +896,7 @@ export function drawFigure(ctx, member, o) {
     if (C.glint) {
       if (k.has(/\bchain\b|medallion/)) glint(ctx, F.key * 5, 102, 15, PALETTE.white, 0.95);
       if (k.has(/\bpin\b|badge|brooch|\bmedal\b|sigil|\btag\b/)) glint(ctx, -F.key * k.sw * 0.4 + F.key * 3, 76, 12, PALETTE.white, 0.95);
+      if (k.garb === 'surety') { glint(ctx, F.key * 15, 9, 11, PALETTE.white, 0.95); glint(ctx, F.key * 5, 197, 9, PALETTE.white, 0.9); }
     }
     ctx.restore(); // torso translate
   }
@@ -1078,6 +1191,32 @@ export function drawPortrait(ctx, member, x, y, size, emote, talk, t = 0) {
   ctx.restore();
 }
 
+// ───────────────────────── the Ledger, seen ─────────────────────────
+const _revealed = new WeakMap();
+/**
+ * The narrator as a body: Ilse in old age, the hood she has kept up for eight chapters put back on her shoulders.
+ * Built from cast.ilse (her face, her freckles, the braid over one shoulder with the pen through it, gone grey with
+ * a little copper left in it) and cast.narrator (the name, the colour, the dark coat). The engine stages this
+ * member when a line lists 'narrator' in `on`; the cabinet's framed bust of the narrator stays a book.
+ */
+export function ledgerRevealed(cast) {
+  let m = _revealed.get(cast);
+  if (m) return m;
+  const N = cast.narrator, I = cast.ilse;
+  if (!N || !I || !N.look || !I.look) throw new Error("cinema: the Ledger cannot be shown without cast.narrator and cast.ilse (each with a look)");
+  const eyes = I.look.eyes || (I.color && /^#/.test(I.color) ? (lum(I.color) > 150 ? shade(I.color, 0.22) : I.color) : undefined);
+  m = {
+    ...N,
+    look: {
+      skin: blend(I.look.skin, '#c9a288', 0.3), hair: blend(I.look.hair, '#d6d2cc', 0.74), hairStyle: 'braid',
+      coat: N.look.coat, trim: N.look.trim, build: I.look.build, age: 'old', faceOf: I.id, eyes,
+      mark: 'grey braid over one shoulder with a pen pushed through it; freckles; a hood pushed back on the shoulders; ink on the fingers',
+    },
+  };
+  _revealed.set(cast, m);
+  return m;
+}
+
 /**
  * The box drawFigure may paint in, in figure units about the origin (the base of the neck): x in -half..half, y in top..bot.
  * The engine cuts its sprites of people standing still to this box, so whatever a figure paints outside it is lost
@@ -1096,6 +1235,7 @@ export function spriteBounds(k, part) {
       if (g.front) pts(head, g.front);
       if (g.brim) pts(head, g.brim);
       if (g.pins) pts(head, g.pins);
+      if (g.tie) pts(back, g.tie);
       for (const p of g.back) pts(back, p);
       if (g.braid) { const b = g.braid.front ? head : back; acc(b, g.braid.x0, g.braid.y0); acc(b, g.braid.x1 + (g.braid.x1 < 0 ? -34 : 34), g.braid.y1 + 44); }
     }

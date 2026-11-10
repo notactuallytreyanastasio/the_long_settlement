@@ -221,8 +221,8 @@ export const chapter8 = {
       id: 'ch8.s3',
       title: 'The Brass Cap',
       thread: 'covert',
-      hint: "Climb the Founders' Lamp: sink the Plumb in the LAMP",
-      objective: { kind: 'count', ids: ['lamp'], n: 1 },
+      hint: "Up the Founders' Lamp: sink the Plumb in the LAMP twice",
+      objective: { kind: 'count', ids: ['lamp'], n: 2 },
       reward: { points: 25000 },
       briefing: [
         { id: 'ch8.s3.b01', who: 'sable', text: "Lamp-house. The watch changes at two." },
@@ -294,8 +294,8 @@ export const chapter8 = {
       id: 'ch8.s4',
       title: 'Forty for Twenty-Four',
       thread: 'duty',
-      hint: 'Go up to the Chancellor: 15 hits on the RING bumpers',
-      objective: { kind: 'count', ids: ['ring1', 'ring2', 'ring3'], n: 15 },
+      hint: 'Go up to the Chancellor: 20 hits on the RING bumpers',
+      objective: { kind: 'count', ids: ['ring1', 'ring2', 'ring3'], n: 20 },
       reward: { points: 30000 },
       briefing: [
         { id: 'ch8.s4.b01', who: 'crowd', text: "The Chancellor will see the Tribune. Alone, he asks." },
@@ -439,8 +439,8 @@ export const chapter8 = {
       id: 'ch8.s6',
       title: 'Eleven Minutes',
       thread: 'commons',
-      hint: 'Get down to the water: shoot the MOLE ramp twice',
-      objective: { kind: 'count', ids: ['moleRamp'], n: 2 },
+      hint: 'Get down to the water: shoot the MOLE ramp 3 times',
+      objective: { kind: 'count', ids: ['moleRamp'], n: 3 },
       reward: { points: 40000, trust: 35 },
       briefing: [
         { id: 'ch8.s6.b01', lean: 'commons', who: 'crowd', text: "Nobody's running. Why is nobody running?" },

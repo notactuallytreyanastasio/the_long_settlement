@@ -37,6 +37,7 @@ export const SFX_NAMES = [
 export const MOODS = [
   'title', 'festival', 'tense', 'covert', 'sorrow', 'hope', 'march', 'mine', 'court',
   'shrine', 'dread', 'silence', 'academy', 'storm', 'village', 'exchange',
+  'capital', 'lanehold', 'thesum',
 ];
 
 /**
@@ -947,6 +948,99 @@ export function createAudio() {
         if (scatter(k, n % 3) > (bar < 4 ? 0.88 : 0.76)) I.pluck(root + 36 + [0, 2, third, 7][Math.floor(scatter(k + 7, n) * 4)], t, 0.03, { type: 'square', cut: 5000, decay: 0.05 });
         // the ratchet winding up the last half bar
         if (bar === 7 && b >= 8) { I.tick(t + s * 0.5, 0.04 + (b - 8) * 0.008, 2400 + (b - 8) * 260); }
+      },
+    },
+
+    // Cresset. D minor over a ground that only goes down: D, C, B flat, A, at a
+    // walk, the old lament bass under a city that thinks it is a march. Square
+    // brass in open fifths (the Assembly: the right shape, nothing in it), a
+    // harpsichord counting seats, and under all of it the Founders' Lamp: one
+    // great bell every second bar, on A, a fourth below the tonic, so it agrees
+    // with one chord in four. Every other time round the brass tries the last
+    // phrase of the lullaby and stops a note short of home.
+    capital: {
+      bpm: 84, div: 4, len: 128, vol: 0.85, send: 0.5,
+      step(k, t, s, I, n) {
+        const bar = k >> 4, b = k & 15;
+        const ground = [38, 36, 34, 33, 38, 36, 31, 33][bar];          // D C Bb A | D C G A
+        const third = [3, 4, 4, 4, 3, 4, 3, 4][bar];                    // Dm C Bb A | Dm C Gm A
+        const chord = [ground + 12, ground + 12 + third, ground + 19];
+        if (b === 0) {
+          I.bass(ground, t, s * 14, 0.28, { type: 'sawtooth', cut: 240 });
+          I.pad([ground + 12, ground + 19, ground + 24], t, s * 13, 0.035, { type: 'square', cut: 1100, att: 0.12, rel: 0.6, spread: 4 });
+          I.kick(t, 0.4, 64);
+        }
+        if (b === 8) { I.bass(ground + 7, t, s * 6, 0.16, { cut: 300 }); I.kick(t, 0.22, 80); }
+        if (b % 2 === 0) {
+          const at = [0, 1, 2, 1, 0, 2, 1, 2][b >> 1];
+          I.pluck(chord[at] + 12, t, b === 0 ? 0.08 : 0.055, { type: 'sawtooth', cut: 4600, decay: 0.28 });
+        }
+        if (b === 4 || b === 12) I.tick(t, 0.06, 2600);
+        if (bar % 2 === 0 && b === 0) I.bell(45, t, 0.2, { decay: 6, detune: -6 });   // the Lamp
+        if (bar === 6 && b === 0 && n % 2 === 1) {
+          I.phrase(LULLABY.minor[3], 74, t, s * 4, (m, at, len, i) => {
+            if (i < 6) I.pad([m], at, len * 0.9, 0.035, { type: 'square', cut: 1700, att: 0.04, rel: 0.25, spread: 3 });
+          });
+        }
+      },
+    },
+
+    // The commons ending. G major, and the lullaby as what it was first: a rowing
+    // chant, the stroke on 1, 3, 5 and 7 and the eighth beat left for the
+    // recovery. All four phrases, the lost third among them. One boat begins,
+    // plucked. Each time round another joins: a second an octave under, a
+    // little late; then a whistle above; then a low bell on the strokes. In the
+    // rest after every second phrase a point far off answers, high and small.
+    lanehold: {
+      bpm: 66, div: 2, len: 64, vol: 1.05, send: 0.5,
+      step(k, t, s, I, n) {
+        const bar = k >> 3, b = k & 7;
+        // G | D | C | G over D, twice; the last bar comes down onto the root
+        const chords = [[43, 55, 59, 62], [38, 54, 57, 62], [36, 55, 60, 64], [38, 55, 59, 62],
+          [43, 55, 59, 62], [38, 54, 57, 62], [36, 55, 60, 64], [43, 55, 59, 62]];
+        const c = chords[bar];
+        const boats = Math.min(4, n + 1 + (bar >= 4 ? 1 : 0));
+        if (b === 0) {
+          I.pad(c.slice(1), t, s * 8, 0.03, { type: 'triangle', cut: 1200, att: 0.7 });
+          I.bass(c[0] - 12, t, s * 6.5, 0.22);
+          const ph = LULLABY.major[bar % 4];
+          const last = bar % 4 === 3;
+          I.phrase(ph, 67, t, s, (m, at, len, i) => {
+            const stroke = i % 2 === 0;
+            I.pluck(m, at, stroke ? 0.15 : 0.1, { decay: i === 6 ? (last ? 2.2 : 1.5) : 0.7, cut: 2200 });
+            if (boats >= 2) I.pluck(m - 12, at + s * 0.07, stroke ? 0.08 : 0.05, { type: 'sine', decay: 0.9, cut: 1400 });
+            if (boats >= 3) I.whistle(m + 12, at, len * 0.94, 0.045);
+            if (boats >= 4 && stroke) I.bell(m - 12, at, 0.07, { decay: i === 6 ? 3 : 1.3 });
+          });
+        }
+        if (b % 2 === 0) { I.kick(t, 0.12, 84); I.wash(t, s * 0.9, 0.012, 3400); }   // the oars
+        if (b === 7 && bar % 2 === 1) I.bell(91, t, 0.035, { decay: 2.6, detune: 9 });   // the answer, down the relays
+      },
+    },
+
+    // The mint ending. E, and almost nothing: one long low note, a count that
+    // goes on ticking because sums do, and one small plucked light. It plays
+    // the first phrase, waits, and then the last one at half the pace, and does
+    // not play the last note of it. Every other time something a long way
+    // below does, a fifth off.
+    thesum: {
+      bpm: 46, div: 2, len: 64, vol: 0.7, send: 0.7,
+      step(k, t, s, I, n) {
+        const bar = k >> 3, b = k & 7;
+        if (k % 32 === 0) {
+          I.bass(28, t, s * 31, 0.16, { type: 'sine' });
+          I.pad([40, 47], t, s * 29, 0.035, { type: 'triangle', cut: 500, att: 3, rel: 3, spread: 5 });
+        }
+        if (b % 4 === 0) I.tick(t, b === 0 ? 0.035 : 0.02, 1500);       // the count
+        if (k === 0) I.phrase(LULLABY.minor[0], 64, t, s * 2, (m, at) => I.pluck(m, at, 0.12, { decay: 1.6, cut: 1700 }));
+        if (bar === 2 && b === 0) I.pad([52, 55, 59], t, s * 12, 0.02, { cut: 800, att: 2, rel: 2 });
+        if (bar === 3 && b === 0) I.air(t, s * 8, 0.035, 500, 1400);    // the sea, standing up
+        if (k === 32) {
+          I.phrase(LULLABY.minor[3], 64, t, s * 4, (m, at, len, i) => {
+            if (i < 6) I.pluck(m, at, 0.12 - i * 0.008, { decay: 2.4, cut: 1500 });
+            else if (n % 2 === 1) I.bell(35, at, 0.05, { decay: 5, detune: -10 });
+          });
+        }
       },
     },
 
