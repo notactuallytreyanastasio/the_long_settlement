@@ -257,7 +257,7 @@ function makeStage(set, troupe) {
       if (a.poseT > 0) a.poseT -= dt;
       if (a.busyT > 0) a.busyT -= dt;
       st.emote = a.tempT > 0 ? a.temp : a.emote;
-      st.pose = a.moving ? (Math.floor(a.gait / STEP) % 2 ? 'stride' : 'strideB') : a.poseT > 0 ? a.flashPose : a.pose;
+      st.pose = a.moving ? 'walk' : a.poseT > 0 ? a.flashPose : a.pose; st.walk = a.speed;
       st.face = a.moving ? clamp(Math.atan2(dx, dz) / DEG, -100, 100) * 0.82 : a.face;
       if (a.moving) st.look = null;
       st.camera = camera;
@@ -553,6 +553,7 @@ export const MODES = {
 const PARTY_SLOT = [[-0.9, 0.8], [-1.7, 0.52], [-2.45, 0.95]];
 const OPP_SLOT = [[0.9, 0.8], [1.7, 0.45], [2.45, 0.95]];
 const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]], BACK_L = [[-3.05, 0.0], [-2.4, -0.1]];
+const HALF_W = 3.0;   // world units of the strip either side of centre that the band's camera keeps in frame
 const LAG = 0.16;      // seconds between a table hit and the stage answering: the time the energy takes to climb
 const MAX_FOLK = 2;    // figures are the band's draw calls: two supporters, a clerk and the hat are already five more
 // scheduled steps
@@ -910,14 +911,17 @@ function fightOn(S, opts = {}) {
   };
 
   /** The stage camera: the whole strip, pushed in on the pair for a team move, shaken by a blow. */
-  F.frame = (camera, aspect, viewHeight, time, rect) => {
+  F.frame = (camera, aspect, viewHeight, time, rect, pad) => {
     const fov = 24, tv = Math.tan(fov * DEG / 2);
-    let cx = 0, d = Math.min(3.3 / (tv * aspect), 11.5), cy = 1.02;
+    // the strip is HALF_W either side of centre; the ground line sits just above whatever the HUD covers at the foot
+    // of the rectangle (pad.bottom, px), so feet are never under the status strip, however tall the band is
+    const d = Math.min(HALF_W / (tv * aspect), 14.2), h = viewHeight || 220, foot = pad ? pad.bottom : 0;
+    let cx = 0, dd = d, cy = clamp((h / 2 - foot - 10) * (2 * d * tv) / h, 0.55, 1.5);
     if (mode === MODES.walk || mode === MODES.stealth) { const a = party[0]; if (a && aspect < 1.2) cx = a.x; }   // grown toward full screen, the frame is narrower than the strip: stay with the lead
     if (aspect < 1.2 && party.length && won) { cx = 0; for (const a of party) cx += a.x / party.length; }
-    if (focus.t < 8) { const k = smooth(focus.t / 0.25) * (1 - smooth((focus.t - focus.dur + 0.1) / 0.2)); cx = lerp(cx, lerp(focus.x, focus.x2, smooth((focus.t - 0.6) / 0.4)), k); d *= lerp(1, focus.zoom, k); cy = lerp(cy, 0.9, k); }
+    if (focus.t < 8) { const k = smooth(focus.t / 0.25) * (1 - smooth((focus.t - focus.dur + 0.1) / 0.2)); cx = lerp(cx, lerp(focus.x, focus.x2, smooth((focus.t - 0.6) / 0.4)), k); dd *= lerp(1, focus.zoom, k); cy = lerp(cy, cy * focus.zoom + 0.12, k); }
     RT[0] = cx; RT[1] = cy; RT[2] = 0.5;
-    PROBE.fov = fov; PROBE.orbit(RT, d, 7 + Math.sin(time * 0.21) * 1.0, 7);
+    PROBE.fov = fov; PROBE.orbit(RT, dd, 7 + Math.sin(time * 0.21) * 1.0, 7);
     rigTo(S.rig, camera, dtLast, false, focus.t < 8 ? 9 : 5, time, punch);
     S.view.shadowCenter[0] = 0; S.view.shadowCenter[2] = 0.2; S.view.shadowRadius = 5.2; set.env.shadow.center = S.view.shadowCenter; set.env.shadow.radius = 5.2;
     if (set.foreground) set.foreground.visible = false;
@@ -1056,7 +1060,7 @@ export function createDirector(troupe, { getSet, lod = 'stage' } = {}) {
         if (!leaving) { if (was === 'lines') S.lines.reset(); S.fight.update(dt, time, fightIn); }
         if (S.floorRoot) S.floorRoot.visible = true;
         S.tick(dt, time, camera);
-        S.fight.frame(camera, aspect, rect.h, time, rect);
+        S.fight.frame(camera, aspect, rect.h, time, rect, f.pad || null);
         dir.sparks = S.fight.sparks; dir.cues = S.fight.cues; dir.punch = S.fight.punch;
       } else if (mode === 'lines') {
                 lineIn.line = st.line || null; lineIn.on = st.party || NONE; lineIn.cam = st.cam || ''; lineIn.voice = f.voice || null; lineIn.camera = camera; lineIn.cut = cut; lineIn.radio = !!st.radio;

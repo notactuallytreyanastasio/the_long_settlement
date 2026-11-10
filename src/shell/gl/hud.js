@@ -64,7 +64,7 @@ const COMBO_GENERIC = ['', '', 'DOUBLE', 'TEAM UP', 'TEAM MOVE'];
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
 /** The band's foot (status strip and objective line) and head (score and opposition rows), logical px. */
-export const HUD_BAND_FOOT = 54;
+export const HUD_BAND_FOOT = 36;
 export const HUD_BAND_HEAD = 60;
 const STRIP_H = 30;
 
@@ -452,22 +452,34 @@ function drawBoons(g, right, y, boons) {
   g.textAlign = 'left';
 }
 
-/** The combo: a number that jumps when it grows, its name at level 2 and up (kept inside maxW), and a fuse that burns down. */
-function drawCombo(g, x, y, combo, now, maxW) {
+/**
+ * The combo, centred on cx in the clear air between the party and what opposes them: a number that jumps when it
+ * grows (with what it multiplies the score by beside it), its name under that from level 2, and a fuse that burns down.
+ */
+function drawCombo(g, cx, y, combo, now, maxW) {
   if (!combo || !(combo.count > 0)) return;
   const level = clamp(Math.floor(combo.level || 0), 0, 4);
   const left = clamp(combo.left === undefined ? 1 : combo.left, 0, 1);
   const fresh = clamp((left - 0.93) / 0.07, 0, 1); // the first third of a second after a hit
   const k = 1 + fresh * (0.16 + 0.07 * level);
   const fill = level >= 4 ? (Math.floor(now / 90) % 2 ? GOLD : COMBO_FILL[4]) : COMBO_FILL[level];
-  const name = level >= 2 ? String(combo.name || COMBO_GENERIC[level]).toUpperCase() : level === 1 ? 'HITS' : '';
+  const name = level >= 2 ? String(combo.name || COMBO_GENERIC[level]).toUpperCase() : '';
+  const side = combo.mult > 1 ? `×${combo.mult}` : level >= 1 ? 'HITS' : '';
+  const base = y + 30;
   g.save();
-  g.translate(x, y);
-  g.rotate(-0.05);
+  g.translate(cx, base);
+  g.rotate(-0.04);
   g.scale(k, k);
+  const size = 28 + level * 2;
+  const num = String(combo.count);
+  g.font = font(size, 800, true);
+  const nw = g.measureText(num).width;
+  g.font = font(13, 800, true);
+  const sw = side ? g.measureText(side).width + 5 : 0;
+  const x0 = -(nw + sw) / 2;
   if (level >= 3) {
     // a burst behind the number: the team move
-    starPath(g, 20, -12, 22 + level * 2, 15, 10, now / 700);
+    starPath(g, x0 + nw / 2, -11, 22 + level * 2, 15, 10, now / 700);
     g.fillStyle = level >= 4 ? CORAL : GOLD_LO;
     g.globalAlpha = 0.9;
     g.fill();
@@ -477,28 +489,27 @@ function drawCombo(g, x, y, combo, now, maxW) {
     g.lineJoin = 'round';
     g.stroke();
   }
-  const size = 30 + level * 2;
-  g.font = font(size, 800, true);
   g.textAlign = 'left';
-  const num = String(combo.count);
-  inked(g, num, 0, 0, { fill, lw: 5, drop: 3 });
-  const nw = g.measureText(num).width;
-  if (name) {
-    fit(g, name, Math.max(60, maxW / k - nw - 6), level >= 3 ? 15 : 13, MIN_TYPE, 800, true);
-    inked(g, name, nw + 6, -2, { fill: level >= 3 ? fill : WHITE, lw: 4, drop: 2 });
+  g.font = font(size, 800, true);
+  inked(g, num, x0, 0, { fill, lw: 5, drop: 3 });
+  if (side) {
+    g.font = font(13, 800, true);
+    inked(g, side, x0 + nw + 5, -3, { fill: combo.mult > 1 ? (fill === WHITE ? GOLD : fill) : WHITE, lw: 4, drop: 2 });
   }
   g.restore();
-  // what the chain is worth: score only (the core never multiplies marks)
-  if (combo.mult > 1) {
-    g.font = font(MIN_TYPE, 800);
+  let fy = base + 6;
+  if (name) {
+    g.textAlign = 'center';
+    fit(g, name, maxW, level >= 3 ? 15 : 13, MIN_TYPE, 800, true);
+    inked(g, name, cx, base + 16, { fill: level >= 3 ? fill : WHITE, lw: 4, drop: 2 });
     g.textAlign = 'left';
-    inked(g, `SCORE ×${combo.mult}`, x + 82, y + 15.5, { fill: fill === WHITE ? GOLD : fill, lw: 3, drop: 1 });
+    fy = base + 22;
   }
   // the fuse
-  const fw = 74;
-  panel(g, x, y + 8, fw, 7, { r: 4, fill: NAVY_HI, drop: 0, lw: 2 });
+  const fw = 64;
+  panel(g, cx - fw / 2, fy, fw, 7, { r: 4, fill: NAVY_HI, drop: 0, lw: 2 });
   if (left > 0.02) {
-    rr(g, x + 1.5, y + 9.5, Math.max(4, (fw - 3) * left), 4, 2);
+    rr(g, cx - fw / 2 + 1.5, fy + 1.5, Math.max(4, (fw - 3) * left), 4, 2);
     g.fillStyle = left < 0.25 && Math.floor(now / 110) % 2 ? WHITE : fill === WHITE ? GOLD : fill;
     g.fill();
   }
@@ -863,7 +874,7 @@ const barkSeen = { id: null, since: 0 };
  * for the speaker it lies along the foot of the band where the objective line was. Returns true when it took
  * the objective line's place.
  */
-function drawBark(g, content, line, fx, B, foot, now) {
+function drawBark(g, content, line, fx, B, foot, now, minY = B.y + 4) {
   const who = content.cast[line.who];
   if (!who) throw new Error(`hud: line '${line.id}' is spoken by unknown cast id '${line.who}'`);
   if (barkSeen.id !== line.id || now < barkSeen.since) { barkSeen.id = line.id; barkSeen.since = now; }
@@ -886,7 +897,7 @@ function drawBark(g, content, line, fx, B, foot, now) {
   let y;
   if (anchor) {
     x = clamp(anchor.x - w / 2, B.x + 6, B.x + B.w - w - 6);
-    y = Math.max(B.y + 4, anchor.y - 12 - h);
+    y = Math.max(minY, anchor.y - 12 - h);
   } else {
     x = B.x + (B.w - w) / 2;
     y = foot - h - 2;
@@ -978,10 +989,6 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   // the foot rides the band's lower edge down as the band grows
   g.translate(0, fx.band ? Math.max(0, fx.band.y + fx.band.h - (B.y + B.h)) : 0);
   g.globalAlpha = 1 - out;
-  const footBase = S.y - 9;
-  let barked = false;
-  if (fx.speaking) barked = drawBark(g, content, fx.speaking, fx, B, S.y - 4, now);
-  if (!barked && scene) drawHint(g, B.x + B.w / 2, footBase, scene.hint, B.w - 28);
   drawStrip(g, S, game, stage, now, rects.mute);
   drawMute(g, rects.mute, Boolean(fx.muted));
   g.restore();
@@ -991,34 +998,53 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   g.translate(0, -out * (HUD_BAND_HEAD + top + 30));
   g.globalAlpha = 1 - out;
   const sw = drawScore(g, B.x + 10, top, game.econ.score);
-  const opp = drawOpposition(g, B.x + B.w - 10, top, stage, now, B.w - sw - 34);
+  const opp = drawOpposition(g, B.x + B.w - 10, top, stage, now, Math.min(B.w - sw - 34, 190));
   drawBoons(g, B.x + B.w - 10, opp.bottom + 5, boonsOf(game, stage));
-  // a short band (or a deep notch) has no room for both the scene's name and a combo: the combo wins
+  // the combo has the clear air between the score and the opposition, over the gap the two sides face each other across
   const comboOn = Boolean(stage.combo && stage.combo.count > 0);
-  const comboY = Math.min(top + 88, S.y - 42);
-  drawCombo(g, B.x + 12, comboY, stage.combo, now, B.w * 0.56);
-  if (scene && !(comboOn && comboY < top + 80)) {
-    const col = THREADS[scene.thread];
-    if (!col) throw new Error(`hud: scene '${scene.id}' has unknown thread '${scene.thread}'`);
-    // the scene's name in its thread's colour and, after it, what the stage has just come to (stage.beat.name)
-    const title = scene.title.toUpperCase();
-    const room = opp.left - 10 - (B.x + 12);
-    g.textAlign = 'left';
-    fit(g, title, room, 12, MIN_TYPE, 800);
-    const shownTitle = ellipsize(g, title, room);
-    inked(g, shownTitle, B.x + 12, top + 46, { fill: col, lw: 3.5, drop: 1.5 });
-    const tw = g.measureText(shownTitle).width;
+  const gapL = B.x + 10 + sw + 6;
+  const gapR = opp.left - 6;
+  drawCombo(g, clamp((gapL + gapR) / 2, B.x + 150, B.x + B.w - 150), top - 4, stage.combo, now, Math.max(96, gapR - gapL));
+  // the scene's name in its thread's colour and what the stage has just come to (stage.beat.name): said when it changes, then out of the way
+  if (scene) {
     const beat = stage.beat && typeof stage.beat.name === 'string' ? stage.beat.name : '';
-    if (beat && !comboOn) {
-      g.font = font(12, 700);
-      inked(g, ellipsize(g, beat, B.w - 24), B.x + 12, top + 63, { fill: CREAM, lw: 3.5, drop: 1.5 });
-    } else if (beat && room - tw > 70) {
-      g.font = font(MIN_TYPE, 700);
-      inked(g, ellipsize(g, beat, room - tw - 8), B.x + 12 + tw + 8, top + 46, { fill: CREAM, lw: 3.5, drop: 1.5 });
+    const key = `${scene.id}|${beat}`;
+    if (beatSeen.key !== key || now < beatSeen.since) { beatSeen.key = key; beatSeen.since = now; }
+    const age = (now - beatSeen.since) / 1000;
+    const show = clamp(age / 0.25, 0, 1) * clamp((BEAT_SHOWN - age) / 0.5, 0, 1);
+    if (show > 0.01) {
+      const col = THREADS[scene.thread];
+      if (!col) throw new Error(`hud: scene '${scene.id}' has unknown thread '${scene.thread}'`);
+      const title = scene.title.toUpperCase();
+      const room = B.w * 0.5;
+      g.globalAlpha = (1 - out) * show;
+      g.textAlign = 'left';
+      fit(g, title, room, 12, MIN_TYPE, 800);
+      inked(g, ellipsize(g, title, room), B.x + 12, top + 44, { fill: col, lw: 3.5, drop: 1.5 });
+      if (beat) {
+        g.font = font(12, 700);
+        inked(g, ellipsize(g, beat, room), B.x + 12, top + 60, { fill: CREAM, lw: 3.5, drop: 1.5 });
+      }
+      g.globalAlpha = 1 - out;
     }
   }
   g.restore();
+
+  // ── what is said, and what to do ── over everything else: a bark lasts a few seconds
+  g.save();
+  g.translate(0, fx.band ? Math.max(0, fx.band.y + fx.band.h - (B.y + B.h)) : 0);
+  g.globalAlpha = 1 - out;
+  let barked = false;
+  if (fx.speaking) barked = drawBark(g, content, fx.speaking, fx, B, S.y - 4, now, top - 2);
+  // the objective line is for a player with no ball to watch: it steps aside while one is live
+  const live = Boolean(game.phys && game.phys.balls.some((b) => b.state === 'live'));
+  if (!barked && scene && !live && !comboOn) drawHint(g, B.x + B.w / 2, S.y - 9, scene.hint, B.w - 28);
+  g.restore();
 }
+
+// When the stage last came to a new beat, so its name can be shown and then got out of the way. A cache of the clock, not of the game.
+const beatSeen = { key: null, since: 0 };
+const BEAT_SHOWN = 4.5; // seconds a scene's name and beat stay up
 
 // ───────────────────────── the subtitle box ─────────────────────────
 

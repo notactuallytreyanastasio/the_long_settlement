@@ -242,6 +242,8 @@ async function boot() {
       bottom: over(px(inset.paddingBottom), vh - rect.bottom),
       left: over(px(inset.paddingLeft), rect.left),
     };
+    // the 3D layout gives the stage band back the height a notch takes from its head (same W and H, so the canvases stand)
+    if (glOn) layout = computeGlLayout(vw, vh, fx.safe.top);
   }
   fit();
   window.addEventListener('resize', fit);

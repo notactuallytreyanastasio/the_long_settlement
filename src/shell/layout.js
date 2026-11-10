@@ -152,9 +152,10 @@ const GL_SEAM = 12;             // px the band overlaps the head of the table's 
 
 const glCache = new Map();
 
-function glPortrait(H) {
+function glPortrait(H, safeTop) {
   const W = GL_W;
-  const bandH = Math.round(Math.min(220, Math.max(168, H * 0.236)));
+  // under a notch the head of the band is sky nobody can letter on: the band is given most of that height back
+  const bandH = Math.round(Math.min(220, Math.max(168, H * 0.236)) + Math.min(70, safeTop) * 0.6);
   const ty = bandH - GL_SEAM;
   const scale = Math.min(0.93, (H - GL_FOOT - ty) / 800);
   const tw = 400 * scale;
@@ -209,14 +210,17 @@ function glWide() {
  * height, and one object is kept per height, so a caller may compare layouts by identity to see a resize.
  * @param {number} vw viewport width, css px
  * @param {number} vh viewport height, css px
+ * @param {number} [safeTop] logical px of the canvas head that lie under a notch (fx.safe.top); portrait only
  * @returns {Layout}
  */
-export function computeGlLayout(vw, vh) {
+export function computeGlLayout(vw, vh, safeTop = 0) {
   if (!(vw > 0) || !(vh > 0) || !Number.isFinite(vw) || !Number.isFinite(vh)) {
     throw new Error(`layout.computeGlLayout: the viewport must have a positive finite size, got ${String(vw)} x ${String(vh)}`);
   }
   const H = vh > vw ? Math.round(Math.min(GL_MAX_H, Math.max(GL_MIN_H, (GL_W * vh) / vw))) : 0;
-  let L = glCache.get(H);
-  if (!L) { L = H ? glPortrait(H) : glWide(); glCache.set(H, L); }
+  const st = H && safeTop > 0 ? Math.round(safeTop) : 0;
+  const key = H * 1000 + st;
+  let L = glCache.get(key);
+  if (!L) { L = H ? glPortrait(H, st) : glWide(); glCache.set(key, L); }
   return L;
 }

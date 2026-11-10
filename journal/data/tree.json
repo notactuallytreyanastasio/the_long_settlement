@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 61748,
-  "lines": 1658
+  "bytes": 62952,
+  "lines": 1684
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12585,6 +12585,36 @@
   "lines": 780
  },
  {
+  "path": "src/shell/gl/sets/kit-ch2.js",
+  "bytes": 74519,
+  "lines": 914
+ },
+ {
+  "path": "src/shell/gl/sets/kit-ch3.js",
+  "bytes": 35918,
+  "lines": 424
+ },
+ {
+  "path": "src/shell/gl/sets/kit-ch4.js",
+  "bytes": 35083,
+  "lines": 458
+ },
+ {
+  "path": "src/shell/gl/sets/kit-ch5.js",
+  "bytes": 45063,
+  "lines": 566
+ },
+ {
+  "path": "src/shell/gl/sets/kit-ch6.js",
+  "bytes": 53769,
+  "lines": 656
+ },
+ {
+  "path": "src/shell/gl/sets/kit-ch8.js",
+  "bytes": 52832,
+  "lines": 584
+ },
+ {
   "path": "src/shell/gl/sets/kit.js",
   "bytes": 81252,
   "lines": 1086
@@ -12626,8 +12656,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 77763,
-  "lines": 1092
+  "bytes": 78237,
+  "lines": 1096
  },
  {
   "path": "src/shell/gl/table3d.js",
@@ -12641,13 +12671,13 @@
  },
  {
   "path": "src/shell/layout.js",
-  "bytes": 11322,
-  "lines": 223
+  "bytes": 11691,
+  "lines": 227
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 23068,
-  "lines": 487
+  "bytes": 23253,
+  "lines": 489
  },
  {
   "path": "src/shell/render.js",
