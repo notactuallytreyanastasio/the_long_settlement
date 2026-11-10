@@ -203,7 +203,7 @@ const _stills = new Map();   // backdrop key -> { id, back: { layers, built }, f
 let _pass = null;            // the painter pass in progress: { mode: 'off'|'build'|'live', key, real, part, cfg, cur, i, px }
 
 export function dropLayer(l) { freeCanvas(l.canvas); if (l.rest) freeCanvas(l.rest.canvas); l.rest = null; }
-export function dropStills(rec) { for (const part of [rec.back, rec.front]) { for (const l of part.layers) dropLayer(l); part.layers = []; part.built = false; } }
+export function dropStills(rec) { for (const part of [rec.back, rec.front]) { for (const l of part.layers) dropLayer(l); if (part.pending) freeCanvas(part.pending.canvas); part.pending = null; part.layers = []; part.built = false; } }
 export function stillsFor(key, cfg) {
   let rec = _stills.get(key);
   if (rec && rec.id !== cfg.id) { dropStills(rec); rec = null; }     // the canvas changed size
@@ -212,32 +212,50 @@ export function stillsFor(key, cfg) {
   while (_stills.size > cinemaCache.keep) { const [k, r] = _stills.entries().next().value; dropStills(r); _stills.delete(k); }
   return rec;
 }
-/** finish the layer being built: find what was actually painted, keep only that rectangle */
+/**
+ * finish the layer being built: find what was actually painted, keep only that rectangle.
+ * In a stepped build (p.only set) the painted canvas is only set aside here, and sealed by the next step: reading
+ * a full layer back and scanning it costs about what painting it does, and the two together are a long frame.
+ */
 export function sealLayer(p) {
   const cur = p.cur;
   if (!cur) return;
   p.cur = null;
+  if (p.only !== undefined) {
+    // Reading one pixel makes the browser rasterise what was just recorded now, in the painting step. Left to
+    // itself Chrome rasterises inside the next step's read of the whole canvas, which then carries both costs.
+    cur.canvas.getContext('2d').getImageData(0, 0, 1, 1);
+    p.part.pending = cur;
+    return;
+  }
+  p.part.layers.push(sealed(cur, p.cfg));
+}
+/** the kept rectangle of one painted canvas, as a layer record. The scans are plain loops: this runs over two million pixels */
+function sealed(cur, cfg) {
   const c = cur.canvas, w = c.width, h = c.height, k = cur.k;
-  const _t0 = performance.now();
   const d = new Uint32Array(c.getContext('2d').getImageData(0, 0, w, h).data.buffer);
-  const rowHas = (y) => { for (let i = y * w, e = i + w; i < e; i++) if (d[i] >>> 24) return true; return false; };
-  let y0 = 0, y1 = h - 1;
-  while (y0 < h && !rowHas(y0)) y0++;
-  if (y0 === h) { freeCanvas(c); p.part.layers.push({ canvas: null, depth: cur.depth, rest: null, seen: null }); return; }   // nothing was painted
-  while (!rowHas(y1)) y1--;
-  const colHas = (x) => { for (let y = y0; y <= y1; y++) if (d[y * w + x] >>> 24) return true; return false; };
-  let x0 = 0, x1 = w - 1;
-  while (!colHas(x0)) x0++;
-  while (!colHas(x1)) x1--;
+  const A = 0xff000000;                       // the alpha byte of a pixel read as one little-endian word
+  let y0 = 0, y1 = h - 1, o;
+  for (; y0 < h; y0++) { o = 0; for (let i = y0 * w, e = i + w; i < e; i++) o |= d[i]; if (o & A) break; }
+  if (y0 === h) { freeCanvas(c); return { canvas: null, depth: cur.depth, rest: null, seen: null }; }   // nothing was painted
+  for (; y1 > y0; y1--) { o = 0; for (let i = y1 * w, e = i + w; i < e; i++) o |= d[i]; if (o & A) break; }
+  // leftmost and rightmost painted column: each row is searched only as far as the best found so far
+  let x0 = w, x1 = -1;
+  for (let y = y0; y <= y1; y++) {
+    const r = y * w;
+    for (let x = 0; x < x0; x++) if (d[r + x] & A) { x0 = x; break; }
+    for (let x = w - 1; x > x1; x--) if (d[r + x] & A) { x1 = x; break; }
+  }
   let opaque = x0 === 0 && y0 === 0 && x1 === w - 1 && y1 === h - 1;
-  if (opaque) for (let i = 0, n = w * h; i < n; i++) if ((d[i] >>> 24) !== 255) { opaque = false; break; }
+  if (opaque) {
+    for (let y = 0; y < h && opaque; y++) { o = A; for (let i = y * w, e = i + w; i < e; i++) o &= d[i]; if ((o & A) !== A) opaque = false; }
+  }
   x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(w - 1, x1 + 1); y1 = Math.min(h - 1, y1 + 1);
   const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
   const out = newCanvas(bw, bh);
   out.getContext('2d', opaque ? { alpha: false } : undefined).drawImage(c, x0, y0, bw, bh, 0, 0, bw, bh);
   freeCanvas(c);
-  p.part.layers.push({ canvas: out, depth: cur.depth, opaque, x: p.cfg.x + x0 / k, y: p.cfg.y + y0 / k, w: bw / k, h: bh / k, rest: null, seen: null });
-  cinemaCache.sealMs = (cinemaCache.sealMs || 0) + performance.now() - _t0;
+  return { canvas: out, depth: cur.depth, opaque, x: cfg.x + x0 / k, y: cfg.y + y0 / k, w: bw / k, h: bh / k, rest: null, seen: null };
 }
 export const sameAt = (r, a, d, e, f) => Math.abs(r.a - a) < 1e-6 && Math.abs(r.d - d) < 1e-6 && Math.abs(r.e - e) < 0.02 && Math.abs(r.f - f) < 0.02;
 /** resample a layer into device pixels for the place it now lies: (a, d) scale and (e, f) origin of stage space on the canvas */
@@ -327,6 +345,8 @@ export function A() {
 export function buildStills(key, which, cfg, rec, T, info) {
   const part = rec[which];
   for (const l of part.layers) dropLayer(l);
+  if (part.pending) freeCanvas(part.pending.canvas);
+  part.pending = null;
   part.layers = [];
   const outer = _pass;
   _pass = { mode: 'build', key, real: null, part, cfg, cur: null, i: 0, px: 0 };
@@ -345,14 +365,24 @@ export function buildStillsStep(key, which, cfg, rec, T, info) {
   if (part.built) return true;
   const fn = P[key][which];
   if (!fn) { part.built = true; return true; }
+  if (part.pending) {
+    // the second half of a layer: read back what the last step painted, keep its rectangle
+    const cur = part.pending;
+    part.pending = null;
+    part.layers.push(sealed(cur, cfg));
+    if (part.last) { part.built = true; cinemaCache.builds++; }
+    cinemaCache.steps++;
+    return part.built;
+  }
   const outer = _pass;
   const only = part.layers.length;
   _pass = { mode: 'build', key, real: null, part, cfg, cur: null, i: 0, px: 0, only, n: 0 };
   try {
     fn(NULL_CTX, T, 0, info);
     sealLayer(_pass);
-    // sections seen: _pass.n. This pass built section `only` if there was one; the half is done when there is no next.
-    if (_pass.n <= only + 1) { part.built = true; cinemaCache.builds++; }
+    // sections seen: _pass.n. This pass painted section `only` if there was one; the half is done when there is no next.
+    part.last = _pass.n <= only + 1;
+    if (!part.pending && part.last) { part.built = true; cinemaCache.builds++; }
     cinemaCache.steps++;
   } finally { if (_pass.cur) freeCanvas(_pass.cur.canvas); _pass = outer; }
   return part.built;
