@@ -266,6 +266,80 @@
    "prompt": "keep it going, polish after you finish this round and make it have a more unique art style that resembles a mix of zelda wind waker and something with dashing intense lighting",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "0d3283d0-cdb0-4846-b851-3b30db946a84",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Reels-on-table and portrait iPhone layout landed: 159/159 tests, touch-only phone run clean in emulation",
+   "description": "Slot mode removed; reels live in the HUD, filled by lanes, spun by lit shot or the launch button as lever. Emulated iPhone 393x852: 16.6ms median frame under 4x CPU throttle. Ending leaning now follows behaviour (waiting bots commons 32/32, never-waiting bots mint 32/32) after adding a 2s aid delay and TRUST_PER_GIFT. Not verified on a real iPhone; reels state not saved; no touch mute in cinematics; desktop keyboard bot cleared no scene.",
+   "created": "2026-11-10T07:11:23.423399Z",
+   "updated": "2026-11-10T07:11:23.423399Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "dfe98d07-0f2e-415f-a02f-3d03c3f73b65",
+   "type": "option",
+   "status": "completed",
+   "title": "Redraw everything in place with one shared style module (ink outline, two-tone cel shading, one key light per scene)",
+   "description": "Split cinema.js into figures/backdrops/engine files first so artists can work in parallel; tables, HUD, cast and all 34 backdrops share src/shell/style.js.",
+   "created": "2026-11-10T07:11:39.332698Z",
+   "updated": "2026-11-10T07:11:39.332698Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "d975fcba-dc79-4c00-97e0-27c420c504e3",
+   "type": "option",
+   "status": "rejected",
+   "title": "Post-process filter over the existing soft-glow art (posterise + edge pass)",
+   "description": "Cheap to build but costs a full-screen pixel pass per frame on a phone and still reads as the old art.",
+   "created": "2026-11-10T07:11:39.334275Z",
+   "updated": "2026-11-10T07:11:39.334275Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "0e5ccc9b-bcd8-431a-8083-3144dddc04dd",
+   "type": "decision",
+   "status": "completed",
+   "title": "Redraw in a shared cel style over a post-process filter",
+   "description": "A filter is a per-frame full-screen cost on iPhone and cannot give designed light shapes; flat fills are cheaper to draw than the current gradients.",
+   "created": "2026-11-10T07:11:39.335163Z",
+   "updated": "2026-11-10T07:11:39.335163Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "c767cb98-dea2-488e-bef7-41e1e47d1d0a",
+   "type": "action",
+   "status": "completed",
+   "title": "Workflow 4: split cinema.js, add style.js, restyle tables/HUD/cast/backdrops, polish touch and save gaps, outline chapters 6-8",
+   "description": null,
+   "created": "2026-11-10T07:11:39.340950Z",
+   "updated": "2026-11-10T07:11:39.340950Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/shell/style.js",
+    "src/shell/render.js",
+    "src/shell/cinema.js"
+   ],
+   "commit": null
   }
  ],
  "edges": [
@@ -387,6 +461,41 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T05:43:27.241300Z"
+  },
+  {
+   "from": "e0adb529-d1ef-422c-b1f8-ca87a32680d6",
+   "to": "0d3283d0-cdb0-4846-b851-3b30db946a84",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T07:11:23.425848Z"
+  },
+  {
+   "from": "0e5ccc9b-bcd8-431a-8083-3144dddc04dd",
+   "to": "dfe98d07-0f2e-415f-a02f-3d03c3f73b65",
+   "type": "chosen",
+   "rationale": "A filter is a per-frame full-screen cost on iPhone and cannot give designed light shapes; flat fills are cheaper to draw than the current gradients.",
+   "created": "2026-11-10T07:11:39.337126Z"
+  },
+  {
+   "from": "0e5ccc9b-bcd8-431a-8083-3144dddc04dd",
+   "to": "d975fcba-dc79-4c00-97e0-27c420c504e3",
+   "type": "rejected",
+   "rationale": "A filter is a per-frame full-screen cost on iPhone and cannot give designed light shapes; flat fills are cheaper to draw than the current gradients.",
+   "created": "2026-11-10T07:11:39.338709Z"
+  },
+  {
+   "from": "4f88f828-ab4a-4718-8ff0-a5f86fcc2f9e",
+   "to": "0e5ccc9b-bcd8-431a-8083-3144dddc04dd",
+   "type": "leads_to",
+   "rationale": "Decided",
+   "created": "2026-11-10T07:11:39.340346Z"
+  },
+  {
+   "from": "0e5ccc9b-bcd8-431a-8083-3144dddc04dd",
+   "to": "c767cb98-dea2-488e-bef7-41e1e47d1d0a",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-10T07:11:39.343136Z"
   }
  ]
 }
