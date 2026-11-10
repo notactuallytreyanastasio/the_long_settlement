@@ -2741,8 +2741,8 @@
  },
  {
   "path": "index.html",
-  "bytes": 3535,
-  "lines": 74
+  "bytes": 3793,
+  "lines": 75
  },
  {
   "path": "package.json",
@@ -2776,7 +2776,7 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 14013,
+  "bytes": 14027,
   "lines": 318
  },
  {

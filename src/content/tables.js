@@ -191,8 +191,8 @@ function vessery() {
     decor: [
       { text: 'VESSERY', pos: [187, 420], size: 30 },
       { text: 'FESTIVAL OF LOTS', pos: [187, 448], size: 11 },
-      { text: 'PIER', pos: [44, 400], size: 10, angle: -1.14 },
-      { text: 'DOCKS', pos: [330, 400], size: 10, angle: 1.14 },
+      { text: 'PIER', pos: [25, 292], size: 10, angle: -1.5708 },
+      { text: 'DOCKS', pos: [mx(25), 292], size: 10, angle: 1.5708 },
       { text: 'PAYABLE IN STILLNESS', pos: [187, 560], size: 8 },
     ],
     labels: {
@@ -298,8 +298,8 @@ function saltmere() {
       { text: 'IN ARREARS', pos: [187, 496], size: 11 },
       { text: 'ORRERY', pos: [172, 250], size: 9, angle: -1.445 },
       { text: 'PICKET', pos: [84, 206], size: 8, angle: 0.71 },
-      { text: 'CAUSEWAY', pos: [40, 420], size: 9, angle: -1.14 },
-      { text: 'CIRCUIT BENCH', pos: [322, 410], size: 9, angle: 1.14 },
+      { text: 'CAUSEWAY', pos: [24, 316], size: 9, angle: -1.5708 },
+      { text: 'CIRCUIT BENCH', pos: [mx(23), 296], size: 9, angle: 1.5708 },
       { text: 'NOTICE OF FORECLOSURE', pos: [200, 560], size: 8 },
     ],
     labels: {
