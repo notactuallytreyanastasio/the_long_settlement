@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 25896,
-  "lines": 488
+  "bytes": 25960,
+  "lines": 489
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/sets/academy-yard.js",
-  "bytes": 26870,
-  "lines": 319
+  "bytes": 26856,
+  "lines": 318
  },
  {
   "path": "src/shell/gl/sets/bench.js",
@@ -12573,6 +12573,11 @@
   "path": "src/shell/gl/sets/compact-hall.js",
   "bytes": 22018,
   "lines": 236
+ },
+ {
+  "path": "src/shell/gl/sets/corvane-study.js",
+  "bytes": 17616,
+  "lines": 209
  },
  {
   "path": "src/shell/gl/sets/court.js",
@@ -12620,6 +12625,11 @@
   "lines": 182
  },
  {
+  "path": "src/shell/gl/sets/hall-steps.js",
+  "bytes": 15587,
+  "lines": 208
+ },
+ {
   "path": "src/shell/gl/sets/harbor-night.js",
   "bytes": 28206,
   "lines": 349
@@ -12651,18 +12661,18 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch2.js",
-  "bytes": 79172,
+  "bytes": 79238,
   "lines": 979
  },
  {
   "path": "src/shell/gl/sets/kit-ch3.js",
-  "bytes": 37258,
-  "lines": 437
+  "bytes": 37291,
+  "lines": 436
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
-  "bytes": 35216,
-  "lines": 460
+  "bytes": 35349,
+  "lines": 461
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
@@ -12676,8 +12686,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch7.js",
-  "bytes": 67853,
-  "lines": 843
+  "bytes": 68716,
+  "lines": 859
  },
  {
   "path": "src/shell/gl/sets/kit-ch8.js",
@@ -12691,8 +12701,8 @@
  },
  {
   "path": "src/shell/gl/sets/lane-by-hand.js",
-  "bytes": 12960,
-  "lines": 150
+  "bytes": 13334,
+  "lines": 152
  },
  {
   "path": "src/shell/gl/sets/lantern-line.js",
@@ -12701,13 +12711,18 @@
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
-  "bytes": 31697,
-  "lines": 393
+  "bytes": 31807,
+  "lines": 394
  },
  {
   "path": "src/shell/gl/sets/ledger.js",
   "bytes": 19313,
   "lines": 239
+ },
+ {
+  "path": "src/shell/gl/sets/mine-deep.js",
+  "bytes": 19062,
+  "lines": 224
  },
  {
   "path": "src/shell/gl/sets/mint-office.js",
@@ -12726,7 +12741,7 @@
  },
  {
   "path": "src/shell/gl/sets/picket.js",
-  "bytes": 18715,
+  "bytes": 18803,
   "lines": 230
  },
  {
@@ -12735,9 +12750,24 @@
   "lines": 318
  },
  {
+  "path": "src/shell/gl/sets/quarter-flame.js",
+  "bytes": 20974,
+  "lines": 232
+ },
+ {
+  "path": "src/shell/gl/sets/quay-break.js",
+  "bytes": 14795,
+  "lines": 163
+ },
+ {
   "path": "src/shell/gl/sets/under-lane.js",
-  "bytes": 19401,
-  "lines": 202
+  "bytes": 20433,
+  "lines": 210
+ },
+ {
+  "path": "src/shell/gl/sets/wreck-shore.js",
+  "bytes": 17429,
+  "lines": 177
  },
  {
   "path": "src/shell/gl/shaders.js",
@@ -12751,8 +12781,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 78324,
-  "lines": 1096
+  "bytes": 78594,
+  "lines": 1098
  },
  {
   "path": "src/shell/gl/table3d.js",

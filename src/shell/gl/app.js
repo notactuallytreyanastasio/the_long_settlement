@@ -328,6 +328,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     set.update(time, dt);
     if (set.setPower) set.setPower(1);
     if (set.foreground) set.foreground.visible = true;
+    if (set.wings) for (const w of set.wings) w.visible = true;
     set.frame(titleCam, name, time);
     titleCam.fov = c.fov;
     titleCam.orbit(c.target, c.dist * Math.max(1, c.aspect / (cssW / cssH)), c.yaw + Math.sin(time * 0.11) * 13, c.pitch + Math.sin(time * 0.07) * 1.5);

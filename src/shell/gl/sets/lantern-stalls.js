@@ -197,7 +197,8 @@ function build(engine = GL0, { light = 'dusk', low = false } = {}) {
   if (env.sky.sunDir) env.sky.sunDir = norm(env.sky.sunDir);
   env.water.level = WATER;
   env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], [BOAT[0], BOAT[2], 0.95, 0.5], [BOAT[0] + 0.9, BOAT[2] + 0.15, 0.62, 0.45], [BOAT[0] - 0.9, BOAT[2] - 0.15, 0.62, 0.45], [-7.5, -19, 1.25, 0.6], [9.5, -24, 1.6, 0.7], [19, -40, 2.2, 0.8], [-5.5, -30, 1.3, 0.6], [-52, -135, 46, 1.6], [78, -150, 39, 1.6]];
-  scene.root.add(mergeStatic(set, 'set'), mergeStatic(sideL, 'set-left'), mergeStatic(sideR, 'set-right'), mergeStatic(far, 'far'));
+  const wings = [mergeStatic(sideL, 'set-left'), mergeStatic(sideR, 'set-right')];   // out of the live band's frame: the director hides them there
+  scene.root.add(mergeStatic(set, 'set'), wings[0], wings[1], mergeStatic(far, 'far'));
 
   // ---- cobbles: one instanced draw
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
@@ -380,7 +381,7 @@ function build(engine = GL0, { light = 'dusk', low = false } = {}) {
 
   update(0, 0);
   return {
-    id: 'lantern-stalls', light, scene, env, actors, foreground,
+    id: 'lantern-stalls', light, scene, env, actors, foreground, wings,
     cameras: CAMERAS, frame, view: (name) => views[name],
     marks: { ...MARKS, focus: FOCUS, nanLanterns },
     lamps, setPower, setLantern, lanternCount: lanterns.length,

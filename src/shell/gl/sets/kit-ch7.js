@@ -17,7 +17,7 @@
 //   trestle, fishBox, fish, basket, dryingNet, skiff, cutter (the Audit cutter: one mast, one search lamp), moleWall, quay7
 //   slate (the hearing's tally slate on an easel), oddsBoard (Tobb's board: 'odds' | 'table'), chalk, numerals, tallies
 // The Mint
-//   column7, mintSeal7, mintHall (the portico, doors, pediment and dome), doorLeaf7, auditSeal, lampStandard, banner7, hillTown
+//   stairs7, column7, mintSeal7, mintHall (the portico, doors, pediment and dome), doorLeaf7, auditSeal, lampStandard, banner7, hillTown
 //   lotDrum7 ({ cradle, drum, hatch }), reelWorks (the Reels of Assay from behind: { cabinet, wheel, plate }), plumb, slipBundle
 // Nan's stall
 //   lanternFrame (a bare frame, for instancing), pastePot, paperStack
@@ -465,6 +465,20 @@ export function auditSeal({ r = 0.3, span = 2.2 } = {}) {
   return merge(parts);
 }
 
+/**
+ * A flight of stone steps `w` wide rising toward -Z: the first riser stands at z = 0 on y = 0, the top tread is at
+ * y = n * rise and ends at z = -n * run. Treads in two tones. (kit.js's steps() goes down and is rounded: 108 triangles a step.)
+ */
+export function stairs7({ w = 10, n = 6, rise = 0.2, run = 0.42, colors = [C7.stone, C7.stone2], nose = C7.stoneShade } = {}) {
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const h = rise * (i + 1);
+    parts.push(tint(place(box(w, h, run + 0.02), 0, h / 2, -run * (i + 0.5)), colors[i % 2]));
+    parts.push(tint(place(box(w + 0.04, 0.05, 0.06), 0, h - 0.025, -run * i + 0.01), nose));
+  }
+  return merge(parts);
+}
+
 /** A brass lamp standard on a stone plinth with a round glass. anchors: lamp */
 export function lampStandard({ h = 2.7, lit = true, glass = '#ffe6a0', metal = C7.brass, plinth = C7.stone2 } = {}) {
   const parts = [rb(0.56, 0.5, 0.56, 0.05, 0, 0.25, 0, plinth), tint(lathe([[0, 0.5], [0.16, 0.5], [0.14, 0.58], [0.06, 0.7], [0.05, h - 0.5], [0.12, h - 0.42], [0, h - 0.4]], 7, { crease: 50 }), metal)];
@@ -488,11 +502,12 @@ export function banner7({ w = 0.95, h = 3.0, color = C7.wine, trim = C7.brass, d
  * a brass frieze, a pediment carrying the seal, and (dome: true) the copper dome and its brass lantern behind.
  * Origin: the middle of the front edge of the portico floor, whose top is y = 0. The front faces +Z.
  *   doors   'shut' | 'open' | 'none' (leave the opening empty: hang doorLeaf7 nodes at anchors.hinges)
+ *   colX    the columns' x positions, when the middle bay wants to be wider than the rest (default: `cols` evenly spaced)
  *   detail  1 (a set you stand in front of) | 0 (seen across the harbour: six-sided columns, no studs, no steps)
  * anchors: doors (centre of the threshold), hinges [left, right], sealAt (where an auditSeal goes), pediment (the seal on it),
  *          finial (the dome's brass lantern), lampL / lampR (either side of the doorway, at head height), top
  */
-export function mintHall({ w = 12, h = 4.8, d = 3.2, cols = 6, doorW = 2.6, doorH = 3.6, doors = 'shut', dome = true, detail = 1, body = 7, wall = C7.peach, stone = C7.stone, roof = C7.copper } = {}) {
+export function mintHall({ w = 12, h = 4.8, d = 3.2, cols = 6, colX = null, doorW = 2.6, doorH = 3.6, doors = 'shut', dome = true, detail = 1, body = 7, wall = C7.peach, stone = C7.stone, roof = C7.copper } = {}) {
   const parts = [], hw = w / 2, seg = detail ? 8 : 6;
   parts.push(bx(w + 1.0, 0.5, d + 0.8, 0, -0.25, -d / 2, C7.stone2));
   // the wall behind the colonnade, with the doorway cut out of it
@@ -507,7 +522,8 @@ export function mintHall({ w = 12, h = 4.8, d = 3.2, cols = 6, doorW = 2.6, door
   if (doors === 'shut') { parts.push(place(doorLeaf7({ w: lw - 0.01, h: doorH, studs: !!detail }), -lw, 0, -d + 0.2)); parts.push(place(doorLeaf7({ w: lw - 0.01, h: doorH, studs: !!detail }), lw, 0, -d + 0.2, 0, 180, 0, 1, 1, -1)); }
   if (doors === 'open') { parts.push(place(doorLeaf7({ w: lw, h: doorH, studs: !!detail }), -lw, 0, -d + 0.2, 0, 104, 0)); parts.push(place(doorLeaf7({ w: lw, h: doorH, studs: !!detail }), lw, 0, -d + 0.2, 0, 180 - 104, 0, 1, 1, -1)); }
   // columns
-  for (let i = 0; i < cols; i++) { const x = -hw + 0.6 + (w - 1.2) * (i / (cols - 1)); parts.push(place(column7({ h, r: 0.38, color: stone, seg }), x, 0, -0.55)); }
+  const xs = colX || Array.from({ length: cols }, (_, i) => -hw + 0.6 + (w - 1.2) * (i / (cols - 1)));
+  for (const x of xs) parts.push(place(column7({ h, r: 0.38, color: stone, seg }), x, 0, -0.55));
   // entablature, frieze, pediment, seal
   parts.push(bx(w + 0.7, 0.55, d + 0.5, 0, h + 0.275, -d / 2, stone), bx(w + 0.74, 0.14, d + 0.54, 0, h + 0.3, -d / 2, C7.brass), bx(w + 1.1, 0.16, d + 0.9, 0, h + 0.63, -d / 2, C7.stone2));
   const ph = w * 0.17;

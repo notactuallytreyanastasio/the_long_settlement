@@ -27,7 +27,7 @@ const LIGHTS = {
   night: {
     preset: 'night', power: 1.15,
     env: {
-      key: { dir: dirFrom(-150, 42), color: '#8aa2f2' },
+      key: { dir: dirFrom(-150, 42), color: '#7890e8' },
       shadow: { tint: '#3040ac', lift: 0.12, saturate: 1.3 },
       ambient: { sky: '#4a62d8', ground: '#3a2e9c', amount: 0.18 },
       rim: { color: '#c8b4ff', amount: 0.9, edge: 0.74 },
@@ -50,22 +50,23 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const M = materials8(), r = rng(8303);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env; env.sky.sunDir = norm8(env.sky.sunDir);
   const sprites = scene.sprites = createSprites(low ? 192 : 448);
-  const base = harbourBase({ scene, M, low, seed: 8, quayZ: QUAY_Z, water: WATER, ground: '#cfc6ee', cobbles: ['#e2dcfa', '#c4bcec', '#d8d0f6', '#b8b0e4'], cloud: L.cloud, beam: 0,
+  const base = harbourBase({ scene, M, low, seed: 8, quayZ: QUAY_Z, water: WATER, ground: '#a39ce0', cobbles: ['#b9b2ee', '#958edc', '#aea6e8', '#8a84d4'], cloud: L.cloud, beam: 0,
     far: { tower: [6.4, -1.2, BAR_Z], moleZ: BAR_Z, moleDir: 1, moleLen: 80, town: [-22, -0.5, -40], lit: 0.9 } });
   const A = base.F.anchors;
   base.lamp.set(0);
 
   // ---- the standing sea either side of the lane, beyond the bar: two walls facing each other across one hull's width
-  const LANE_X = -1.2, far = group('seas');
-  const wallL = node('sea-l', seaWall({ w: 150, h: 11, seg: low ? 12 : 22, seed: 3, deep: '#16227e', mid: '#2c46b8', high: '#6a6ee6', foam: '#e6d8ff' }), M.sea, { pos: [LANE_X - 9, WATER - 0.2, BAR_Z - 82], rot: [0, 84, 0] });
-  const wallR = node('sea-r', seaWall({ w: 150, h: 11, seg: low ? 12 : 22, seed: 9, deep: '#16227e', mid: '#2c46b8', high: '#6a6ee6', foam: '#e6d8ff' }), M.sea, { pos: [LANE_X + 9, WATER - 0.2, BAR_Z - 82], rot: [0, -84, 0] });
-  const wallB = node('sea-b', seaWall({ w: 400, h: 15, seg: low ? 10 : 18, seed: 5, bow: -40, deep: '#121c70', mid: '#2238a4', high: '#4a58d0', foam: '#c8b8f4' }), M.sea, { pos: [LANE_X, WATER - 0.2, BAR_Z - 170] });
-  scene.root.add(wallB, wallL, wallR);
+  const LANE_X = -1.2, SEA_Z = BAR_Z - 38, GAP = 7.5;
+  const wallL = node('sea-l', seaWall({ w: 220, h: 13, seg: low ? 14 : 24, seed: 3, bow: 10, deep: '#16227e', mid: '#2c46b8', high: '#5a7ae6', foam: '#e6d8ff' }), M.sea, { pos: [LANE_X - GAP - 110, WATER - 0.2, SEA_Z], rot: [0, 4, 0] });
+  const wallR = node('sea-r', seaWall({ w: 220, h: 13, seg: low ? 14 : 24, seed: 9, bow: 10, deep: '#16227e', mid: '#2c46b8', high: '#5a7ae6', foam: '#e6d8ff' }), M.sea, { pos: [LANE_X + GAP + 110, WATER - 0.2, SEA_Z], rot: [0, -4, 0] });
+  // the ends of the two walls, turned to face each other across the lane
+  const cheek = (sx) => node('sea-cheek', seaWall({ w: 60, h: 13, seg: 8, seed: 5 + sx, deep: '#121c70', mid: '#2238a4', high: '#4a62d8', foam: '#d8c8ff' }), M.sea, { pos: [LANE_X + sx * (GAP + 2), WATER - 0.2, SEA_Z - 30], rot: [0, -sx * 90, 0] });
+  scene.root.add(cheek(-1), cheek(1), wallL, wallR);
 
   // ---- the harbour steps, a bollard each side, the first boat at their foot
   const STEP_X = 1.5, near = group('near');
   near.add(node('steps', steps({ w: 2.6, n: 6, rise: 0.25, run: 0.4, color: '#e6e0fa', color2: '#c8c0ee' }), M.prop, { pos: [STEP_X, 0, QUAY_Z + 0.05] }));
-  for (const sx of [-1, 1]) near.add(node('newel', merge(tint(place(cylinder(0.2, 0.24, 0.8, 8), 0, 0, 0), '#e6e0fa'), tint(place(sphere(0.22, 8, 6), 0, 0.95, 0), C8.brass)), M.prop, { pos: [STEP_X + sx * 1.55, 0, QUAY_Z + 0.5] }));
+  for (const sx of [-1, 1]) near.add(node('newel', merge(tint(place(cylinder(0.2, 0.24, 0.8, 8), 0, 0, 0), '#e6e0fa'), place(shipLantern({ s: 1.2 }), 0, 1.62, 0)), M.prop, { pos: [STEP_X + sx * 1.55, 0, QUAY_Z + 0.5] }));
   const clutter = [[crate({ s: 0.6, seed: 1 }), [-4.2, 0, -1.4], 14], [barrel({}), [-4.9, 0, -0.5], 0], [sack({ seed: 2 }), [4.4, 0, -1.2], 30], [bollard({ s: 1.2 }), [-2.6, 0, QUAY_Z + 0.6], 0], [ropeCoil({}), [-1.9, 0, QUAY_Z + 1.0], 0], [crate({ s: 0.5, seed: 5, color: PAL.wood2 }), [5.1, 0, -0.6], -20],
     [tint(place(box(0.5, 0.06, 0.34), 0, 0.03, 0), C8.parchment), [2.9, 0.0, -1.9], 20]]; // the writ a steward set down on the step
   clutter.forEach(([m, p, yaw], i) => near.add(node('clutter' + i, m, M.prop, { pos: p, rot: [0, yaw, 0] })));
@@ -80,17 +81,17 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   scene.root.add(folk.node);
 
   // ---- the chain: boats from the steps to the bar and on between the walls
-  const NB = low ? 12 : 20, sk = skiff({}), boats = node('boats', sk, M.prop), pans = node('pans', flame({ r: 0.17, h: 0.44, seg: 5, root: '#ffffff', tip: C8.kelpDeep }), M.lantern), rowers = node('rowers', townsfolk({ hold: 'none', detail: 0 }), M.prop);
+  const NB = low ? 10 : 15, sk = skiff({}), boats = node('boats', sk, M.prop), pans = node('pans', flame({ r: 0.17, h: 0.44, seg: 5, root: '#ffffff', tip: C8.kelpDeep }), M.lantern), rowers = node('rowers', townsfolk({ hold: 'none', detail: 0 }), M.prop);
   for (const n of [boats, pans, rowers]) { n.castShadow = false; n.instances = makeInstances(n === rowers ? NB * 2 : NB); n.instances.count = n === rowers ? NB * 2 : NB; scene.root.add(n); }
   const chain = [];
   for (let i = 0; i < NB; i++) {
-    const u = i / (NB - 1), z = QUAY_Z - 3.2 - Math.pow(u, 1.55) * 150, x = STEP_X + (LANE_X - STEP_X) * Math.min(1, u * 2.4) + Math.sin(u * 7) * 0.9 * (1 - u), s = 1.5 + u * 3.2; // far boats are drawn larger, or they are a pixel
-    chain.push({ x, z, s, yaw: 84 + (r() - 0.5) * 30, ph: r() * 6.28, lit: 0, glow: sprites.add({ kind: 'glow', pos: [x, 0.8, z], size: 1.6 + u * 5, color: C8.kelp, alpha: 0 }) });
+    const u = i / (NB - 1), z = QUAY_Z - 3.4 - Math.pow(u, 1.3) * 118, x = STEP_X + (LANE_X - STEP_X) * Math.min(1, u * 2.4) + Math.sin(u * 7) * 0.9 * (1 - u), s = 1.4 + u * 2.4; // far boats are drawn larger, or they are a pixel
+    chain.push({ x, z, s, yaw: 90 + (i % 2 ? 1 : -1) * (14 + r() * 26), ph: r() * 6.28, lit: 0, glow: sprites.add({ kind: 'glow', pos: [x, 0.8, z], size: 1.6 + u * 5, color: C8.kelp, alpha: 0 }) });
   }
   const FIRST = [chain[0].x, WATER + 1.3, chain[0].z];
   env.water.shores.push([chain[0].x, chain[0].z, 1.1, 0.5]);
   // the blue points past the bar: four, low on the horizon inside the lane
-  const blues = [-5.5, -1.5, 2.2, 6.5].map((dx, i) => sprites.add({ kind: 'glow', pos: [LANE_X + dx * 2.2, WATER + 2.4 + (i % 2) * 0.9, BAR_Z - 150], size: 6.5, color: '#6fb8ff', alpha: 0 }));
+  const blues = [-5.5, -1.5, 2.2, 6.5].map((dx, i) => sprites.add({ kind: 'glow', pos: [LANE_X + dx * 0.95, WATER + 2.0 + (i % 2) * 1.6, SEA_Z - 90], size: 6.5, color: '#6fb8ff', alpha: 0 }));
 
   const fg = group('fg');
   fg.add(node('fg1', bollard({ s: 1.25 }), M.prop, { pos: [-1.9, 0, 2.9] }), node('fg2', ropeCoil({ r: 0.26 }), M.prop, { pos: [-1.2, 0, 2.6] }), node('fg3', barrel({ r: 0.28, h: 0.7 }), M.prop, { pos: [2.0, 0, 2.95] }));
@@ -100,11 +101,12 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const lamps = [
     { name: 'first-pan', pos: FIRST, color: '#c8b0ff', radius: 7.5, base: 1.2, flicker: 0.16 },
     { name: 'hand', pos: [HAND[0], HAND[1] - 0.55, HAND[2]], color: '#ffc06a', radius: 5.4, base: 1.0, fixed: true },
-    { name: 'crowd-left', pos: [-3.9, 1.4, -3.0], color: '#ffb060', radius: 4.2, base: 0.8 },
-    { name: 'crowd-right', pos: [4.3, 1.4, -3.0], color: '#ffb060', radius: 4.2, base: 0.8 },
+    { name: 'newel-left', pos: [STEP_X - 1.55, 1.2, QUAY_Z + 0.5], color: '#ffb860', radius: 6.4, base: 1.1 },
+    { name: 'newel-right', pos: [STEP_X + 1.55, 1.2, QUAY_Z + 0.5], color: '#ffb860', radius: 6.4, base: 1.1 },
     { name: 'chain', pos: [0.2, 1.6, -11.5], color: '#b9a0ff', radius: 7, base: 0.9, flicker: 0.1 },
   ];
   const glows = [{ sprite: sprites.add({ kind: 'glow', pos: lamps[1].pos, size: 1.7, color: '#ffb450', alpha: 0 }), base: 0.6, fixed: true }];
+  for (const sx of [-1, 1]) glows.push({ sprite: sprites.add({ kind: 'glow', pos: [STEP_X + sx * 1.55, 1.12, QUAY_Z + 0.5], size: 1.8, color: '#ffb450', alpha: 0 }), base: 0.6 });
   if (!low) A.windows.slice(0, 12).forEach((p) => glows.push({ sprite: sprites.add({ kind: 'glow', pos: p, size: 3.0, color: '#ffc060', alpha: 0 }), base: 0.4, fixed: true }));
 
   let chainGoal = 1, chainNow = 1, blueGoal = 1, blueNow = 1;

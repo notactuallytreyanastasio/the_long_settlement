@@ -40,7 +40,7 @@ const LIGHTS = {
       ambient: { sky: '#4666d8', ground: '#2c3c98', amount: 0.17 },
       rim: { color: '#bcd6ff', amount: 0.7, edge: 0.74 },
       fog: { density: 0.0042, start: 18, max: 0.85 },
-      sky: { zenith: '#0a166a', mid: '#1b3cac', midAt: 0.42, horizon: '#5886ea', below: '#3058c4', sunDir: dirFrom(-7.5, 30), moon: 0.8, stars: 1, sun: { size: 3.4 } },
+      sky: { zenith: '#0a166a', mid: '#1b3cac', midAt: 0.42, horizon: '#5886ea', below: '#3058c4', sunDir: dirFrom(5.5, 19.5), moon: 0.8, stars: 1, sun: { size: 3.6 } },
       water: null,
     },
     ground: '#eef0ff', cloud: { color: '#8fa6ea', shadowTint: '#3a50aa' }, smoke: '#b9c6f2', still: 0.9,
@@ -84,7 +84,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- the gate, its walls, the palisade running off both ways
   const GATE = [0, 0, GATE_Z];
-  const gate = pitGate({ w: 4.2, h: 3.3, side: 1, seed: 4 });
+  const gate = pitGate({ w: 4.2, h: 3.3, side: 1, seed: 4, wood: '#b9806a', wood2: '#cf9a80', stone: '#cfc8f4' });
   set.add(node('gate', gate, M.prop, { pos: GATE }));
   const gAt = (name) => anchorAt(gate, name, GATE);
   const cr = cresset({ h: 0.5, r: 0.3, post: false });
@@ -99,7 +99,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- the pit behind the gate: the winding tower, the engine house with its stack, salt heaps
   const HEAD = [-1.2, 0, GATE_Z - 8.5];
-  const hf = headframe({ h: 9.4, w: 4.2, seed: 1 });
+  const hf = headframe({ h: 9.4, w: 4.2, seed: 1, color: '#7e4f5e', color2: '#a0685e' });
   set.add(node('headframe', hf, M.prop, { pos: HEAD, rot: [0, 14, 0] }));
   const ENG = [6.4, 0, GATE_Z - 7.5];
   const eng = house({ seed: 9, w: 4.2, d: 3.4, h: 3.4, roofH: 1.9, wall: SM.brick, roof: '#5b7fe8', shutters: SM.enamel, sides: 'left', lit: 0.9, floors: 2, chimney: false, flowers: false, door: false });
@@ -115,18 +115,18 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   set.add(node('heap-l', saltHeap({ r: 1.3, h: 1.0, seed: 3 }), M.prop, { pos: [-6.3, 0, -1.7] }), node('heap-r', saltHeap({ r: 1.0, h: 0.75, seed: 6 }), M.prop, { pos: [6.9, 0, -0.6] }));
   set.add(node('tub', oreCart({ load: 0.4, seed: 2 }), M.prop, { pos: [-6.6, -0.1, 0.4], rot: [0, 24, -5] }));
   set.add(node('crates', merge(place(crate({ s: 0.6, seed: 3 }), 0, 0, 0), place(crate({ s: 0.48, seed: 7, color: SM.timberPale }), 0.72, 0, 0.1, 0, 20, 0), place(barrel({ r: 0.28, h: 0.7 }), -0.75, 0, 0.2), place(pick({ len: 1.0 }), 0.3, 0, 0.42)), M.prop, { pos: [5.6, 0, -3.5] }));
-  const signs = [[-2.7, -3.3, ['OUR', 'LIGHT'], 8, SM.salt, SM.rust], [2.6, -3.5, ['TEN', 'DAYS'], -7, SM.mustard, SM.iron], [-5.0, -3.6, ['NO SALT', 'NO SEA'], 5, SM.salt, SM.royal], [5.1, -2.3, ['SHUT'], -10, SM.coral, SM.salt]];
+  const signs = [[-2.7, -3.3, ['OUR', 'LIGHT'], 8, SM.salt, SM.rust], [1.75, -3.7, ['TEN', 'DAYS'], -7, SM.mustard, SM.iron], [-5.0, -3.6, ['NO SALT', 'NO SEA'], 5, SM.salt, SM.royal], [5.1, -2.3, ['SHUT'], -10, SM.coral, SM.salt]];
   signs.forEach(([x, z, lines, tilt, c, ink], i) => { if (low && i > 1) return; set.add(deco(node('placard' + i, placard({ lines, h: 2.3, w: 1.05, color: c, ink }), M.prop, { pos: [x, 0, z], rot: [0, tilt, tilt * 0.6] }))); });
   scene.root.add(mergeStatic(set, 'set'));
 
   // ---- far: the town on its rise to the left, the lamp-house on its rock to the right
   const far = group('far');
-  far.add(node('town', townBank({ w: 30, d: 10, h: 7, rows: 3, seed: 6, lit: night ? 0.3 : 0.12, tower: false }), low ? M.farFlat : M.far, { pos: [-27, 0, -44], rot: [0, 24, 0] }));
-  const LH = [21, 0, -46];
+  far.add(node('town', townBank({ w: 30, d: 10, h: 7, rows: 3, seed: 6, lit: night ? 0.3 : 0.12, tower: false }), low ? M.farFlat : M.far, { pos: [-30, 0, -40], rot: [0, 30, 0] }));
+  const LH = [-9.5, 0, -58];
   const lh = lampHouse({ h: 9, r: 2.1 });
-  far.add(node('lamp-rock', saltHeap({ r: 7, h: 4.5, seed: 4, top: '#d8ccff', low: '#a898e8' }), low ? M.farFlat : M.far, { pos: [LH[0], 0, LH[2]] }), node('lamp-house', lh, low ? M.farFlat : M.far, { pos: [LH[0], 3.6, LH[2]] }));
+  far.add(node('lamp-rock', saltHeap({ r: 9, h: 11, seed: 4, top: '#d8ccff', low: '#a898e8' }), low ? M.farFlat : M.far, { pos: [LH[0], 0, LH[2]] }), node('lamp-house', lh, low ? M.farFlat : M.far, { pos: [LH[0], 9.6, LH[2]] }));
   scene.root.add(mergeStatic(far, 'far'));
-  const lhLamp = [LH[0], 3.6 + lh.anchors.lamp[1], LH[2]];
+  const lhLamp = [LH[0], 9.6 + lh.anchors.lamp[1], LH[2]];
 
   // crystals of salt in the ground catching the light: one instanced draw
   if (!low) {
@@ -154,7 +154,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- fire: both baskets and both braziers in one draw
   const fireAt = [[fireL[0], fireL[1] + 0.02, fireL[2]], [fireR[0], fireR[1] + 0.02, fireR[2]], ...BRZ.map((p) => [p[0], p[1] + bz.anchors.fire[1], p[2]])];
-  const fire = flameBank({ spots: [{ pos: fireAt[0], s: 1.5 }, { pos: fireAt[1], s: 1.35 }, { pos: fireAt[2], s: 1.15 }, { pos: fireAt[3], s: 1.15 }], material: M.speck });
+  const fire = flameBank({ spots: [{ pos: fireAt[0], s: 2.3 }, { pos: fireAt[1], s: 2.1 }, { pos: fireAt[2], s: 1.3 }, { pos: fireAt[3], s: 1.3 }], material: M.speck });
   scene.root.add(fire.node);
 
   // ---- sky
@@ -167,14 +167,14 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- lamps
   const lamps = [
-    { name: 'cresset-l', pos: [fireAt[0][0], fireAt[0][1] + 0.3, fireAt[0][2] + 0.5], color: '#ffa850', radius: 9.5, base: 1.25, flicker: 0, fire: 0 },
-    { name: 'cresset-r', pos: [fireAt[1][0], fireAt[1][1] + 0.3, fireAt[1][2] + 0.5], color: '#ffa850', radius: 8.5, base: 1.1, flicker: 0, fire: 1 },
+    { name: 'cresset-l', pos: [fireAt[0][0], fireAt[0][1] + 0.3, fireAt[0][2] + 0.5], color: '#ffa850', radius: 8, base: 1.0, flicker: 0, fire: 0 },
+    { name: 'cresset-r', pos: [fireAt[1][0], fireAt[1][1] + 0.3, fireAt[1][2] + 0.5], color: '#ffa850', radius: 7.5, base: 0.95, flicker: 0, fire: 1 },
     { name: 'brazier-l', pos: [fireAt[2][0], fireAt[2][1] + 0.35, fireAt[2][2]], color: '#ff9a48', radius: 5.2, base: 1.15, flicker: 0, fire: 2 },
     { name: 'brazier-r', pos: [fireAt[3][0], fireAt[3][1] + 0.35, fireAt[3][2]], color: '#ff9a48', radius: 5.2, base: 1.15, flicker: 0, fire: 3 },
     { name: 'door', pos: [DOOR[0] - 0.1, 1.1, DOOR[2] + 0.9], color: '#ffc070', radius: 4.6, base: 0, flicker: 0, fixed: true },
     { name: 'tower', pos: anchorAt(hf, 'lamp', HEAD, 14), color: '#ffb060', radius: 7, base: 1.0 },
   ];
-  const glows = fireAt.map((p, i) => ({ sprite: sprites.add({ kind: 'glow', pos: [p[0], p[1] + 0.25, p[2]], size: i < 2 ? 2.6 : 1.9, color: '#ff9a40', alpha: 0 }), base: night ? 0.62 : 0.45, flick: 1 }));
+  const glows = fireAt.map((p, i) => ({ sprite: sprites.add({ kind: 'glow', pos: [p[0], p[1] + 0.25, p[2]], size: i < 2 ? 3.4 : 2.0, color: '#ff9a40', alpha: 0 }), base: night ? 0.62 : 0.45, flick: 1 }));
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: lamps[5].pos, size: 2.0, color: '#ffb450', alpha: 0 }), base: 0.5 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: lhLamp, size: 9, color: SM.still, alpha: 0 }), base: L.still * 0.6, fixed: true });
   const lhHalo = sprites.add({ kind: 'glow', pos: lhLamp, size: 20, color: SM.stillDeep, alpha: 0 });

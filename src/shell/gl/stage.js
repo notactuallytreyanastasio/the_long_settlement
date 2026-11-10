@@ -410,6 +410,7 @@ function linesOn(S) {
       rigTo(S.rig, camera, dtLast, cut, 4.6, time, 0);
       if (name !== 'wide' && name !== 'low') { S.view.shadowCenter[0] = S.rig.x; S.view.shadowCenter[2] = 0.5; }
       S.view.shadowRadius = radius; set.env.shadow.center = S.view.shadowCenter; set.env.shadow.radius = radius;
+      if (set.wings) for (let i = 0; i < set.wings.length; i++) set.wings[i].visible = true;
       if (set.foreground) set.foreground.visible = name === 'wide' || name === 'low';   // the near clutter is dressing for the wide marks; a close camera would stand inside it
       if (S.fill) S.fill.light.intensity = 1;
       set.env.outline.width = inkFor(camera, viewHeight || 852, first ? first.ch.headRadius : 0.2);
@@ -925,6 +926,7 @@ function fightOn(S, opts = {}) {
     rigTo(S.rig, camera, dtLast, false, focus.t < 8 ? 9 : 5, time, punch);
     S.view.shadowCenter[0] = 0; S.view.shadowCenter[2] = 0.2; S.view.shadowRadius = 5.2; set.env.shadow.center = S.view.shadowCenter; set.env.shadow.radius = 5.2;
     if (set.foreground) set.foreground.visible = false;
+    if (set.wings) for (let i = 0; i < set.wings.length; i++) set.wings[i].visible = aspect < 1.6;   // a set's far sides are outside the band at rest: not drawn until it grows
     if (S.fill) S.fill.light.intensity = 0.6;
     set.env.outline.width = inkFor(camera, viewHeight || 220, party[0] ? party[0].ch.headRadius : 0.2);
     troupe.aim(camera);

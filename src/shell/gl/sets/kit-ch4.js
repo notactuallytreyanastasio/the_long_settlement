@@ -212,7 +212,7 @@ export function hoodedLantern({ s = 1, hood = 0.6, lit = true, color = PAL.iron,
  * anchors: staff (the head of the bow staff, where the lantern hangs), bow, stern, seats [[x, y, z]...] (rowers, far side),
  *          locks [[x, y, z]...] (oar locks on the far gunwale), nearLocks (near gunwale), mast
  */
-export function longboat({ len = 8.4, beam = 3.1, side = 0.5, hull = '#f2e6c8', keel = PAL.teal, trim = PAL.wood, seats = 4, seed = 1, staff = 2.3 } = {}) {
+export function longboat({ len = 8.4, beam = 3.1, side = 0.5, hull = '#f2e6c8', keel = PAL.teal, band = PAL.coral, trim = PAL.wood, seats = 4, seed = 1, staff = 2.3 } = {}) {
   const q = R(seed), parts = [], hl = len / 2, hb = beam / 2;
   const halfAt = (x) => { const t = Math.abs(x) / hl; return hb * Math.pow(Math.max(0, 1 - Math.pow(t, 2.6)), 0.55); };
   const sheer = (x) => { const t = x / hl; return side + 0.34 * t * t * (t > 0 ? 1.5 : 1); };
@@ -224,6 +224,7 @@ export function longboat({ len = 8.4, beam = 3.1, side = 0.5, hull = '#f2e6c8', 
     const top = sheer(xm);
     parts.push(tint(place(box(ln, top * 0.56 + 0.3, 0.07), xm, top * 0.72 - 0.15, sz * (wm + 0.0), sz * -9, yaw, 0), hull));
     parts.push(tint(place(box(ln, 0.42, 0.075), xm, -0.34, sz * (wm - 0.1), sz * -24, yaw, 0), keel));
+    if (band) parts.push(tint(place(box(ln, 0.11, 0.085), xm, top - 0.13, sz * (wm + 0.012), sz * -9, yaw, 0), band));
     parts.push(seg3([x0, sheer(x0) + 0.02, sz * (w0 + 0.03)], [x1, sheer(x1) + 0.02, sz * (w1 + 0.03)], 0.055, trim));
   }
   // the sole: boards fore and aft
@@ -235,10 +236,10 @@ export function longboat({ len = 8.4, beam = 3.1, side = 0.5, hull = '#f2e6c8', 
   // thwarts on the far side, a stern sheet, and the locks
   const seatsAt = [], locks = [], nearLocks = [];
   for (let i = 0; i < seats; i++) {
-    const x = -hl + 1.5 + (len - 3.6) * (i / Math.max(1, seats - 1));
+    const x = -hl + 1.95 + (len - 4.5) * (i / Math.max(1, seats - 1));
     parts.push(tint(place(roundedBox(0.34, 0.07, hb - 0.5, 0.02, 1), x, 0.34, -hb * 0.5 - 0.12, 0, (q() - 0.5) * 4, 0), '#e2a35e'));
     parts.push(tint(place(box(0.06, 0.34, 0.06), x, 0.17, -0.42), trim));
-    seatsAt.push([x, 0.37, -hb * 0.5 - 0.2]);
+    seatsAt.push([x, 0.37, -hb * 0.62]);
     for (const sz of [-1, 1]) {
       const lx = x + 0.38, p = [lx, sheer(lx) + 0.08, sz * (halfAt(lx) + 0.03)];
       parts.push(tint(place(cylinder(0.03, 0.03, 0.16, 5), p[0] - 0.07, p[1] - 0.08, p[2]), PAL.iron), tint(place(cylinder(0.03, 0.03, 0.16, 5), p[0] + 0.07, p[1] - 0.08, p[2]), PAL.iron));

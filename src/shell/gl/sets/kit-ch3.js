@@ -126,11 +126,11 @@ function hairParts(v, lod) {
 }
 /** One figure in the Company's uniform, every colour baked: coat, belt, collar, a shako with its band. */
 function uniformMesh({ coat = H3.cadet, cap = H3.tealDark, band = H3.silver, skin = '#ffdcc0', lod = 0, paper = false } = {}) {
-  const seg = lod ? 5 : 6, parts = [coatMesh(lod, coat), ...faceParts(lod, skin, paper)];
+  const seg = lod ? 5 : 6, parts = [coatMesh(lod, coat), ...faceParts(lod, skin, paper).map((m, i) => (i === 0 ? setGlow(m, 0.3) : m))]; // a little glow on the face: ranks stand with the sun behind them
   parts.push(tint(place(cylinder(0.2, 0.19, 0.05, seg, { caps: false }), 0, 0.2, 0), band));
   if (!lod) { parts.push(tint(place(cylinder(0.13, 0.11, 0.05, seg), 0, 0.5, 0), band)); for (const y of [0.3, 0.4]) parts.push(setOutline(tint(place(quad(0.04, 0.04), 0, y, 0.185), H3.gold), 0)); }
-  parts.push(tint(place(cylinder(0.19, 0.16, 0.2, seg), 0, 0.82, -0.01), cap), tint(place(cylinder(0.195, 0.19, 0.05, seg, { caps: false }), 0, 0.84, -0.01), band));
-  if (!lod) parts.push(tint(place(cylinder(0.225, 0.21, 0.035, seg), 0, 0.8, 0.03), cap), setOutline(tint(place(quad(0.06, 0.07), 0, 0.93, 0.17), H3.gold), 0));
+  parts.push(tint(place(cylinder(0.19, 0.165, 0.16, seg), 0, 0.84, -0.01), cap), tint(place(cylinder(0.195, 0.19, 0.045, seg, { caps: false }), 0, 0.85, -0.01), band));
+  if (!lod) parts.push(tint(place(cylinder(0.225, 0.21, 0.03, seg), 0, 0.83, 0.04), cap), setOutline(tint(place(quad(0.06, 0.06), 0, 0.94, 0.175), H3.gold), 0));
   return merge(parts);
 }
 function armMesh(color) { return merge(tint(place(ellipsoid(0.05, 0.17, 0.05, 5, 3), 0, 0.15, 0), color), tint(place(sphere(0.055, 5, 3), 0, 0.34, 0), '#ffdcc0')); }
@@ -232,7 +232,6 @@ export function academyBlock({ w = 14, h = 6, d = 4, floors = 3, bays = 8, seed 
       const pane = tint(place(box(ww, wh, 0.06), x, wy, 0.06), on ? H3.lit : glass);
       parts.push(on ? setGlow(pane, 0.95) : pane);
       parts.push(bx(0.045, wh, 0.03, x, wy, 0.1, wall), bx(ww, 0.045, 0.03, x, wy + wh * 0.12, 0.1, wall));
-      parts.push(rb(ww + 0.26, 0.09, 0.2, 0.03, x, wy - wh / 2 - 0.08, 0.08, trim));
       if (on) lit.push([x, wy, 0.1]);
     }
   }

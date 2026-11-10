@@ -29,7 +29,7 @@ import {
 import { PAL, kitMaterials, anchorAt, pickLight, barrel, sack, crate, ropeCoil, cloudBank, boat, crowd } from './kit.js';
 import { C4, crag, hoodedLantern, longboat, oar, cutter, blanketRoll, c4Shell, cams, MARKS4, norm3, dirFrom } from './kit-ch4.js';
 
-const WATER = -0.4, BOAT_Z = 0.55;
+const WATER = -0.2, BOAT_Z = 0.55;
 
 const LIGHTS = {
   night: {
@@ -61,7 +61,7 @@ const LIGHTS = {
 };
 
 const CAMERAS = cams({
-  wide: { target: [0.1, 1.5, -0.2], dist: 8.4, yaw: 3, pitch: 6 },
+  wide: { target: [0.1, 1.45, -0.2], dist: 8.4, yaw: 3, pitch: 8 },
   stage: { target: [0, 1.0, 0.5], dist: 9.6, yaw: -13, pitch: 8 },
 });
 
@@ -71,7 +71,7 @@ function build(engine = GL0, { light, low = false } = {}) {
 
   // ---- our boat, and everything that rides in it
   const raft = group('raft', { pos: [0, 0, 0] }), fixed = group('boat-fixed');
-  const hull = longboat({ len: 8.8, beam: 3.3, side: 0.5, seats: low ? 3 : 4, staff: 0, hull: '#f4e2c0', keel: PAL.coral, trim: '#b8683a', seed: 3 });
+  const hull = longboat({ len: 8.8, beam: 3.3, side: 0.32, seats: low ? 3 : 4, staff: 0, hull: '#fff1d0', keel: PAL.teal, band: PAL.coral, trim: '#c8743e', seed: 3 });
   const B = [0, 0, BOAT_Z];
   fixed.add(node('hull', hull, M.prop, { pos: B }));
   // the lantern staff, stepped against the far gunwale: crooked, with an iron crook to hang the light from
@@ -80,7 +80,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   // what the run carries: medicine chests and salt sacks aft, the record in oilcloth, a boat-hook, a water cask
   fixed.add(node('chest1', crate({ s: 0.52, seed: 3, color: PAL.teal, trim: '#1c8c9a' }), M.prop, { pos: [-3.35, 0, BOAT_Z - 0.5], rot: [0, 12, 0] }), node('chest2', crate({ s: 0.44, seed: 5, color: PAL.wood2 }), M.prop, { pos: [-3.3, 0.53, BOAT_Z - 0.48], rot: [0, -10, 0] }), node('sack1', sack({ seed: 2, s: 0.3, color: '#e6ecff' }), M.prop, { pos: [-3.5, 0, BOAT_Z + 0.35] }), node('sack2', sack({ seed: 6, s: 0.26, color: '#e6ecff' }), M.prop, { pos: [-3.0, 0, BOAT_Z + 0.9], rot: [0, 40, 0] }));
   fixed.add(node('cask', barrel({ r: 0.24, h: 0.56, color: '#c8643e' }), M.prop, { pos: [3.3, 0, BOAT_Z - 0.2] }), node('coil', ropeCoil({ r: 0.24 }), M.prop, { pos: [3.25, 0, BOAT_Z + 0.75] }), node('oilcloth', merge(tint(place(roundedBox(0.5, 0.2, 0.36, 0.08, 2), 0, 0.1, 0), '#3a4aa0'), tint(place(box(0.52, 0.03, 0.05), 0, 0.2, 0), PAL.rope), tint(place(box(0.05, 0.03, 0.38), 0, 0.2, 0), PAL.rope)), M.prop, { pos: [0.1, 0, BOAT_Z - 0.75], rot: [0, 14, 0] }));
-  fixed.add(node('rolls', blanketRoll({ color: PAL.coral }), M.prop, { pos: [-2.2, 0, BOAT_Z - 0.85], rot: [0, 80, 0] }), node('hook', merge(tint(place(cylinder(0.025, 0.025, 2.6, 5), -1.3, 0.56, 0, 0, 0, -90), '#b8683a'), tint(place(GL0.torus(0.07, 0.016, 8, 4), 1.36, 0.56, 0, 90, 0, 0), PAL.iron)), M.prop, { pos: [0.6, 0, BOAT_Z + 1.55] }));
+  fixed.add(node('rolls', blanketRoll({ color: PAL.coral }), M.prop, { pos: [-2.2, 0, BOAT_Z - 0.85], rot: [0, 80, 0] }));
+  // a stubby mast against the far gunwale with the sail furled dark on its yard, and two stays: something overhead
+  const MAST = [-1.5, 0, BOAT_Z - 1.4], MH = 4.3;
+  fixed.add(node('mast', merge(
+    tint(tube(curve([[MAST[0], 0, MAST[2]], [MAST[0] - 0.05, MH * 0.5, MAST[2]], [MAST[0] + 0.04, MH, MAST[2]]], 8), (t) => 0.085 - 0.035 * t, 6, { crease: 180 }), '#8a5a4a'),
+    tint(place(cylinder(0.04, 0.035, 3.2, 5), MAST[0] - 1.5, MH * 0.74 - 0.3, MAST[2] + 0.06, 0, 0, -79), '#8a5a4a'),
+    tint(tube(curve([[MAST[0] - 1.4, MH * 0.74 - 0.36, MAST[2] + 0.1], [MAST[0] - 0.6, MH * 0.74 - 0.3, MAST[2] + 0.14], [MAST[0] + 0.5, MH * 0.74 + 0.02, MAST[2] + 0.12], [MAST[0] + 1.5, MH * 0.74 + 0.2, MAST[2] + 0.1]], 10), (t) => 0.07 + 0.07 * Math.sin(t * Math.PI), 7, { crease: 180 }), '#4a58c0'),
+    tint(tube([[MAST[0] + 0.04, MH - 0.05, MAST[2]], [4.3, 0.9, BOAT_Z]], 0.014, 4, { crease: 180 }), PAL.rope), tint(tube([[MAST[0] + 0.04, MH - 0.05, MAST[2]], [-4.3, 0.7, BOAT_Z]], 0.014, 4, { crease: 180 }), PAL.rope),
+    tint(place(GL0.extrude([[0, 0], [0.5, 0.1], [0, 0.22]], 0.02), MAST[0] + 0.06, MH - 0.3, MAST[2], 0, -20, 0), PAL.coral), tint(place(sphere(0.06, 7, 5), MAST[0] + 0.04, MH + 0.03, MAST[2]), PAL.gold)), M.prop));
   const boatNode = mergeStatic(fixed, 'boat'); raft.add(boatNode);
 
   // ---- the lane: the other boats ahead in line, the Maund rocks, the cutter, the islands
@@ -98,14 +106,14 @@ function build(engine = GL0, { light, low = false } = {}) {
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir); env.water.level = WATER;
-  env.water.shores = [[0, BOAT_Z, 2.3, 0.5], [3, BOAT_Z, 1.6, 0.45], [-3, BOAT_Z, 1.6, 0.45], ...rocks.map(([x, z, w]) => [x, z, w * 0.62, 0.7]), ...others.map(([x, z]) => [x, z, 1.5, 0.5])];
+  env.water.shores = [[0, BOAT_Z, 1.75, 0.3], [2.6, BOAT_Z, 1.3, 0.28], [-2.6, BOAT_Z, 1.3, 0.28], ...rocks.map(([x, z, w]) => [x, z, w * 0.62, 0.7]), ...others.map(([x, z]) => [x, z, 1.5, 0.5])];
   scene.root.add(raft, mergeStatic(sea, 'sea'), mergeStatic(far, 'far'));
   const cutNode = node('cutter', cutMesh, M.farFlat, { pos: CUT0, rot: [0, 160, 0] }); cutNode.castShadow = false; scene.root.add(cutNode);
 
   const sprites = scene.sprites = createSprites(384);
   // ---- rowers on the thwarts, their sweeps out over the far side
   const seats = hull.anchors.seats, locks = hull.anchors.locks;
-  const folk = crowd({ spots: seats.map((s, i) => ({ pos: [B[0] + s[0], 0.02, B[2] + s[2] - 0.05], face: 96, s: 0.82 })), material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 9, amount: 1 });
+  const folk = crowd({ spots: seats.map((s, i) => ({ pos: [B[0] + s[0], 0.02, B[2] + s[2] - 0.05], face: -84, s: 0.82 })), material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 9, amount: 1 });
   raft.add(folk.node);
   const oars = node('oars', oar({ len: 2.7 }), M.prop); oars.castShadow = false; oars.instances = makeInstances(locks.length + 1); oars.instances.count = locks.length + 1; raft.add(oars);
   // the lantern: it swings on its hook
@@ -118,15 +126,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   const lampGlow = sprites.add({ kind: 'glow', pos: LAMP, size: 1.7, color: '#ffa848', alpha: 0 });
   const cone = node('lamp-cone', tint(rayMesh(2.5, 0.12, 1.5, 14), '#ffb050'), rayMaterial({ power: 1.5, near: 0.4, far: 0 }), { pos: [LAMP[0], LAMP[1] - 0.1, LAMP[2]] }); raft.add(cone);
   const otherGlows = others.map(([x, z]) => ({ g: sprites.add({ kind: 'glow', pos: [x, WATER + 1.5, z], size: 1.3, color: '#ffa848', alpha: 0 }), s: sprites.add({ kind: 'glow', pos: [x, WATER + 0.12, z + 1.6], size: [0.5, 1.6], color: '#ff9a40', alpha: 0 }), ph: r() * 6 }));
-  for (const s of ISLES) { s.glow = sprites.add({ kind: 'glow', pos: s.lamp, size: s.big ? 22 : s.name === 'carrow' ? 12 : 15, color: '#8fe4ff', alpha: 0 }); s.core = sprites.add({ kind: 'glow', pos: s.lamp, size: s.big ? 7 : 4.5, color: '#f0fdff', alpha: 0 }); s.streak = sprites.add({ kind: 'glow', pos: [s.lamp[0], WATER + 0.2, s.lamp[2] + (s.big ? 40 : 60)], size: s.big ? [7, 2.2] : [5, 1.4], color: '#6fccff', alpha: 0 }); s.on = 0; }
+  for (const s of ISLES) { s.glow = sprites.add({ kind: 'glow', pos: s.lamp, size: s.big ? 15 : s.name === 'carrow' ? 10 : 12, color: '#5fd0ff', alpha: 0 }); s.core = sprites.add({ kind: 'glow', pos: s.lamp, size: s.big ? 4.5 : 3, color: '#d8f8ff', alpha: 0 }); s.streak = sprites.add({ kind: 'glow', pos: [s.lamp[0], WATER + 0.2, s.lamp[2] + (s.big ? 40 : 60)], size: s.big ? [7, 2.2] : [5, 1.4], color: '#6fccff', alpha: 0 }); s.on = 0; }
   const brandBeam = node('brand-beam', tint(place(rayMesh(120, 1.2, 16, 12), 0, 0, 0, 78, 0, 0), '#8fe4ff'), rayMaterial({ power: 0.8, near: 0.5, far: 0 }), { pos: ISLES[0].lamp }); brandBeam.visible = false; scene.root.add(brandBeam);
   const cutLamp = anchorAt(cutMesh, 'lamp', CUT0, 160), cutGlow = sprites.add({ kind: 'glow', pos: cutLamp, size: 9, color: '#fff6d8', alpha: 0 });
-  const search = node('search', tint(place(rayMesh(150, 0.8, 13, 12), 0, 0, 0, 0, 0, 86), '#fff2c8'), rayMaterial({ power: 0.8, near: 0.55, far: 0 }), { pos: cutLamp }); search.visible = false; scene.root.add(search);
-  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 6, seed: 12, arc: [152, 208], radius: [280, 440], height: [30, 130], size: [0.7, 1.4], speed: 0.04, ...L.cloud });
+  const search = node('search', tint(place(rayMesh(150, 0.6, 8, 12), 0, 0, 0, 0, 0, 86), '#fff2c8'), rayMaterial({ power: 1.1, near: 0.5, far: 0 }), { pos: cutLamp }); search.visible = false; scene.root.add(search);
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 8, seed: 12, arc: [150, 210], radius: [280, 440], height: [30, 190], size: [0.7, 1.4], speed: 0.04, ...L.cloud });
   scene.root.add(clouds.node);
 
   const lamps = [
-    { name: 'lantern', pos: [LAMP[0], LAMP[1] - 0.25, LAMP[2] + 0.2], color: '#ffb058', radius: 6.4, base: 1.7, k: 1 },
+    { name: 'lantern', pos: [LAMP[0], LAMP[1] - 0.25, LAMP[2] + 0.2], color: '#ffb058', radius: 7, base: 3.4, k: 1 },
     { name: 'search', pos: [0, 2.4, -3], color: '#fff2d0', radius: 9, base: 0, own: true, steady: true },
   ];
 
@@ -159,17 +167,17 @@ function build(engine = GL0, { light, low = false } = {}) {
     oars.instances.dirty = true;
     folk.update(time, dt, { lit: 0, lively: 0.25 + 0.6 * strokeNow });
     // the lantern
-    const sway = Math.sin(time * 1.3) * 7 + Math.sin(time * 0.53 + 1) * 4, fl = 0.92 + 0.08 * Math.sin(time * 10.1) * Math.sin(time * 6.3), open = 1 - 0.55 * hoodNow, on = Math.min(1.4, pw);
+    const sway = Math.sin(time * 1.3) * 7 + Math.sin(time * 0.53 + 1) * 4, fl = 0.92 + 0.08 * Math.sin(time * 10.1) * Math.sin(time * 6.3), open = 1 - 0.4 * hoodNow, on = Math.min(1.4, pw);
     lantern.setRot(Math.sin(time * 1.1 + 2) * 4, 0, sway);
     lamps[0].k = open * fl; lampGlow.alpha = 0.7 * open * on * fl; lampGlow.size[0] = lampGlow.size[1] = 1.2 + 1.2 * open * on;
-    cone.material.beam.near = (0.22 + 0.3 * (1 - hoodNow)) * on * fl; cone.setRot(0, 0, sway * 0.5); cone.visible = pw > 0.05;
+    cone.material.beam.near = (0.4 + 0.3 * (1 - hoodNow)) * on * fl; cone.setRot(0, 0, sway * 0.5); cone.visible = pw > 0.05;
     lantern.tint[0] = 0.55 + 0.45 * Math.min(1, on); lantern.tint[1] = 0.5 + 0.28 * Math.min(1, on); lantern.tint[2] = 0.5 - 0.14 * Math.min(1, on);
     for (let i = 0; i < otherGlows.length; i++) { const o = otherGlows[i], k = 0.5 + 0.12 * Math.sin(time * 2 + o.ph); o.g.alpha = k; o.s.alpha = k * 0.5; o.g.pos[1] = WATER + 1.5 + Math.sin(time * 0.9 + o.ph) * 0.06; }
     // the cutter works its bearing out and back; its lamp comes round
     const leg = Math.sin(time * 0.11), cx = CUT0[0] - 16 + leg * 22 - cutNow * 6, cz = CUT0[2] + cutNow * 46, vis = Math.min(1, cutNow);
     cutNode.visible = vis > 0.02; cutNode.position[0] = cx; cutNode.position[2] = cz; cutNode.position[1] = WATER - (1 - vis) * 4; cutNode.setRot(0, Math.cos(time * 0.11) > 0 ? 174 : 6, Math.sin(time * 0.8) * 2);
     const lx = cx + (cutLamp[0] - CUT0[0]) * (Math.cos(time * 0.11) > 0 ? 1 : -1), swing = Math.sin(time * (0.5 + 0.3 * cutNow)) * (38 + 18 * cutNow) + (cutNow > 1.2 ? -8 : 20);
-    cutGlow.pos[0] = lx; cutGlow.pos[1] = cutLamp[1]; cutGlow.pos[2] = cz; cutGlow.alpha = 0.9 * vis; cutGlow.size[0] = cutGlow.size[1] = 7 + 5 * cutNow;
+    cutGlow.pos[0] = lx; cutGlow.pos[1] = cutLamp[1]; cutGlow.pos[2] = cz; cutGlow.alpha = 0.9 * vis; cutGlow.size[0] = cutGlow.size[1] = 3.5 + 2 * cutNow;
     search.visible = vis > 0.05; search.position[0] = lx; search.position[1] = cutLamp[1]; search.position[2] = cz; search.setRot(0, swing - 90, -4); search.material.beam.near = 0.5 * vis;
     const facing = Math.max(0, 1 - Math.abs(swing) / 16) * Math.max(0, cutNow - 0.9) * 1.6; lamps[1].base = facing * 1.6; // when the lamp comes across them
     // the islands' lamps

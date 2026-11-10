@@ -583,8 +583,8 @@ export function cave({ w = 8, h = 4.5, len = 12, seg = 12, rings = 10, seed = 1,
     }
   }
   const s = seg + 1;
-  for (let j = 0; j < rings; j++) for (let i = 0; i < seg; i++) { const a = j * s + i, b = a + 1, d = a + s, e = d + 1; if ((i + j) % 2) idx.push(a, b, d, b, e, d); else idx.push(a, b, e, a, e, d); }
-  const m = fromArrays(pos, idx, null, lump > 0 ? 24 : 50);
+  for (let j = 0; j < rings; j++) for (let i = 0; i < seg; i++) { const a = j * s + i, b = a + 1, d = a + s, e = d + 1; if ((i + j) % 2) idx.push(a, d, b, b, d, e); else idx.push(a, e, b, a, d, e); }
+  const m = fromArrays(pos, idx, null, lump > 0 ? 1 : 50); // rock: every facet flat, so the two tones break on the triangles
   // colour by the (pre-split) vertex it came from: fromArrays may split vertices at creases, so paint by position lookup
   const key = (x, y, z) => Math.round(x * 50) + ':' + Math.round(y * 50) + ':' + Math.round(z * 50), map = new Map();
   for (let i = 0; i < pos.length / 3; i++) map.set(key(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]), i);
