@@ -12331,8 +12331,8 @@
  },
  {
   "path": "index.html",
-  "bytes": 8733,
-  "lines": 157
+  "bytes": 9352,
+  "lines": 165
  },
  {
   "path": "package.json",
@@ -12480,14 +12480,19 @@
   "lines": 730
  },
  {
+  "path": "src/shell/gl/app.js",
+  "bytes": 31420,
+  "lines": 565
+ },
+ {
   "path": "src/shell/gl/atlas.js",
   "bytes": 2172,
   "lines": 43
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 89139,
-  "lines": 1218
+  "bytes": 98058,
+  "lines": 1304
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12496,8 +12501,8 @@
  },
  {
   "path": "src/shell/gl/faces.js",
-  "bytes": 24161,
-  "lines": 342
+  "bytes": 26162,
+  "lines": 362
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -12508,6 +12513,11 @@
   "path": "src/shell/gl/gl.js",
   "bytes": 13674,
   "lines": 214
+ },
+ {
+  "path": "src/shell/gl/hud.js",
+  "bytes": 57627,
+  "lines": 1581
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12540,9 +12550,14 @@
   "lines": 472
  },
  {
+  "path": "src/shell/gl/sets/kit-b.js",
+  "bytes": 56843,
+  "lines": 738
+ },
+ {
   "path": "src/shell/gl/sets/kit.js",
-  "bytes": 72131,
-  "lines": 984
+  "bytes": 79276,
+  "lines": 1071
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12551,13 +12566,13 @@
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 21286,
-  "lines": 421
+  "bytes": 27970,
+  "lines": 554
  },
  {
   "path": "src/shell/gl/sprites.js",
-  "bytes": 8052,
-  "lines": 133
+  "bytes": 10760,
+  "lines": 159
  },
  {
   "path": "src/shell/gl/stage.js",
@@ -12581,8 +12596,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 19173,
-  "lines": 416
+  "bytes": 22585,
+  "lines": 477
  },
  {
   "path": "src/shell/render.js",
@@ -12621,8 +12636,8 @@
  },
  {
   "path": "test/game.test.js",
-  "bytes": 66772,
-  "lines": 1220
+  "bytes": 67316,
+  "lines": 1225
  },
  {
   "path": "test/physics.test.js",

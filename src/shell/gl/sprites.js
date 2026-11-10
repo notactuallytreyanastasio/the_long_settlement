@@ -5,15 +5,24 @@
 //   glow     additive stepped halo: lamp bloom, sun glints, embers
 //   sparkle  additive four-point star
 //   puff     toon smoke ball with a shadow crescent and an ink edge; pops (shrinks) at the end of its life
-//   curl     a white wind streak that runs in from the left and winds into a spiral
+//   curl     a brush stroke of wind that runs in from the left, loops and winds up (aspect about 1.8)
 //   ring     a flat ring on the ground plane that thins as it expands: foam, splashes, shockwaves
 //   dot      a flat disc: spray, dust, petals
+//   tex      a picture from the system's sprite sheet (sys.texture, a rectangle given as `uv`), alpha blended
+//   shade    a flat blob of the scene's shadow colour lying on the ground: a figure's shadow when there is no shadow map
+//   texadd   a picture from the sprite sheet, added: light, energy
+//   bolt     a streak of energy along the sprite's x axis (aim it with rot), hot in the middle, added; phase runs its head along
+//
+// Alpha-blended kinds are drawn far to near (the renderer hands pack() the camera), so smoke in front of
+// smoke looks right; additive kinds need no order and go last.
 
 import { rgb } from './math.js';
 
-export const KIND = { glow: 0, sparkle: 1, puff: 2, curl: 3, ring: 4, dot: 5 };
-const FLOATS = 12; // per instance in the GPU buffer
-const PF = 20;     // per particle in the simulation
+export const KIND = { glow: 0, sparkle: 1, puff: 2, curl: 3, ring: 4, dot: 5, tex: 6, shade: 7, texadd: 8, bolt: 9 };
+const ADDITIVE = [true, true, false, false, false, false, false, false, true, true];
+const FLOATS = 16; // per instance in the GPU buffer
+const PF = 24;     // per particle in the simulation
+const NO_UV = [0, 0, 1, 1];
 
 function kindOf(k) {
   const v = typeof k === 'number' ? k : KIND[k];
@@ -22,33 +31,37 @@ function kindOf(k) {
 }
 
 /**
- * createSprites(capacity) -> a sprite system. Assign it to scene.sprites and call update(dt) each frame.
+ * createSprites(capacity, { texture }) -> a sprite system. Assign it to scene.sprites and call update(dt) each frame.
  *
- *   add({ kind, pos, size, color, alpha, rot, phase }) -> a persistent sprite object you may edit
- *        every frame (pos is [x, y, z]; size is a number or [w, h]; set .visible = false to hide)
+ *   add({ kind, pos, size, color, alpha, rot, phase, uv }) -> a persistent sprite object you may edit
+ *        every frame (pos is [x, y, z]; size is a number or [w, h]; set .visible = false to hide;
+ *        uv is an atlas rectangle [u, v, su, sv] for the textured kinds)
  *   remove(sprite)
- *   spawn({ kind, pos, vel, size, endSize, life, color, alpha, rot, spin, gravity, drag })
+ *   spawn({ kind, pos, vel, size, endSize, life, color, alpha, rot, spin, gravity, drag, aspect, uv })
  *        one particle; it is simulated and removed after `life` seconds
  *   puff(pos, opts) / sparkle(pos, opts) / gust(pos, opts) / splash(pos, opts)   ready-made bursts
  *   update(dt)
+ *   texture   the sprite sheet for 'tex' and 'texadd' ({ source: canvas } from texture() or atlas.texture); one per system
  */
-export function createSprites(capacity = 512) {
+export function createSprites(capacity = 512, opts = {}) {
   const sim = new Float32Array(capacity * PF);
+  const order = new Uint16Array(capacity), keys = new Float32Array(capacity);
   const sys = {
-    capacity, count: 0, live: 0, data: new Float32Array(capacity * FLOATS), fixed: [],
+    capacity, count: 0, live: 0, data: new Float32Array(capacity * FLOATS), fixed: [], texture: opts.texture || null,
     add(o = {}) {
       const c = rgb(o.color || '#ffffff');
-      const s = { kind: kindOf(o.kind ?? 'glow'), pos: [...(o.pos || [0, 0, 0])], size: typeof o.size === 'number' ? [o.size, o.size] : [...(o.size || [1, 1])], color: c, alpha: o.alpha ?? 1, rot: o.rot || 0, phase: o.phase || 0, visible: true };
+      const s = { kind: kindOf(o.kind ?? 'glow'), pos: [...(o.pos || [0, 0, 0])], size: typeof o.size === 'number' ? [o.size, o.size] : [...(o.size || [1, 1])], color: c, alpha: o.alpha ?? 1, rot: o.rot || 0, phase: o.phase || 0, uv: o.uv ? [o.uv[0], o.uv[1], o.uv[2], o.uv[3]] : NO_UV, visible: o.visible !== false };
       sys.fixed.push(s); return s;
     },
     remove(s) { const i = sys.fixed.indexOf(s); if (i >= 0) sys.fixed.splice(i, 1); },
     spawn(o) {
       if (sys.live >= capacity) return; // full: drop the particle rather than grow mid-frame
-      const k = sys.live++ * PF, c = o.color ? colorOf(o.color) : WHITE, p = o.pos, v = o.vel || ZERO;
+      const k = sys.live++ * PF, c = o.color ? colorOf(o.color) : WHITE, p = o.pos, v = o.vel || ZERO, uv = o.uv || NO_UV;
       sim[k] = p[0]; sim[k + 1] = p[1]; sim[k + 2] = p[2]; sim[k + 3] = v[0]; sim[k + 4] = v[1]; sim[k + 5] = v[2];
       sim[k + 6] = o.size ?? 0.3; sim[k + 7] = o.endSize ?? sim[k + 6]; sim[k + 8] = o.life ?? 1; sim[k + 9] = 0;
       sim[k + 10] = c[0]; sim[k + 11] = c[1]; sim[k + 12] = c[2]; sim[k + 13] = o.alpha ?? 1;
       sim[k + 14] = o.rot || 0; sim[k + 15] = o.spin || 0; sim[k + 16] = kindOf(o.kind ?? 'dot'); sim[k + 17] = o.gravity || 0; sim[k + 18] = o.drag || 0; sim[k + 19] = o.aspect || 1;
+      sim[k + 20] = uv[0]; sim[k + 21] = uv[1]; sim[k + 22] = uv[2]; sim[k + 23] = uv[3];
     },
     update(dt) {
       for (let i = 0; i < sys.live;) {
@@ -62,33 +75,25 @@ export function createSprites(capacity = 512) {
         i++;
       }
     },
-    /** Write the instance buffer (alpha-blended kinds first, additive last). Called by the renderer. */
-    pack() {
-      const D = sys.data; let n = 0;
-      for (let pass = 0; pass < 2; pass++) {
-        for (let i = 0; i < sys.fixed.length && n < capacity; i++) {
-          const s = sys.fixed[i];
-          if (!s.visible || (s.kind < 1.5) !== (pass === 1)) continue;
-          const o = n++ * FLOATS;
-          D[o] = s.pos[0]; D[o + 1] = s.pos[1]; D[o + 2] = s.pos[2]; D[o + 3] = s.kind;
-          D[o + 4] = s.size[0]; D[o + 5] = s.size[1]; D[o + 6] = s.rot; D[o + 7] = s.phase;
-          D[o + 8] = s.color[0]; D[o + 9] = s.color[1]; D[o + 10] = s.color[2]; D[o + 11] = s.alpha;
-        }
-        for (let i = 0; i < sys.live && n < capacity; i++) {
-          const k = i * PF, kind = sim[k + 16];
-          if ((kind < 1.5) !== (pass === 1)) continue;
-          const t = sim[k + 9] / sim[k + 8], e = 1 - (1 - t) * (1 - t);
-          let size = sim[k + 6] + (sim[k + 7] - sim[k + 6]) * e, a = sim[k + 13];
-          if (kind === 2) { if (t < 0.12) size *= 0.4 + 0.6 * (t / 0.12); if (t > 0.78) { const q = (t - 0.78) / 0.22; size *= 1 - q * q; } } // puffs pop in and pop out
-          else if (kind === 3) a *= 1;                                             // curls animate by phase
-          else if (kind === 1) { const q = Math.sin(t * Math.PI); size *= q; }     // sparkles swell and vanish
-          else a *= t > 0.6 ? 1 - (t - 0.6) / 0.4 : 1;
-          const o = n++ * FLOATS;
-          D[o] = sim[k]; D[o + 1] = sim[k + 1]; D[o + 2] = sim[k + 2]; D[o + 3] = kind;
-          D[o + 4] = size * sim[k + 19]; D[o + 5] = size; D[o + 6] = sim[k + 14]; D[o + 7] = t;
-          D[o + 8] = sim[k + 10]; D[o + 9] = sim[k + 11]; D[o + 10] = sim[k + 12]; D[o + 11] = a;
-        }
+    /**
+     * Write the instance buffer: alpha-blended kinds first, far to near when a camera is given, then the
+     * additive ones. Called by the renderer. Allocates nothing.
+     */
+    pack(camera = null) {
+      const D = sys.data, F = sys.fixed, nf = F.length; let n = 0, m = 0;
+      // blended: collect, sort by depth along the view direction, write
+      let fx = 0, fy = 0, fz = 0, cx = 0, cy = 0, cz = 0;
+      if (camera) { cx = camera.position[0]; cy = camera.position[1]; cz = camera.position[2]; fx = camera.target[0] - cx; fy = camera.target[1] - cy; fz = camera.target[2] - cz; }
+      for (let i = 0; i < nf && m < capacity; i++) { const s = F[i]; if (!s.visible || ADDITIVE[s.kind]) continue; order[m] = i; keys[m++] = (s.pos[0] - cx) * fx + (s.pos[1] - cy) * fy + (s.pos[2] - cz) * fz; }
+      for (let i = 0; i < sys.live && m < capacity; i++) { const k = i * PF; if (ADDITIVE[sim[k + 16]]) continue; order[m] = nf + i; keys[m++] = (sim[k] - cx) * fx + (sim[k + 1] - cy) * fy + (sim[k + 2] - cz) * fz; }
+      if (camera) for (let i = 1; i < m; i++) { // insertion sort, farthest first: the order barely changes between frames
+        const o = order[i], kv = keys[i]; let j = i - 1;
+        while (j >= 0 && keys[j] < kv) { order[j + 1] = order[j]; keys[j + 1] = keys[j]; j--; }
+        order[j + 1] = o; keys[j + 1] = kv;
       }
+      for (let q = 0; q < m; q++) { const id = order[q]; if (id < nf) writeFixed(F[id], n++); else writeLive(id - nf, n++); }
+      for (let i = 0; i < nf && n < capacity; i++) { const s = F[i]; if (s.visible && ADDITIVE[s.kind]) writeFixed(s, n++); }
+      for (let i = 0; i < sys.live && n < capacity; i++) if (ADDITIVE[sim[i * PF + 16]]) writeLive(i, n++);
       sys.count = n;
       return n;
     },
@@ -123,6 +128,27 @@ export function createSprites(capacity = 512) {
       }
     },
   };
+  function writeFixed(s, at) {
+    const D = sys.data, o = at * FLOATS;
+    D[o] = s.pos[0]; D[o + 1] = s.pos[1]; D[o + 2] = s.pos[2]; D[o + 3] = s.kind;
+    D[o + 4] = s.size[0]; D[o + 5] = s.size[1]; D[o + 6] = s.rot; D[o + 7] = s.phase;
+    D[o + 8] = s.color[0]; D[o + 9] = s.color[1]; D[o + 10] = s.color[2]; D[o + 11] = s.alpha;
+    D[o + 12] = s.uv[0]; D[o + 13] = s.uv[1]; D[o + 14] = s.uv[2]; D[o + 15] = s.uv[3];
+  }
+  function writeLive(i, at) {
+    const D = sys.data, k = i * PF, kind = sim[k + 16];
+    const t = sim[k + 9] / sim[k + 8], e = 1 - (1 - t) * (1 - t);
+    let size = sim[k + 6] + (sim[k + 7] - sim[k + 6]) * e, a = sim[k + 13];
+    if (kind === 2) { if (t < 0.12) size *= 0.4 + 0.6 * (t / 0.12); if (t > 0.78) { const q = (t - 0.78) / 0.22; size *= 1 - q * q; } } // puffs pop in and pop out
+    else if (kind === 3 || kind === 9) a *= 1;                                // curls and bolts animate by phase
+    else if (kind === 1) { const q = Math.sin(t * Math.PI); size *= q; }      // sparkles swell and vanish
+    else a *= t > 0.6 ? 1 - (t - 0.6) / 0.4 : 1;
+    const o = at * FLOATS;
+    D[o] = sim[k]; D[o + 1] = sim[k + 1]; D[o + 2] = sim[k + 2]; D[o + 3] = kind;
+    D[o + 4] = size * sim[k + 19]; D[o + 5] = size; D[o + 6] = sim[k + 14]; D[o + 7] = t;
+    D[o + 8] = sim[k + 10]; D[o + 9] = sim[k + 11]; D[o + 10] = sim[k + 12]; D[o + 11] = a;
+    D[o + 12] = sim[k + 20]; D[o + 13] = sim[k + 21]; D[o + 14] = sim[k + 22]; D[o + 15] = sim[k + 23];
+  }
   return sys;
 }
 

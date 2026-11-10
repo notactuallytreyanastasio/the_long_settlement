@@ -15,6 +15,13 @@
 //
 // When the page is hidden (the phone locked, another app in front) everything stops: the
 // frame loop, the audio clock, and the timers that would otherwise end a spoken line.
+//
+// TWO RENDERERS. render.js paints the 2D game on #stage. src/shell/gl/app.js draws the 3D game on #gl, with
+// #stage as its HUD. Each frame the 3D one draws if it is wanted (GL_DEFAULT, ?gl=1, ?gl=0), has a context
+// (glApp.ok) and has every set the chapter needs (glApp.canDraw); otherwise the 2D one does. The two have
+// different layouts (computeGlLayout / computeLayout), so `layout` follows whichever is drawing, and input
+// reads it from there. The 3D module is fetched only when wanted: a browser that is not asked for it, or has
+// no WebGL2, never loads a line of it.
 
 import { content } from '../content/index.js';
 import { init, update, SAVE_VERSION, LOADABLE_SAVES } from '../core/game.js';
@@ -26,7 +33,7 @@ import { FONT_UI, FONT_SERIF, FONT_MONO } from './cinema/kit.js';
 import { createAudio } from './audio.js';
 import { createVoice } from './voice.js';
 import { createInput } from './input.js';
-import { computeLayout, wantsRotate } from './layout.js';
+import { computeLayout, computeGlLayout, wantsRotate } from './layout.js';
 
 // The key was named before saves had versions. It is kept, so a v:1 save is still found;
 // the version that matters is the `v` inside (the core's SAVE_VERSION; its load takes the older ones in LOADABLE_SAVES as well).
@@ -39,6 +46,14 @@ const CHATTER_MAX = 3;          // non-blocking lines allowed to wait their turn
 const PRELOAD_AHEAD = 3;        // lines of a cinematic to have ready beyond the one being spoken
 const PRELOAD_MAX = 8;          // voice files asked for at one time; the rest load when they are spoken
 const LOAD_WAIT_MS = 1500;      // how long Continue waits for sound before going on without it
+
+// The 3D renderer. ?gl=1 asks for it, ?gl=0 refuses it, and with neither GL_DEFAULT decides: the integrator
+// flips this one constant when chapter 1 is ready to be the default. ?q=low|mid|high pins its quality tier.
+const GL_DEFAULT = false;
+const QUERY = new URLSearchParams(window.location.search);
+const GL_ASKED = QUERY.get('gl') === '1';                                  // asked for by name: its errors are fatal
+const GL_WANTED = QUERY.get('gl') === '0' ? false : GL_ASKED || GL_DEFAULT;
+const GL_QUALITY = QUERY.get('q');
 
 const $ = (id) => {
   const el = document.getElementById(id);
@@ -137,8 +152,27 @@ async function fetchManifest() {
   return manifest;
 }
 
+/**
+ * The 3D renderer, or null: not wanted, no #gl canvas in this page, the module failed to load, or no WebGL2.
+ * Asked for by name (?gl=1), a failure to load is thrown; as a default it is logged and the 2D game goes on.
+ */
+async function loadGl(glCanvas, hudCanvas) {
+  if (!GL_WANTED || !glCanvas) return null;
+  if (typeof WebGL2RenderingContext === 'undefined') return null;          // no WebGL2: never touch the GL path
+  try {
+    const { createGlApp } = await import('./gl/app.js');
+    const app = createGlApp(glCanvas, hudCanvas, { quality: GL_QUALITY === 'low' || GL_QUALITY === 'mid' || GL_QUALITY === 'high' ? GL_QUALITY : null });
+    return app.ok ? app : null;
+  } catch (e) {
+    if (GL_ASKED) throw e;
+    console.warn(`main: the 3D renderer did not start (${e && e.message}); drawing in 2D`);
+    return null;
+  }
+}
+
 async function boot() {
   const canvas = $('stage');
+  const glCanvas = document.getElementById('gl');     // absent from a cached index.html: then there is no 3D
   const gate = $('gate');
 
   // view-only: what the renderer needs that is not game state
@@ -160,6 +194,8 @@ async function boot() {
   const touchPrimary = window.matchMedia('(hover: none) and (pointer: coarse)');
   let sideways = false;
   let onSideways = () => {};                        // set once the loop exists
+  let glApp = null;                                 // the 3D renderer, once loaded (see loadGl)
+  let glOn = false;                                 // it is the one drawing: decided each frame in pickRenderer
 
   function fit() {
     const vw = window.innerWidth;
@@ -167,8 +203,8 @@ async function boot() {
     if (!(vw > 0) || !(vh > 0)) return;             // minimised, or not laid out yet: keep what we have
     const turn = wantsRotate(vw, vh, touchPrimary.matches);
     if (turn !== sideways) { sideways = turn; rotateCard.hidden = !turn; onSideways(); }
-    layout = computeLayout(vw, vh);
-    if (!layout || !(layout.W > 0) || !(layout.H > 0)) throw new Error(`main: computeLayout(${vw}, ${vh}) gave ${JSON.stringify(layout)}`);
+    layout = glOn ? computeGlLayout(vw, vh) : computeLayout(vw, vh);
+    if (!layout || !(layout.W > 0) || !(layout.H > 0)) throw new Error(`main: ${glOn ? 'computeGlLayout' : 'computeLayout'}(${vw}, ${vh}) gave ${JSON.stringify(layout)}`);
     const s = Math.min(vw / layout.W, vh / layout.H);
     const w = Math.max(1, Math.floor(layout.W * s));
     const h = Math.max(1, Math.floor(layout.H * s));
@@ -178,6 +214,13 @@ async function boot() {
     const bw = Math.round(w * dpr);
     const bh = Math.round(h * dpr);
     if (canvas.width !== bw || canvas.height !== bh) { canvas.width = bw; canvas.height = bh; }
+    if (glCanvas) {
+      // the same box as #stage; its backing store is the 3D renderer's business (it has its own pixel-ratio cap)
+      glCanvas.style.width = `${w}px`;
+      glCanvas.style.height = `${h}px`;
+      glCanvas.hidden = !glOn;
+    }
+    document.body.classList.toggle('gl', glOn);
 
     const inset = getComputedStyle(safeProbe);
     const rect = canvas.getBoundingClientRect();
@@ -197,6 +240,7 @@ async function boot() {
   if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
 
   const renderer = createRenderer(canvas);
+  glApp = await loadGl(glCanvas, canvas);
   cinemaCache.stepped = true;      // frames follow one another here: build a backdrop a layer a frame, never all in one
   warmCanvasPaths();
   const audio = createAudio();
@@ -291,8 +335,10 @@ async function boot() {
           game = init(newSeed());
           continue;
         }
+        const before = game;
         const r = update(content, game, m);
         game = r.game;
+        if (glOn && m.type === 'tick') glApp.observe(content, before, m, game);     // the 3D table's events, read off the tick
         for (const e of r.effects) interpret(e);
       }
       preload();
@@ -310,6 +356,17 @@ async function boot() {
   let last = null;
   let bank = 0;
   let raf = null;
+
+  /** Which renderer draws this frame. A change of renderer is a change of layout, so the canvases are fitted again. */
+  function pickRenderer() {
+    const want = glApp !== null && glApp.ok && glApp.canDraw(content, game);
+    if (want !== glOn) {
+      glOn = want;
+      if (controls) controls.release();           // the buttons have moved under any finger that is down
+      fit();
+    }
+    return glOn;
+  }
 
   function frame(now) {
     raf = null;
@@ -331,9 +388,13 @@ async function boot() {
         if (fx.flash.a <= 0) fx.flash = null;
       }
       fx.touch = fx.touch || (controls !== null && controls.touched());
-      renderer.draw(content, game, fx, layout);
-      // while the chapter card is up, get the prologue's first backdrop ready behind it
-      if (game.mode === 'card') warmCinema(content, game, layout, canvas.width / layout.W, now);
+      if (pickRenderer()) {
+        glApp.draw(content, game, fx, layout);
+      } else {
+        renderer.draw(content, game, fx, layout);
+        // while the chapter card is up, get the prologue's first backdrop ready behind it
+        if (game.mode === 'card') warmCinema(content, game, layout, canvas.width / layout.W, now);
+      }
     } catch (err) {
       fatal(err);
       return;
@@ -409,7 +470,7 @@ async function boot() {
 
   // for the console and for driving the game from a test script
   // `set` replaces the state outright: a measuring script uses it to stand the game in a given cinematic
-  window.tls = { game: () => game, set: (g) => { game = g; }, send: dispatch, content, audio, voice, layout: () => layout, fx, input: () => (controls ? controls.state() : NO_INPUT) };
+  window.tls = { game: () => game, set: (g) => { game = g; }, send: dispatch, content, audio, voice, layout: () => layout, fx, input: () => (controls ? controls.state() : NO_INPUT), gl: () => glApp, glOn: () => glOn };
 }
 
 boot().catch(fatal);

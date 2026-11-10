@@ -16,7 +16,8 @@
 //
 //   createFaces({ size = 2048 }) -> {
 //     atlas, material,                       one 'blend' material for every face layer of every character
-//     lid(set, emote, shut) -> rect          set: 'round' | 'lash' | 'old'
+//     lid(set, emote, shut) -> rect          set: 'round' | 'lash' | 'old' | 'heavy' | 'sharp' (LID_SETS)
+//     mouthShape(name) -> rect               a closed mouth by name: plain happy softsmile down flat smirk pursed grin wry o wobble grit
 //     eyeball(irisColor, kind) -> rect       kind: 'normal' | 'small' | 'wet'
 //     mouth(emote, level 0..3) -> rect
 //     marks(key, spec) -> rect               spec: { skin, blush, freckles, laugh, scar, beauty }
@@ -94,7 +95,15 @@ function topLid(g, w, h, L) {
   g.bezierCurveTo(cx - a * 0.86, cy - L.ht * h * 1.33 * L.c1, cx + a * 0.62, cy - L.ht * h * 1.33 * L.c2 - L.tilt * h, cx + a, cy - L.tilt * h);
 }
 
-function drawLid(set, L, shut, shutStyle) {
+/** The lid sets. 'round' the default, 'lash' with flicked lashes, 'old' smaller with one soft crease, 'heavy' a lid that sits half down with a fold over it, 'sharp' a narrow almond with a long corner. */
+export const LID_SETS = ['round', 'lash', 'old', 'heavy', 'sharp'];
+function lidFor(set, L) {
+  if (set === 'heavy') return { ...L, ht: L.ht * 0.66, c1: L.c1 * 0.7, c2: L.c2 * 0.62, tilt: L.tilt - 0.012 };
+  if (set === 'sharp') return { ...L, ht: L.ht * 0.86, hb: L.hb * 0.9, c1: L.c1 * 0.66, c2: L.c2 * 1.04, tilt: L.tilt + 0.035, bot: L.bot * 0.8 };
+  return L;
+}
+function drawLid(set, L0, shut, shutStyle) {
+  const L = lidFor(set, L0);
   return (g, w, h) => {
     const cx = w * 0.5, cy = h * 0.52, a = w * 0.3, f = 9;
     // the skin mask: opaque in the middle, feathered at the cell's edge
@@ -106,7 +115,7 @@ function drawLid(set, L, shut, shutStyle) {
       const gr = g.createRadialGradient(px, py, 0, px, py, f); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(px < w / 2 ? 0 : w - f, py < h / 2 ? 0 : h - f, f, f);
     }
-    const old = set === 'old', lash = set === 'lash';
+    const old = set === 'old', lash = set === 'lash', heavy = set === 'heavy', sharp = set === 'sharp';
     g.lineCap = 'round'; g.lineJoin = 'round';
     if (shut) {
       // a closed eye: one thick curve. 'up' is the happy arch, 'down' the resting lid
@@ -114,7 +123,6 @@ function drawLid(set, L, shut, shutStyle) {
       g.strokeStyle = INK; g.lineWidth = w * (old ? 0.07 : 0.085);
       g.beginPath(); g.moveTo(cx - a * 0.98, y0); g.quadraticCurveTo(cx, y0 + bend * 2, cx + a * 1.02, y0 - h * 0.01); g.stroke();
       if (lash) { g.lineWidth = w * 0.05; g.beginPath(); g.moveTo(cx + a * 0.95, y0); g.lineTo(cx + a * 1.3, y0 + (shutStyle === 'up' ? 0.045 : 0.05) * h); g.moveTo(cx + a * 0.7, y0 + bend * 0.55); g.lineTo(cx + a * 0.98, y0 + bend * 0.55 + 0.06 * h); g.stroke(); }
-      if (old) { g.lineWidth = w * 0.028; g.globalAlpha = 0.55; g.beginPath(); g.moveTo(cx - a * 0.5, y0 + h * 0.17); g.quadraticCurveTo(cx, y0 + h * 0.22, cx + a * 0.6, y0 + h * 0.15); g.stroke(); g.globalAlpha = 1; }
       underfill(g, w, h, '#ffffff');
       return;
     }
@@ -137,13 +145,19 @@ function drawLid(set, L, shut, shutStyle) {
       g.beginPath(); g.moveTo(ox - w * 0.02, oy - h * 0.01); g.lineTo(ox + w * 0.1, oy - h * 0.06); g.stroke();
       g.lineWidth = w * 0.042;
       g.beginPath(); g.moveTo(ox - w * 0.08, oy - h * 0.075 * L.c2 - h * 0.025); g.lineTo(ox + w * 0.02, oy - h * 0.14 * Math.max(0.5, L.c2) - h * 0.03); g.stroke();
+    } else if (sharp) { // a long corner, drawn out and up
+      g.lineWidth = w * 0.055; g.beginPath(); g.moveTo(ox - w * 0.02, oy); g.lineTo(ox + w * 0.1, oy - h * 0.035); g.stroke();
     } else { // a short tail so the corner is not a blunt end
       g.lineWidth = w * 0.06; g.beginPath(); g.moveTo(ox - w * 0.01, oy); g.lineTo(ox + w * 0.045, oy + h * 0.035); g.stroke();
     }
-    if (old) { // a crease above the lid and a soft bag under it
-      g.lineWidth = w * 0.026; g.globalAlpha = 0.5;
-      g.beginPath(); g.moveTo(cx - a * 0.7, cy - L.ht * h - h * 0.085); g.quadraticCurveTo(cx + a * 0.1, cy - L.ht * h * L.c2 - h * 0.13, cx + a * 0.95, cy - L.ht * h * 0.5 - h * 0.07); g.stroke();
-      g.beginPath(); g.moveTo(cx - a * 0.55, cy + L.hb * h + h * 0.07); g.quadraticCurveTo(cx, cy + L.hb * h + h * 0.115, cx + a * 0.6, cy + L.hb * h + h * 0.06); g.stroke();
+    if (old) { // one soft crease above the lid. Nothing under the eye: at 70 px a second line there reads as dirt
+      g.lineWidth = w * 0.03; g.globalAlpha = 0.32;
+      g.beginPath(); g.moveTo(cx - a * 0.6, cy - L.ht * h - h * 0.09); g.quadraticCurveTo(cx + a * 0.1, cy - L.ht * h * L.c2 - h * 0.135, cx + a * 0.9, cy - L.ht * h * 0.5 - h * 0.075); g.stroke();
+      g.globalAlpha = 1;
+    }
+    if (heavy) { // the fold of a lid that is carried half down
+      g.lineWidth = w * 0.04; g.globalAlpha = 0.6;
+      g.beginPath(); g.moveTo(cx - a * 0.85, cy - L.ht * h * 0.9 - h * 0.1); g.quadraticCurveTo(cx + a * 0.05, cy - L.ht * h * 1.25 - h * 0.14, cx + a * 1.02, cy - L.ht * h * 0.6 - h * 0.085); g.stroke();
       g.globalAlpha = 1;
     }
     underfill(g, w, h, '#ffffff');
@@ -166,8 +180,8 @@ function drawEyeball(color, kind) {
     // catchlights: a big one up and to one side, a small one opposite
     g.fillStyle = '#ffffff';
     const k = kind === 'wet' ? 1.25 : 1;
-    g.beginPath(); g.ellipse(c - R * 0.36, cy - R * 0.4, R * 0.31 * k, R * 0.27 * k, -0.4, 0, 7); g.fill();
-    g.beginPath(); g.arc(c + R * 0.42, cy + R * 0.36, R * 0.13 * k, 0, 7); g.fill();
+    g.beginPath(); g.ellipse(c - R * 0.36, cy - R * 0.4, R * 0.35 * k, R * 0.3 * k, -0.4, 0, 7); g.fill();
+    g.beginPath(); g.arc(c + R * 0.42, cy + R * 0.36, R * 0.15 * k, 0, 7); g.fill();
     if (kind === 'wet') { g.beginPath(); g.ellipse(c - R * 0.1, cy + R * 0.62, R * 0.3, R * 0.11, 0, 0, 7); g.fill(); g.beginPath(); g.arc(c + R * 0.05, cy - R * 0.62, R * 0.09, 0, 7); g.fill(); }
   };
 }
@@ -181,6 +195,12 @@ const CLOSED = {
   happy(g, w, h) { line(g, w, [[0.25, 0.36], [0.5, 0.82], [0.75, 0.36]]); tick(g, w, h, 0.25, 0.36, -1); tick(g, w, h, 0.75, 0.36, 1); },
   softsmile(g, w, h) { line(g, w, [[0.34, 0.42], [0.5, 0.66], [0.66, 0.42]]); },
   down(g, w, h) { line(g, w, [[0.33, 0.58], [0.5, 0.38], [0.67, 0.58]]); },
+  // resting mouths a character can be given in place of 'plain' (face.mouths)
+  flat(g, w, h) { line(g, w, [[0.35, 0.5], [0.5, 0.5], [0.65, 0.5]]); },
+  smirk(g, w, h) { line(g, w, [[0.33, 0.5], [0.54, 0.62], [0.69, 0.38]]); tick(g, w, h, 0.69, 0.38, 1); },
+  pursed(g, w, h) { line(g, w, [[0.41, 0.5], [0.5, 0.46], [0.59, 0.5]]); g.lineWidth = w * 0.03; g.beginPath(); g.moveTo(w * 0.45, h * 0.66); g.quadraticCurveTo(w * 0.5, h * 0.7, w * 0.55, h * 0.66); g.stroke(); },
+  grin(g, w, h) { line(g, w, [[0.27, 0.4], [0.5, 0.74], [0.73, 0.4]]); },
+  wry(g, w, h) { line(g, w, [[0.34, 0.44], [0.46, 0.6], [0.67, 0.5]]); },
   o(g, w, h) { g.fillStyle = MOUTH_IN; g.strokeStyle = MOUTH_INK; g.lineWidth = w * 0.045; g.beginPath(); g.ellipse(w * 0.5, h * 0.52, w * 0.085, h * 0.2, 0, 0, 7); g.fill(); g.stroke(); },
   wobble(g, w, h) {
     g.strokeStyle = MOUTH_INK; g.lineWidth = w * 0.05; g.lineCap = 'round'; g.lineJoin = 'round';
@@ -253,15 +273,13 @@ function drawMarks(spec) {
       const dots = [[27, -22, 1.0], [32, -19.5, 0.85], [37, -22.5, 1.0], [31.5, -25.5, 0.8], [41, -20, 0.7], [23, -19.5, 0.7], [5, -19, 0.75], [-4, -20.5, 0.65]];
       for (const s of [-1, 1]) for (const [a, b, r] of dots) { if (s < 0 && Math.abs(a) < 8) continue; g.beginPath(); g.arc(wx(a * s), wy(b + (s < 0 ? 0.6 : 0)), r * 1.15 * DEGX, 0, 7); g.fill(); }
     }
-    if (spec.laugh) {
-      g.strokeStyle = rgba(mix(skin, '#5a2420', 0.5), 0.6); g.lineWidth = 0.95 * DEGX; // soft: at 70 px anything darker reads as dirt
-      for (const s of [-1, 1]) {
-        // crow's feet at the outer corner of each eye
-        for (const [dy, len] of [[3.2, 4.5], [-3.2, 4.5]]) { g.beginPath(); g.moveTo(wx(s * 42.5), wy(-6 + dy * 0.6)); g.lineTo(wx(s * (42.5 + len)), wy(-6 + dy * 1.5)); g.stroke(); }
-        // the line from the nose round the mouth
-        g.beginPath(); g.moveTo(wx(s * 11), wy(-22)); g.quadraticCurveTo(wx(s * 19), wy(-28), wx(s * 17.5), wy(-37)); g.stroke();
-      }
-      // two soft lines on the brow
+    if (spec.laugh) { // age, in two strokes: the line from the nose round each corner of the mouth. Soft: at 70 px anything darker reads as dirt
+      g.strokeStyle = rgba(mix(skin, '#5a2420', 0.45), 0.42); g.lineWidth = 1.0 * DEGX;
+      for (const s of [-1, 1]) { g.beginPath(); g.moveTo(wx(s * 12.5), wy(-23.5)); g.quadraticCurveTo(wx(s * 20), wy(-29), wx(s * 18.5), wy(-37)); g.stroke(); }
+    }
+    if (spec.dust) { // salt in the brows and at the temples
+      g.fillStyle = 'rgba(255,255,255,0.8)';
+      for (const [a, b2, r] of [[40, 16, 1.0], [44, 11, 0.8], [36, 20, 0.7], [-41, 17, 0.9], [-45, 12, 0.7], [-37, 21, 0.8], [47, 4, 0.6], [-48, 5, 0.6]]) { g.beginPath(); g.arc(wx(a), wy(b2), r * DEGX, 0, 7); g.fill(); }
     }
     if (spec.scar) { // a pale nick down through one brow
       const s = spec.scar === 'R' ? -1 : 1;
@@ -322,11 +340,11 @@ export function createFaces({ size = 2048, figure = null } = {}) {
   const mat = material({ name: 'face', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: figure ? figure.rim : 1, bands: figure ? figure.bands : 2, bandEdge: figure ? figure.bandEdge : 0, bandSoft: figure ? figure.bandSoft : 0.006, keyLight: figure ? figure.keyLight : null });
   const emoteOf = (e) => { const E = EMOTE[e]; if (!E) throw new Error(`faces: unknown emote "${e}" (have ${EMOTES.join(', ')})`); return E; };
   // the eyeballs keep some of their own colour in shadow, or the iris goes dead when the face turns from the light
-  const eyeMat = material({ name: 'eyes', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.4, keyLight: mat.keyLight });
+  const eyeMat = material({ name: 'eyes', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.5, keyLight: mat.keyLight });
   return {
     atlas, material: mat, eyeMaterial: eyeMat,
     lid(set, emote, shut) {
-      if (set !== 'round' && set !== 'lash' && set !== 'old') throw new Error(`faces: unknown lid set "${set}" (have round, lash, old)`);
+      if (!LID_SETS.includes(set)) throw new Error(`faces: unknown lid set "${set}" (have ${LID_SETS.join(', ')})`);
       const E = emoteOf(emote);
       return shut ? cell(`lid:${set}:shut:${E.shut}`, LW, LH, drawLid(set, E.lid, true, E.shut)) : cell(`lid:${set}:${emote}`, LW, LH, drawLid(set, E.lid, false, E.shut));
     },
@@ -335,6 +353,8 @@ export function createFaces({ size = 2048, figure = null } = {}) {
       const E = emoteOf(emote), n = Math.max(0, Math.min(3, level | 0));
       return n === 0 ? cell(`mouth:${E.mouth}`, MW, MH, CLOSED[E.mouth]) : cell(`mouth:${E.open}${n}`, MW, MH, drawOpen(E.open, n));
     },
+    /** A closed mouth by name (see CLOSED), for a character whose face rests in something other than the emote's own. */
+    mouthShape(name) { if (!CLOSED[name]) throw new Error(`faces: unknown mouth "${name}" (have ${Object.keys(CLOSED).join(', ')})`); return cell(`mouth:${name}`, MW, MH, CLOSED[name]); },
     marks(key, spec) { return cell(`marks:${key}`, WW, WH, drawMarks(spec)); },
     fx(name) { if (!name) return null; if (!FX[name]) throw new Error(`faces: unknown fx "${name}" (have ${Object.keys(FX).join(', ')})`); return cell(`fx:${name}`, WW, WH, FX[name]); },
   };

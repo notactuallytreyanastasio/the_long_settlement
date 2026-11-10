@@ -37,6 +37,13 @@
     display: block; background: #000; outline: none; touch-action: none;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   }
+  /* The 3D renderer (src/shell/gl/app.js) draws on #gl, under #stage, which is then its transparent HUD and still
+     takes every touch. Both sit in the one grid cell. main.js shows #gl and sets body.gl only while the 3D renderer
+     is the one drawing; without WebGL2 this canvas is never shown and never asked for a context. */
+  canvas#gl, canvas#stage { grid-area: 1 / 1; }
+  canvas#gl { display: block; background: #1d2146; pointer-events: none; touch-action: none; }
+  canvas#gl[hidden] { display: none; }
+  body.gl canvas#stage { background: transparent; }
   /* main.js reads the safe-area insets off this, since env() cannot be read from script */
   #safe {
     position: fixed; top: 0; left: 0; width: 0; height: 0; visibility: hidden; pointer-events: none;
@@ -104,6 +111,7 @@
 </style>
 </head>
 <body>
+<canvas id="gl" hidden aria-hidden="true"></canvas>
 <canvas id="stage" tabindex="0" aria-label="The Long Settlement"></canvas>
 
 <div id="gate">

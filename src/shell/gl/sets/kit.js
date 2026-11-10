@@ -48,9 +48,11 @@
 //   townBank(opts)                   a hillside of small lit houses as one far mesh
 //   floatLight()                     a paper light on a wooden float, for instancing on water
 //   desk(opts), ledgerBook(opts), candle(opts), inkwell(), quill(), bookshelf(opts), archWindow(opts)
+//   lanternLines(opts)               strings of swaying paper lanterns as instanced draws: { nodes, list, update, setLit }
+//   crowd(opts)                      townsfolk on spots as one instanced draw, each with a light: { node, setAmount, update }
 
 import {
-  m4, rng, DEG, rgb,
+  m4, quat, rng, DEG, rgb,
   sphere, ellipsoid, superellipsoid, blob, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane,
   merge, tint, paint, place, deform, setGlow, setOutline, gradientY, clone, bounds, scale as scaleMesh,
   Node, material, makeInstances, setInstance,
@@ -891,8 +893,9 @@ export function townBank({ w = 44, d = 16, h = 11, rows = 4, seed = 1, lit = 0.7
   return keepAnchors(setOutline(merge(parts), 0.6), { windows: wins, top: [0, h, -d] });
 }
 
-/** A paper light on a little wooden float, waterline at y = 0. White paper: colour it per instance. */
-export function floatLight({ s = 1 } = {}) {
+/** A paper light on a little wooden float, waterline at y = 0. White paper: colour it per instance. `detail: 0` is a bare 12-triangle light for the far hundreds. */
+export function floatLight({ s = 1, detail = 1 } = {}) {
+  if (!detail) return setOutline(setGlow(tint(place(box(0.2 * s, 0.22 * s, 0.2 * s), 0, 0.13 * s, 0), '#ffffff'), 0.95), 0);
   return scaleMesh(merge(tint(place(cylinder(0.2, 0.17, 0.05, 7), 0, 0, 0), PAL.wood), setGlow(tint(place(roundedBox(0.2, 0.22, 0.2, 0.04, 1), 0, 0.16, 0), '#ffffff'), 0.95)), s);
 }
 
@@ -978,6 +981,90 @@ export function archWindow({ w = 1.1, h = 2.2, glass = '#3f6fe0', frame = PAL.st
   for (const y of [h * 0.3, h * 0.6]) parts.push(tint(place(box(w, 0.04, 0.04), 0, y, 0.11), bars));
   parts.push(tint(place(roundedBox(w + 0.44, 0.1, 0.3, 0.03, 1), 0, -0.03, 0.08), frame));
   return merge(parts);
+}
+
+// ------------------------------------------------------------------------------------ live dressing (nodes, not meshes)
+
+/**
+ * Paper lanterns on strings, swaying, as one instanced draw per shape (plus its outline).
+ *   strings   [{ hooks: [[x, y, z]...], cols: [indices into PAL.lanterns], scale?, skip? (a hook index to leave bare) }]
+ *   material  kitMaterials().lantern;  sprites: the scene's sprites (each lantern gets a glow), or null
+ *   shapes    2 (round and tall) or 1;  seg: sides of a lantern
+ * Returns { nodes (add them to the scene), list ([{ hook, lit, glow, ... }]), count, setLit(i, 0..1),
+ *           update(time, { on, pw, unlit, paper, glow, cool }) }:
+ *   on 0..1 how lit the lit ones are, pw the lamp power for the halo, unlit the brightness of dead paper,
+ *   paper 0..1 how far dead paper washes to white (daylight), glow the halo strength, cool the blue shift of dead paper.
+ */
+export function lanternLines({ strings, material, sprites = null, shapes = 2, seg = 8, seed = 1, glowSize = 0.95, r0 = 0.17 }) {
+  const r = R(seed), meshes = [paperLantern({ r: r0, shape: 'round', seg }), paperLantern({ r: r0 * 0.88, shape: 'tall', seg })].slice(0, shapes);
+  const len = meshes.map((m) => -m.anchors.centre[1]), list = [];
+  strings.forEach((s, si) => s.hooks.forEach((h, i) => {
+    if (i === s.skip) return;
+    list.push({ hook: h, col: rgb(PAL.lanterns[s.cols[i % s.cols.length] % PAL.lanterns.length]), s: (s.scale || 1) * (0.74 + r() * 0.24), ph: r() * 6.283, lit: 1, shape: shapes > 1 && (i + si) % 3 === 1 ? 1 : 0, inst: null, idx: 0, glow: null });
+  }));
+  const count = meshes.map(() => 0);
+  for (const l of list) l.idx = count[l.shape]++;
+  const nodes = meshes.map((m, k) => { const n = new Node('lanterns' + k, { mesh: m, material }); n.castShadow = false; n.instances = makeInstances(Math.max(1, count[k])); n.instances.count = count[k]; return n; });
+  for (const l of list) { l.inst = nodes[l.shape].instances; if (sprites) l.glow = sprites.add({ kind: 'glow', pos: l.hook, size: glowSize * l.s, color: l.col, alpha: 0 }); }
+  const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create();
+  return {
+    nodes, list, count: list.length,
+    setLit(i, lit) { const l = list[i]; if (!l) throw new Error(`lanternLines: no lantern ${i} (have ${list.length})`); l.lit = Math.max(0, Math.min(1, lit)); },
+    update(time, { on = 1, pw = on, unlit = 0.42, paper = 0, glow = 0.7, cool = 0.1 } = {}) {
+      for (let i = 0; i < list.length; i++) {
+        const l = list[i], az = (Math.sin(time * 1.25 + l.ph) * 5 + Math.sin(time * 0.43 + l.ph * 2.1) * 4) * DEG, ax = Math.sin(time * 1.05 + l.ph * 1.7) * 4 * DEG;
+        quat.fromEuler(Q, ax, 0, az); S3[0] = S3[1] = S3[2] = l.s;
+        m4.fromTRS(Mx, l.hook, Q, S3);
+        const d = l.inst.data, o = l.idx * 20, k = l.lit * on, fl = 0.94 + 0.06 * Math.sin(time * 9.0 + l.ph * 5);
+        d.set(Mx, o);
+        const u0 = (l.col[0] + (1 - l.col[0]) * paper) * unlit * (1 - cool), u1 = (l.col[1] + (1 - l.col[1]) * paper) * unlit, u2 = (l.col[2] + (1 - l.col[2]) * paper) * unlit + cool * 2;
+        d[o + 16] = u0 + (l.col[0] * 1.06 * fl - u0) * k; d[o + 17] = u1 + (l.col[1] * fl - u1) * k; d[o + 18] = u2 + (l.col[2] * fl - u2) * k;
+        l.inst.dirty = true;
+        if (l.glow) { const ln = len[l.shape] * l.s, g = l.glow; g.pos[0] = l.hook[0] + Math.sin(az) * ln; g.pos[1] = l.hook[1] - Math.cos(az) * ln; g.pos[2] = l.hook[2] - Math.sin(ax) * ln; g.alpha = (glow + 0.06) * l.lit * Math.min(1.2, pw) * fl; }
+      }
+    },
+  };
+}
+
+/**
+ * A crowd: one townsfolk mesh drawn on every spot, in one instanced call (plus its outline), each holding a light.
+ *   spots     [{ pos: [x, y, z], face: degrees, s?: scale }], in the order they should arrive
+ *   material  kitMaterials().prop (outlined) or .speck (not);  sprites: for a glow on each light, or null
+ *   hold      'lantern' | 'torch' | 'none';  detail 1 | 0;  colors: pale instance colours (COATS)
+ * Returns { node, people, amount, setAmount(0..1), update(time, dt, { lit, lively }) }: setAmount is how much of the
+ * crowd has turned up (they pop in and out one by one); lit 0..1.5 scales the lights; lively 0..1 how much they bob and
+ * shove (0.25 is a quiet vigil, 1 a march).
+ */
+export function crowd({ spots, material, sprites = null, seed = 1, detail = 1, hold = 'lantern', colors = COATS, glow = '#ffc060', glowSize = 0.75, amount = 1 }) {
+  const r = R(seed), mesh = townsfolk({ seed, hold, detail }), A = mesh.anchors.light;
+  const n = new Node('crowd', { mesh, material }); n.castShadow = false; n.instances = makeInstances(Math.max(1, spots.length)); n.instances.count = 0;
+  const people = spots.map((sp, i) => ({ pos: sp.pos, face: sp.face || 0, s: sp.s || 0.88 + r() * 0.24, ph: r() * 6.283, col: rgb(colors[Math.floor(r() * colors.length) % colors.length]), here: i < Math.round(amount * spots.length) ? 1 : 0, glow: sprites && hold !== 'none' ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: glowSize, color: glow, alpha: 0 }) : null }));
+  const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), P = [0, 0, 0];
+  const c = {
+    node: n, people, amount,
+    setAmount(a) { c.amount = Math.max(0, Math.min(1, a)); },
+    update(time, dt = 0, { lit = 1, lively = 0.3 } = {}) {
+      const want = Math.round(c.amount * people.length), d = n.instances.data; let k = 0;
+      for (let i = 0; i < people.length; i++) {
+        const p = people[i], goal = i < want ? 1 : 0;
+        p.here += (goal - p.here) * Math.min(1, dt * 7 + (dt === 0 ? 1 : 0));
+        if (p.here < 0.02) { if (p.glow) p.glow.alpha = 0; continue; }
+        const hop = Math.abs(Math.sin(time * (2.2 + lively * 2.6) + p.ph)) * 0.05 * lively, sw = Math.sin(time * 1.1 + p.ph * 1.7) * (2 + 5 * lively) * DEG, yaw = (p.face + Math.sin(time * 0.6 + p.ph) * 8 * lively) * DEG;
+        const s = p.s * (0.2 + 0.8 * p.here) * (1 + 0.12 * Math.sin(Math.min(1, p.here) * Math.PI));
+        P[0] = p.pos[0]; P[1] = p.pos[1] + hop; P[2] = p.pos[2];
+        quat.fromEuler(Q, 0, yaw, sw); S3[0] = S3[1] = S3[2] = s;
+        m4.fromTRS(Mx, P, Q, S3); d.set(Mx, k * 20);
+        d[k * 20 + 16] = p.col[0]; d[k * 20 + 17] = p.col[1]; d[k * 20 + 18] = p.col[2]; d[k * 20 + 19] = 1; k++;
+        if (p.glow) {
+          const cy = Math.cos(yaw), sy = Math.sin(yaw), g = p.glow, ax = A[0] - Math.sin(sw) * A[1];
+          g.pos[0] = P[0] + (ax * cy + A[2] * sy) * s; g.pos[1] = P[1] + A[1] * s; g.pos[2] = P[2] + (-ax * sy + A[2] * cy) * s;
+          g.alpha = 0.6 * Math.min(1.3, lit) * p.here * (0.9 + 0.1 * Math.sin(time * 8 + p.ph * 3));
+        }
+      }
+      n.instances.count = k; n.instances.dirty = true; n.visible = k > 0;
+    },
+  };
+  return c;
 }
 
 export { plane, clone };

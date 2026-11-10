@@ -462,15 +462,58 @@ export const EXTRAS = {
     b.parts.head.push(setOutline(tint(place(sphere(0.017, 8, 6), sx * R[0] * 1.1, y - R[1] * 0.14, 0.012), s.color || '#c9d2de'), 0.6));
     b.parts.head.push(setOutline(tint(strand(curve([[sx * R[0] * 1.1, y - R[1] * 0.16, 0.0], [sx * R[0] * 1.06, y - R[1] * 0.5, -0.05], [sx * R[0] * 0.7, y - R[1] * 0.92, -0.09]], 6), () => 0.0035, () => 0.0035, 5), s.color || '#c9d2de'), 0));
   },
-  /** Round spectacles. */
+  /** Round spectacles: { color, size, half: true for half-moons worn low }. */
   glasses(b, s) {
-    const hd = b.hd, y = b.dim.headC, col = s.color || '#3a3050';
+    const hd = b.hd, y = b.dim.headC, col = s.color || '#3a3050', ep = (b.face.eyePitch ?? FACE.eyePitch) + (s.half ? -8 : 1), ey = b.face.eyeYaw ?? FACE.eyeYaw, rr = hd.R[0] * 0.25 * (s.size ?? 1);
     for (const sx of [-1, 1]) {
-      const c = hd.at(sx * FACE.eyeYaw, FACE.eyePitch + 1, 1.07), q = quat.fromTo(quat.create(), [0, 1, 0], norm(c));
-      const ring = xform(torus(hd.R[0] * 0.25, 0.007, 16, 5), c, q); place(ring, 0, y, 0); b.parts.head.push(tint(ring, col));
+      const c = hd.at(sx * ey, ep, 1.07), q = quat.fromTo(quat.create(), [0, 1, 0], norm(c));
+      const ring = xform(scaleMesh(torus(rr, 0.007, b.lo ? 9 : 16, b.lo ? 3 : 5), 1, 1, s.half ? 0.56 : 1), c, q); place(ring, 0, y, 0); b.parts.head.push(tint(ring, col));
     }
-    const a = hd.at(-8, FACE.eyePitch + 4, 1.09), c = hd.at(8, FACE.eyePitch + 4, 1.09);
-    b.parts.head.push(tint(place(strand([a, hd.at(0, FACE.eyePitch + 6, 1.1), c], () => 0.006, () => 0.006, 5), 0, y, 0), col));
+    const a = hd.at(-8, ep + 3, 1.09), c = hd.at(8, ep + 3, 1.09);
+    b.parts.head.push(tint(place(strand([a, hd.at(0, ep + 5, 1.1), c], () => 0.006, () => 0.006, 5), 0, y, 0), col));
+  },
+  /** A beard under the mouth: { shape 'square' | 'full' | 'point', color, size, whiskers: false }. */
+  beard(b, s) {
+    const hd = b.hd, R = hd.R, y = b.dim.headC, k = s.size ?? 1, col = s.color || '#9a9aa0', sq = s.shape === 'square';
+    let m = sq ? superellipsoid(R[0] * 0.5 * k, R[1] * 0.3 * k, R[2] * 0.3 * k, 0.5, 0.5, b.S(14), b.S(9))
+      : blob({ rx: R[0] * 0.56 * k, ry: R[1] * 0.36 * k, rz: R[2] * 0.32 * k, chin: s.shape === 'point' ? 1 : 0.3, pear: -0.3, seg: b.S(14), rings: b.S(9) });
+    b.parts.head.push(tint(place(m, 0, y - R[1] * (sq ? 0.99 : 1.04), R[2] * 0.56), col));
+    if (s.whiskers !== false) for (const sx of [-1, 1]) b.parts.head.push(tint(place(lockOn(hd, [[sx * 82, -4, 1.03], [sx * 72, -34, 1.05], [sx * 46, -58, 1.05]], 0.05 * k, { n: b.N(8), seg: b.S(7), thick: 0.5 }), 0, y, 0), col));
+  },
+  /** The two white bands a magistrate wears at the throat. */
+  tabs(b, s) {
+    const d = b.dim, y = d.neckY - 0.115;
+    for (const sx of [-1, 1]) b.parts.chest.push(setOutline(tint(place(roundedBox(0.036, 0.08, 0.01, 0.004, 1), sx * 0.021, y, b.torsoZ(sx * 0.021, y) + 0.012, 10, 0, sx * 8), s.color || '#fffdf4'), 0.6));
+  },
+  /** Checks on the front of the top (a waistcoat): { color (the second colour), cols, rows, bottom }. */
+  checks(b, s) {
+    const d = b.dim, nx = s.cols || 6, ny = s.rows || 5, x0 = -d.rx * 0.84, x1 = d.rx * 0.84, y1 = d.shoulderY - 0.012, y0 = s.bottom ?? 0.005, pos = [], idx = [];
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      if ((i + j) % 2) continue;
+      const xa = x0 + (x1 - x0) * i / nx, xb = x0 + (x1 - x0) * (i + 1) / nx, ya = y0 + (y1 - y0) * j / ny, yb = y0 + (y1 - y0) * (j + 1) / ny, v = pos.length / 3;
+      for (const [x, yy] of [[xa, ya], [xb, ya], [xb, yb], [xa, yb]]) pos.push(x, yy, b.torsoZ(x, yy) + 0.004);
+      idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
+    }
+    b.parts.chest.push(setOutline(tint(fromArrays(pos, idx, null, 180), s.color || '#3d4a1f'), 0));
+  },
+  /** A plain cape over the shoulders: { color, trim, length, lining, clasp }. It covers the upper arms, as the shawl does. */
+  cape(b, s) {
+    const d = b.dim, c1 = s.color || '#3a3226', c3 = s.trim || c1, w = d.shoulderX, sh = d.shoulderY, top = d.neckY + 0.012, len = s.length ?? 0.14;
+    b.parts.chest.push(bands([[w * 1.5, sh - len, c3], [w * 1.54, sh - len + 0.016, c1], [w * 1.42, sh - len * 0.4, c1], [w * 1.22, sh + 0.005, c1], [w * 0.95, sh + 0.04, c1], [w * 0.62, top, c1]], b.S(20), 0.88));
+    b.parts.chest.push(tint(scaleMesh(lathe([[w * 1.0, sh - len + 0.03], [w * 1.5, sh - len]], b.S(20), { crease: 180 }), 1, 1, 0.88), s.lining || mixc(c1, '#1a1040', 0.4)));
+    if (s.clasp) b.parts.chest.push(setOutline(tint(place(cylinder(0.026, 0.026, 0.014, b.S(10), { crease: 40 }), 0, sh - len * 0.3, w * 1.4 * 0.88, 80, 0, 0), s.clasp), 0.7));
+    b.sleeve = { color: c1, color2: c3 === c1 ? mixc(c1, '#1a1040', 0.18) : c3, drape: true };
+  },
+  /** A pin, a tag or a seal on the chest: { x, y (chest coordinates; default left breast), size, color, shape 'disc' | 'bar' }. */
+  brooch(b, s) {
+    const x = s.x ?? 0.055, y = s.y ?? b.dim.shoulderY - 0.06, z = b.torsoZ(x, y) + 0.004, r = s.size ?? 0.02;
+    const m = s.shape === 'bar' ? place(roundedBox(r * 1.1, r * 2.2, 0.008, 0.003, 1), x, y, z + 0.003) : place(cylinder(r, r, 0.01, b.S(10), { crease: 40 }), x, y, z - 0.002, 84, 0, 0);
+    b.parts.chest.push(setOutline(tint(m, s.color || '#c0c6d6'), 0.6));
+  },
+  /** A bow tie. */
+  bowtie(b, s) {
+    const d = b.dim, y = d.neckY - 0.1, z = b.torsoZ(0, y) + 0.016, c = s.color || '#e07a3f', r = 0.03, L = 0.052;
+    b.parts.chest.push(setOutline(merge(tint(place(cone(r, L, 6), -L, y, z, 0, 0, -90), c), tint(place(cone(r, L, 6), L, y, z, 0, 0, 90), c), tint(place(sphere(0.016, 6, 4), 0, y, z + 0.004), mixc(c, '#3a1020', 0.25))), 0.7));
   },
   /** A moustache: two short locks under the nose. */
   moustache(b, s) {
@@ -497,6 +540,34 @@ export const PROPS = {
   baton(s, S) {
     const m = merge(tint(place(cylinder(0.016, 0.02, 0.3, S(8)), 0, -0.07, 0), s.color || '#5a3a2a'), tint(place(sphere(0.028, 8, 6), 0, 0.235, 0), s.tip || '#ffd24a'));
     return { mesh: place(m, 0, 0, 0, -78, 0, 0) };
+  },
+  /** A magistrate's gavel. */
+  gavel(s, S) {
+    const m = merge(tint(place(cylinder(0.013, 0.016, 0.26, S(8)), 0, -0.06, 0), s.color || '#8a5a34'), tint(place(cylinder(0.042, 0.042, 0.12, S(10), { crease: 50 }), 0.06, 0.2, 0, 0, 0, 90), s.head || '#6a3f24'),
+      tint(place(cylinder(0.045, 0.045, 0.016, S(10), { crease: 50 }), 0.03, 0.2, 0, 0, 0, 90), '#ffd24a'), tint(place(cylinder(0.045, 0.045, 0.016, S(10), { crease: 50 }), -0.044, 0.2, 0, 0, 0, 90), '#ffd24a'));
+    return { mesh: place(m, 0, 0, 0, -64, 0, 0) };
+  },
+  /** A long thin cane with a brass tip. */
+  pointer(s, S) {
+    const m = merge(tint(place(cylinder(0.008, 0.012, 0.52, S(7)), 0, -0.08, 0), s.color || '#2a3a3a'), tint(place(sphere(0.016, 6, 4), 0, 0.445, 0), s.tip || '#ffd24a'), tint(place(sphere(0.02, 6, 4), 0, -0.08, 0), s.tip || '#ffd24a'));
+    return { mesh: place(m, 0, 0, 0, -70, 0, 0) };
+  },
+  /** A big bound book, held against the body: { color, trim, pages }. */
+  ledger(s, S) {
+    const c = s.color || '#6a4a2a', m = merge(tint(roundedBox(0.2, 0.27, 0.056, 0.012, 2), c), tint(place(roundedBox(0.19, 0.25, 0.044, 0.004, 1), 0.012, 0, 0), s.pages || '#fff3d0'),
+      tint(place(roundedBox(0.03, 0.272, 0.058, 0.01, 1), -0.088, 0, 0), s.trim || '#c9b78a'), setOutline(tint(place(roundedBox(0.07, 0.05, 0.008, 0.004, 1), 0.01, 0.03, 0.03), s.trim || '#c9b78a'), 0.5));
+    return { mesh: place(m, 0.02, -0.04, 0.075, -12, -20, 8) };
+  },
+  /** The hat that goes round: upturned, with what people put in it. */
+  hat(s, S) {
+    const c = s.color || '#6a5a4a', bowl = tint(lathe([[0, 0], [0.07, 0.006], [0.1, 0.05], [0.105, 0.09], [0.15, 0.1], [0.15, 0.108], [0.092, 0.1], [0.086, 0.052], [0, 0.03]], S(14), { crease: 60 }), c);
+    const r = rng(s.seed ?? 3), coins = []; for (let i = 0; i < (s.coins ?? 5); i++) coins.push(setOutline(setGlow(tint(place(cylinder(0.02, 0.02, 0.008, 7, { crease: 40 }), (r() - 0.5) * 0.1, 0.04 + r() * 0.03, (r() - 0.5) * 0.1, r() * 50 - 25, 0, r() * 50 - 25), '#ffd24a'), 0.35), 0.5));
+    return { mesh: place(merge(bowl, coins), 0, -0.07, 0.07) };
+  },
+  /** A bowl of something hot, held out. */
+  bowl(s, S) {
+    const m = merge(tint(lathe([[0, 0], [0.04, 0], [0.085, 0.05], [0.09, 0.062], [0.078, 0.058], [0.04, 0.02], [0, 0.016]], S(12), { crease: 60 }), s.color || '#e9dcc0'), tint(place(cylinder(0.074, 0.074, 0.006, S(10), { crease: 40 }), 0, 0.044, 0), s.soup || '#d98a3a'));
+    return { mesh: place(m, 0, -0.045, 0.06) };
   },
   writ(s, S) {
     const m = merge(tint(roundedBox(0.12, 0.16, 0.012, 0.004, 1), s.color || '#fff6dc'), tint(place(cylinder(0.022, 0.022, 0.01, 10), 0.025, -0.045, 0.006, 90, 0, 0), '#e6323a'));
@@ -636,13 +707,20 @@ let seedCounter = 1;
  *   eyes      'shut' | 'open' overrides blinking
  *   snap      true on a cut: every blend (emote, pose, look, facing) lands at once and nothing blinks
  */
-export function createCharacter(def, { faces = null, material: mat = null, detail = 1 } = {}) {
+export function createCharacter(def, { faces = null, material: mat = null, detail = 1, lod = 'full' } = {}) {
   if (!def || !def.id) throw new Error('createCharacter: a def needs an id');
   mat = mat || defaultMaterial();
-  const S = (n) => Math.max(5, Math.round(n * detail));
+  if (lod !== 'full' && lod !== 'stage') throw new Error(`createCharacter(${def.id}): unknown lod "${lod}" (have full, stage)`);
+  // 'stage' is the figure for the live band, drawn 60 to 90 px tall: the same silhouette from half the segments,
+  // fewer points along every lock, discs for buttons, coarser face patches
+  const lo = lod === 'stage', dq = detail * (lo ? 0.52 : 1), CR = lo ? 2 : 4;
+  const S = (n) => Math.max(lo ? 4 : 5, Math.round(n * dq));
+  const N = (n) => (lo ? Math.max(3, Math.round(n * 0.55)) : n);
+  const uids = {}, uid = (p) => { uids[p] = (uids[p] || 0) + 1; return p + uids[p]; };
   const B = { ...DEFAULT_BUILD, ...(def.build || {}) };
   const C = def.costume || {};
   const skin = def.skin || '#ffd8b0';
+  const headSkin = def.face?.shade ? mixc(skin, '#2a1c52', def.face.shade) : skin; // a face kept in the shadow of a hood
   const top = { color: '#ffc83a', hem: -0.03, flare: 1.3, ...(C.top || {}) };
   const sleeves = { color: top.color, flare: 1.16, ...(C.sleeves || {}) };
   const legsC = { color: '#2a3a66', ...(C.legs || {}) };
@@ -668,13 +746,13 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   const skirtR = (y) => { const t = Math.max(0, Math.min(1, (y - dim.hemY) / (dim.waistY + 0.05 - dim.hemY))); return hemR + (waistR - hemR) * t ** 0.8; };
 
   const parts = { hips: [], chest: [], head: [], armL: [], armR: [], foreL: [], foreR: [], handL: [], handR: [], legL: [], legR: [], shinL: [], shinR: [] };
-  const b = { dim, parts, swing: [], torsoZ, skirtR, S, hd, skin, sleeve: null };
+  const b = { dim, parts, swing: [], torsoZ, skirtR, S, N, lo, hd, skin, sleeve: null, face: def.face || {} };
 
   // ---- legs and feet
   const legR0 = 0.064 * w, legR1 = 0.058 * w;
-  parts.legL.push(tint(limb(legR0, legR1, thigh, S(14), 4), legsC.color));
+  parts.legL.push(tint(limb(legR0, legR1, thigh, S(14), CR), legsC.color));
   const boot = tint(place(blob({ rx: 0.074 * B.feet, ry: 0.07, rz: 0.112 * B.feet, flatBottom: 0.55, pear: 0.25, seg: S(16), rings: S(10) }), 0, -shin - 0.035, 0.034 * B.feet), shoes.color);
-  const shinParts = [tint(limb(legR1, legR1 * 1.04, shin, S(14), 4), shoes.tall ? shoes.color : legsC.color), boot];
+  const shinParts = [tint(limb(legR1, legR1 * 1.04, shin, S(14), CR), shoes.tall ? shoes.color : legsC.color), boot];
   if (shoes.sole) shinParts.push(tint(place(scaleMesh(cylinder(0.074 * B.feet, 0.078 * B.feet, 0.016, S(12), { crease: 50 }), 1, 1, 1.5), 0, -shin - footDrop, 0.034 * B.feet), shoes.sole));
   if (shoes.cuff) shinParts.push(tint(place(torus(legR1 * 1.12, 0.014, S(10), 5), 0, -shin + 0.012, 0), shoes.cuff));
   parts.shinL.push(merge(shinParts));
@@ -700,7 +778,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const n = C.buttons.count || 3, rowsN = C.buttons.rows || 1, y0 = dim.shoulderY - 0.035, y1 = (C.belt ? dim.waistY - dim.chestY + 0.075 : 0.0);
     for (let i = 0; i < n; i++) for (let r = 0; r < rowsN; r++) {
       const y = y0 + (y1 - y0) * (i / Math.max(1, n - 1)), x = rowsN === 1 ? 0 : (r ? 1 : -1) * 0.036 * w;
-      parts.chest.push(setOutline(tint(place(sphere(C.buttons.size || 0.016, 8, 6), x, y, torsoZ(x, y) + 0.002, 0, 0, 0, 1, 1, 0.5), C.buttons.color), 0.6));
+      parts.chest.push(setOutline(tint(place(lo ? sphere(C.buttons.size || 0.016, 5, 3) : sphere(C.buttons.size || 0.016, 8, 6), x, y, torsoZ(x, y) + 0.002, 0, 0, 0, 1, 1, 0.5), C.buttons.color), 0.6));
     }
   }
   if (top.placket) { // the line the coat closes on
@@ -712,8 +790,11 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const k = C.collar, y = dim.neckY;
     if (k.kind === 'stand') parts.chest.push(tint(scaleMesh(lathe([[0.066 * w, y - 0.028], [0.084 * w, y - 0.022], [0.09 * w, y + 0.03], [0.074 * w, y + 0.034], [0.066 * w, y - 0.028]], S(16), { crease: 50 }), 1, 1, 0.92), k.color));
     else if (k.kind === 'flat') parts.chest.push(tint(scaleMesh(lathe([[0.125 * w, y - 0.058], [0.132 * w, y - 0.046], [0.07 * w, y - 0.004], [0.05 * w, y - 0.004]], S(18), { crease: 60 }), 1, 1, 0.9), k.color));
-    else if (k.kind === 'scarf') parts.chest.push(tint(place(scaleMesh(torus(0.09 * w, 0.042, S(16), 7), 1, 0.85, 0.95), 0, y, 0), k.color));
-    else throw new Error(`createCharacter(${def.id}): unknown collar kind "${k.kind}" (have stand, flat, scarf)`);
+    else if (k.kind === 'scarf') parts.chest.push(tint(place(scaleMesh(torus(0.09 * w, 0.042, S(16), lo ? 5 : 7), 1, 0.85, 0.95), 0, y, 0), k.color));
+    // 'high': a stiff collar up to the jaw.  'turned': a coat collar turned up against the weather, open at the throat
+    else if (k.kind === 'high') parts.chest.push(tint(scaleMesh(lathe([[0.07 * w, y - 0.03], [0.09 * w, y - 0.024], [0.1 * w, y + 0.052], [0.084 * w, y + 0.056], [0.07 * w, y - 0.03]], S(16), { crease: 50 }), 1, 1, 0.92), k.color));
+    else if (k.kind === 'turned') parts.chest.push(tint(scaleMesh(lathe([[0.075 * w, y - 0.04], [0.11 * w, y - 0.034], [0.15 * w, y + 0.036], [0.135 * w, y + 0.044], [0.075 * w, y - 0.04]], S(16), { crease: 50 }), 1, 1, 0.86), k.color));
+    else throw new Error(`createCharacter(${def.id}): unknown collar kind "${k.kind}" (have stand, flat, scarf, high, turned)`);
   }
   // ---- fail on an unknown extra before building anything else
   for (const e of C.extras || []) { const f = EXTRAS[e.kind]; if (!f) throw new Error(`createCharacter(${def.id}): unknown costume extra "${e.kind}" (have ${Object.keys(EXTRAS).join(', ')})`); }
@@ -722,16 +803,16 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   {
     const skull = sphere(1, S(30), S(20)), P = skull.positions, p = [0, 0, 0], unit = P.slice();
     for (let i = 0; i < P.length; i += 3) { p[0] = P[i]; p[1] = P[i + 1]; p[2] = P[i + 2]; hd.shape(p); P[i] = p[0]; P[i + 1] = p[1]; P[i + 2] = p[2]; }
-    const sk = tint(fromArrays(skull.positions, skull.indices, null, 180), skin);
+    const sk = tint(fromArrays(skull.positions, skull.indices, null, 180), headSkin);
     for (let i = 0; i < unit.length; i += 3) { // exact normals away from the poles (see makeHead.normalAt)
       if (Math.abs(unit[i + 1]) > 0.985) continue;
       const n = hd.normalAt(Math.atan2(unit[i], unit[i + 2]) / DEG, Math.asin(unit[i + 1]) / DEG);
       sk.normals[i] = n[0]; sk.normals[i + 1] = n[1]; sk.normals[i + 2] = n[2];
     }
     const head = [sk];
-    for (const sx of [-1, 1]) head.push(tint(place(ellipsoid(0.027 * B.head, 0.044 * B.head, 0.031 * B.head, 10, 7), sx * HR[0] * 1.08, -HR[1] * 0.2, -0.012, 0, sx * 24, 0), skin));
-    if (def.face?.nose !== 0) { const np = hd.at(0, -19.5, 0.985); head.push(setOutline(tint(place(ellipsoid(0.017, 0.011, 0.014, 8, 6), np[0], np[1], np[2]), skin), 0)); }
-    const hairCol = def.hair?.color || '#b8542a', ctx = { color: hairCol, dark: mixc(hairCol, '#1a1040', 0.35), S };
+    if (def.face?.ears !== 0) for (const sx of [-1, 1]) head.push(tint(place(ellipsoid(0.027 * B.head, 0.044 * B.head, 0.031 * B.head, lo ? 6 : 10, lo ? 4 : 7), sx * HR[0] * 1.08, -HR[1] * 0.2, -0.012, 0, sx * 24, 0), headSkin));
+    if (def.face?.nose !== 0) { const np = hd.at(0, -19.5, 0.985), nk = def.face?.nose ?? 1; head.push(setOutline(tint(place(ellipsoid(0.017 * nk, 0.011 * nk, 0.014 * nk, lo ? 5 : 8, lo ? 3 : 6), np[0], np[1], np[2]), headSkin), 0)); }
+    const hairCol = def.hair?.color || '#b8542a', ctx = { color: hairCol, dark: mixc(hairCol, '#1a1040', 0.35), S, N, lo, uid };
     for (const piece of def.hair?.pieces || []) {
       const f = HAIR[piece.kind]; if (!f) throw new Error(`createCharacter(${def.id}): unknown hair piece "${piece.kind}" (have ${Object.keys(HAIR).join(', ')})`);
       const r = f(hd, piece, ctx), col = piece.color || hairCol;
@@ -746,17 +827,19 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
 
   // ---- arms and mitten hands
   {
-    const sc = b.sleeve || sleeves, r0 = 0.05 * w, r1 = 0.046 * w, r2 = r1 * (sleeves.flare || 1.16);
+    // sleeves.rolled: bare forearms below a roll at the elbow.  costume.gloves { L, R }: a hand in a glove (or stained with ink)
+    const sc = b.sleeve || sleeves, r0 = 0.05 * w, r1 = 0.046 * w, r2 = r1 * (sleeves.rolled ? 0.96 : sleeves.flare || 1.16);
     const upper = sc.drape
-      ? merge(tint(limb(r0, r1, dim.upper, S(14), 4), sc.color), bands([[r0 * 1.9, -dim.upper * 1.05, sc.color2], [r0 * 1.86, -dim.upper * 0.7, sc.color], [r0 * 1.5, -dim.upper * 0.2, sc.color2], [r0 * 1.0, 0.03, sc.color]], S(10)))
-      : tint(limb(r0, r1, dim.upper, S(14), 4), sleeves.color);
+      ? merge(tint(limb(r0, r1, dim.upper, S(14), CR), sc.color), bands([[r0 * 1.9, -dim.upper * 1.05, sc.color2], [r0 * 1.86, -dim.upper * 0.7, sc.color], [r0 * 1.5, -dim.upper * 0.2, sc.color2], [r0 * 1.0, 0.03, sc.color]], S(10)))
+      : tint(limb(r0, r1, dim.upper, S(14), CR), sleeves.color);
     parts.armL.push(upper);
-    const fore = [tint(limb(r1, r2, dim.fore, S(14), 4), sleeves.color)];
-    if (sleeves.cuff) fore.push(tint(place(cylinder(r2 * 1.1, r2 * 1.14, 0.03, S(14), { crease: 50 }), 0, -dim.fore - 0.012, 0), sleeves.cuff));
+    const fore = [tint(limb(r1, r2, dim.fore, S(14), CR), sleeves.rolled ? skin : sleeves.color)];
+    if (sleeves.rolled) fore.push(tint(place(torus(r1 * 1.08, 0.017, S(12), 5), 0, -0.008, 0), sleeves.color));
+    else if (sleeves.cuff) fore.push(tint(place(cylinder(r2 * 1.1, r2 * 1.14, 0.03, S(14), { crease: 50 }), 0, -dim.fore - 0.012, 0), sleeves.cuff));
     parts.foreL.push(merge(fore));
-    const hand = merge(tint(place(blob({ rx: dim.hand, ry: dim.hand * 1.12, rz: dim.hand * 0.9, seg: S(12), rings: S(9) }), 0, -dim.hand * 0.75, 0), skin), tint(place(sphere(dim.hand * 0.42, 7, 5), dim.hand * 0.1, -dim.hand * 0.55, dim.hand * 0.82), skin));
-    parts.handL.push(hand);
-    parts.armR.push(mirrorX(merge(parts.armL))); parts.foreR.push(mirrorX(merge(parts.foreL))); parts.handR.push(mirrorX(merge(parts.handL)));
+    const hand = () => { const palm = place(blob({ rx: dim.hand, ry: dim.hand * 1.12, rz: dim.hand * 0.9, seg: S(12), rings: S(9) }), 0, -dim.hand * 0.75, 0); return lo ? palm : merge(palm, place(sphere(dim.hand * 0.42, 7, 5), dim.hand * 0.1, -dim.hand * 0.55, dim.hand * 0.82)); };
+    parts.handL.push(tint(hand(), C.gloves?.L || skin));
+    parts.armR.push(mirrorX(merge(parts.armL))); parts.foreR.push(mirrorX(merge(parts.foreL))); parts.handR.push(tint(mirrorX(hand()), C.gloves?.R || skin));
     if (sleeves.ink) parts['fore' + sleeves.ink].push(setOutline(tint(place(blob({ rx: r2 * 0.42, ry: 0.024, rz: r2 * 0.3, seg: 8, rings: 6 }), r2 * 0.3, -dim.fore - 0.012, r2 * 0.95), '#2a2f7a'), 0));
   }
 
@@ -781,7 +864,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     for (let i = 0; i <= 6; i++) { const u = i / 6 - 0.5, a = u * browSpec.len * DEG, e = (0.25 - u * u) * 9 * DEG; pts.push([Math.sin(a) * Math.cos(e) * rr, Math.sin(e) * rr, Math.cos(a) * Math.cos(e) * rr]); }
     const wf = (t) => browSpec.w * (0.55 + 0.45 * Math.sin(Math.min(1, t * 2.2 + 0.25) * Math.PI / 2)) * (1 - 0.55 * t * t);
     const th = (t) => 0.008 + 0.004 * (1 - t);
-    const whole = () => setOutline(tint(strand(pts, wf, th, 6), browSpec.color), 0.55);
+    const whole = () => setOutline(tint(strand(pts, wf, th, lo ? 4 : 6), browSpec.color), 0.55);
     // a scar through a brow: the same brow in two pieces with a gap between them
     const nicked = () => { const k = 4, f = (a, b) => (t) => wf(a + (b - a) * t), g = (a, b) => (t) => th(a + (b - a) * t);
       const cut = (i0, i1, u) => { const q = pts[i0], r = pts[i1]; return [q[0] + (r[0] - q[0]) * u, q[1] + (r[1] - q[1]) * u, q[2] + (r[2] - q[2]) * u]; };
@@ -817,24 +900,27 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   let face = null;
   if (faces) {
     const F = { set: 'round', iris: '#5a3a2a', eyeScale: 1, eyeYaw: FACE.eyeYaw, eyePitch: FACE.eyePitch, mouthScale: 1.2, mouthPitch: FACE.mouth.pitch, ...(def.face || {}) };
-    const fm = faces.material, cy = dim.headC, k = F.eyeScale;
+    // at stage size a face is twenty pixels across: the eyes and mouth are drawn a little larger there so they still read
+    const fm = faces.material, cy = dim.headC, k = F.eyeScale * (lo ? 1.07 : 1), mk2 = F.mouthScale * (lo ? 1.14 : 1), ps = lo ? 3 : 6;
     const pivot = group('face', { pos: [0, cy, 0], parent: head });
-    const two = (wd, ht, flip) => merge(hd.patch(F.eyeYaw, F.eyePitch, wd * k, ht * k, 0.012, 6, false), hd.patch(-F.eyeYaw, F.eyePitch, wd * k, ht * k, 0.012, 6, flip));
+    const two = (wd, ht, flip) => merge(hd.patch(F.eyeYaw, F.eyePitch, wd * k, ht * k, 0.012, ps, false), hd.patch(-F.eyeYaw, F.eyePitch, wd * k, ht * k, 0.012, ps, flip));
     const eyes = node('eyes', two(FACE.ball.w, FACE.ball.h, false), faces.eyeMaterial, { parent: pivot });
-    const lids = node('lids', two(FACE.lid.w, FACE.lid.h, true), fm, { parent: pivot, tint: skin });
-    const wide = hd.patch(0, FACE.wide.pitch, FACE.wide.w, FACE.wide.h, 0.013, 10);
+    const lids = node('lids', two(FACE.lid.w, FACE.lid.h, true), fm, { parent: pivot, tint: headSkin });
+    const wide = hd.patch(0, FACE.wide.pitch, FACE.wide.w, FACE.wide.h, 0.013, lo ? 5 : 10);
     const marks = node('marks', wide, fm, { parent: pivot });
-    const mouth = node('mouth', hd.patch(0, F.mouthPitch, FACE.mouth.w * F.mouthScale, FACE.mouth.h * F.mouthScale, 0.014, 5), fm, { parent: pivot });
+    const mouth = node('mouth', hd.patch(0, F.mouthPitch, FACE.mouth.w * mk2, FACE.mouth.h * mk2, 0.014, lo ? 3 : 5), fm, { parent: pivot });
     const fx = node('fx', wide, fm, { parent: pivot, visible: false });
-    marks.uvRect.set(faces.marks(def.id, { skin, ...(def.face?.marks || {}) }));
+    marks.uvRect.set(faces.marks(def.id, { skin: headSkin, ...(def.face?.marks || {}) }));
     const table = {};
     for (const e of EMOTES) {
       table[e] = {
         open: faces.lid(F.set, e, false), shut: faces.lid(F.set, e, true), eye: faces.eyeball(F.iris, EMOTE[e].eye),
         mouth: [0, 1, 2, 3].map((n) => faces.mouth(e, n)), fx: faces.fx(EMOTE[e].fx),
       };
+      // face.mouths { emote: closed shape }: the mouth a person's face rests in (a smirk, a thin line), see faces.js CLOSED
+      if (F.mouths && F.mouths[e]) table[e].mouth[0] = faces.mouthShape(F.mouths[e]);
     }
-    face = { eyes, lids, marks, mouth, fx, table, F };
+    face = { eyes, lids, marks, mouth, fx, table, F, tris: (eyes.mesh.indices.length + lids.mesh.indices.length + wide.indices.length + mouth.mesh.indices.length) / 3 };
   }
 
   // one draw for the whole figure; from here on the nodes are joints
@@ -1023,7 +1109,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
 
   // cost
   let tris = 0; for (const sk of skins) tris += sk.mesh.indices.length / 3;
-  ch.stats.triangles = tris + (face ? (2 * 72 + 2 * 72 + 200 + 50) : 0);
+  ch.stats.triangles = tris + (face ? face.tris : 0); ch.stats.lod = lod;
   ch.stats.draws = skins.length * 3 + (face ? 4 : 0);
   ch.stats.vertices = skins.reduce((a, sk) => a + vertexCount(sk.mesh), 0);
   ch.update(0, NOSTATE);
