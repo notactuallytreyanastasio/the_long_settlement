@@ -4,7 +4,7 @@ import { seed, next } from '../src/core/rng.js';
 import { spin, payoutFor } from '../src/core/slot.js';
 import {
   SPIN_COST, LOAN, MARKS_PER_POINT, initEcon, awardPoints, canSpin, paySpin, applyPayout,
-  needsLoan, takeLoan, spendWrit, addTrust, aidAvailable, takeAid, TRUST_PER_LOAN, leaning,
+  needsLoan, takeLoan, spendWrit, addTrust, aidAvailable, takeAid, TRUST_PER_LOAN, TRUST_PER_GIFT, TRUST_PER_AID, leaning,
 } from '../src/core/economy.js';
 import { chapter1 } from '../src/content/chapter1.js';
 import { chapter2 } from '../src/content/chapter2.js';
@@ -20,6 +20,8 @@ test('constants are sane', () => {
   assert.ok(LOAN.marks >= SPIN_COST, 'a loan buys at least one spin');
   assert.ok(LOAN.garnish > 0 && LOAN.garnish < 1);
   near(60000 * MARKS_PER_POINT, 60, 'a 60k ball is 60 marks');
+  assert.ok(TRUST_PER_GIFT > TRUST_PER_LOAN, 'a gift accepted outweighs a loan');
+  assert.equal(TRUST_PER_AID, 25);
 });
 
 test('initEcon affords exactly three spins and nothing else', () => {
@@ -31,18 +33,18 @@ test('initEcon affords exactly three spins and nothing else', () => {
   for (let i = 0; i < 3; i++) { assert.ok(canSpin(e)); e = paySpin(e); }
   assert.equal(canSpin(e), false);
   assert.equal(e.spins, 3);
-  assert.throws(() => paySpin(e), /costs 100 marks, econ has 0/);
+  assert.throws(() => paySpin(e), new RegExp(`costs ${SPIN_COST} marks, econ has 0`));
 });
 
 test('awardPoints adds score and converts to marks; mult touches marks only', () => {
   const e0 = Object.freeze(initEcon());
   const e1 = awardPoints(e0, 2500);
   assert.equal(e1.score, 2500);
-  near(e1.marks, 302.5);
+  near(e1.marks, e0.marks + 2.5);
   const e2 = awardPoints(e0, 2500, 2);
   assert.equal(e2.score, 2500);
-  near(e2.marks, 305);
-  near(awardPoints(e0, 100).marks, 300.1);
+  near(e2.marks, e0.marks + 5);
+  near(awardPoints(e0, 100).marks, e0.marks + 0.1);
   assert.deepEqual(e0, initEcon(), 'argument not mutated');
   assert.throws(() => awardPoints(e0, -5), /got -5/);
   assert.throws(() => awardPoints(e0, NaN), /got NaN/);
@@ -70,7 +72,7 @@ test('a loan advances LOAN.marks, books LOAN.owed, and garnishes every mark unti
 
   // slot winnings are garnished too
   const before = e;
-  e = applyPayout(e, payoutFor(['crown', 'crown', 'crown']));
+  e = applyPayout(e, payoutFor(['crown', 'crown', 'crown'], 'lever'));
   near(e.marks, before.marks + 400 * (1 - LOAN.garnish));
   near(e.debt, before.debt - 400 * LOAN.garnish);
   assert.equal(e.writs, 3);
@@ -106,7 +108,8 @@ test('trustEarned takes every positive gain whole, past the clamp, and never goe
   assert.deepEqual([e.trust, e.trustEarned], [60, 110], 'losing standing does not unearn it');
   e = addTrust(e, 0);
   assert.deepEqual([e.trust, e.trustEarned], [60, 110]);
-  assert.equal(takeAid(e).trustEarned, 110, 'drawing aid spends nothing from the total');
+  assert.equal(takeAid(e).trustEarned, 110 + TRUST_PER_GIFT, 'drawing aid spends nothing from the total: a gift accepted adds to it');
+  assert.equal(takeAid(e).trust, 60, 'and leaves the town\'s meter where it was');
 });
 
 test('leaning: commons while trustEarned >= loansTaken * TRUST_PER_LOAN, mint past it', () => {
@@ -122,46 +125,74 @@ test('leaning: commons while trustEarned >= loansTaken * TRUST_PER_LOAN, mint pa
   assert.throws(() => leaning({ ...initEcon(), trustEarned: 'much' }), /econ\.trustEarned must be a finite number, got much/);
 });
 
-test('TRUST_PER_LOAN against the five chapters: two loans a chapter leans commons, four leans mint', () => {
+test('the ledger against the five chapters: scene trust covers four loans, and every gift accepted covers one and more', () => {
   const chapters = [chapter1, chapter2, chapter3, chapter4, chapter5];
   const perChapter = chapters.map((ch) => ch.scenes.reduce((n, s) => n + (s.reward.trust || 0), 0));
   const total = perChapter.reduce((a, b) => a + b, 0);
-  console.log(`trust on offer per chapter ${perChapter.join(', ')}; total ${total}; TRUST_PER_LOAN ${TRUST_PER_LOAN}`);
+  console.log(`trust on offer per chapter ${perChapter.join(', ')}; total ${total}; TRUST_PER_LOAN ${TRUST_PER_LOAN}; TRUST_PER_GIFT ${TRUST_PER_GIFT}`);
   assert.ok(perChapter.every((n) => n > 0), 'every chapter pays some trust');
+  assert.equal(total, 370, 'TRUST_PER_LOAN was set against this figure');
 
-  // Play every scene through the real reducers, borrowing `loans` times in each chapter
-  // (before its scenes, the worst case for the commons), and read the book after each chapter.
-  const run = (loans) => {
+  // Play every scene through the real reducers. In each chapter the player is out of balls
+  // `empties` times after its first trust has been paid; `waits` says whether they wait for
+  // the Commons (a gift while the town has one to give, otherwise a loan) or go to the Mint.
+  const run = (empties, waits) => {
     let e = initEcon();
-    return chapters.map((ch) => {
+    for (const ch of chapters) {
       e = { ...e, trust: 0, aidUsed: 0 }; // what game.js does at a chapter card
-      for (let i = 0; i < loans; i++) e = takeLoan(e);
       for (const s of ch.scenes) e = addTrust(e, s.reward.trust || 0);
-      return { lean: leaning(e), trustEarned: e.trustEarned, loansTaken: e.loansTaken };
-    });
+      for (let i = 0; i < empties; i++) e = waits && aidAvailable(e) ? takeAid(e) : takeLoan(e);
+    }
+    return e;
   };
-  const leans = (rows) => rows.map((r) => r.lean);
-  const all = (lean) => Array(chapters.length).fill(lean);
-  assert.equal(run(0).at(-1).trustEarned, total, 'nothing is lost to the 0..100 clamp');
-  assert.deepEqual(leans(run(0)), all('commons'));
-  assert.deepEqual(leans(run(1)), all('commons'));
-  assert.deepEqual(leans(run(2)), all('commons'), 'a couple of loans a chapter');
-  assert.deepEqual(leans(run(4)), all('mint'), 'borrowing freely');
-  assert.deepEqual(leans(run(6)), all('mint'));
-  assert.equal(run(3).at(-1).lean, 'mint', 'three a chapter ends just on the far side');
+  const none = run(0, true);
+  assert.equal(none.trustEarned, total, 'nothing is lost to the 0..100 clamp');
+  assert.equal(leaning(none), 'commons');
 
-  // the whole game turns on one loan
+  // a book with no gifts in it turns on one loan
   const turn = Math.floor(total / TRUST_PER_LOAN);
+  assert.equal(turn, 4);
   assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn }), 'commons');
   assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn + 1 }), 'mint');
-  console.log(`over the five chapters the book turns between loan ${turn} and loan ${turn + 1}`);
+
+  // the same number of empty tables, answered the two ways
+  for (const empties of [1, 2, 3, 4, 6]) {
+    const waited = run(empties, true), refused = run(empties, false);
+    console.log(`${empties} empty tables a chapter: waiting ${waited.trustEarned} trust against ${waited.loansTaken} loans -> ${leaning(waited)}; `
+      + `not waiting ${refused.trustEarned} against ${refused.loansTaken} -> ${leaning(refused)}`);
+    assert.equal(refused.trustEarned, total);
+    assert.equal(refused.loansTaken, empties * chapters.length);
+    assert.equal(leaning(refused), 'mint', `refusing the Commons ${empties} times a chapter`);
+    assert.ok(waited.trustEarned - waited.loansTaken * TRUST_PER_LOAN > refused.trustEarned - refused.loansTaken * TRUST_PER_LOAN);
+  }
+  for (const empties of [1, 2, 3, 4]) assert.equal(leaning(run(empties, true)), 'commons', `waiting for the Commons ${empties} times a chapter`);
+  // the Commons has only so much to give: a player who is out of balls far more often than
+  // the town can cover ends in the Mint's book however patiently they waited
+  assert.equal(leaning(run(12, true)), 'mint');
 });
 
 test('applyPayout grants writs and marks and rejects malformed payouts', () => {
-  const e = applyPayout(initEcon(), payoutFor(['coin', 'coin', 'scale']));
+  const m0 = initEcon().marks;
+  const e = applyPayout(initEcon(), payoutFor(['coin', 'coin', 'scale'], 'lever'));
   assert.equal(e.writs, 2);
-  assert.equal(e.marks, 340);
-  assert.deepEqual(applyPayout(initEcon(), payoutFor(['tide', 'tide', 'tide'])), initEcon());
+  assert.equal(e.marks, m0 + 40);
+  assert.equal(e.score, 0);
+  assert.deepEqual(applyPayout(initEcon(), payoutFor(['tide', 'tide', 'tide'], 'lever')), initEcon());
+  assert.deepEqual(applyPayout(initEcon(), payoutFor(['tide', 'tide', 'tide'], 'lanes')), initEcon());
+
+  // a line earned in play pays points too: score, and their marks at the multiplier given
+  const lean = payoutFor(['coin', 'coin', 'scale'], 'lanes');
+  assert.deepEqual([lean.writs, lean.marks, lean.points], [0, 12, 2000]);
+  const p1 = applyPayout(initEcon(), lean);
+  assert.deepEqual([p1.writs, p1.score], [0, 2000]);
+  near(p1.marks, m0 + 12 + 2);
+  near(applyPayout(initEcon(), lean, 2).marks, m0 + 12 + 4);
+  // and all of it is garnished while debt stands
+  const owing = applyPayout(takeLoan(initEcon()), lean);
+  near(owing.debt, LOAN.owed - 14 * LOAN.garnish);
+  // a payout written by hand without points (the scripted first draw) pays none
+  assert.equal(applyPayout(initEcon(), { writs: 3, marks: 0, boon: null, name: 'x', blurb: 'x' }).score, 0);
+  assert.throws(() => applyPayout(initEcon(), { writs: 1, marks: 0, points: -1 }), /payout\.points must be a finite number >= 0, got -1/);
   assert.throws(() => applyPayout(initEcon(), { writs: 1.5, marks: 0 }), /got 1.5/);
   assert.throws(() => applyPayout(initEcon(), null), /not a Payout/);
 });
@@ -186,7 +217,7 @@ test('mutual aid: one ball per 25 trust per chapter, free of debt', () => {
   e = addTrust(e, 60); // two aid balls
   assert.equal(aidAvailable(e), true);
   e = takeAid(e);
-  assert.deepEqual([e.aidUsed, e.writs, e.debt, e.marks], [1, 1, 0, 300]);
+  assert.deepEqual([e.aidUsed, e.writs, e.debt, e.marks], [1, 1, 0, SPIN_COST * 3]);
   e = takeAid(e);
   assert.equal(e.writs, 2);
   assert.equal(aidAvailable(e), false);
@@ -199,7 +230,7 @@ test('mutual aid: one ball per 25 trust per chapter, free of debt', () => {
 });
 
 // ───────── tuning, by seeded play ─────────
-// A player plays every writ, spins whenever they can, and borrows only when they must.
+// A player plays every writ, pulls the lever whenever they can, and borrows only when they must.
 // Each ball scores meanPoints * U(0.5, 1.5). doubleMarks is modelled as doubling the next ball.
 // ballSave, multiball, scene rewards and mutual aid are not modelled: all four only help the player.
 function career(seedN, meanPoints, spins) {
@@ -210,7 +241,7 @@ function career(seedN, meanPoints, spins) {
       e = awardPoints(spendWrit(e), meanPoints * (0.5 + u), dbl ? 2 : 1);
       dbl = false;
     } else if (canSpin(e)) {
-      const s = spin(r); r = s.rng;
+      const s = spin(r, 'lever'); r = s.rng;
       e = applyPayout(paySpin(e), s.result.payout);
       if (s.result.payout.boon === 'doubleMarks') dbl = true;
     } else {
@@ -241,36 +272,40 @@ const show = (label, c) => console.log(
   `median first loan at spin ${c.medFirstLoan}, never borrowed ${(c.neverBorrowed * 100).toFixed(1)}%, ` +
   `mean loans ${c.meanLoans.toFixed(2)}, median debt ${Math.round(c.medDebt)}`);
 
-test('200k spins: a 60-marks-a-ball player stays about level', () => {
-  const c = cohort(60000, 400, 500);
-  show('60k/ball, 400 players x 500 spins', c);
-  assert.ok(Math.abs(c.drift) < 6, `net drift per spin ${c.drift}`);
-  assert.ok(c.medFirstLoan >= 15, `median first loan at spin ${c.medFirstLoan}`);
+test('200k pulls: a 95-marks-a-ball player stays about level', () => {
+  const c = cohort(95000, 400, 500);
+  show('95k/ball, 400 players x 500 pulls', c);
+  assert.ok(Math.abs(c.drift) < 6, `net drift per pull ${c.drift}`);
+  assert.ok(c.medFirstLoan >= 10, `median first loan at pull ${c.medFirstLoan}`);
   assert.equal(c.medDebt, 0, 'the median level player ends out of debt');
 });
 
-test('200k spins: a 40-marks-a-ball player drifts into debt slowly, not instantly', () => {
-  const c = cohort(40000, 400, 500);
-  show('40k/ball, 400 players x 500 spins', c);
-  assert.ok(c.drift < -20 && c.drift > -45, `net drift per spin ${c.drift}`);
-  assert.ok(c.medFirstLoan >= 5 && c.medFirstLoan <= 15, `median first loan at spin ${c.medFirstLoan}`);
+test('200k pulls: a 60-marks-a-ball player drifts into debt, not instantly', () => {
+  const c = cohort(60000, 400, 500);
+  show('60k/ball, 400 players x 500 pulls', c);
+  assert.ok(c.drift < -45 && c.drift > -85, `net drift per pull ${c.drift}`);
+  assert.ok(c.medFirstLoan >= 4 && c.medFirstLoan <= 12, `median first loan at pull ${c.medFirstLoan}`);
   assert.ok(c.medDebt > 0);
   assert.equal(c.neverBorrowed, 0);
 });
 
-test('200k spins: an 80-marks-a-ball player gets ahead and rarely borrows', () => {
-  const c = cohort(80000, 400, 500);
-  show('80k/ball, 400 players x 500 spins', c);
-  assert.ok(c.drift > 15, `net drift per spin ${c.drift}`);
+test('200k pulls: a 120-marks-a-ball player gets ahead and rarely borrows', () => {
+  const c = cohort(120000, 400, 500);
+  show('120k/ball, 400 players x 500 pulls', c);
+  assert.ok(c.drift > 15, `net drift per pull ${c.drift}`);
   assert.ok(c.neverBorrowed > 0.6, `never borrowed ${c.neverBorrowed}`);
 });
 
-test('over one sitting (60 spins) the weak player owes a few loans, not a fortune', () => {
-  const weak = cohort(40000, 2000, 60);
-  const level = cohort(60000, 2000, 60);
-  show('40k/ball, 2000 players x 60 spins', weak);
-  show('60k/ball, 2000 players x 60 spins', level);
-  assert.ok(weak.medDebt > LOAN.owed && weak.medDebt < LOAN.owed * 12, `median debt ${weak.medDebt}`);
+test('over one game (25 pulls) the bot-grade player owes a dozen loans if nobody gives it anything', () => {
+  // 21k a ball is what the playthrough bot scores. This model has no mutual aid, no ball
+  // saves and no lines paid in play, so it is the ceiling on what such a player borrows;
+  // the playthrough, which has all three, measures 6 loans for the bot that takes aid.
+  const bot = cohort(21000, 2000, 25);
+  const level = cohort(95000, 2000, 60);
+  show('21k/ball, 2000 players x 25 pulls', bot);
+  show('95k/ball, 2000 players x 60 pulls', level);
+  assert.ok(bot.meanLoans > 8 && bot.meanLoans < 18, `mean loans ${bot.meanLoans}`);
+  assert.ok(bot.medDebt > LOAN.owed * 6 && bot.medDebt < LOAN.owed * 18, `median debt ${bot.medDebt}`);
   assert.ok(level.medDebt === 0);
   assert.ok(Math.abs(level.drift) < 6, `level drift ${level.drift}`);
 });

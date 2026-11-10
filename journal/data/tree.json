@@ -7241,13 +7241,13 @@
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 8570,
-  "lines": 205
+  "bytes": 8755,
+  "lines": 207
  },
  {
   "path": "src/core/game.js",
-  "bytes": 34326,
-  "lines": 746
+  "bytes": 34510,
+  "lines": 749
  },
  {
   "path": "src/core/physics.js",
@@ -7321,8 +7321,8 @@
  },
  {
   "path": "test/economy.test.js",
-  "bytes": 13072,
-  "lines": 277
+  "bytes": 15711,
+  "lines": 312
  },
  {
   "path": "test/game.test.js",

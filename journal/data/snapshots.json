@@ -2605,5 +2605,69 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T06:05:32.713Z",
+  "files": 1474,
+  "lines": 27693,
+  "bytes": 42119136,
+  "linesByDir": {
+   ".": 138,
+   "assets/voice": 7180,
+   "src/content": 4176,
+   "src/core": 2264,
+   "src/shell": 9829,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 177,
+   "test/economy.test.js": 312,
+   "test/game.test.js": 1114,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 310,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 156,
+   "test/story.test.js": 163,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M src/core/economy.js",
+   "M src/core/game.js",
+   "M test/economy.test.js"
+  ],
+  "tests": {
+   "total": 147,
+   "pass": 136,
+   "fail": 11,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 12312,
+   "failures": [
+    "the rigged first spin is three orbs and pays what the reels would pay in writs",
+    "every one of the 216 combinations has a complete, well-formed payout",
+    "the named lots mean what the world says they mean",
+    "reel order never matters; a pair pays whatever the third reel shows",
+    "the Churn voids an unpaired draw and its own pair pays nothing",
+    "payoutFor returns a fresh object and rejects bad input by name",
+    "spin is deterministic, pure, and consistent with payoutFor",
+    "measured odds over 200k seeded spins match the design and the exact enumeration",
+    "eligibleBarks: a line with minScene waits for game.scene >= minScene",
+    "preloadIds: a running cinematic wants its next few lines, and what follows a cutscene",
+    "preloadIds: at the reels and the table, the briefing, the cutscene opening and the eligible barks"
+   ]
+  },
+  "nodes": {
+   "goal": 3,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 3,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

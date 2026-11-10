@@ -34,7 +34,9 @@ export const FILL_SECONDS = 0.5;
 export const PAY_SECONDS = 1.2;
 /**
  * Bumper, sling and target hits needed to light the spin shots again after a spin.
- * Tuned with LOAN and the lean paytable by test/playthrough.test.js; the numbers are there.
+ * At 45 the playthrough bot is paid about ten lines a chapter in play, six of them from
+ * lit shots (one every 70 seconds or so) and the rest filled in through the lanes; at 30
+ * it was twelve. test/playthrough.test.js prints the numbers.
  */
 export const REELS_NEED = 45;
 /** Seconds the Commons takes to pass the hat. A lever pull inside them goes to the Mint instead. */
@@ -461,8 +463,9 @@ function tickReels(content, game, dt) {
  *
  * 'credit' is what makes the ending a choice. Without it the lever only ever borrows when
  * the purse is empty, the count of loans measures luck and skill, and a player who turns
- * the Commons down every time ends with the same book as one who never does: over 16
- * seeds the two bots took 0-16 and 3-21 loans. See TRUST_PER_LOAN in economy.js.
+ * the Commons down every time ends with the same book as one who never does: before this
+ * existed the two playthrough bots took 0-16 and 3-21 loans over 16 seeds. See TRUST_PER_LOAN
+ * in economy.js.
  */
 export function leverStatus(content, game) {
   if (game.mode !== 'play' || game.phys.balls.length > 0 || game.econ.writs > 0) return null;

@@ -5,9 +5,10 @@
 // Tuning (asserted in test/economy.test.js over 200k seeded pulls per skill level, and in
 // test/playthrough.test.js by a bot playing all five chapters):
 //   a pull of the lever costs 150 marks and returns on average 1.44 writs and 16.5 marks.
-//   1000 points is one mark, so a 90k ball is 90 marks: 1.44 * 90 + 16.5 is about 146
-//   before interest, and that player holds level. The flipper bot, which cannot aim, makes
-//   about 21k a ball and is in the Mint's book by the second chapter.
+//   1000 points is one mark, so a 95k ball is 95 marks: 1.44 * 95 + 16.5 is about 153,
+//   and that player holds level. A 60k player loses about 65 marks a pull and meets the
+//   Mint around the sixth. The flipper bot, which cannot aim, makes about 21k a ball: it
+//   lives on what the Commons gives and the Mint lends, 1.2 loans and 1.3 gifts a chapter.
 
 /** @typedef {import('./types.js').Econ} Econ */
 /** @typedef {import('./types.js').Payout} Payout */
@@ -33,22 +34,23 @@ export const TRUST_PER_AID = 25;
  * The rest is TRUST_PER_GIFT for each ball the Commons was allowed to give.
  *
  * The obvious ledger is scene trust against loans and nothing else. It does not work,
- * and the playthrough bot shows why: over seeds 1 to 16 a bot that takes every gift
- * borrowed 0 to 16 times and a bot that takes none borrowed 3 to 21 times. Loans counted
+ * and the playthrough bot shows why: over seeds 1 to 16 a bot that took every gift
+ * borrowed 0 to 16 times and a bot that took none borrowed 3 to 21 times. Loans counted
  * luck. So the choice itself is entered on both sides: a gift accepted is trust earned
- * (here), and a pull of the lever while the hat is still going round is a loan
- * (game.js, leverStatus 'credit'). With that the same two bots, same seeds, took 0-16
- * loans against 4-9 gifts and 11-30 loans against none.
+ * (TRUST_PER_GIFT), and a pull of the lever while the hat is still going round is a loan
+ * (game.js, leverStatus 'credit').
  *
- * At 50 a loan and 75 a gift: the gift-taking bot's worst book is 16 loans, 800, against
- * 370 + 8 * 75 = 970; the refusing bot's best is 11 loans, 550, against 370. A book with
- * no gifts turns between the seventh loan and the eighth.
+ * At 75 a loan and 130 a gift, over seeds 1 to 32 of each bot: the one that waits for the
+ * hat took 0-15 loans against 2-9 gifts and its closest book was 12 loans, 900, against
+ * 370 + 5 * 130 = 1020; the one that never waits took 7-29 loans and its closest was 7,
+ * 525, against 370. All 64 books lean the way their bot chose. A book with no gifts in it
+ * turns between the fourth loan and the fifth.
  */
 export const TRUST_PER_LOAN = 75;
 
 /**
- * Lifetime trust earned by letting the Commons cover a ball: a gift taken weighs a loan
- * and a half. It goes to trustEarned only, never to the town's meter, or aid would buy aid.
+ * Lifetime trust earned by letting the Commons cover a ball: a gift taken outweighs a loan
+ * and two thirds. It goes to trustEarned only, never to the town's meter, or aid would buy aid.
  */
 export const TRUST_PER_GIFT = 130;
 
