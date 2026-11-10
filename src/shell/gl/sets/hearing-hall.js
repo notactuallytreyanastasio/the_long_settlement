@@ -71,7 +71,7 @@ const CAMERAS = {
   low: { target: [0.1, 2.1, -0.4], dist: 6.4, yaw: -6, pitch: -12, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -0.6], shadowRadius: 7 },
   stage: { target: [0, 1.25, 0.3], dist: 9.6, yaw: -13, pitch: 5, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -0.2], shadowRadius: 7, outline: 0.7 },
   landscape: { target: [0, 2.2, -1.2], dist: 10.5, yaw: 4, pitch: 3, fov: 44, aspect: 1.6, shadowCenter: [0, 0, -0.6], shadowRadius: 9 },
-  gallery: { target: [-1.1, GAL_Y + 0.75, GAL_Z - 0.3], dist: 6.2, yaw: 12, pitch: 3, fov: 30, aspect: 0.46, shadowCenter: [-1, GAL_Y, GAL_Z], shadowRadius: 4 },
+  gallery: { target: [-0.7, GAL_Y + 1.0, GAL_Z - 0.6], dist: 5.4, yaw: -44, pitch: 5, fov: 44, aspect: 0.46, shadowCenter: [-1, GAL_Y, GAL_Z], shadowRadius: 4 }, // from the left side: the great window's shaft runs down the middle of the house and the side windows' shafts come in from the right; a camera inside either is veiled
 };
 
 const MARKS = {
@@ -189,6 +189,10 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     if (low && k >= 5 && (i + k) % 2) continue;
     (k < NEAR ? spotsN : spotsF).push({ pos: [b.x - (b.n * PITCH) / 2 + PITCH * (i + 0.5) + (r() - 0.5) * 0.06, PIT + RISE * k + 0.28, ROW0 - RUN * k - 0.02], yaw: (r() - 0.5) * 16 + (b.x ? -Math.sign(b.x) * 8 : 0), s: 0.84 + r() * 0.18, row: k });
   }
+  // by day the house sits in its own shade, deeper the further back, so whoever is on the stage reads against it
+  if (!L.night) { const SK = ['#ffe2c8', '#f6cfae', '#e8b48e', '#c98e6a', '#a8704e', '#ffd8b8'];
+    const shade = (hex, f) => { const v = parseInt(hex.slice(1), 16), c = (sh, a, b2) => Math.round(((v >> sh) & 255) * (a + (b2 - a) * f)).toString(16).padStart(2, '0'); return '#' + c(16, 0.9, 0.56) + c(8, 0.84, 0.54) + c(0, 0.9, 0.86); };
+    for (const sp of [...spotsN, ...spotsF]) { const f = Math.min(1, sp.row / 5); sp.coat = shade(HOUSE_COATS[Math.floor(r() * HOUSE_COATS.length)], f); sp.skin = shade(SK[Math.floor(r() * SK.length)], f * 0.8); } }
   const near = people({ spots: spotsN, material: M.prop, heads: [HEADS[0], HEADS[1]], seed: 7, coats: HOUSE_COATS });
   const far = people({ spots: spotsF, material: M.deco, heads: [HEADS[2], HEADS[4], HEADS[3]].slice(0, low ? 2 : 3), lod: 1, seed: 9, coats: HOUSE_COATS });
   scene.root.add(near.node, far.node);
@@ -214,9 +218,9 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     { name: 'house', pos: lampPos, color: '#ffd080', radius: 13, base: L.night ? 0.75 : 1.0, flicker: 0.03 },
     { name: 'foot-l', pos: [-1.5, 0.45, LIP + 0.7], color: '#ffc468', radius: 4.6, base: 0.85, flicker: 0.04 },
     { name: 'foot-r', pos: [1.5, 0.45, LIP + 0.7], color: '#ffc468', radius: 4.6, base: 0.85, flicker: 0.04 },
-    { name: 'window', pos: [0, 6.4, BACK + 3], color: L.night ? '#8fa8ff' : '#fff0c8', radius: 10, base: 1.0, flicker: 0 },
-    { name: 'gallery-l', pos: [-4.4, GAL_Y + 2.4, BACK + 1.2], color: '#ffc070', radius: 6, base: 0.9 },
-    { name: 'gallery-r', pos: [4.4, GAL_Y + 2.4, BACK + 1.2], color: '#ffc070', radius: 6, base: 0.9 },
+    { name: 'window', pos: [0, 7.6, BACK + 6.5], color: L.night ? '#8fa8ff' : '#fff0c8', radius: 9, base: 0.8, flicker: 0 },
+    { name: 'gallery-l', pos: [-4.4, GAL_Y + 2.6, BACK + 0.9], color: '#ffc070', radius: 4.6, base: 0.5 },
+    { name: 'gallery-r', pos: [4.4, GAL_Y + 2.6, BACK + 0.9], color: '#ffc070', radius: 4.6, base: 0.5 },
   ];
   const sprites = scene.sprites = createSprites(low ? 96 : 256), glows = [];
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [lampPos[0], lampPos[1] + 0.1, lampPos[2]], size: 5.4, color: '#ffb850', alpha: 0 }), base: L.night ? 0.5 : 0.4 });

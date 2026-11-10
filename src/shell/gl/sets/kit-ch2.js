@@ -12,6 +12,7 @@
 //   roomWall(opts)              a wall run with square or arched openings;  splay(side, ...) where a side flat goes
 //   paneWindow(opts)            frame, bars and a glowing pane to stand in an opening
 //   shafts(opts), floorPatch(opts)   additive light cards from a window; the window thrown on the floor
+//   lampPool(opts)              a lamp's warm pool drawn on a cold floor (two crooked rings)
 //   gableWall(opts), runner(opts)
 //   boardFloor(opts), flagFloor(opts)
 //   openRoof(opts)              two sloped planes seen from below, trusses with king posts and braces
@@ -85,7 +86,7 @@ export function ch2Materials() {
 const FONT = {
   A: '010101111101101', B: '110101110101110', C: '011100100100011', D: '110101101101110', E: '111100110100111', F: '111100110100100',
   G: '011100101101011', H: '101101111101101', I: '111010010010111', J: '001001001101010', K: '101101110101101', L: '100100100100111',
-  M: '101111111101101', N: '110101101101101', O: '010101101101010', P: '110101110100100', Q: '010101101110011', R: '110101110101101',
+  M: '101111111101101', N: '101111111111101', O: '010101101101010', P: '110101110100100', Q: '010101101110011', R: '110101110101101',
   S: '011100010001110', T: '111010010010010', U: '101101101101111', V: '101101101101010', W: '101101111111101', X: '101101010101101',
   Y: '101101010010010', Z: '111001010100111', 0: '111101101101111', 1: '010110010010111', 2: '110001010100111', 3: '110001010001110',
   4: '101101111001001', 5: '111100110001110', 6: '011100110101010', 7: '111001010010010', 8: '010101010101010', 9: '010101011001110',
@@ -212,6 +213,16 @@ export function floorPatch({ w = 1.5, d = 2.6, panes = 3, rows = 2, shear = 0.3,
   const m = merge(parts), P = m.positions;
   for (let i = 0; i < P.length; i += 3) P[i] += -P[i + 2] * shear;
   return setOutline(setGlow(tint(m, color), glow), 0);
+}
+
+/**
+ * A lamp's pool drawn on the floor: two crooked rings, the inner one hotter. Lamp light in this engine multiplies the
+ * surface colour, so on a cold floor (violet flags, blue rock) a warm lamp shows nothing unless the pool is drawn.
+ * Centred on the origin, lying in y = 0 (stand it a hair above the floor). Scale the node to make it breathe.
+ */
+export function lampPool({ r = 2, inner = 0.55, color = '#e0a0c0', hot = '#ffc890', glow = 0.5, n = 11, seed = 1, squash = 0.8 } = {}) {
+  const rr = R(seed), ring = (rad, y) => { const P = [0, y, 0], I = []; for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2, k = rad * (0.9 + rr() * 0.2); P.push(Math.cos(a) * k, y, Math.sin(a) * k * squash); } for (let i = 0; i < n; i++) I.push(0, 1 + (i + 1) % n, 1 + i); return fromArrays(P, I, null, 180); };
+  return setOutline(merge(setGlow(tint(ring(r, 0), color), glow * 0.6), setGlow(tint(ring(r * inner, 0.003), hot), glow)), 0);
 }
 
 /** Floorboards running front to back, centred, top at y = 0. */

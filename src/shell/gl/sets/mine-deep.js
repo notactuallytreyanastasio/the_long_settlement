@@ -28,7 +28,7 @@ import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { anchorAt, crate, barrel, sack, ropeCoil, ledgerBook, scatter, cobble, rock } from './kit.js';
 import {
-  SM, ch2Materials, shell, lightOf, stageMarks, norm3, cave, timberSet, oreCart, rails, cage, pick, crystals, hangLamp, lectern, handLamp, pixelText, paneWindow, roomWall, keg,
+  SM, ch2Materials, shell, lightOf, stageMarks, norm3, cave, timberSet, oreCart, rails, cage, pick, crystals, hangLamp, lectern, handLamp, pixelText, paneWindow, roomWall, keg, lampPool,
 } from './kit-ch2.js';
 
 const FRONT = 3.6, LEN = 20, W = 12.4, HGT = 5.6, NARROW = 0.44;
@@ -135,6 +135,10 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   const stillNode = mergeStatic(still, 'still'), stillParts = []; stillNode.traverse((n) => { n.castShadow = false; stillParts.push(n); });
   scene.root.add(stillNode);
 
+  // the hook lamp's pool on the gallery floor (drawn: warm light on blue rock shows nothing otherwise)
+  const pool = node('pool', lampPool({ r: 2.7, color: '#a47ee0', hot: '#eca47c', glow: 0.45, seed: 2, squash: 0.7 }), M.flat, { pos: [lampPos[0] - 0.3, 0.012, lampPos[2] + 1.2] }); pool.castShadow = false;
+  scene.root.add(pool);
+
   // ---- the cage (it moves) and the light down the shaft
   const cageNode = node('cage', cage({ w: 1.5, h: 2.3 }), M.prop, { pos: CAGE, rot: [0, 12, 0] });
   scene.root.add(cageNode);
@@ -199,6 +203,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   function tick(time, dt, pw, live) {
     cageNow += (cageUp - cageNow) * Math.min(1, dt * 2.2);
     cageNode.position[1] = cageNow * 6.2 + (cageNow > 0.02 && cageNow < 0.98 ? Math.sin(time * 30) * 0.01 : 0); cageNode.visible = cageNow < 0.97;
+    { const k = 0.62 + 0.38 * Math.min(1.3, pw / L.power) + 0.02 * Math.sin(time * 4.7); pool.setScale(k, 1, k); }
     const tw = 0.82 + 0.18 * Math.sin(time * 1.7);
     for (let i = 0; i < stillParts.length; i++) { const n = stillParts[i]; n.tint[0] = n.tint[1] = n.tint[2] = 0.25 + 0.75 * seam; }
     for (let i = 0; i < shardGlows.length; i++) shardGlows[i].alpha = (low && i > 3 ? 0 : 0.5) * seam * (0.8 + 0.2 * Math.sin(time * 2.3 + i * 1.9));

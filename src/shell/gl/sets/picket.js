@@ -80,7 +80,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   const set = group('set');
   set.add(node('ground', tint(place(plane(160, 110, 1, 1), 0, 0, -35), L.ground), M.ground));
   set.add(deco(node('road', setOutline(tint(fromArrays([-2.6, 0.006, 5, 2.6, 0.006, 5, -1.9, 0.006, GATE_Z, 1.9, 0.006, GATE_Z], [0, 1, 2, 1, 3, 2], null, 180), night ? '#ffffff' : '#fffaf0'), 0), M.flat)));
-  set.add(node('rails', rails({ len: 14, seed: 3 }), M.prop, { pos: [-3.4, 0, GATE_Z - 5.2], rot: [0, 78, 0] }));
+  set.add(deco(node('rails', rails({ len: 14, seed: 3 }), M.prop, { pos: [-3.4, 0, GATE_Z - 5.2], rot: [0, 78, 0] })));
 
   // ---- the gate, its walls, the palisade running off both ways
   const GATE = [0, 0, GATE_Z];
@@ -100,13 +100,13 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   // ---- the pit behind the gate: the winding tower, the engine house with its stack, salt heaps
   const HEAD = [-1.2, 0, GATE_Z - 8.5];
   const hf = headframe({ h: 9.4, w: 4.2, seed: 1, color: '#7e4f5e', color2: '#a0685e' });
-  set.add(node('headframe', hf, M.prop, { pos: HEAD, rot: [0, 14, 0] }));
+  set.add(deco(node('headframe', hf, M.prop, { pos: HEAD, rot: [0, 14, 0] }))); // behind the gate: its shadow falls where nobody looks, so it is not in the shadow pass
   const ENG = [6.4, 0, GATE_Z - 7.5];
   const eng = house({ seed: 9, w: 4.2, d: 3.4, h: 3.4, roofH: 1.9, wall: SM.brick, roof: '#5b7fe8', shutters: SM.enamel, sides: 'left', lit: 0.9, floors: 2, chimney: false, flowers: false, door: false });
-  set.add(node('engine-house', eng, M.prop, { pos: ENG, rot: [0, -16, 0] }));
+  set.add(deco(node('engine-house', eng, M.prop, { pos: ENG, rot: [0, -16, 0] })));
   const STACK = [ENG[0] + 2.6, 0, ENG[2] - 1.2], STACK_H = 9.5;
-  set.add(node('stack', merge(tint(place(cylinder(0.75, 0.5, STACK_H, 9), 0, 0, 0), SM.brick), tint(place(cylinder(0.56, 0.6, 0.4, 9), 0, STACK_H - 0.5, 0), SM.brickDark), tint(place(cylinder(0.8, 0.8, 0.5, 9), 0, 0, 0), SM.brickDark)), M.prop, { pos: STACK, rot: [0, 0, -1.5] }));
-  for (const [x, z, rr, hh, seed] of [[-6.8, GATE_Z - 4.5, 2.6, 2.2, 2], [-10.5, GATE_Z - 7, 3.4, 2.9, 5], [11.5, GATE_Z - 4.2, 2.4, 1.9, 8]]) set.add(node('heap', saltHeap({ r: rr, h: hh, seed }), M.prop, { pos: [x, 0, z] }));
+  set.add(deco(node('stack', merge(tint(place(cylinder(0.75, 0.5, STACK_H, 9), 0, 0, 0), SM.brick), tint(place(cylinder(0.56, 0.6, 0.4, 9), 0, STACK_H - 0.5, 0), SM.brickDark), tint(place(cylinder(0.8, 0.8, 0.5, 9), 0, 0, 0), SM.brickDark)), M.prop, { pos: STACK, rot: [0, 0, -1.5] })));
+  for (const [x, z, rr, hh, seed] of [[-6.8, GATE_Z - 4.5, 2.6, 2.2, 2], [-10.5, GATE_Z - 7, 3.4, 2.9, 5], [11.5, GATE_Z - 4.2, 2.4, 1.9, 8]]) set.add(deco(node('heap', saltHeap({ r: rr, h: hh, seed }), M.prop, { pos: [x, 0, z] })));
 
   // ---- in front of the gate, clear of the road: braziers, heaps, a tub off the rails, placards
   const BRZ = [[-3.9, 0, -2.5], [3.5, 0, -2.9]];

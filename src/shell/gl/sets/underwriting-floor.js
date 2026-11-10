@@ -45,7 +45,7 @@ const LIGHTS = {
       sky: { zenith: '#0c1a70', mid: '#243ab0', midAt: 0.45, horizon: '#5a78e0', below: '#2f3aa0', stars: 1, moon: 0.7 },
       water: null,
     },
-    glass: '#a9c6ff', shaft: '#9fb8ff', patch: '#b4c8ff',
+    glass: '#8fb0ff', shaft: '#6f8ae4', patch: '#c4d6ff',
   },
 };
 
@@ -76,12 +76,12 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- the room
   const room = group('room');
-  room.add(node('floor', place(checker({ w: 20, d: 14, nx: 20, nz: 14, colors: ['#dfe4ff', '#a4aef6'], seed: 3 }), 0, 0, -2.6), M.flat));
+  room.add(node('floor', place(checker({ w: 20, d: 14, nx: 20, nz: 14, colors: ['#8794f2', '#5b68d6'], seed: 3 }), 0, 0, -2.6), M.flat));
   const WINS = [-3.7, 0, 3.7].map((x) => ({ x, w: 1.9, sill: 3.75, top: 6.1, arch: true }));
-  room.add(node('back', wall({ w: BW * 2 + 0.4, h: H, t: 0.4, color: '#c4c8ff', openings: WINS }), M.wall, { pos: [0, 0, BACK] }));
+  room.add(node('back', wall({ w: BW * 2 + 0.4, h: H, t: 0.4, color: '#8a92ee', openings: WINS }), M.wall, { pos: [0, 0, BACK] }));
   const TEA = { x: -1.0, w: 1.4, sill: 0, top: 2.6 };
-  room.add(node('wing-l', wall({ w: WL.len + 0.3, h: H, t: 0.4, color: '#c4c8ff' }), M.wall, { pos: WL.pos, rot: [0, WL.yaw, 0] }));
-  room.add(node('wing-r', wall({ w: WR.len + 0.3, h: H, t: 0.4, color: '#c4c8ff', openings: [TEA] }), M.wall, { pos: WR.pos, rot: [0, WR.yaw, 0] }));
+  room.add(node('wing-l', wall({ w: WL.len + 0.3, h: H, t: 0.4, color: '#8a92ee' }), M.wall, { pos: WL.pos, rot: [0, WL.yaw, 0] }));
+  room.add(node('wing-r', wall({ w: WR.len + 0.3, h: H, t: 0.4, color: '#8a92ee', openings: [TEA] }), M.wall, { pos: WR.pos, rot: [0, WR.yaw, 0] }));
   for (const [Wg, skip] of [[WL, null], [WR, TEA]]) { // a plum dado with a brass rail on both wings
     const runs = skip ? [[-Wg.len / 2, skip.x - skip.w / 2 - 0.14], [skip.x + skip.w / 2 + 0.14, Wg.len / 2]] : [[-Wg.len / 2, Wg.len / 2]];
     for (const [x0, x1] of runs) room.add(node('dado', merge(tint(place(box(x1 - x0, 1.5, 0.06), 0, 0.75, 0.03), '#7a5ad0'), tint(place(box(x1 - x0, 0.09, 0.09), 0, 1.54, 0.045), H3.brass)), M.wall, { pos: Wg.at((x0 + x1) / 2), rot: [0, Wg.yaw, 0] }));
@@ -183,7 +183,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   // ---- lamps
   const teaPos = WR.at(TEA.x - 0.2, -0.5, 1.5), teaIn = WR.at(TEA.x, 0.9, 1.4);
   const lamps = [
-    { name: 'desk', pos: lampPos, color: '#ffc870', radius: 7, base: 1.5, flicker: 0.05 },
+    { name: 'desk', pos: lampPos, color: '#ffc870', radius: 9, base: 1.7, flicker: 0.05 },
     { name: 'moon', pos: [0.6, 3.6, BACK + 3.2], color: '#8fa8ff', radius: 9, base: 1.1, flicker: 0 },
     { name: 'moon-l', pos: [-3.4, 3.2, BACK + 3.4], color: '#8fa8ff', radius: 7, base: 0.9, flicker: 0 },
     { name: 'tea', pos: teaIn, color: '#ffa860', radius: 5.5, base: 0, flicker: 0.04 },

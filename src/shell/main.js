@@ -48,8 +48,8 @@ const PRELOAD_MAX = 8;          // voice files asked for at one time; the rest l
 const LOAD_WAIT_MS = 1500;      // how long Continue waits for sound before going on without it
 
 // The 3D renderer. ?gl=1 asks for it, ?gl=0 refuses it, and with neither GL_DEFAULT decides: the integrator
-// flips this one constant when chapter 1 is ready to be the default. ?q=low|mid|high pins its quality tier.
-const GL_DEFAULT = false;
+// flipped this one constant to true once chapter 1 played through in 3D. ?q=low|mid|high pins its quality tier.
+const GL_DEFAULT = true;
 const QUERY = new URLSearchParams(window.location.search);
 const GL_ASKED = QUERY.get('gl') === '1';                                  // asked for by name: its errors are fatal
 const GL_WANTED = QUERY.get('gl') === '0' ? false : GL_ASKED || GL_DEFAULT;

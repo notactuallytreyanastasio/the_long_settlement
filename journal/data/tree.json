@@ -12561,7 +12561,7 @@
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
-  "bytes": 15760,
+  "bytes": 15761,
   "lines": 167
  },
  {
@@ -12641,7 +12641,7 @@
  },
  {
   "path": "src/shell/gl/sets/dormitory.js",
-  "bytes": 23303,
+  "bytes": 23335,
   "lines": 258
  },
  {
@@ -12701,8 +12701,8 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 27329,
-  "lines": 282
+  "bytes": 28171,
+  "lines": 286
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
@@ -12726,8 +12726,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch2.js",
-  "bytes": 79230,
-  "lines": 979
+  "bytes": 80268,
+  "lines": 990
  },
  {
   "path": "src/shell/gl/sets/kit-ch3.js",
@@ -12781,8 +12781,8 @@
  },
  {
   "path": "src/shell/gl/sets/ledger-room.js",
-  "bytes": 18050,
-  "lines": 208
+  "bytes": 18802,
+  "lines": 213
  },
  {
   "path": "src/shell/gl/sets/ledger.js",
@@ -12791,8 +12791,8 @@
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
-  "bytes": 19141,
-  "lines": 224
+  "bytes": 19601,
+  "lines": 229
  },
  {
   "path": "src/shell/gl/sets/mint-office.js",
@@ -12816,7 +12816,7 @@
  },
  {
   "path": "src/shell/gl/sets/picket.js",
-  "bytes": 18803,
+  "bytes": 18922,
   "lines": 230
  },
  {
@@ -12826,7 +12826,7 @@
  },
  {
   "path": "src/shell/gl/sets/proctor-office.js",
-  "bytes": 20323,
+  "bytes": 20429,
   "lines": 226
  },
  {
@@ -12843,6 +12843,11 @@
   "path": "src/shell/gl/sets/shore-dusk.js",
   "bytes": 19216,
   "lines": 234
+ },
+ {
+  "path": "src/shell/gl/sets/stall-day.js",
+  "bytes": 30274,
+  "lines": 343
  },
  {
   "path": "src/shell/gl/sets/under-lane.js",
@@ -12891,7 +12896,7 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 23795,
+  "bytes": 23798,
   "lines": 501
  },
  {

@@ -36,7 +36,7 @@ const LIGHTS = {
   dawn: {
     preset: 'day', power: 0.5, night: false,
     env: {
-      key: { dir: norm3([-0.36, 0.72, 0.6]), color: '#f4f0ff' },
+      key: { dir: norm3([0.4, 0.5, -0.77]), color: '#ffe9c4' }, // first light comes in low through the east window behind her: everything throws its shadow down the room
       shadow: { tint: '#7f86ec', lift: 0.1, saturate: 1.4 },
       ambient: { sky: '#c8dcff', ground: '#ffd0b8', amount: 0.14 },
       rim: { color: '#fff0c8', amount: 0.7, edge: 0.74 },

@@ -55,7 +55,7 @@ const LIGHTS = {
       sky: { zenith: '#0c1a70', mid: '#243ab0', midAt: 0.45, horizon: '#5a78e0', below: '#2f3aa0', stars: 1, moon: 0.7 },
       water: null,
     },
-    glass: '#a8c4ff', glassGlow: 0.95, shaft: '#9fb8ff', patch: '#a8c0ff', wallUp: '#cfd4ff', sleepers: true, cadets: 0,
+    glass: '#86a2f6', glassGlow: 0.7, shaft: '#4f66c8', patch: '#a8c0ff', wallUp: '#cfd4ff', sleepers: true, cadets: 0,
   },
 };
 
@@ -180,7 +180,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
   // ---- drawn light: the window down the aisle, the cone under the lamp
   const lampPos = [LAMP[0] + hl.anchors.lamp[0], LAMP[1] + hl.anchors.lamp[1], LAMP[2] + hl.anchors.lamp[2]];
   if (!low) scene.root.add(node('shaft', place(shaftCards({ w: WIN.w * 0.8, h: (WIN.top - WIN.sill) * 0.7, dir: [0.03, -0.62, 1], len: 5.2, cards: 3, color: L.shaft }), 0, (WIN.sill + WIN.top) / 2, BACK + 0.05), M.shaft));
-  const cone = node('lamp-cone', tint(place(rayMesh(3.1, 0.3, 2.3, 16), lampPos[0], lampPos[1] + 0.05, lampPos[2]), '#ffc060'), rayMaterial({ power: 1.4, near: 0.42, far: 0 }));
+  const cone = node('lamp-cone', tint(place(rayMesh(3.1, 0.3, 2.3, 16), lampPos[0], lampPos[1] + 0.05, lampPos[2]), '#ffc060'), rayMaterial({ power: 1.4, near: L.night ? 0.2 : 0.27, far: 0 }));
   scene.root.add(cone);
 
   // ---- the boys: one on the foot of every lower bunk, a few up top with their legs over the side
@@ -212,7 +212,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: lampPos, size: 2.6, color: '#ffc060', alpha: 0 }), base: 0.5 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: lamps[2].pos, size: 1.6, color: '#ffc060', alpha: 0 }), base: 0.4 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [DOOR.x, 2.95, MOUTH + 0.1], size: 1.5, color: '#ffc870', alpha: 0 }), base: 0.45 });
-  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 2.9, BACK + 0.2], size: 4.4, color: L.night ? '#8fa8ff' : '#b8a0ff', alpha: 0 }), base: 0.3, fixed: true });
+  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 2.9, BACK + 0.2], size: 4.4, color: L.night ? '#8fa8ff' : '#b8a0ff', alpha: 0 }), base: L.night ? 0.14 : 0.3, fixed: true });
   const stoveGlow = sprites.add({ kind: 'glow', pos: fire, size: 1.3, color: '#ff8a30', alpha: 0.5 });
   const tallyGlow = sprites.add({ kind: 'glow', pos: [tally.position[0], 0.36, tally.position[2]], size: 0.9, color: '#fff0a0', alpha: 0 });
 

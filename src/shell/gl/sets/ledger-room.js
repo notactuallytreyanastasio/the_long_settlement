@@ -25,7 +25,7 @@ import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { anchorAt, bookshelf, ledgerBook, candle, crate } from './kit.js';
 import {
-  SM, ch2Materials, shell, lightOf, stageMarks, norm3, cave, roomWall, flagFloor, shafts, floorPatch, drawerBank, lectern, sleeper, keg, handLamp, pixelText, flameBank,
+  SM, ch2Materials, shell, lightOf, stageMarks, norm3, cave, roomWall, flagFloor, shafts, floorPatch, drawerBank, lectern, sleeper, keg, handLamp, pixelText, flameBank, lampPool,
 } from './kit-ch2.js';
 
 const FRONT = 3.8, BACK = -5.2, W = 11.6, HGT = 5.5, FLAT = 0.72;
@@ -123,6 +123,10 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   if (!low) scene.root.add(node('shafts', place(shafts({ w: GR.w * 0.85, h: (GR.top - GR.sill) * 0.75, dir: [0.05, -1, 0.92], len: 5.6, cards: 3, color: '#9fb8ff' }), GR.x, (GR.sill + GR.top) / 2, BACK + 0.05), M.shaft));
 
+  // the storm lamp's pool on the flags (drawn: see kit-ch2 lampPool), and a smaller one round the clerk's candle
+  const pool = node('pool', merge(lampPool({ r: 2.5, color: '#b48ad8', hot: '#f0b08c', glow: 0.45, seed: 3 }), place(lampPool({ r: 1.1, color: '#b084d4', hot: '#e8a888', glow: 0.4, seed: 5, n: 9 }), CANDLE[0] + 0.1 - (CR[0] - 0.75), 0, CANDLE[2] + 0.5 - (CR[2] + 1.0))), M.flat, { pos: [CR[0] - 0.75, 0.008, CR[2] + 1.0] }); pool.castShadow = false;
+  scene.root.add(pool);
+
   // ---- the four drawers: L I E N
   const sprites = scene.sprites = createSprites(low ? 96 : 256);
   const dw = (3.3 - 0.14) / 4, dh = (2.25 - 0.14) / 4, DY = 0.17 + dh * 2.5;
@@ -150,10 +154,10 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   // ---- lamps
   const candleAt = fire.spots[0].pos;
   const lamps = [
-    { name: 'storm', pos: [lampPos[0] - 0.3, lampPos[1] + 0.75, lampPos[2] + 0.7], color: '#ffc468', radius: 7.5, base: 1.9 },
+    { name: 'storm', pos: [lampPos[0] - 0.7, lampPos[1] + 1.7, lampPos[2] + 1.3], color: '#ffc468', radius: 10, base: 2.3 }, // held well above the lamp itself: a light at crate height only warms the crate
     { name: 'moon', pos: [0.2, 2.2, BACK + 2.2], color: '#8fa8ff', radius: 5.6, base: 1.3, flicker: 0, fixed: true },
-    { name: 'candle', pos: [candleAt[0], candleAt[1] + 0.2, candleAt[2] + 0.2], color: '#ffb860', radius: 3.4, base: 1.0, flicker: 0, fire: 0, fixed: true },
-    { name: 'door', pos: [DOOR.x + 0.4, 1.3, BACK + 0.7], color: '#ff9a50', radius: 3.6, base: 0.7, flicker: 0, fixed: true },
+    { name: 'candle', pos: [candleAt[0] + 0.2, candleAt[1] + 0.9, candleAt[2] + 0.7], color: '#ffb860', radius: 4.8, base: 1.3, flicker: 0, fire: 0, fixed: true },
+    { name: 'door', pos: [DOOR.x + 0.5, 2.0, BACK + 1.2], color: '#ff9a50', radius: 5.2, base: 1.1, flicker: 0, fixed: true },
     { name: 'drawers', pos: [CAB[0], DY, CAB[2] + 0.9], color: '#ffd070', radius: 3.6, base: 0, flicker: 0, fixed: true },
   ];
   const glows = [
@@ -183,6 +187,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     let lit = 0;
     for (let i = 0; i < 4; i++) { const d = drawers[i]; d.now += (d.v - d.now) * Math.min(1, dt * 6 + (dt === 0 ? 1 : 0)); d.n.position[2] = d.z + 0.26 * d.now; d.glow.alpha = 0.75 * d.now * (0.85 + 0.15 * Math.sin(time * 3 + i)); d.n.flash[0] = 1; d.n.flash[1] = 0.85; d.n.flash[2] = 0.5; d.n.flash[3] = 0.1 * d.now; lit += d.now; }
     env.points[4].intensity = 0.5 * lit;
+    { const k = 0.7 + 0.3 * Math.min(1.3, pw / L.power); pool.setScale(k, 1, k); } // both pools are one mesh about the storm lamp's: it shrinks as the table runs down
     pageGlow.alpha = reg ? pageHot * (0.45 + 0.2 * Math.sin(time * 4.4)) : 0;
     let flare = 0;
     if (stirT >= 0) { stirT += dt; flare = Math.sin(Math.min(1, stirT / 2.4) * Math.PI); if (stirT > 2.4) stirT = -1; }

@@ -40,7 +40,7 @@ const LIGHTS = { noon: { preset: 'day', power: 1, sky: 1, env: ENV }, grey: { pr
 const GREY = { key: rgb('#9a9ec8'), tint: rgb('#5a5cb4'), zenith: rgb('#8a90b8'), mid: rgb('#a8aecc'), horizon: rgb('#c4c8dc') };
 
 const CAMERAS = cams({
-  wide: { target: [0.05, 2.0, -0.6], dist: 8.6, yaw: 2, pitch: 2, fov: 47 },
+  wide: { target: [0.05, 2.45, -0.6], dist: 8.8, yaw: 2, pitch: 0, fov: 47 },
   low: { target: [0.1, 2.6, -0.2], dist: 6.4, yaw: -5, pitch: -22, fov: 60 },
   stage: { target: [0, 1.2, 0.3], dist: 9.6, yaw: -12, pitch: 6, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -1], shadowRadius: 8, outline: 0.7 },
   landscape: { target: [0, 2.2, -1.6], dist: 11, yaw: 3, pitch: 3, fov: 44 },
@@ -106,7 +106,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   // ---- the light from the eye
   const EYE = [0, WALL_H + 5.4, CZ];
-  const shaft = node('shaft', tint(rayMesh(EYE[1] + 0.2, 1.5, 2.7, low ? 12 : 18), '#fff4d0'), rayMaterial({ power: 1.3, near: 0.5, far: 0.2 }), { pos: EYE }); scene.root.add(shaft);
+  const shaft = node('shaft', tint(rayMesh(EYE[1] + 0.2, 1.5, 2.7, low ? 12 : 18), '#ffe2a0'), rayMaterial({ power: 1.3, near: 0.3, far: 0.1 }), { pos: EYE }); scene.root.add(shaft);
   const pool = node('pool', setOutline(setGlow(tint(cylinder(2.6, 2.6, 0.012, 24), '#fffbe6'), 0.75), 0), M.flat, { pos: [0, 0.002, CZ] }); pool.castShadow = false; scene.root.add(pool);
 
   const fg = group('fg');
