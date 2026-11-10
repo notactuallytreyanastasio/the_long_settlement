@@ -293,7 +293,7 @@ export function createVoice(audio, cast, manifest) {
       analyser.getFloatTimeDomainData(scope);
       let sum = 0;
       for (let i = 0; i < scope.length; i++) sum += scope[i] * scope[i];
-      return Math.min(1, Math.sqrt(sum / scope.length) * 5);
+      return Math.min(1, Math.sqrt(sum / scope.length) * 3.5);
     }
     if (current.mode === 'synth') {
       // speechSynthesis output cannot be tapped; move the mouth at syllable rate instead

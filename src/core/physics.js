@@ -21,14 +21,14 @@ const WALL_BOUNCE = 0.5;      // default restitution of a wall segment
 const TARGET_BOUNCE = 0.55;
 const SLING_BOUNCE = 0.4;
 const BUMPER_BOUNCE = 0.5;
-const FLIPPER_BOUNCE = 0.42;
+const FLIPPER_BOUNCE = 0.4;
 const BALL_BOUNCE = 0.9;
 const WALL_FRICTION = 0.04;   // Coulomb coefficient: tangential impulse <= mu * normal impulse
-const FLIPPER_FRICTION = 0.1;
+const FLIPPER_FRICTION = 0.22;
 const REST_SPEED = 28;        // impacts slower than this do not bounce (lets a ball settle)
 
-const FLIP_ACCEL = 1500;      // rad/s^2 while the coil is on
-const FLIP_SPEED = 38;        // rad/s, top speed of the up-stroke
+const FLIP_ACCEL = 3000;      // rad/s^2 while the coil is on
+const FLIP_SPEED = 30;        // rad/s, top speed of the up-stroke
 const RETURN_ACCEL = 500;
 const RETURN_SPEED = 14;
 

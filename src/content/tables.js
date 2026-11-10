@@ -52,6 +52,7 @@ function bank(ids, a, b, group, gap = 0.12) {
  * o.elbow    y where the inlane guide turns in toward the flipper
  * o.pivot    left flipper pivot
  * o.sling    [top, bottomLeft, bottomRight] of the left slingshot triangle
+ * o.guard    [left, right] how far each outlane guard bump stands out from the wall; o.guardY its tip
  */
 function lower(o) {
   // The guide ends tangent to the top of the flipper's pivot cap, and is shallower than
@@ -61,7 +62,12 @@ function lower(o) {
   const [st, sbl, sbr] = o.sling;
   const f0 = lerp(st, sbr, 0.14), f1 = lerp(st, sbr, 0.88);
   const slingWallsL = [...poly([f0, st, sbl, sbr, f1])];
+  // A rubber bump on the side wall above each outlane. Without it a weak lob from the
+  // far flipper drops straight down the wall into the outlane; with it the ball has to
+  // come in low and sideways to get there.
+  const guard = (g) => [[L, o.guardY - 46], [L + g, o.guardY], [L, o.guardY + 12]];
   const walls = [
+    ...poly(guard(o.guard[0])), ...poly(guard(o.guard[1]).map(mirror)),
     ...poly(guideL), ...poly(guideL.map(mirror)),
     ...slingWallsL, ...slingWallsL.map((w) => ({ a: mirror(w.a), b: mirror(w.b) })),
   ];
@@ -117,7 +123,7 @@ function vessery() {
   const lo = lower({
     divX: 31, divTop: 592, elbow: 660, pivot: [120, 698],
     sling: [[72, 574], [72, 648], [108, 664]], slingKick: 330,
-    flipLen: 56, rest: 0.5, active: 0.45,
+    flipLen: 56, rest: 0.5, active: 0.62, guard: [14, 14], guardY: 552,
   });
   const pier = sideLane(250, 330, 430, 34, 46);        // left: the pier ramp
   const dock = { inner: pier.inner.map(mirror), outer: pier.outer.map(mirror) };   // right: the dock orbit
@@ -208,7 +214,7 @@ function saltmere() {
   const lo = lower({
     divX: 30, divTop: 600, elbow: 664, pivot: [122, 702],
     sling: [[68, 566], [68, 652], [108, 670]], slingKick: 380,
-    flipLen: 57, rest: 0.52, active: 0.45,
+    flipLen: 57, rest: 0.52, active: 0.62, guard: [10, 14], guardY: 558,
   });
   const cause = sideLane(270, 360, 452, 32, 42);       // left: the causeway ramp
   const courtBase = sideLane(240, 350, 440, 30, 40);   // right: the court orbit, narrower

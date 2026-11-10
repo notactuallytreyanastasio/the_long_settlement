@@ -66,13 +66,13 @@ export function createAudio() {
   meter.connect(ctx.destination);
 
   const musicBus = ctx.createGain();
-  musicBus.gain.value = 0.8;
+  musicBus.gain.value = 0.5;
   const duckGain = ctx.createGain();
   musicBus.connect(duckGain);
   duckGain.connect(master);
 
   const sfxBus = ctx.createGain();
-  sfxBus.gain.value = 0.9;
+  sfxBus.gain.value = 0.75;
   sfxBus.connect(master);
 
   const voiceBus = ctx.createGain();
@@ -533,7 +533,7 @@ export function createAudio() {
 
     // E minor: a pulse that will not sit down.
     tense: {
-      bpm: 96, div: 4, len: 64, vol: 0.85, send: 0.3,
+      bpm: 96, div: 4, len: 64, vol: 1.0, send: 0.3,
       step(k, t, s, I, n) {
         const bar = k >> 4, b = k & 15;
         const root = [40, 40, 36, 35][bar];
@@ -580,7 +580,7 @@ export function createAudio() {
 
     // A minor. The lullaby whole, in the minor: a bell first, then whistled.
     sorrow: {
-      bpm: 54, div: 2, len: 64, vol: 0.9, send: 0.6,
+      bpm: 54, div: 2, len: 64, vol: 0.75, send: 0.6,
       step(k, t, s, I) {
         const bar = k >> 3, b = k & 7;
         const chords = [[45, 52, 57, 60], [40, 52, 55, 59], [41, 53, 57, 60], [45, 52, 57, 60],
@@ -600,7 +600,7 @@ export function createAudio() {
 
     // C major. The lullaby plainly, over the chords it was written for.
     hope: {
-      bpm: 72, div: 2, len: 64, vol: 0.9, send: 0.45,
+      bpm: 72, div: 2, len: 64, vol: 1.15, send: 0.45,
       step(k, t, s, I, n) {
         const bar = k >> 3, b = k & 7;
         const chords = [[48, 55, 60, 64], [43, 55, 59, 62], [45, 52, 57, 60], [41, 53, 57, 60],
@@ -643,7 +643,7 @@ export function createAudio() {
 
     // B minor. A drone, water somewhere, and iron struck far down a gallery.
     mine: {
-      bpm: 60, div: 2, len: 64, vol: 0.9, send: 0.7,
+      bpm: 60, div: 2, len: 64, vol: 0.7, send: 0.7,
       step(k, t, s, I, n) {
         const bar = k >> 3, b = k & 7;
         if (k % 16 === 0) {
@@ -688,14 +688,14 @@ export function createAudio() {
 
     // E lydian. Open fifths, glass, and the brass works of the Orrery turning.
     shrine: {
-      bpm: 48, div: 2, len: 64, vol: 0.9, send: 0.8,
+      bpm: 48, div: 2, len: 64, vol: 0.7, send: 0.8,
       step(k, t, s, I, n) {
         const bar = k >> 3, b = k & 7;
         if (k % 16 === 0) {
           const c = (k / 16) % 2 === 0 ? [52, 59, 64] : [54, 61, 66];
           I.pad(c, t, s * 16, 0.04, { type: 'triangle', cut: 1400, att: 2.5, rel: 3 });
         }
-        if (k === 0) I.bass(28, t, s * 30, 0.2, { type: 'sine' });
+        if (k === 0) I.bass(28, t, s * 30, 0.12, { type: 'sine' });
         if (b % 2 === 0) I.tick(t, b === 0 ? 0.05 : 0.025, 3600);       // the escapement
         const glass = [76, 78, 80, 82, 83, 85, 88];
         const r = scatter(k + 11, n % 3);
@@ -707,12 +707,12 @@ export function createAudio() {
     // C, no mode worth naming. The lullaby upside down on a cracked bell, ending
     // a semitone short. Two low thuds for a heart.
     dread: {
-      bpm: 50, div: 2, len: 64, vol: 0.95, send: 0.65,
+      bpm: 50, div: 2, len: 64, vol: 0.6, send: 0.65,
       step(k, t, s, I, n) {
         const bar = k >> 3, b = k & 7;
         if (k % 16 === 0) {
           I.pad([36, 37], t, s * 16, 0.06, { type: 'sawtooth', cut: 220, att: 3, rel: 3, spread: 11 });
-          I.bass(24, t, s * 15, 0.26, { type: 'sine' });
+          I.bass(24, t, s * 15, 0.17, { type: 'sine' });
         }
         if (b === 0 || b === 4) { I.kick(t, 0.4, 52); I.kick(t + 0.27, 0.26, 46); }
         const place = { 20: 0, 28: 1, 36: 2, 46: 3 };
