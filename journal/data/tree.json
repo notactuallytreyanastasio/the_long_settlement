@@ -12506,8 +12506,8 @@
  },
  {
   "path": "src/shell/gl/index.js",
-  "bytes": 995,
-  "lines": 18
+  "bytes": 5149,
+  "lines": 65
  },
  {
   "path": "src/shell/gl/math.js",
@@ -12556,7 +12556,7 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 23132,
+  "bytes": 23146,
   "lines": 341
  },
  {

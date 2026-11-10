@@ -510,6 +510,20 @@
    "prompt": "like you see the combat and progress\n\nand then the dialogue happens\n\nits like playing the pinball slots (which the slot should show on the pinball table) powers their world\n\nand as you score more they will do combos and stuff",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "7d804d46-949e-4555-b7ce-c7dd84b7f208",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Toon engine slice works: WebGL2 cel renderer, 3 chibi characters, lantern market set, 3D Vessery table with reels on the playfield, live stage with combos",
+   "description": "Demo at tools/gl-demo.html (views live, cine, table, cast). Lead looked at the live and two-shot frames: clearly more charming than the rejected 2D art. Live view is 92 draws / 370k triangles; CPU cost under 2 ms at 6x throttle; GPU cost on an iPhone unmeasured. Motion judged only from stills. Live game untouched; 205/205 tests.",
+   "created": "2026-11-10T17:13:40.199048Z",
+   "updated": "2026-11-10T17:13:40.199048Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -750,6 +764,13 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T15:41:51.059147Z"
+  },
+  {
+   "from": "33b29edf-0bda-45e0-96ed-94493e3c6858",
+   "to": "7d804d46-949e-4555-b7ce-c7dd84b7f208",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T17:13:40.201367Z"
   }
  ]
 }

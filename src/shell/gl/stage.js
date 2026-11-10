@@ -313,7 +313,7 @@ export function createEncounter(set, troupe, def) {
     if (progress && progress.total > 0) resolve = won ? 0 : 1 - progress.done / progress.total;
     shown += (resolve - shown) * Math.min(1, dt * 5);
     // the table powers their world: lamps follow the chain, and sag when nothing is being hit
-    const want = won ? 1.3 : 0.55 + 0.22 * enc.combo.level + 0.25 * clamp(1 - (time - enc.combo.last) / 6, 0, 1);
+    const want = won ? 1.3 : Math.min(1.4, 0.55 + 0.2 * enc.combo.level + 0.25 * clamp(1 - (time - enc.combo.last) / 6, 0, 1));
     power += (want - power) * Math.min(1, dt * (want > power ? 6 : 1.2));
     set.setPower(power);
     punch = Math.max(0, punch - dt * 3.2);
