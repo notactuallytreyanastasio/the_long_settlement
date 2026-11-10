@@ -1930,7 +1930,8 @@ export function createRenderer(canvas) {
     // writs
     cap('WRITS', C, y0 + 24);
     const writs = Math.max(0, Math.floor(econ.writs));
-    const showN = Math.min(writs, 6);
+    // six fit beside a one-digit count; past six the count is '×nn' and needs the sixth's room
+    const showN = writs > 6 ? 5 : writs;
     for (let i = 0; i < Math.max(showN, 1); i++) {
       const bx = C + 10 + i * 24;
       const by = y0 + 46;

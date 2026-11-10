@@ -1840,5 +1840,55 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T05:26:04.201Z",
+  "files": 1473,
+  "lines": 25377,
+  "bytes": 42000885,
+  "linesByDir": {
+   ".": 113,
+   "assets/voice": 7180,
+   "src/content": 4170,
+   "src/core": 1814,
+   "src/shell": 8492,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 177,
+   "test/economy.test.js": 277,
+   "test/game.test.js": 741,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 243,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 156,
+   "test/story.test.js": 163,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 76
+  },
+  "changed": [
+   "M src/shell/render.js"
+  ],
+  "tests": {
+   "total": 140,
+   "pass": 140,
+   "fail": 0,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 0,
+   "ms": 7760,
+   "failures": []
+  },
+  "nodes": {
+   "goal": 2,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 2,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]
