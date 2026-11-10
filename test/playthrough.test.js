@@ -1,5 +1,5 @@
 // The whole game, start to finish, through the core only: update(content, game, msg).
-// No shell. A flipper bot plays both tables; cinematics are confirmed through line by line.
+// No shell. A flipper bot plays all five tables; cinematics are confirmed through line by line.
 //
 // The bot does not aim. It flips when a ball is over a flipper, a few steps late, and
 // plunges with a random charge. A person who can aim will do better than it does, so
@@ -10,9 +10,16 @@ import assert from 'node:assert/strict';
 import { content } from '../src/content/index.js';
 import { init, update } from '../src/core/game.js';
 import { STEP } from '../src/core/physics.js';
+import { leaning } from '../src/core/economy.js';
 
-const SCENE_LIMIT = 4 * 60;     // simulated seconds the bot may need for one scene (median over the seeds)
-const GAME_LIMIT = 60 * 60;     // simulated seconds at the table for any one seed, cinematics excluded
+// A scene the bot needs longer than this for is too hard, and the fix is geometry or the
+// objective, never these numbers.
+const SCENE_MEDIAN_LIMIT = 2.5 * 60;   // simulated seconds for one scene, median over the seeds
+const SCENE_MEAN_LIMIT = 4 * 60;       // and the mean, which is what one unlucky seed moves
+// The game is as long as it has chapters, so its caps are per chapter: seven scenes.
+const CHAPTER_MEDIAN_LIMIT = 15 * 60;  // median seed, whole game / chapters, cinematics excluded
+const CHAPTER_WORST_LIMIT = 30 * 60;   // any one seed, likewise
+const GAME_LIMIT = CHAPTER_WORST_LIMIT * content.chapters.length;
 
 function mulberry(a) {
   return () => {
@@ -140,17 +147,25 @@ export function playthrough(seedN, { maxSeconds = GAME_LIMIT * 3, onStep = null 
 }
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const median = (xs) => { const o = [...xs].sort((a, b) => a - b); return (o[(o.length - 1) >> 1] + o[o.length >> 1]) / 2; };
+const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const runs = [];
 
+test('the game under test is the whole one: five chapters of seven scenes', () => {
+  assert.equal(content.chapters.length, 5);
+  assert.equal(content.chapters.reduce((n, ch) => n + ch.scenes.length, 0), 35);
+});
+
 for (const seedN of SEEDS) {
-  test(`seed ${seedN}: the bot plays from the title to the end of chapter two`, (t) => {
+  test(`seed ${seedN}: the bot plays from the title to the end of chapter five`, (t) => {
     const run = playthrough(seedN);
     runs.push(run);
     const { game, scenes, seen, tableSeconds } = run;
 
     assert.equal(game.mode, 'end');
+    assert.equal(game.chapter, content.chapters.length - 1, 'ended in the last chapter');
     const wanted = content.chapters.flatMap((ch) => ch.scenes.map((s) => s.id));
     assert.deepEqual(scenes.map((s) => s.id), wanted, 'every scene was played, in order');
     for (const s of scenes) assert.ok(s.done, `${s.id} completed`);
@@ -167,32 +182,61 @@ for (const seedN of SEEDS) {
 
     assert.ok(tableSeconds < GAME_LIMIT, `the game took the bot ${fmt(tableSeconds)} at the table`);
 
-    for (const s of scenes) {
-      t.diagnostic(`${s.id.padEnd(7)} ${fmt(s.seconds).padStart(5)}  balls ${String(s.balls).padStart(2)}  slot trips ${s.slotTrips}  `
-        + `spins ${String(s.spins).padStart(2)}  loans ${s.loans}  aid ${s.aid}   ${s.title}`);
-    }
+    // the two lifetime totals are what the bot actually did, and the ledger reads from them
     const sum = (k) => scenes.reduce((n, s) => n + s[k], 0);
+    const paid = content.chapters.reduce((n, ch) => n + ch.scenes.reduce((m, s) => m + (s.reward.trust || 0), 0), 0);
+    assert.equal(game.econ.loansTaken, sum('loans'), 'every loan is in the lifetime total');
+    assert.equal(game.econ.trustEarned, paid, 'every scene paid its trust into the lifetime total');
+    run.leaning = leaning(game.econ);
+    run.sum = sum;
+
     t.diagnostic(`seed ${seedN} total ${fmt(tableSeconds)} at the table: slot trips ${sum('slotTrips')}, spins ${sum('spins')}, `
-      + `loans ${sum('loans')}, aid ${sum('aid')}; ends with ${Math.round(game.econ.marks)} marks, debt ${Math.round(game.econ.debt)}, `
-      + `trust ${game.econ.trust}`);
+      + `loans ${sum('loans')}, aid ${sum('aid')}; ends with ${Math.round(game.econ.marks)} marks, debt ${Math.round(game.econ.debt)}; `
+      + `trust earned ${game.econ.trustEarned} against ${game.econ.loansTaken} loans: the ledger leans ${run.leaning}`);
   });
 }
 
-test('no scene is too hard: the median seed needs under four minutes for each', (t) => {
+test('no scene is too hard: median under 2:30 and mean under 4:00 for each of the 35', (t) => {
   assert.equal(runs.length, SEEDS.length, 'the playthroughs above ran');
-  const ids = runs[0].scenes.map((s) => s.id);
-  const median = (xs) => { const o = [...xs].sort((a, b) => a - b); return (o[(o.length - 1) >> 1] + o[o.length >> 1]) / 2; };
-  // A bot that cannot aim has a long tail on "hit every target in the bank" scenes: one
-  // seed in eight can take three times the median. The median is what is asserted; the
-  // mean and the worst seed are printed so the tail stays visible.
-  for (const id of ids) {
-    const times = runs.map((r) => r.scenes.find((s) => s.id === id).seconds);
-    const mean = times.reduce((a, b) => a + b, 0) / times.length;
-    t.diagnostic(`${id.padEnd(7)} median ${fmt(median(times)).padStart(5)}  mean ${fmt(mean).padStart(5)}  worst ${fmt(Math.max(...times)).padStart(5)}`);
-    assert.ok(median(times) < SCENE_LIMIT, `${id} takes the bot ${fmt(median(times))} (median of ${times.map(fmt).join(' ')})`);
-    assert.ok(mean < SCENE_LIMIT * 1.25, `${id} takes the bot ${fmt(mean)} on average (${times.map(fmt).join(' ')})`);
+  const timesOf = (id) => runs.map((r) => r.scenes.find((s) => s.id === id).seconds);
+
+  // The table: one row per chapter, one column per scene, median/mean over the seeds.
+  t.diagnostic(`per-scene time at the table, median/mean over seeds ${SEEDS.join(',')}`);
+  t.diagnostic(`      ${[1, 2, 3, 4, 5, 6, 7].map((n) => `s${n}`.padEnd(10)).join(' ')}`);
+  for (const ch of content.chapters) {
+    const cells = ch.scenes.map((sc) => { const x = timesOf(sc.id); return `${fmt(median(x))}/${fmt(mean(x))}`.padEnd(10); });
+    t.diagnostic(`${ch.id}   ${cells.join(' ')}`);
   }
+  t.diagnostic('seed   total  slot trips  spins  loans  aid  leaning');
+  for (let i = 0; i < runs.length; i++) {
+    const r = runs[i];
+    t.diagnostic(`${String(SEEDS[i]).padStart(4)}  ${fmt(r.tableSeconds).padStart(6)}  ${String(r.sum('slotTrips')).padStart(10)}  `
+      + `${String(r.sum('spins')).padStart(5)}  ${String(r.sum('loans')).padStart(5)}  ${String(r.sum('aid')).padStart(3)}  ${r.leaning}`);
+  }
+
+  // A bot that cannot aim has a long tail on "hit every target in the bank" scenes: one
+  // seed in eight can take three times the median. Both are asserted; the worst is in the message.
+  const failures = [];
+  for (const ch of content.chapters) {
+    for (const sc of ch.scenes) {
+      const times = timesOf(sc.id);
+      if (median(times) >= SCENE_MEDIAN_LIMIT) failures.push(`${sc.id} takes the bot a median ${fmt(median(times))} (${times.map(fmt).join(' ')})`);
+      if (mean(times) >= SCENE_MEAN_LIMIT) failures.push(`${sc.id} takes the bot ${fmt(mean(times))} on average (${times.map(fmt).join(' ')})`);
+    }
+  }
+  assert.deepEqual(failures, []);
+
   const totals = runs.map((r) => r.tableSeconds);
-  t.diagnostic(`whole game at the table: median ${fmt(median(totals))}, worst ${fmt(Math.max(...totals))}`);
-  assert.ok(median(totals) < 30 * 60, `the median game takes the bot ${fmt(median(totals))}`);
+  const n = content.chapters.length;
+  t.diagnostic(`whole game at the table: median ${fmt(median(totals))}, worst ${fmt(Math.max(...totals))}; `
+    + `per chapter: median ${fmt(median(totals) / n)}, worst ${fmt(Math.max(...totals) / n)}`);
+  assert.ok(median(totals) / n < CHAPTER_MEDIAN_LIMIT, `the median game takes the bot ${fmt(median(totals) / n)} a chapter`);
+});
+
+// Reported, not asserted either way: which ending the bot gets is tuning (TRUST_PER_LOAN), not correctness.
+test('every seed ends with the ledger leaning one way or the other', (t) => {
+  const counts = { commons: 0, mint: 0 };
+  for (const r of runs) counts[r.leaning]++;
+  t.diagnostic(`leaning over ${runs.length} seeds: commons ${counts.commons}, mint ${counts.mint}`);
+  assert.equal(counts.commons + counts.mint, SEEDS.length);
 });

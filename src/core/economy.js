@@ -35,8 +35,9 @@ export const TRUST_PER_AID = 25;
  * turn between the fourteenth loan and the fifteenth. It is also the price of one
  * mutual-aid ball (TRUST_PER_AID): a loan weighs what a gift is worth.
  * test/economy.test.js asserts this against the chapters themselves. The playthrough
- * bot, over chapters 1 and 2 (135 trust, so five loans is the limit), took 3, 3, 6, 5,
- * 4, 1, 7 and 5 loans on seeds 1 to 8: six books lean commons and two lean mint.
+ * bot, over all five chapters (370 trust, so fourteen loans is the limit), took 5, 7, 8,
+ * 9, 8, 5, 9 and 10 loans on seeds 1 to 8: all eight books lean commons. A player who
+ * borrows half as often again as the bot does ends on the other side.
  */
 export const TRUST_PER_LOAN = 25;
 

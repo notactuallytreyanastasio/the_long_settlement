@@ -13,7 +13,7 @@ const EMOTES = ['smile', 'grim', 'shock', 'tears', 'anger', 'soft'];
 const CAMS = ['wide', 'close', 'two', 'low'];
 const THREADS = ['duty', 'covert', 'commons'];
 const BARK_KEYS = ['launch', 'drain', 'bumper', 'ramp', 'save', 'loan', 'aid', 'jackpot', 'bust', 'idle'];
-const LINE_KEYS = new Set(['id', 'who', 'text', 'fx', 'bg', 'on', 'cam', 'music', 'sfx', 'emote']);
+const LINE_KEYS = new Set(['id', 'who', 'text', 'fx', 'bg', 'on', 'cam', 'music', 'sfx', 'emote', 'minScene']);
 
 /** Every line with where it sits. */
 function allLines() {
@@ -56,6 +56,20 @@ test('every line is spoken by a cast member, says something, and uses only contr
   }
 });
 
+test('minScene is only on barks, names a scene of its chapter, and leaves every key something to say in scene 0', () => {
+  for (const { line, where, ch } of allLines()) {
+    if (line.minScene === undefined) continue;
+    assert.ok(where.includes('.barks.'), `${where} (${line.id}): minScene on a line that is not a bark`);
+    assert.ok(Number.isInteger(line.minScene) && line.minScene > 0 && line.minScene < ch.scenes.length,
+      `${line.id}: minScene ${line.minScene} is not a later scene of ${ch.id}`);
+  }
+  for (const ch of content.chapters) {
+    for (const [key, lines] of Object.entries(ch.barks)) {
+      assert.ok(lines.some((l) => l.minScene === undefined), `${ch.id}.barks.${key}: nothing may be said before scene ${Math.min(...lines.map((l) => l.minScene))}`);
+    }
+  }
+});
+
 test('every backdrop a line names is one cinema.js can paint', () => {
   const used = new Set();
   for (const { line } of allLines()) {
@@ -77,7 +91,7 @@ test('every music mood and sound effect a line or chapter names is one audio.js 
   }
 });
 
-test('every cinematic opens on a backdrop, and Thorne is only ever heard over the Line', () => {
+test('every cinematic opens on a backdrop, and Thorne is heard over the Line unless she is in the room', () => {
   for (const ch of content.chapters) {
     const cines = [[`${ch.id}.prologue`, ch.prologue], [`${ch.id}.epilogue`, ch.epilogue], ...ch.scenes.map((s) => [s.id, s.cutscene])];
     for (const [where, lines] of cines) {
@@ -85,11 +99,34 @@ test('every cinematic opens on a backdrop, and Thorne is only ever heard over th
       assert.ok(lines[0].bg !== undefined, `${where} does not set a backdrop on its first line`);
     }
   }
-  for (const { line } of allLines()) if (line.who === 'thorne') assert.equal(line.fx, 'radio', `${line.id}: Thorne without the radio`);
+  // The bible: Thorne is "always fx:'radio' unless physically present". In a cinematic, present
+  // means on stage (the `on` list, carried forward); the two must agree line by line.
+  let inPerson = 0;
+  for (const ch of content.chapters) {
+    const cines = [ch.prologue, ch.epilogue, ...ch.scenes.map((s) => s.cutscene)];
+    for (const lines of cines) {
+      let on = [];
+      for (const line of lines) {
+        if (line.on !== undefined) on = line.on;
+        if (line.who !== 'thorne') continue;
+        const present = on.includes('thorne');
+        if (present) inPerson++;
+        assert.equal(line.fx === 'radio', !present,
+          `${line.id}: Thorne is ${present ? 'on stage but speaks over the radio' : 'not on stage but speaks without the radio'}`);
+      }
+    }
+    // Over live play there is no stage. She is in the room only at Halcyon Reach (chapter 3).
+    const loose = [...ch.scenes.flatMap((s) => s.briefing), ...Object.values(ch.barks).flat()];
+    for (const line of loose) {
+      if (line.who === 'thorne' && line.fx !== 'radio') assert.equal(ch.id, 'ch3', `${line.id}: Thorne without the radio outside Halcyon Reach`);
+    }
+  }
+  assert.ok(inPerson > 0, 'Thorne is never met in person');
 });
 
 test('chapters name a real table and every objective id is an element of it', () => {
-  assert.equal(content.chapters.length, 2);
+  assert.equal(content.chapters.length, 5);
+  assert.deepEqual(content.chapters.map((ch) => ch.tableId), ['vessery', 'saltmere', 'halcyon', 'brand', 'tallis']);
   content.chapters.forEach((ch, i) => {
     assert.equal(ch.number, i + 1);
     const table = content.tables[ch.tableId];
@@ -121,12 +158,12 @@ test('all three threads are played in each chapter: duty, espionage and the comm
 });
 
 test('the rigged first spin is three orbs and pays what the reels would pay in writs', () => {
-  const [ch1, ch2] = content.chapters;
+  const [ch1, ...later] = content.chapters;
   assert.deepEqual(ch1.riggedSpin.reels, ['orb', 'orb', 'orb']);
   for (const s of ch1.riggedSpin.reels) assert.ok(SYMBOLS.includes(s));
   assert.equal(ch1.riggedSpin.payout.writs, 3);
   assert.equal(ch1.riggedSpin.payout.name, payoutFor(['orb', 'orb', 'orb']).name);
-  assert.equal(ch2.riggedSpin, null);
+  for (const ch of later) assert.equal(ch.riggedSpin, null, `${ch.id} has a rigged spin`);
 });
 
 test('every cast member has a voice, a look and a colour', () => {

@@ -224,7 +224,7 @@ function vessery() {
       { text: 'FESTIVAL OF LOTS', pos: [187, 498], size: 11 },
       { text: 'PIER', pos: [25, 292], size: 10, angle: -1.5708 },
       { text: 'DOCKS', pos: [mx(25), 292], size: 10, angle: 1.5708 },
-      { text: 'PAYABLE IN STILLNESS', pos: [187, 560], size: 8 },
+      { text: 'PAYABLE IN CALM', pos: [187, 560], size: 8 },
     ],
     labels: {
       drum1: 'DRUM', drum2: 'DRUM', drum3: 'DRUM',

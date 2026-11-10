@@ -680,6 +680,114 @@ export function createRenderer(canvas) {
         g.stroke();
         g.restore();
       }
+    } else if (/banner|parade|academy/.test(m)) {
+      // a parade ground: ranked flagstones, and plumb-weight banners hung down both sides
+      g.lineWidth = 1;
+      g.strokeStyle = A(accent, 0.055);
+      g.beginPath();
+      for (let y = 30; y < 800; y += 44) { g.moveTo(0, y); g.lineTo(400, y); }
+      for (let x = 12; x < 400; x += 47) { g.moveTo(x, 0); g.lineTo(x, 800); }
+      g.stroke();
+      for (let i = 0; i < 6; i++) {
+        const x = i % 2 ? 338 : 62;
+        const y = 150 + Math.floor(i / 2) * 212;
+        const w = 30;
+        const h = 92;
+        glow(g, x, y + h / 2, 70, gl, 0.05);
+        g.beginPath();
+        g.moveTo(x - w / 2, y);
+        g.lineTo(x + w / 2, y);
+        g.lineTo(x + w / 2, y + h);
+        g.lineTo(x, y + h - 14);
+        g.lineTo(x - w / 2, y + h);
+        g.closePath();
+        g.fillStyle = A(accent, 0.07);
+        g.fill();
+        g.strokeStyle = A(accent, 0.24);
+        g.stroke();
+        // the plumb: a line and a weight
+        g.strokeStyle = A(gl, 0.3);
+        g.beginPath();
+        g.moveTo(x, y + 10);
+        g.lineTo(x, y + 42);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(x - 6, y + 42);
+        g.lineTo(x + 6, y + 42);
+        g.lineTo(x, y + 60);
+        g.closePath();
+        g.fillStyle = A(gl, 0.22);
+        g.fill();
+      }
+    } else if (/reef|dark|tide|brand/.test(m)) {
+      // black water: long swell lines, rock under the surface, a few shuttered lights
+      g.lineWidth = 1;
+      for (let k = 0; k < 20; k++) {
+        const y = 30 + k * 40;
+        g.strokeStyle = A(gl, 0.035 + hash(k + 9) * 0.04);
+        g.beginPath();
+        g.moveTo(0, y);
+        for (let x = 0; x <= 400; x += 25) g.lineTo(x, y + Math.sin(x / 38 + k * 1.7) * 6 + (hash(k * 7 + x) - 0.5) * 4);
+        g.stroke();
+      }
+      for (let i = 0; i < 14; i++) {
+        const x = 24 + hash(i + 3) * 352;
+        const y = 60 + hash(i + 41) * 700;
+        const r = 12 + hash(i + 77) * 26;
+        g.beginPath();
+        for (let k = 0; k <= 9; k++) {
+          const a = (k / 9) * TAU;
+          const rr_ = r * (0.62 + hash(i * 11 + (k % 9)) * 0.5);
+          const px = x + Math.cos(a) * rr_ * 1.5;
+          const py = y + Math.sin(a) * rr_ * 0.7;
+          if (k) g.lineTo(px, py); else g.moveTo(px, py);
+        }
+        g.closePath();
+        g.fillStyle = 'rgba(0,0,0,0.3)';
+        g.fill();
+        g.strokeStyle = A(gl, 0.09);
+        g.stroke();
+      }
+      for (let i = 0; i < 9; i++) {
+        const x = 30 + hash(i + 300) * 340;
+        const y = 420 + hash(i + 330) * 360;
+        glow(g, x, y, 14, accent, 0.16);
+        g.fillStyle = A(accent, 0.5);
+        g.fillRect(x - 1, y - 2, 2, 4);
+      }
+    } else if (/ticker|exchange|price|bell/.test(m)) {
+      // the exchange: ruled ledger columns and a price line that will not sit still
+      g.lineWidth = 1;
+      g.strokeStyle = A(accent, 0.06);
+      g.beginPath();
+      for (let x = 20; x < 400; x += 36) { g.moveTo(x, 0); g.lineTo(x, 800); }
+      for (let y = 24; y < 800; y += 24) { g.moveTo(0, y); g.lineTo(400, y); }
+      g.stroke();
+      for (let k = 0; k < 3; k++) {
+        const y0 = 170 + k * 230;
+        let y = y0;
+        g.strokeStyle = A(gl, 0.2 - k * 0.04);
+        g.lineWidth = 1.4;
+        g.beginPath();
+        g.moveTo(8, y);
+        for (let x = 20; x <= 400; x += 12) {
+          y = clamp(y + (hash(k * 97 + x) - 0.5 + (k === 1 ? 0.12 : -0.05)) * 26, y0 - 70, y0 + 70);
+          g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+      g.font = `600 8px ${MONO}`;
+      g.textAlign = 'center';
+      for (let i = 0; i < 30; i++) {
+        const x = 38 + (i % 10) * 36;
+        const y = 36 + Math.floor(hash(i + 500) * 30) * 24;
+        const n = 40 + Math.floor(hash(i + 520) * 59);
+        g.fillStyle = A(hash(i + 540) > 0.5 ? gl : accent, 0.16);
+        g.fillText(String(n), x, y + 8);
+      }
+      g.textAlign = 'left';
+    } else {
+      throw new Error(`render: table '${table.id}' has motif ${JSON.stringify(motif)}, which paintMotif cannot draw`);
     }
     // Every table is an Orrery: the brass rings are always there, under the motif.
     g.save();
@@ -992,6 +1100,25 @@ export function createRenderer(canvas) {
       g.setLineDash([2, 3]);
       g.stroke();
       g.setLineDash([]);
+      // which way it opens: small chevrons along the gate, pointing the way a ball may pass
+      const pl = Math.hypot(o.pass[0], o.pass[1]) || 1;
+      const pa = Math.atan2(o.pass[1] / pl, o.pass[0] / pl);
+      const len = Math.hypot(o.b[0] - o.a[0], o.b[1] - o.a[1]);
+      const count = Math.max(1, Math.floor(len / 26));
+      g.strokeStyle = A(STEEL, 0.55);
+      g.lineWidth = 1.2;
+      for (let k = 0; k < count; k++) {
+        const t = (k + 0.5) / count;
+        g.save();
+        g.translate(o.a[0] + (o.b[0] - o.a[0]) * t, o.a[1] + (o.b[1] - o.a[1]) * t);
+        g.rotate(pa);
+        g.beginPath();
+        g.moveTo(-1, -3.5);
+        g.lineTo(3, 0);
+        g.lineTo(-1, 3.5);
+        g.stroke();
+        g.restore();
+      }
     }
 
     // slingshots: a rubber that jumps when struck
