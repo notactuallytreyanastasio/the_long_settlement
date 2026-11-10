@@ -10941,7 +10941,7 @@
  },
  {
   "path": "assets/voice/ch8.m7.c12.m4a",
-  "bytes": 50783,
+  "bytes": 50772,
   "lines": null
  },
  {
@@ -12376,18 +12376,18 @@
  },
  {
   "path": "src/content/chapter6.js",
-  "bytes": 58185,
-  "lines": 702
+  "bytes": 58313,
+  "lines": 704
  },
  {
   "path": "src/content/chapter7.js",
-  "bytes": 62047,
-  "lines": 716
+  "bytes": 62090,
+  "lines": 717
  },
  {
   "path": "src/content/chapter8.js",
-  "bytes": 83329,
-  "lines": 902
+  "bytes": 83517,
+  "lines": 904
  },
  {
   "path": "src/content/index.js",
@@ -12431,8 +12431,8 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 24598,
-  "lines": 373
+  "bytes": 24806,
+  "lines": 376
  },
  {
   "path": "src/shell/audio.js",
@@ -12441,8 +12441,8 @@
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 51452,
-  "lines": 896
+  "bytes": 52214,
+  "lines": 910
  },
  {
   "path": "src/shell/cinema/backdrops-a.js",
@@ -12491,7 +12491,7 @@
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 181754,
+  "bytes": 181812,
   "lines": 4334
  },
  {
@@ -12511,8 +12511,8 @@
  },
  {
   "path": "test/content.test.js",
-  "bytes": 21055,
-  "lines": 348
+  "bytes": 21797,
+  "lines": 360
  },
  {
   "path": "test/economy.test.js",

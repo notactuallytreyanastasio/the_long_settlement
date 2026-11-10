@@ -15,6 +15,8 @@ export const chapter6 = {
   tableId: 'kedge',
   riggedSpin: null,
   music: { play: 'march', cine: 'tense' },
+  // He defaulted at Tallis (ch5.s7): the plate under his name says so from here on.
+  roles: { ren: 'Volunteer, in default' },
 
   // ───────────────────────── prologue ─────────────────────────
   prologue: [

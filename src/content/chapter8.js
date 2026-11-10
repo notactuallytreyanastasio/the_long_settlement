@@ -18,6 +18,8 @@ export const chapter8 = {
   tableId: 'cresset',
   riggedSpin: null,
   music: { play: 'capital', cine: 'sorrow' },
+  // Tobb was put back on the roll in ch7.s5, and has not been forgiven.
+  roles: { ren: 'Volunteer, no writ', tobb: 'Actuary of the Mint, on paper' },
 
   endings: {
     commons: {
@@ -595,7 +597,7 @@ export const chapter8 = {
           text: "Mister Speaker. I withdraw the Emergency Schedule. And I lay this on the table. It is the chain of the Mint. I told the Tribune she might have it." },
         { id: 'ch8.s7.c03', lean: 'commons', who: 'corvane', cam: 'close', emote: 'soft',
           text: "There was also to be an apology. I knew one thing about people. I had it from one night, and I put twelve seats in grey on it. I was wrong. That is the apology." },
-        { id: 'ch8.s7.c04', lean: 'commons', who: 'crowd', cam: 'wide',
+        { id: 'ch8.s7.c04', lean: 'commons', who: 'crowd', on: ['ilse', 'tobb', 'maravel'], cam: 'wide',
           text: "The question is the renewal of the Settlement, on the Average Schedule. Divide." },
         { id: 'ch8.s7.c05', lean: 'commons', who: 'tobb', cam: 'close',
           text: "Fourteen. And fourteen. Good. I should not have trusted it if it had come out pretty." },
@@ -666,7 +668,7 @@ export const chapter8 = {
         { id: 'ch8.m7.c11', lean: 'mint', who: 'crowd', cam: 'close',
           text: "A position, Tribune, and it was closed. Today the Mint is ours, and its powers stand only while the treaty stands. We should be so much obliged." },
         { id: 'ch8.m7.c12', lean: 'mint', who: 'narrator', on: ['ilse', 'corvane', 'tobb'], cam: 'two', music: 'silence',
-          text: "And up in the gallery, where the public sits, an old man in a plain coat stood up. He wore no chain. Nobody had thought to stop a private citizen." },
+          text: "And up in the gallery, where the public sits, an old man stood up. He held no office that morning. Nobody had thought to stop a private citizen." },
         { id: 'ch8.m7.c13', lean: 'mint', who: 'corvane', cam: 'low',
           text: "Tribune. I drafted those powers for one office, and one pair of hands. It did not cross my mind that the hands could be bought. Cast it down. Let it lapse." },
         { id: 'ch8.m7.c14', lean: 'mint', who: 'crowd', cam: 'wide',
@@ -714,7 +716,7 @@ export const chapter8 = {
       text: "Wyn Okerby. Nineteen years, and you still can't trim a wick. Look at that flame. It's a disgrace to the family." },
     { id: 'ch8.epi.04', lean: 'commons', who: 'wyn', cam: 'close', emote: 'tears',
       text: "Old, cross and busy, I said, and he told you. Come in out of the wind, you daft woman. You are letting my light out." },
-    { id: 'ch8.epi.05', lean: 'commons', who: 'narrator', bg: 'court', on: ['sable'], cam: 'wide', music: 'sorrow',
+    { id: 'ch8.epi.05', lean: 'commons', who: 'narrator', bg: 'full-bench', on: ['sable'], cam: 'wide', music: 'sorrow',
       text: "The Bench sat a month. The bond was void and the bursar's letter good, so Ren Vasker owed nothing. Odalys Thorne was convicted, on the log and the weight, and not on a word she said at Vessery." },
     { id: 'ch8.epi.06', lean: 'commons', who: 'narrator', cam: 'close',
       text: "Sable Vasker gave up the Audit's pin, and took his brother's finding. The receiver sent him back to the Reach. He walks the dormitory at lights-out, and knows who is not asleep." },

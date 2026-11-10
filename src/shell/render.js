@@ -32,7 +32,7 @@ import { REEL_STRIPS } from '../core/slot.js';
 import { currentScene, objectiveProgress, litIds, lineSeconds, endingOf } from '../core/story.js';
 import { SPIN_COST, LOAN, TRUST_PER_LOAN, ledger } from '../core/economy.js';
 import { leverStatus, AID_WAIT } from '../core/game.js';
-import { drawCinema, drawPortrait } from './cinema.js';
+import { drawCinema, drawPortrait, castInChapter } from './cinema.js';
 import {
   INK, PALETTE, light, shadowOf, alpha as A, blend, shade, tint, ink as inkLine, cel, bloom, shaft, glint, curl, bands, rings, waves,
 } from './style.js';
@@ -3309,8 +3309,8 @@ export function createRenderer(canvas) {
     const vy = 334;
     const level = clamp(fx.voiceLevel || 0, 0, 1);
     if (line) {
-      const who = content.cast[line.who];
-      if (!who) throw new Error(`render: line '${line.id}' is spoken by unknown cast id '${line.who}'`);
+      if (!content.cast[line.who]) throw new Error(`render: line '${line.id}' is spoken by unknown cast id '${line.who}'`);
+      const who = castInChapter(content, game.chapter, line.who);
       const radio = line.fx === 'radio';
       // portrait in a brass frame
       const ps = 92;

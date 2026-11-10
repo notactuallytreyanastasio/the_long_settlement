@@ -15,6 +15,7 @@ export const chapter7 = {
   tableId: 'fishdock',
   riggedSpin: null,
   music: { play: 'festival', cine: 'court' },
+  roles: { ren: 'Volunteer, in default' },
 
   // ───────────────────────── prologue ─────────────────────────
   prologue: [

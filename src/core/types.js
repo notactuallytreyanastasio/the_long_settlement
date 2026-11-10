@@ -227,6 +227,9 @@
  * @property {{play:string, cine:string}} music
  *        play: the table.  cine: the quieter mood a prologue or epilogue falls back to when its
  *        first line names none
+ * @property {Object<string,string>} [roles]
+ *        cast id -> what stands under that speaker's name in this chapter, where cast.role is no longer true
+ *        (a cadet who has defaulted). Drawing only.
  * @property {{commons:{title:string,text:string}, mint:{title:string,text:string}}} [endings]
  *        on the last chapter: what the end screen says for each reading of the ledger (story.endingOf)
  *

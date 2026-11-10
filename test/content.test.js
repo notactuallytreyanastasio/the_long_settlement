@@ -296,6 +296,18 @@ test('the ending cannot change sides: in the last chapter no scene line that lea
     + `${live.length ? `: ${live.map((x) => x.line.id).join(', ')}` : ''}`);
 });
 
+test('a chapter that renames a role names a cast member and keeps it short enough for the plate', () => {
+  for (const ch of content.chapters) {
+    if (ch.roles === undefined) continue;
+    assert.ok(ch.roles && typeof ch.roles === 'object' && !Array.isArray(ch.roles), `${ch.id}.roles must be an object`);
+    for (const [id, role] of Object.entries(ch.roles)) {
+      assert.ok(content.cast[id], `${ch.id}.roles names ${id}, who is not in the cast`);
+      assert.ok(id !== 'narrator' && id !== 'crowd', `${ch.id}.roles: ${id} has no plate role to change`);
+      assert.ok(typeof role === 'string' && role.trim().length > 0 && role.length <= 34, `${ch.id}.roles.${id}: ${JSON.stringify(role)} must be 1 to 34 characters`);
+    }
+  }
+});
+
 test('the end screen text: both endings or neither, on the last chapter only', () => {
   content.chapters.forEach((ch, i) => {
     if (ch.endings === undefined) return;

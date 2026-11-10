@@ -628,6 +628,20 @@ export function warmCinema(content, game, layout, dev, timeMs) {
  *   'portrait' puts the painting in layout.cine.art, the words in layout.cine.text and a skip button at layout.skip.
  * The context's transform must already map the layout's logical size (layout.W x layout.H) onto the canvas.
  */
+// A chapter may say what stands under a speaker's name while it runs (chapter.roles): the same member, another role.
+// The copies are kept, so a plate sees one object per speaker per chapter and not a new one each frame.
+const ROLE_COPIES = new Map();
+export function castInChapter(content, chapterIndex, id) {
+  const member = content.cast[id];
+  const ch = content.chapters[chapterIndex];
+  const role = ch && ch.roles && ch.roles[id];
+  if (!member || !role) return member;
+  const key = `${ch.id}/${id}`;
+  let copy = ROLE_COPIES.get(key);
+  if (!copy || copy.of !== member || copy.member.role !== role) { copy = { of: member, member: { ...member, role } }; ROLE_COPIES.set(key, copy); }
+  return copy.member;
+}
+
 export function drawCinema(ctx, content, game, fx, layout) {
   const cine = game && game.cine;
   if (!cine) throw new Error(`cinema: drawCinema called with no running cinematic (game.cine is ${String(cine)})`);
@@ -636,8 +650,8 @@ export function drawCinema(ctx, content, game, fx, layout) {
   const line = lines[cine.index];
   if (!line) throw new Error(`cinema: line index ${cine.index} is out of range (0..${lines.length - 1})`);
   const cast = content.cast;
-  const who = cast[line.who];
-  if (!who) throw new Error(`cinema: line ${line.id} is spoken by unknown cast id '${line.who}'`);
+  if (!cast[line.who]) throw new Error(`cinema: line ${line.id} is spoken by unknown cast id '${line.who}'`);
+  const who = castInChapter(content, game.chapter, line.who);
   const bgNow = P[cine.bg];
   if (!bgNow) throw new Error(`cinema: unknown backdrop key '${cine.bg}' on line ${line.id} (known: ${BACKDROPS.join(', ')})`);
   if (fx.shake && typeof fx.shake !== 'number') throw new Error(`cinema: fx.shake must be a number 0..1, got ${String(fx.shake)}`);
