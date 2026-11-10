@@ -28,7 +28,7 @@ export function createTroupe({ detail = 1, material = null } = {}) {
   return {
     figMat, faces, detail, keyLight,
     /** Point the character light for this camera. side: -1 light from screen left, +1 from screen right; lift: how far above. */
-    aim(camera, side = -1, lift = 0.5, across = 0.45) {
+    aim(camera, side = -1, lift = 0.4, across = 0.45) {
       let bx = camera.position[0] - camera.target[0], by = camera.position[1] - camera.target[1], bz = camera.position[2] - camera.target[2];
       const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl; by = 0;     // toward the camera, level
       const rx = bz, rz = -bx;                                           // screen right
@@ -138,6 +138,7 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
       }
       if (!camera) return;
       const drift = s.still ? 0 : time;
+      if (set.foreground) set.foreground.visible = camName !== 'close' && camName !== 'two'; // the near clutter is dressing for the wide marks; a close camera would stand inside it
       if (camName === 'close' && sp) {
         // look past the speaker toward the middle of the set (the sea), not into the stall behind them
         const side = sp.mark.pos[0] < -0.2 ? -1 : sp.mark.pos[0] > 0.2 ? 1 : -0.7;
@@ -252,7 +253,10 @@ export function createEncounter(set, troupe, def) {
   /** The encounter is over and the lines play here: turn everyone toward the lens, and frame the speaker with whoever they answer. */
   const DH = [];
   enc.dialogue = (camera, aspect, time, speaker, viewHeight = 400) => {
-    for (const ch of all) { ch.state.speaking = ch === speaker; ch.state.face = ch.side > 0 ? 24 : -24; ch.state.look = ch === speaker ? 'camera' : speaker.headPos; ch.state.camera = camera; }
+    for (const ch of all) { ch.state.speaking = ch === speaker; ch.state.face = ch.side > 0 ? 24 : -24; ch.state.camera = camera;
+      if (ch === speaker) ch.state.look = 'camera';
+      else { const L = ch.lookAt || (ch.lookAt = [0, 0, 0]); L[0] = (speaker.headPos[0] + camera.position[0]) / 2; L[1] = ch.headPos[1] + 0.05; L[2] = Math.max((speaker.headPos[2] + camera.position[2]) / 2, ch.headPos[2] + 0.5); ch.state.look = L; } }
+    if (speaker.held) { speaker.release(); speaker.held = false; }   // nobody delivers a line bowed over
     let other = null; // whoever stands nearest: the shot is a two-shot, not the whole line
     for (const ch of all) if (ch !== speaker && (!other || Math.abs(ch.mark.pos[0] - speaker.mark.pos[0]) < Math.abs(other.mark.pos[0] - speaker.mark.pos[0]))) other = ch;
     DH.length = 0; DH.push(speaker.headPos, other.headPos);

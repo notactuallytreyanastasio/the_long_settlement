@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 22603,
-  "lines": 337
+  "bytes": 23132,
+  "lines": 341
  },
  {
   "path": "src/shell/gl/table3d.js",
@@ -12661,8 +12661,8 @@
  },
  {
   "path": "tools/gl-demo.html",
-  "bytes": 37558,
-  "lines": 439
+  "bytes": 37643,
+  "lines": 438
  },
  {
   "path": "tools/gl-set.html",

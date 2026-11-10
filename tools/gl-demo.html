@@ -289,20 +289,19 @@ try {
       }
       fx.globalAlpha = 1;
     }
-    const DLG = [{ who: 'bailiff', emote: 'tears', text: 'All right! All right. The route can go round the stalls.' }, { who: 'nan', emote: 'smile', text: 'There. That is three names lit, and not a thumb on the paper.' }];
+    const DLG = [{ who: 'nan', emote: 'smile', text: 'There. That is three names lit, and not a thumb on the paper.' }, { who: 'bailiff', emote: 'tears', text: 'All right! All right. The route can go round the stalls.' }, { who: 'ren', emote: 'grim', text: 'Three lanterns down. It took a minute.' }];
     const ev = []; let t = 0, accT = 0;
     const forceCombo = num('combo', 0); let sceneN = core.game.scene, later = 0;
     const feed = (dt) => {
       for (const e of ev) if (e.id && (e.type === 'bumper' || e.type === 'target' || e.type === 'shot' || e.type === 'sling' || e.type === 'rollover' || e.type === 'saucer')) lastHit = e;
-      if (forceCombo && enc.log.length === 0) for (let i = 0; i < forceCombo * 7; i++) enc.log.push({ t: t - 0.01, type: 'shot' });
-      if (forceCombo) enc.log.push({ t, type: 'bumper' });
+      if (forceCombo) while (GL.comboOf(enc.log, t).level < forceCombo) enc.log.push({ t, type: 'shot' }); // hold the chain at the level asked for
       if (core.game.scene !== sceneN) { sceneN = core.game.scene; later = t + 2.2; }       // the next scene: let the surrender play, then reset the stage
       if (later && t > later) { later = 0; enc.reset(); }
       tview.update(core.game, ev, dt); set.update(t, dt); enc.update(dt, t, ev, core.progress()); cueSparks();
     };
     const step = (f) => { ev.length = 0; core.tick(ev); core.tick(ev); t += 1 / 60; if (f) feed(1 / 60); return ev; };
     let frozen = false;
-    const speakerOf = () => { const line = DLG[Math.floor(t / 4) % DLG.length]; return [line, line.who === 'bailiff' ? enc.opposition[0] : enc.party.find((c) => c.id.startsWith(line.who))]; };
+    const speakerOf = () => { const line = DLG[(fixedT !== null ? num('line', 0) : Math.floor(t / 4)) % DLG.length]; return [line, line.who === 'bailiff' ? enc.opposition[0] : enc.party.find((c) => c.id.startsWith(line.who))]; };
     function render(dt) {
       clearAll(...GL.rgb('#1d2a5c'));
       set.foreground.visible = false;
@@ -315,7 +314,7 @@ try {
       } else { enc.frame(stageCam, band.w / band.h, t, band.h); acc(renderer.render(set.scene, stageCam, t, { ...band, ...enc.view })); }
       // HUD
       fill.style.width = Math.round(enc.resolve * 100) + '%';
-      const cb = enc.combo; combo.hidden = cb.level < 1 || cb.count < 2;
+      const cb = enc.combo; combo.hidden = dialogue || cb.level < 1 || cb.count < 2;
       if (!combo.hidden) { combo.innerHTML = `<b>${cb.count}</b><span>${GL.COMBO_NAMES[cb.level] || 'HITS'}</span>`; combo.style.transform = 'rotate(-4deg)'; combo.style.opacity = String(0.45 + 0.55 * Math.min(1, cb.left * 3)); }
       const sc = core.scene(), p = core.progress(); score.textContent = `OBJECTIVE ${p.done}/${p.total}`; hint.textContent = dialogue ? '' : sc ? sc.hint.toUpperCase() : '';
       drawSparks(dt);
