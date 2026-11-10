@@ -178,15 +178,18 @@ test('Tallis is the dense one', () => {
   }
 });
 
-test('every shot gate lies inside its lane mouth, and every ramp lands in an inlane', () => {
+test('every shot gate lies inside its lane mouth, and every ramp lands in an inlane or over the top lanes', () => {
   for (const id of Object.keys(BIBLE)) {
     const t = tables[id];
     assert.equal(t.shots.length, 2);
     const ramps = t.shots.filter((s) => s.exit);
     assert.equal(ramps.length, 1, `${id} has one ramp and one orbit`);
-    const inlanes = t.rollovers.filter((r) => r.id === 'inL' || r.id === 'inR');
-    const d = Math.min(...inlanes.map((r) => Math.hypot(r.pos[0] - ramps[0].exit.pos[0], r.pos[1] - ramps[0].exit.pos[1])));
-    assert.ok(d < 60, `${id}: ramp exit is ${d.toFixed(0)} from an inlane`);
+    // an inlane, or (Halcyon's gallery) the three top lanes, which are the first three rollovers
+    const landings = [...t.rollovers.filter((r) => r.id === 'inL' || r.id === 'inR'), ...t.rollovers.slice(0, 3)];
+    const d = Math.min(...landings.map((r) => Math.hypot(r.pos[0] - ramps[0].exit.pos[0], r.pos[1] - ramps[0].exit.pos[1])));
+    assert.ok(d < 70, `${id}: ramp exit is ${d.toFixed(0)} from an inlane or a top lane`);
+    // never dead above a bumper: a ball dropped on the crown of one comes straight back up
+    for (const b of t.bumpers) assert.ok(Math.abs(b.pos[0] - ramps[0].exit.pos[0]) > 4, `${id}: ramp exit is over ${b.id}`);
     for (const s of t.shots) {
       assert.deepEqual(s.dir, [0, -1]);
       assert.equal(s.a[1], s.b[1], 'gates are level');

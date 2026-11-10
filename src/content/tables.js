@@ -365,7 +365,7 @@ function halcyon() {
     ...poly(gallery.inner),
     ...poly(parade.outer), ...poly(parade.inner),
     // the pediment's left wall stops the launch; its right wall is the one-way door below
-    { a: [116, 8], b: [127, 82], bounce: 0.3 },
+    { a: [116, 8], b: [127, 82], bounce: 0.1 },
     ...oaths.walls,
   ];
 
@@ -395,8 +395,12 @@ function halcyon() {
     ],
     rollovers: [...oaths.rollovers, ...lo.rollovers],
     shots: [
-      // gates across the lane mouths; the gallery crosses the square to the right inlane
-      { id: 'galleryRamp', a: gallery.gate(404)[0], b: gallery.gate(404)[1], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 160] } },
+      // Gates across the lane mouths. The gallery climbs to the pediment and lets the ball go
+      // over the centre oath, a little off the middle so it cannot fall dead on drill 1 and
+      // juggle there. The launch alone favours the outer oaths (36, 15 and 21 of 80 plunge
+      // strengths reach right, centre and left); landing the ramp in an inlane, "take all
+      // three oaths" took the bot a median 2:47 in the full playthrough.
+      { id: 'galleryRamp', a: gallery.gate(404)[0], b: gallery.gate(404)[1], dir: [0, -1], exit: { pos: [179, 44], vel: [40, 0] } },
       { id: 'paradeOrbit', a: parade.gate(404)[0], b: parade.gate(404)[1], dir: [0, -1] },
     ],
     saucers: [

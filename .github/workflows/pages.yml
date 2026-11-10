@@ -70,6 +70,40 @@ jobs:
             fi
           fi
 
+          # Share card for /play/. The game's own index.html is the game agent's file and is
+          # not edited in the repo; tags are added to the deployed copy only, and only when
+          # the game has not set its own og:title.
+          if [ -f _site/play/index.html ] && ! grep -q 'property="og:title"' _site/play/index.html; then
+            python3 - <<'PY'
+          p = '_site/play/index.html'
+          s = open(p, encoding='utf-8').read()
+          base = 'https://notactuallytreyanastasio.github.io/the_long_settlement/'
+          desc = ('A voiced story told on a pinball table that runs on a slot machine. '
+                  'Debt, law and a rigged lottery, built live by an AI agent. Best with sound on.')
+          tags = f'''
+          <meta name="description" content="{desc}">
+          <meta property="og:type" content="website">
+          <meta property="og:site_name" content="The Long Settlement">
+          <meta property="og:title" content="The Long Settlement: play the current build">
+          <meta property="og:description" content="{desc}">
+          <meta property="og:url" content="{base}play/">
+          <meta property="og:image" content="{base}og-play.png">
+          <meta property="og:image:width" content="1200">
+          <meta property="og:image:height" content="630">
+          <meta property="og:image:alt" content="The Long Settlement title screen: gold lettering over a harbour of lanterns at night. A treaty, a lot, a ledger.">
+          <meta name="twitter:card" content="summary_large_image">
+          <meta name="twitter:title" content="The Long Settlement: play the current build">
+          <meta name="twitter:description" content="{desc}">
+          <meta name="twitter:image" content="{base}og-play.png">
+          '''
+          i = s.lower().find('</head>')
+          if i < 0:
+              raise SystemExit('play/index.html has no </head>; cannot add share tags')
+          open(p, 'w', encoding='utf-8').write(s[:i] + tags + s[i:])
+          print('added share tags to play/index.html')
+          PY
+          fi
+
           # Build stamp the journal reads to show what Pages is serving.
           tests_ok=${{ steps.tests.outcome == 'success' }}
           printf '{"sha":"%s","built":"%s","testsPassed":%s}\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" "$tests_ok" > _site/data/build.json
