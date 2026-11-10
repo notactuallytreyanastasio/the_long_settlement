@@ -5,6 +5,311 @@
   "lines": null
  },
  {
+  "path": "assets/voice/ch1.bark.aid.1.m4a",
+  "bytes": 23818,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.aid.2.m4a",
+  "bytes": 20110,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.aid.3.m4a",
+  "bytes": 14410,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.aid.4.m4a",
+  "bytes": 20142,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.aid.5.m4a",
+  "bytes": 15419,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bumper.1.m4a",
+  "bytes": 10542,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bumper.2.m4a",
+  "bytes": 10142,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bumper.3.m4a",
+  "bytes": 18547,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bumper.4.m4a",
+  "bytes": 15180,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bust.1.m4a",
+  "bytes": 24060,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bust.2.m4a",
+  "bytes": 12055,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bust.3.m4a",
+  "bytes": 17070,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.bust.4.m4a",
+  "bytes": 17863,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.drain.1.m4a",
+  "bytes": 14547,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.drain.2.m4a",
+  "bytes": 8705,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.drain.3.m4a",
+  "bytes": 19255,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.drain.4.m4a",
+  "bytes": 9101,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.drain.5.m4a",
+  "bytes": 11189,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.idle.1.m4a",
+  "bytes": 14693,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.idle.2.m4a",
+  "bytes": 13467,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.idle.3.m4a",
+  "bytes": 13231,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.idle.4.m4a",
+  "bytes": 11148,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.idle.5.m4a",
+  "bytes": 16369,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.jackpot.1.m4a",
+  "bytes": 18109,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.jackpot.2.m4a",
+  "bytes": 14563,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.jackpot.3.m4a",
+  "bytes": 13793,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.jackpot.4.m4a",
+  "bytes": 14512,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.launch.1.m4a",
+  "bytes": 13444,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.launch.2.m4a",
+  "bytes": 14007,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.launch.3.m4a",
+  "bytes": 16423,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.launch.4.m4a",
+  "bytes": 14201,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.launch.5.m4a",
+  "bytes": 11610,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.loan.1.m4a",
+  "bytes": 17652,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.loan.2.m4a",
+  "bytes": 14650,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.loan.3.m4a",
+  "bytes": 10949,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.loan.4.m4a",
+  "bytes": 23322,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.loan.5.m4a",
+  "bytes": 15995,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.ramp.1.m4a",
+  "bytes": 9137,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.ramp.2.m4a",
+  "bytes": 10922,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.ramp.3.m4a",
+  "bytes": 8167,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.ramp.4.m4a",
+  "bytes": 12028,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.save.1.m4a",
+  "bytes": 13953,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.save.2.m4a",
+  "bytes": 19694,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.save.3.m4a",
+  "bytes": 8352,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.bark.save.4.m4a",
+  "bytes": 14438,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.01.m4a",
+  "bytes": 42818,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.02.m4a",
+  "bytes": 16676,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.03.m4a",
+  "bytes": 14467,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.04.m4a",
+  "bytes": 7624,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.05.m4a",
+  "bytes": 28434,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.06.m4a",
+  "bytes": 10720,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.07.m4a",
+  "bytes": 43606,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.08.m4a",
+  "bytes": 40297,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.09.m4a",
+  "bytes": 28154,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.10.m4a",
+  "bytes": 29779,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.11.m4a",
+  "bytes": 28002,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.12.m4a",
+  "bytes": 29794,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.13.m4a",
+  "bytes": 23918,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.14.m4a",
+  "bytes": 31672,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.15.m4a",
+  "bytes": 20601,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.epi.16.m4a",
+  "bytes": 42641,
+  "lines": null
+ },
+ {
   "path": "assets/voice/ch1.pro.01.m4a",
   "bytes": 24649,
   "lines": null
@@ -480,6 +785,1961 @@
   "lines": null
  },
  {
+  "path": "assets/voice/ch1.s4.b02.m4a",
+  "bytes": 16819,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c01.m4a",
+  "bytes": 36910,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c02.m4a",
+  "bytes": 40789,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c03.m4a",
+  "bytes": 39777,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c04.m4a",
+  "bytes": 34093,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c05.m4a",
+  "bytes": 30671,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c06.m4a",
+  "bytes": 25871,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c07.m4a",
+  "bytes": 20255,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c08.m4a",
+  "bytes": 26629,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c09.m4a",
+  "bytes": 33538,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c10.m4a",
+  "bytes": 41435,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c11.m4a",
+  "bytes": 42939,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c12.m4a",
+  "bytes": 29244,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c13.m4a",
+  "bytes": 34887,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c14.m4a",
+  "bytes": 32190,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c15.m4a",
+  "bytes": 45666,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c16.m4a",
+  "bytes": 34818,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c17.m4a",
+  "bytes": 33589,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c18.m4a",
+  "bytes": 37024,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c19.m4a",
+  "bytes": 30033,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c20.m4a",
+  "bytes": 27743,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c21.m4a",
+  "bytes": 29736,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c22.m4a",
+  "bytes": 27104,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c23.m4a",
+  "bytes": 31201,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c24.m4a",
+  "bytes": 6878,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c25.m4a",
+  "bytes": 33394,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s4.c26.m4a",
+  "bytes": 44009,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.b01.m4a",
+  "bytes": 20897,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.b02.m4a",
+  "bytes": 16335,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.b03.m4a",
+  "bytes": 12116,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c01.m4a",
+  "bytes": 40373,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c02.m4a",
+  "bytes": 20616,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c03.m4a",
+  "bytes": 28632,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c04.m4a",
+  "bytes": 9933,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c05.m4a",
+  "bytes": 48104,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c06.m4a",
+  "bytes": 8824,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c07.m4a",
+  "bytes": 14664,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c08.m4a",
+  "bytes": 26561,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c09.m4a",
+  "bytes": 33706,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c10.m4a",
+  "bytes": 24628,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c11.m4a",
+  "bytes": 22508,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c12.m4a",
+  "bytes": 10652,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c13.m4a",
+  "bytes": 14710,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c14.m4a",
+  "bytes": 30697,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c15.m4a",
+  "bytes": 28855,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c16.m4a",
+  "bytes": 22215,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c17.m4a",
+  "bytes": 17297,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c18.m4a",
+  "bytes": 32775,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c19.m4a",
+  "bytes": 9051,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c20.m4a",
+  "bytes": 29610,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c21.m4a",
+  "bytes": 28306,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c22.m4a",
+  "bytes": 19180,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c23.m4a",
+  "bytes": 32490,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c24.m4a",
+  "bytes": 20723,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s5.c25.m4a",
+  "bytes": 31609,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.b01.m4a",
+  "bytes": 15421,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.b02.m4a",
+  "bytes": 13662,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c01.m4a",
+  "bytes": 38976,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c02.m4a",
+  "bytes": 40927,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c03.m4a",
+  "bytes": 27686,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c04.m4a",
+  "bytes": 44509,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c05.m4a",
+  "bytes": 16217,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c06.m4a",
+  "bytes": 42886,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c07.m4a",
+  "bytes": 16209,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c08.m4a",
+  "bytes": 44484,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c09.m4a",
+  "bytes": 30778,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c10.m4a",
+  "bytes": 38936,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c11.m4a",
+  "bytes": 22962,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c12.m4a",
+  "bytes": 32994,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c13.m4a",
+  "bytes": 31722,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c14.m4a",
+  "bytes": 45699,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c15.m4a",
+  "bytes": 32644,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c16.m4a",
+  "bytes": 43554,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c17.m4a",
+  "bytes": 26327,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c18.m4a",
+  "bytes": 35563,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c19.m4a",
+  "bytes": 17699,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c20.m4a",
+  "bytes": 37495,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c21.m4a",
+  "bytes": 37442,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c22.m4a",
+  "bytes": 17301,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c23.m4a",
+  "bytes": 45995,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c24.m4a",
+  "bytes": 28428,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c25.m4a",
+  "bytes": 30040,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c26.m4a",
+  "bytes": 27969,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s6.c27.m4a",
+  "bytes": 36748,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.b01.m4a",
+  "bytes": 16248,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.b02.m4a",
+  "bytes": 14449,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c01.m4a",
+  "bytes": 37244,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c02.m4a",
+  "bytes": 38697,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c03.m4a",
+  "bytes": 40465,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c04.m4a",
+  "bytes": 30377,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c05.m4a",
+  "bytes": 42376,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c06.m4a",
+  "bytes": 15503,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c07.m4a",
+  "bytes": 29721,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c08.m4a",
+  "bytes": 14037,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c09.m4a",
+  "bytes": 39661,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c10.m4a",
+  "bytes": 46981,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c11.m4a",
+  "bytes": 9915,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c12.m4a",
+  "bytes": 43747,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c13.m4a",
+  "bytes": 40227,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c14.m4a",
+  "bytes": 37673,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c15.m4a",
+  "bytes": 26070,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c16.m4a",
+  "bytes": 37752,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c17.m4a",
+  "bytes": 14984,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c18.m4a",
+  "bytes": 43339,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c19.m4a",
+  "bytes": 26519,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c20.m4a",
+  "bytes": 26171,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c21.m4a",
+  "bytes": 24601,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c22.m4a",
+  "bytes": 40205,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c23.m4a",
+  "bytes": 42544,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c24.m4a",
+  "bytes": 29595,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch1.s7.c25.m4a",
+  "bytes": 42597,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.aid.1.m4a",
+  "bytes": 15656,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.aid.2.m4a",
+  "bytes": 14822,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.aid.3.m4a",
+  "bytes": 16335,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.aid.4.m4a",
+  "bytes": 16071,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.aid.5.m4a",
+  "bytes": 14233,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bumper.1.m4a",
+  "bytes": 14222,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bumper.2.m4a",
+  "bytes": 13811,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bumper.3.m4a",
+  "bytes": 12682,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bumper.4.m4a",
+  "bytes": 9770,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bust.1.m4a",
+  "bytes": 14965,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bust.2.m4a",
+  "bytes": 15663,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bust.3.m4a",
+  "bytes": 13587,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.bust.4.m4a",
+  "bytes": 16354,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.drain.1.m4a",
+  "bytes": 13632,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.drain.2.m4a",
+  "bytes": 16689,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.drain.3.m4a",
+  "bytes": 16362,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.drain.4.m4a",
+  "bytes": 18520,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.drain.5.m4a",
+  "bytes": 8051,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.idle.1.m4a",
+  "bytes": 15418,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.idle.2.m4a",
+  "bytes": 12356,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.idle.3.m4a",
+  "bytes": 14001,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.idle.4.m4a",
+  "bytes": 12947,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.jackpot.1.m4a",
+  "bytes": 14759,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.jackpot.2.m4a",
+  "bytes": 16149,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.jackpot.3.m4a",
+  "bytes": 13041,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.jackpot.4.m4a",
+  "bytes": 13483,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.launch.1.m4a",
+  "bytes": 13444,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.launch.2.m4a",
+  "bytes": 17034,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.launch.3.m4a",
+  "bytes": 15391,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.launch.4.m4a",
+  "bytes": 15899,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.launch.5.m4a",
+  "bytes": 4709,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.loan.1.m4a",
+  "bytes": 17829,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.loan.2.m4a",
+  "bytes": 18184,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.loan.3.m4a",
+  "bytes": 14753,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.loan.4.m4a",
+  "bytes": 13987,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.loan.5.m4a",
+  "bytes": 11271,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.ramp.1.m4a",
+  "bytes": 15881,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.ramp.2.m4a",
+  "bytes": 13310,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.ramp.3.m4a",
+  "bytes": 11370,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.ramp.4.m4a",
+  "bytes": 8950,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.save.1.m4a",
+  "bytes": 12390,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.save.2.m4a",
+  "bytes": 13341,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.save.3.m4a",
+  "bytes": 13550,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.bark.save.4.m4a",
+  "bytes": 16569,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.01.m4a",
+  "bytes": 42662,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.02.m4a",
+  "bytes": 36622,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.03.m4a",
+  "bytes": 10104,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.04.m4a",
+  "bytes": 37541,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.05.m4a",
+  "bytes": 42550,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.06.m4a",
+  "bytes": 10155,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.07.m4a",
+  "bytes": 43098,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.08.m4a",
+  "bytes": 19181,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.09.m4a",
+  "bytes": 43865,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.10.m4a",
+  "bytes": 9679,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.11.m4a",
+  "bytes": 36903,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.12.m4a",
+  "bytes": 33114,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.13.m4a",
+  "bytes": 33730,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.14.m4a",
+  "bytes": 28079,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.15.m4a",
+  "bytes": 42602,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.16.m4a",
+  "bytes": 32275,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.17.m4a",
+  "bytes": 10583,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.18.m4a",
+  "bytes": 35295,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.19.m4a",
+  "bytes": 45225,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.20.m4a",
+  "bytes": 35555,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.21.m4a",
+  "bytes": 35289,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.epi.22.m4a",
+  "bytes": 16904,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.01.m4a",
+  "bytes": 37062,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.02.m4a",
+  "bytes": 34138,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.03.m4a",
+  "bytes": 29037,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.04.m4a",
+  "bytes": 10177,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.05.m4a",
+  "bytes": 26368,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.06.m4a",
+  "bytes": 31164,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.07.m4a",
+  "bytes": 25809,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.08.m4a",
+  "bytes": 29498,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.09.m4a",
+  "bytes": 12258,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.10.m4a",
+  "bytes": 33814,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.11.m4a",
+  "bytes": 28664,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.12.m4a",
+  "bytes": 28471,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.13.m4a",
+  "bytes": 8294,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.14.m4a",
+  "bytes": 22166,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.15.m4a",
+  "bytes": 27259,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.16.m4a",
+  "bytes": 31505,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.17.m4a",
+  "bytes": 13184,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.pro.18.m4a",
+  "bytes": 35689,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.b01.m4a",
+  "bytes": 19575,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.b02.m4a",
+  "bytes": 14476,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c01.m4a",
+  "bytes": 34710,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c02.m4a",
+  "bytes": 38344,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c03.m4a",
+  "bytes": 9836,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c04.m4a",
+  "bytes": 31807,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c05.m4a",
+  "bytes": 32485,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c06.m4a",
+  "bytes": 29494,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c07.m4a",
+  "bytes": 41008,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c08.m4a",
+  "bytes": 21212,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c09.m4a",
+  "bytes": 37132,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c10.m4a",
+  "bytes": 24139,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c11.m4a",
+  "bytes": 30671,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c12.m4a",
+  "bytes": 29647,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c13.m4a",
+  "bytes": 41332,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c14.m4a",
+  "bytes": 29794,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c15.m4a",
+  "bytes": 8680,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c16.m4a",
+  "bytes": 13593,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c17.m4a",
+  "bytes": 35692,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c18.m4a",
+  "bytes": 27292,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c19.m4a",
+  "bytes": 35256,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c20.m4a",
+  "bytes": 30304,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s1.c21.m4a",
+  "bytes": 32820,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.b01.m4a",
+  "bytes": 18241,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.b02.m4a",
+  "bytes": 13214,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c01.m4a",
+  "bytes": 40287,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c02.m4a",
+  "bytes": 41857,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c03.m4a",
+  "bytes": 18055,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c04.m4a",
+  "bytes": 20184,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c05.m4a",
+  "bytes": 41923,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c06.m4a",
+  "bytes": 31842,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c07.m4a",
+  "bytes": 16614,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c08.m4a",
+  "bytes": 32152,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c09.m4a",
+  "bytes": 42215,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c10.m4a",
+  "bytes": 35840,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c11.m4a",
+  "bytes": 7641,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c12.m4a",
+  "bytes": 12119,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c13.m4a",
+  "bytes": 22881,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c14.m4a",
+  "bytes": 23146,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c15.m4a",
+  "bytes": 35875,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c16.m4a",
+  "bytes": 22773,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c17.m4a",
+  "bytes": 28701,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c18.m4a",
+  "bytes": 15690,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c19.m4a",
+  "bytes": 11335,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c20.m4a",
+  "bytes": 31007,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c21.m4a",
+  "bytes": 33737,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c22.m4a",
+  "bytes": 29555,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c23.m4a",
+  "bytes": 32184,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s2.c24.m4a",
+  "bytes": 9279,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.b01.m4a",
+  "bytes": 20533,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.b02.m4a",
+  "bytes": 14352,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c01.m4a",
+  "bytes": 41001,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c02.m4a",
+  "bytes": 10349,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c03.m4a",
+  "bytes": 34290,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c04.m4a",
+  "bytes": 34902,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c05.m4a",
+  "bytes": 32911,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c06.m4a",
+  "bytes": 7911,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c07.m4a",
+  "bytes": 39468,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c08.m4a",
+  "bytes": 41520,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c09.m4a",
+  "bytes": 24019,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c10.m4a",
+  "bytes": 40724,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c11.m4a",
+  "bytes": 33191,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c12.m4a",
+  "bytes": 23471,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c13.m4a",
+  "bytes": 32363,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c14.m4a",
+  "bytes": 16065,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c15.m4a",
+  "bytes": 36555,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c16.m4a",
+  "bytes": 34769,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c17.m4a",
+  "bytes": 19908,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c18.m4a",
+  "bytes": 35192,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c19.m4a",
+  "bytes": 37234,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c20.m4a",
+  "bytes": 20802,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c21.m4a",
+  "bytes": 39073,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c22.m4a",
+  "bytes": 3748,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c23.m4a",
+  "bytes": 34058,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s3.c24.m4a",
+  "bytes": 35485,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.b01.m4a",
+  "bytes": 18063,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.b02.m4a",
+  "bytes": 13955,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c01.m4a",
+  "bytes": 41433,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c02.m4a",
+  "bytes": 38748,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c03.m4a",
+  "bytes": 35215,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c04.m4a",
+  "bytes": 14497,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c05.m4a",
+  "bytes": 31722,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c06.m4a",
+  "bytes": 26582,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c07.m4a",
+  "bytes": 38898,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c08.m4a",
+  "bytes": 41469,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c09.m4a",
+  "bytes": 37418,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c10.m4a",
+  "bytes": 32264,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c11.m4a",
+  "bytes": 33679,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c12.m4a",
+  "bytes": 34946,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c13.m4a",
+  "bytes": 29386,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c14.m4a",
+  "bytes": 16215,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c15.m4a",
+  "bytes": 42594,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c16.m4a",
+  "bytes": 36391,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c17.m4a",
+  "bytes": 47027,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c18.m4a",
+  "bytes": 50750,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c19.m4a",
+  "bytes": 38869,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c20.m4a",
+  "bytes": 39306,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c21.m4a",
+  "bytes": 21990,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c22.m4a",
+  "bytes": 31762,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c23.m4a",
+  "bytes": 41909,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c24.m4a",
+  "bytes": 18690,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c25.m4a",
+  "bytes": 32407,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c26.m4a",
+  "bytes": 44887,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c27.m4a",
+  "bytes": 42664,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c28.m4a",
+  "bytes": 38298,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c29.m4a",
+  "bytes": 14956,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s4.c30.m4a",
+  "bytes": 32817,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.b01.m4a",
+  "bytes": 17175,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.b02.m4a",
+  "bytes": 16932,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c01.m4a",
+  "bytes": 36585,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c02.m4a",
+  "bytes": 31666,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c03.m4a",
+  "bytes": 8236,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c04.m4a",
+  "bytes": 32388,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c05.m4a",
+  "bytes": 13910,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c06.m4a",
+  "bytes": 14242,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c07.m4a",
+  "bytes": 37204,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c08.m4a",
+  "bytes": 32195,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c09.m4a",
+  "bytes": 45871,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c10.m4a",
+  "bytes": 10239,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c11.m4a",
+  "bytes": 23594,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c12.m4a",
+  "bytes": 16346,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c13.m4a",
+  "bytes": 41353,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c14.m4a",
+  "bytes": 37562,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c15.m4a",
+  "bytes": 31105,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c16.m4a",
+  "bytes": 16435,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c17.m4a",
+  "bytes": 32223,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c18.m4a",
+  "bytes": 21711,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c19.m4a",
+  "bytes": 17831,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c20.m4a",
+  "bytes": 32715,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c21.m4a",
+  "bytes": 20279,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c22.m4a",
+  "bytes": 11673,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c23.m4a",
+  "bytes": 10392,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c24.m4a",
+  "bytes": 27139,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c25.m4a",
+  "bytes": 30577,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c26.m4a",
+  "bytes": 13281,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s5.c27.m4a",
+  "bytes": 15614,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.b01.m4a",
+  "bytes": 17043,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.b02.m4a",
+  "bytes": 17482,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c01.m4a",
+  "bytes": 37194,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c02.m4a",
+  "bytes": 31505,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c03.m4a",
+  "bytes": 16129,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c04.m4a",
+  "bytes": 39052,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c05.m4a",
+  "bytes": 33541,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c06.m4a",
+  "bytes": 12250,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c07.m4a",
+  "bytes": 26258,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c08.m4a",
+  "bytes": 10603,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c09.m4a",
+  "bytes": 30957,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c10.m4a",
+  "bytes": 34282,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c11.m4a",
+  "bytes": 36669,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c12.m4a",
+  "bytes": 43813,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c13.m4a",
+  "bytes": 31454,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c14.m4a",
+  "bytes": 16857,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c15.m4a",
+  "bytes": 30535,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c16.m4a",
+  "bytes": 41535,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c17.m4a",
+  "bytes": 35761,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c18.m4a",
+  "bytes": 9031,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c19.m4a",
+  "bytes": 5360,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c20.m4a",
+  "bytes": 27490,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c21.m4a",
+  "bytes": 38570,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c22.m4a",
+  "bytes": 12473,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c23.m4a",
+  "bytes": 32623,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c24.m4a",
+  "bytes": 42932,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c25.m4a",
+  "bytes": 37547,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c26.m4a",
+  "bytes": 27897,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s6.c27.m4a",
+  "bytes": 30198,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.b01.m4a",
+  "bytes": 11844,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.b02.m4a",
+  "bytes": 20390,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c01.m4a",
+  "bytes": 37597,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c02.m4a",
+  "bytes": 13095,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c03.m4a",
+  "bytes": 21052,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c04.m4a",
+  "bytes": 30296,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c05.m4a",
+  "bytes": 31706,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c06.m4a",
+  "bytes": 15523,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c07.m4a",
+  "bytes": 27471,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c08.m4a",
+  "bytes": 33480,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c09.m4a",
+  "bytes": 29856,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c10.m4a",
+  "bytes": 36524,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c11.m4a",
+  "bytes": 30055,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c12.m4a",
+  "bytes": 24672,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c13.m4a",
+  "bytes": 12713,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c14.m4a",
+  "bytes": 41190,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c15.m4a",
+  "bytes": 41314,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c16.m4a",
+  "bytes": 31445,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c17.m4a",
+  "bytes": 15014,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c18.m4a",
+  "bytes": 48490,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c19.m4a",
+  "bytes": 15377,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c20.m4a",
+  "bytes": 41057,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c21.m4a",
+  "bytes": 34546,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c22.m4a",
+  "bytes": 40479,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c23.m4a",
+  "bytes": 21053,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c24.m4a",
+  "bytes": 34085,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c25.m4a",
+  "bytes": 38817,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c26.m4a",
+  "bytes": 29925,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c27.m4a",
+  "bytes": 8258,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/ch2.s7.c28.m4a",
+  "bytes": 51037,
+  "lines": null
+ },
+ {
+  "path": "assets/voice/manifest.json",
+  "bytes": 63204,
+  "lines": 2735
+ },
+ {
   "path": "package.json",
   "bytes": 324,
   "lines": 13
@@ -511,7 +2771,7 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 13680,
+  "bytes": 13676,
   "lines": 314
  },
  {
@@ -588,6 +2848,11 @@
   "path": "test/physics.test.js",
   "bytes": 16163,
   "lines": 324
+ },
+ {
+  "path": "test/playthrough.test.js",
+  "bytes": 8745,
+  "lines": 191
  },
  {
   "path": "test/rng.test.js",
