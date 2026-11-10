@@ -12,6 +12,10 @@
 //   setDrum(on)         the lot drum on the hearing trestle, unsealed, with the tied bundles of fifty beside it (ch7.s4.c03 on)
 //   setTally(0..1)      how much of the slate is chalked
 //   cue(lineId)         the above, keyed to the script (ch7.pro / s2 / s4 / s6)
+//   task('struck-roll')  ch7.s2: the quarter turns out with the objective (0.4 -> 1) and the slate is chalked from a third on
+//   task('quay-walk')    ch7.s6: the dock gathers (0.55 -> 0.9) as the Assessor brings his prisoner along the quay
+//   setback()           the crowd presses and a third of it gives back for two seconds (also passLamp)
+//   The core's 'day' builds 'morning'.
 //   marks.table         where the hearing sits;  marks.slate (Tobb, tally clerk);  marks.box (the fish box the Tribune is lent);
 //   marks.dockEnd       where she stands with her back to the count (ch7.s4.c18);  marks.focus  the dome's brass lantern
 // 'morning' is a high clear sun and capped lamps: setPower turns the daylight up and down a little and sets the harbour
@@ -27,6 +31,7 @@ import {
   PAL, kitMaterials, anchorAt, scatter, pickLight, crate, barrel, bollard, lampPost, pole, headland, lighthouse, cloudBank, gull, cobble, planks,
 } from './kit.js';
 import {
+  coreLight, taskUnit, pulse,
   C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, rows, folk7, dirFrom, norm7,
   trestle, fishBox, basket, fish, dryingNet, skiff, cutter, moleWall, quay7, slate, mintHall, hillTown, lotDrum7, slipBundle, shipLantern, paperStack,
 } from './kit-ch7.js';
@@ -62,13 +67,15 @@ const LIGHTS = {
   },
 };
 
+const CORE = { day: 'morning' };      // the core's light names this set answers ('dusk' is its own)
+
 const CAMERAS = STD_CAMERAS({
   wide: { target: [0.1, 1.72, -0.4], dist: 8.3, yaw: 3, pitch: 4.5 },
   low: { target: [0.2, 2.0, 0.2], dist: 6.3, yaw: -6, pitch: -12 },
 });
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('fish-dock', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('fish-dock', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const M = kitMaterials(), r = rng(7071), FAR = low ? M.farFlat : M.far, lit = L.power > 0;
   const TABLE = [0.15, 0, -1.95], SLATE = [2.45, 0, -2.05], SLATE_YAW = -20;
 
@@ -223,23 +230,41 @@ function build(engine = null, { light, low = false } = {}) {
 
   // ---- per-frame (allocation-free)
   const P = [0, 0, 0], V = [0, 0, 0], S3 = [1, 1, 1], Q = quat.create(), Mx = m4.create(), rnd = rng(77);
-  let nextGlint = 0, nextMote = 0, nextRing = 0.6, nextGust = 1.5, tally = 1, drumOn = false;
-  const setCrowd = (a) => folk.setAmount(a);
+  let nextGlint = 0, nextMote = 0, nextRing = 0.6, nextGust = 1.5, tally = 1, drumOn = false, pressing = false;
+  let crowdA = L.crowd, called = false;
+  const setCrowd = (a) => { crowdA = a; folk.setAmount(a); };
   const setDrum = (on) => { drumOn = !!on; drumNode.visible = drumOn; };
   const setTally = (v) => { tally = Math.max(0, Math.min(1, v)); chalkNode.visible = tally > 0.02; chalkNode.tint[3] = 1; chalkNode.scale[1] = 1; };
   function cue(lineId) {
     const m = /^ch7\.(pro|s\d|epi|m\d)\.?[a-z]?(\d+)?/.exec(lineId || ''); if (!m) return false;
     const part = m[1], n = Number(m[2] || 0);
     if (part === 'pro') { setCrowd(0.55); setDrum(false); setTally(0); }
-    else if (part === 's2') { setCrowd(n >= 9 ? 1 : 0.8); setDrum(false); setTally(n >= 10 ? 1 : 0); }
+    else if (part === 's2') { setDrum(false); if (called) { if (n >= 10) called = false; } else { setCrowd(n >= 9 ? 1 : 0.8); setTally(n >= 10 ? 1 : 0); } }   // after the encounter the quarter is already out and the slate chalked: c01 does not send them home
     else if (part === 's4') { setCrowd(1); setDrum(true); setTally(1); }
     else if (part === 's6') { setCrowd(0.85); setDrum(false); setTally(1); }
     else return false;
     return true;
   }
 
+  // the live stage's two tasks, and its setback
+  const press = pulse(1.8);
+  const rollUnit = taskUnit({
+    pos: [SLATE[0], 1.45, SLATE[2] + 0.2], stand: null,
+    apply(v, fresh) { if (fresh) { setDrum(false); called = true; } setCrowd(0.4 + 0.6 * v); setTally(v >= 0.3 ? v : 0); },
+  });
+  const walkUnit = taskUnit({
+    pos: [TABLE[0], 1.1, TABLE[2] + 0.4], stand: null,
+    apply(v, fresh) { if (fresh) { setDrum(false); setTally(1); called = false; } setCrowd(0.55 + 0.35 * v); },
+  });
+  /** 'struck-roll' (ch7.s2): the quarter turns out lane by lane and the slate is chalked. 'quay-walk' (ch7.s6): the dock gathers as she is brought along the quay. */
+  const task = (type) => (type === 'struck-roll' ? rollUnit.arm() : type === 'quay-walk' ? walkUnit.arm() : null);
+  /** The drain: the dock presses in to see and a third of it is pushed back out of the way again. */
+  function setback() { press.hit(); }
+
   function tick(time, dt, pw, live, power) {
-    folk.update(time, dt, { lit: 0, lively: drumOn ? 0.5 : 0.3 });
+    const pr = press.value(dt);
+    if (pr > 0 || pressing) { pressing = pr > 0; folk.setAmount(crowdA * (1 - 0.35 * pr)); }
+    folk.update(time, dt, { lit: 0, lively: (drumOn ? 0.5 : 0.3) + 0.6 * pr });
     for (let i = 0; i < BOATS.length; i++) {
       const b = BOATS[i];
       P[0] = b.pos[0]; P[1] = b.pos[1] + Math.sin(time * 1.3 + i * 2.1) * 0.04; P[2] = b.pos[2];
@@ -276,9 +301,9 @@ function build(engine = null, { light, low = false } = {}) {
       table: { pos: [TABLE[0], 0, TABLE[2] + 0.75], face: 0 }, slate: { pos: [SLATE[0] - 0.75, 0, SLATE[2] + 0.55], face: 30 }, box: { pos: [BOX[0], 0, BOX[2]], face: 20 },
       dockEnd: { pos: [-5.0, 0, QUAY_Z + 1.3], face: 180 }, back: [[1.3, 0.1], [2.1, -0.05], [2.9, 0.15], [-1.3, 0.1], [-2.1, -0.05], [-2.9, 0.15]],
     },
-    extra: { setCrowd, setDrum, setTally, cue },
+    extra: { setCrowd, setDrum, setTally, cue, task, setback, passLamp: setback },
   });
 }
 
-export const fishDock = { id: 'fish-dock', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const fishDock = { id: 'fish-dock', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default fishDock;

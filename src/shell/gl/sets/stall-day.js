@@ -11,7 +11,8 @@
 //   setNames(n)         1: Tessaly hangs alone on the short wire over the trestle;  2: and Little Brand beside it (ch7.s1.c26 on)
 //   setPapered(0..1)    how many of the bare frames on the back wire have been papered (the scene's work: "hold that frame")
 //   cue(lineId)         ch7.s1.c26 on: both names
-//   task(type)          -> { pos, set(v) }: the papering, for the encounter that helps at the stall
+//   task('bare-frames') -> { pos, stand, set(v) }: the papering, for the encounter that helps at the stall (edge-triggered: see kit-ch7 taskUnit)
+//   setback()           a gust: every frame on the wire swings wide for a second and a half (also passLamp). The core's 'day' builds 'afternoon'.
 //   marks.work          Nan's end of the trestle;  marks.short  one trestle short (where the Tribune stops, ch7.s1.c22);
 //   marks.wire[2]       under the names, for holding the paper flat;  marks.focus  the Tessaly lantern;  marks.pot  the paste pot
 // One light state, 'afternoon'. Nothing is lit: every glow is the sun through paper, and setPower turns that up and down.
@@ -26,7 +27,7 @@ import {
   PAL, kitMaterials, anchorAt, scatter, pickLight, stall, paperLantern, lanternString, lanternLines, bunting, crate, barrel, sack, bollard, ropeCoil,
   house, lighthouse, lampPost, wonk, pole, headland, cloudBank, gull, cobble, rock, bush,
 } from './kit.js';
-import { C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, dirFrom, norm7, trestle, basket, skiff, quay7, lanternFrame, pastePot, paperStack, bar } from './kit-ch7.js';
+import { C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, dirFrom, norm7, trestle, basket, skiff, quay7, lanternFrame, pastePot, paperStack, bar, coreLight, taskUnit, pulse } from './kit-ch7.js';
 
 const QUAY_Z = -7.6, WATER = -0.5;
 
@@ -45,6 +46,8 @@ const LIGHTS = {
     cloud: { color: '#fff6e4', shadowTint: '#b9b4f0' },
   },
 };
+
+const CORE = { day: 'afternoon', dusk: 'afternoon' };      // the core's light names this set answers
 
 const CAMERAS = STD_CAMERAS({
   wide: { target: [0.1, 1.6, -0.4], dist: 8.2, yaw: 3, pitch: 5, fov: 44 },
@@ -85,7 +88,7 @@ function plainHouse({ w = 3, d = 2.6, h = 3, roofH = 1.7, wall = PAL.cream, roof
 }
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('stall-day', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('stall-day', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const M = kitMaterials(), r = rng(7171), FAR = low ? M.farFlat : M.far;
   const NAN = { pos: [-2.75, 0, -2.25], yaw: 16 }, TABLE = [0.3, 0, -1.6], TABLE_YAW = -3, SHORT = [3.85, 0, -1.15];
 
@@ -262,19 +265,26 @@ function build(engine = null, { light, low = false } = {}) {
   let namesN = 1, papered = 0, nextPuff = 0, nextMote = 0, nextGlint = 0, nextRing = 0.8, nextGust = 1.3, nextScrap = 2;
   const setNames = (n) => { namesN = Math.max(0, Math.min(2, Math.round(n))); };
   const setPapered = (v) => { papered = Math.max(0, Math.min(1, v)); };
-  const paperTask = { pos: [backWire.hooks[5][0], backWire.hooks[5][1] - 0.4, backWire.hooks[5][2]], set: setPapered };
-  const task = () => paperTask;
+  // the live stage's task (ch7.s1): the bare frames on the back wire papered left to right with the objective
+  const gustP = pulse(1.6);
+  const paperTask = taskUnit({
+    pos: [backWire.hooks[5][0], backWire.hooks[5][1] - 0.4, backWire.hooks[5][2]], stand: [Math.max(-0.2, Math.min(1.6, backWire.hooks[5][0] - 0.8)), 0.25],
+    apply(v, fresh) { if (fresh) setNames(1); setPapered(v); },
+  });
+  const task = (type) => (type === 'bare-frames' ? paperTask.arm() : null);
+  /** The drain: a gust down the lane sets every frame on the wire swinging and takes the last sheet half off. */
+  function setback() { gustP.hit(); }
   function cue(lineId) {
     const m = /^ch7\.s1\.c(\d+)/.exec(lineId || ''); if (!m) return false;
     setNames(Number(m[1]) >= 26 ? 2 : 1); return true;
   }
 
   function tick(time, dt, pw, live, power) {
-    const sunK = 0.5 + 0.5 * Math.min(1.3, power), snap = dt === 0 ? 1 : 0;
+    const sunK = 0.5 + 0.5 * Math.min(1.3, power), snap = dt === 0 ? 1 : 0, gp = gustP.value(dt), sway = 1 + 4 * gp;
     lines.update(time, { on: Math.min(1, sunK), pw: sunK, unlit: 0.86, paper: 0.3, glow: 0.3, cool: 0 });
     // frames swing on their hooks, lighter than paper
     for (let i = 0; i < frames.length; i++) {
-      const f = frames[i], az = (Math.sin(time * 1.5 + f.ph) * 8 + Math.sin(time * 0.5 + f.ph * 2.1) * 5) * DEG, ax = Math.sin(time * 1.2 + f.ph * 1.7) * 6 * DEG;
+      const f = frames[i], az = (Math.sin(time * 1.5 + f.ph) * 8 + Math.sin(time * 0.5 + f.ph * 2.1) * 5) * DEG * sway, ax = Math.sin(time * 1.2 + f.ph * 1.7) * 6 * DEG;
       quat.fromEuler(Q, ax, f.yaw + time * 0.1 * Math.sin(f.ph), az); S3[0] = S3[1] = S3[2] = f.s;
       m4.fromTRS(Mx, f.hook, Q, S3); f.inst.data.set(Mx, f.idx * 20); f.inst.dirty = true;
     }
@@ -282,7 +292,7 @@ function build(engine = null, { light, low = false } = {}) {
     const D = freshNode.instances.data, done = papered * fresh.length;
     for (let i = 0; i < fresh.length; i++) {
       const p = fresh[i], goal = i < Math.round(done) ? 1 : 0; p.now += (goal - p.now) * Math.min(1, dt * 5 + snap);
-      const f = p.f, az = (Math.sin(time * 1.5 + f.ph) * 6) * DEG, s = f.s * (p.now < 0.02 ? 0.0001 : 0.3 + 0.7 * p.now) * (1 + 0.2 * Math.sin(Math.min(1, p.now) * Math.PI));
+      const f = p.f, az = (Math.sin(time * 1.5 + f.ph) * 6) * DEG * sway, s = f.s * (p.now < 0.02 ? 0.0001 : 0.3 + 0.7 * p.now) * (1 + 0.2 * Math.sin(Math.min(1, p.now) * Math.PI));
       quat.fromEuler(Q, 0, 0, az); S3[0] = S3[1] = S3[2] = s; m4.fromTRS(Mx, p.hook, Q, S3); D.set(Mx, i * 20);
       const k = 0.75 + 0.3 * sunK; D[i * 20 + 16] = p.col[0] * k; D[i * 20 + 17] = p.col[1] * k; D[i * 20 + 18] = p.col[2] * k; D[i * 20 + 19] = 1;
       p.glow.alpha = 0.3 * p.now * sunK;
@@ -336,9 +346,9 @@ function build(engine = null, { light, low = false } = {}) {
       wire: [{ pos: [TABLE[0] - 0.55, 0, TABLE[2] + 0.85], face: 170 }, { pos: [TABLE[0] + 0.5, 0, TABLE[2] + 0.85], face: -170 }],
       back: [[1.3, 0.1], [2.1, -0.05], [2.9, 0.15], [-1.3, 0.1], [-2.1, -0.05], [-2.9, 0.15]],
     },
-    extra: { wings, setNames, setPapered, setLantern: lines.setLit, lanternCount: lines.count, frameCount: frames.length + 4, task, cue },
+    extra: { wings, setNames, setPapered, setLantern: lines.setLit, lanternCount: lines.count, frameCount: frames.length + 4, task, cue, setback, passLamp: setback },
   });
 }
 
-export const stallDay = { id: 'stall-day', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const stallDay = { id: 'stall-day', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default stallDay;

@@ -224,7 +224,18 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
   function vote(v) { votes = Math.max(0, Math.min(1, v)); const n = Math.round(votes * N); for (let i = 0; i < N; i++) hands[order[i]] = i < n ? 1 : 0; }
   for (let i = 0; i < N; i++) { cadets.list[i].here = present; cadets.write(i); }
   const TASK = { pos: [tally.position[0], 0.4, tally.position[2]], stand: [B19.pos[0] - 0.5, B19.pos[2] + 0.9], set(v) { tallyOn = Math.max(0, Math.min(1, v)); } };
-  const task = (type) => (type === 'tally' || type === 'bed-nineteen' ? TASK : null);
+  // ch3.s3's encounter (reading the contract): the tally first, then boy after boy with his own copy
+  const READ = { pos: TASK.pos, stand: TASK.stand, set(v) { tallyOn = Math.max(0, Math.min(1, v * 3)); setCadets((v - 1 / 3) * 1.5); if (votes !== 0) vote(0); } };
+  const task = (type) => (type === 'tally' || type === 'bed-nineteen' ? TASK : type === 'indentures' ? READ : null);
+  /** Stage business by script line. */
+  function cue(id) {
+    switch (id) {
+      case 'ch3.s3.c10': setCadets(1); return true;
+      case 'ch3.s3.c29': vote(0.35); return true;
+      case 'ch3.s3.c30': vote(1); return true;
+      default: return false;
+    }
+  }
 
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(23);
   let nextMote = 0, nextEmber = 0, cursor = 0;
@@ -249,7 +260,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
       ...MARKS, bed19: { pos: [B19.pos[0] - 0.55, 0, B19.pos[2] + 0.85], face: 30 }, tally: TASK.pos,
       door: { pos: [DOOR.x + 0.2, 0, MOUTH + 0.9], face: 60 }, passage: { pos: [DOOR.x, 0, MOUTH - 0.7], face: 180 }, focus: lampPos,
     },
-    extra: { setCadets, vote, task },
+    extra: { setCadets, vote, task, cue },
   });
 }
 

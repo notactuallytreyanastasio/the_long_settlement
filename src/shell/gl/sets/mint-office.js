@@ -28,6 +28,7 @@ import {
   KB, kitBMaterials, setShell, lightOf, wing, norm3, wall, windowFrame, shaftCards, lightPatch, skyline, ceiling, boards, wainscot, cornice, rug, curtain, doorway,
   desk, chair, bookshelf, fileStack, paperPile, scroll, hangingLamp, deskLamp, sconce, candle, fireplace, globe, telescope, teaSet, inkstand, sealPress, mintSeal, scales,
 } from './kit-b.js';
+import { trimSet } from '../scene.js';
 
 const BW = 4.5, BACK = -4.4, FW = 7.0, WING_Z = 2.4, H = 5.6;
 
@@ -225,5 +226,5 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   });
 }
 
-export const mintOffice = { id: 'mint-office', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const mintOffice = { id: 'mint-office', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
 export default mintOffice;

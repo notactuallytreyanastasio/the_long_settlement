@@ -13,6 +13,9 @@
 //   setPlate(on)        the brass back-plate of the Reels: fitted, or off and leaning against the cabinet
 //   setDrum(state)      'sealed' (in its cradle under the Audit's wax) | 'open' | 'gone' (carried down to the dock)
 //   setCrowd(0..1)      the dock in the doorway and down the aisles
+//   task('lot-drum')    ch7.s4: the dock comes in with the objective (0.25 -> 1); complete, the drum's wax is off ('open')
+//   task('reel-works')  ch7.s5: the plate comes away at the first hits, a wheel is run a tooth per hit, the plumb shows only at the end
+//   setback()           the crowd presses; the wheels run back (also passLamp). Core 'dusk' / 'interior' build 'evening'.
 //   cue(lineId)         ch7.s4: plate on, drum sealed, the dock at the doors;  ch7.s5: plate off, drum gone, hall empty
 //   marks.works         where a figure stands at the open back of the Reels;  marks.bench, marks.drum, marks.plumb (world point),
 //   marks.focus         'day': the doorway;  'evening': the hand lamp on the bench
@@ -28,7 +31,7 @@ import { PAL, kitMaterials, pickLight, ledgerBook } from './kit.js';
 import {
   C7, STD_MARKS, STD_CAMERAS, shell7, rows, folk7, dirFrom, norm7, stairs7, column7, doorLeaf7, banner7, wall7, tallWindow, fanRays, floorPatch, tiles,
   chandelier7, lotDrum7, reelWorks, plumb, trestle, shipLantern, mintSeal7, paperStack,
-} from './kit-ch7.js';
+  coreLight, taskUnit, pulse } from './kit-ch7.js';
 
 const FLOOR = -0.6, EDGE = -3.0, DOOR_Z = -17.5, HALF = 7, H = 7.0, COL_X = 3.35, COL_Z = [-5.0, -8.3, -11.6, -14.9];
 
@@ -61,6 +64,8 @@ const LIGHTS = {
   },
 };
 
+const CORE = { dusk: 'evening', interior: 'evening' };      // the core's light names this set answers ('day' is its own)
+
 const CAMERAS = STD_CAMERAS({
   wide: { target: [0.05, 1.7, -0.4], dist: 8.3, yaw: 1.5, pitch: 4.5, fov: 46, shadowCenter: [0, 0, -1.5], shadowRadius: 8 },
   low: { target: [0.0, 2.3, -0.4], dist: 6.4, yaw: -5, pitch: -14, fov: 58 },
@@ -68,7 +73,7 @@ const CAMERAS = STD_CAMERAS({
 });
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('drum-open', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('drum-open', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const K = kitMaterials(), M = {
     ...K,
     wall: material({ name: 'c7-wall', rim: 0, bandEdge: -0.2, outline: { width: 1.9, self: 0.65 }, castShadow: false }),
@@ -188,26 +193,47 @@ function build(engine = null, { light, low = false } = {}) {
   let plate = L.state === 's4', plateNow = plate ? 1 : 0, drumState = L.state === 's4' ? 'sealed' : 'gone', nextMote = 0, nextTick = 2;
   const setPlate = (on) => { plate = !!on; };
   const setDrum = (state) => { if (!['sealed', 'open', 'gone'].includes(state)) throw new Error(`drum-open: no drum state "${state}" (have sealed, open, gone)`); drumState = state; };
-  const setCrowd = (a) => folk.setAmount(a);
+  let crowdA = 0, pressing = false, opened = false, working = false, found = true, teeth = 0;
+  const setCrowd = (a) => { crowdA = a; folk.setAmount(a); };
+  // the live stage's two tasks
+  const press = pulse(1.8);
+  const drumUnit = taskUnit({
+    pos: [DRUM[0], 1.2, DRUM[2] + 0.3], stand: [DRUM[0] - 1.15, 0.3],
+    apply(v, fresh) { if (fresh) { setPlate(true); working = false; found = true; opened = true; } setDrum(v >= 0.999 ? 'open' : 'sealed'); setCrowd(0.25 + 0.75 * v); },
+  });
+  const worksUnit = taskUnit({
+    pos: [PLUMB[0], PLUMB[1], PLUMB[2] + 0.15], stand: [WORKS[0] - 1.1, 0.3],
+    apply(v, fresh) {
+      if (fresh) { setDrum('gone'); setCrowd(0); working = true; opened = false; teeth = Math.floor(v * 20); }
+      setPlate(v < 0.12); found = v >= 0.999;
+      const n = Math.floor(v * 20 + 0.001); if (n > teeth) { wheels[n % 3].tick = 1; teeth = n; }
+    },
+  });
+  /** 'lot-drum' (ch7.s4): the dock comes down the aisles; at the end the wax is off the drum. 'reel-works' (ch7.s5): the plate comes away, the wheels are run a tooth at a time, and behind the third the plumb shows at the last. */
+  const task = (type) => (type === 'lot-drum' ? drumUnit.arm() : type === 'reel-works' ? worksUnit.arm() : null);
+  /** The drain: the crowd presses (s4); the wheels run back a turn (s5). */
+  function setback() { press.hit(); for (const w of wheels) w.tick = 2; }
   function cue(lineId) {
     const m = /^ch7\.(s\d)/.exec(lineId || ''); if (!m) return false;
-    if (m[1] === 's4') { setPlate(true); setDrum('sealed'); setCrowd(1); return true; }
-    if (m[1] === 's5') { setPlate(false); setDrum('gone'); setCrowd(0); return true; }
+    if (m[1] === 's4') { setPlate(true); setDrum(opened ? 'open' : 'sealed'); setCrowd(1); working = false; found = true; return true; }   // after the encounter the wax is already off
+    if (m[1] === 's5') { setPlate(false); setDrum('gone'); setCrowd(0); working = false; found = true; opened = false; return true; }
     return false;
   }
 
   function tick(time, dt, pw, live, power) {
-    folk.update(time, dt, { lit: 0, lively: 0.3 });
+    const pr = press.value(dt);
+    if (pr > 0 || pressing) { pressing = pr > 0; folk.setAmount(crowdA * (1 - 0.35 * pr)); }
+    folk.update(time, dt, { lit: 0, lively: 0.3 + 0.6 * pr });
     // the plate: fitted, or walked off to lean against the cabinet's flank
     const goal = plate ? 1 : 0; plateNow += (goal - plateNow) * Math.min(1, dt * 4 + (dt === 0 ? 1 : 0));
     const k = plateNow;
     plateNode.position[0] = plateOff[0] + (plateOn[0] - plateOff[0]) * k; plateNode.position[1] = plateOff[1] + (plateOn[1] - plateOff[1]) * k; plateNode.position[2] = plateOff[2] + (plateOn[2] - plateOff[2]) * k;
     plateNode.setRot(-12 * (1 - k), WORKS_YAW - 62 * (1 - k), 0);
     const open = 1 - k;
-    plumbNode.visible = open > 0.5; plumbNode.setRot(Math.sin(time * 1.7) * 2.5, 0, Math.sin(time * 1.3 + 1) * 3);
-    plumbGlint.alpha = open > 0.5 ? 0.55 + 0.4 * Math.sin(time * 2.6) : 0; plumbGlint.rot = time * 0.4;
+    plumbNode.visible = open > 0.5 && found; plumbNode.setRot(Math.sin(time * 1.7) * 2.5, 0, Math.sin(time * 1.3 + 1) * 3);
+    plumbGlint.alpha = open > 0.5 && found ? 0.55 + 0.4 * Math.sin(time * 2.6) : 0; plumbGlint.rot = time * 0.4;
     // honest brass: now and then a wheel is let run a tooth and the pawl drops
-    if (live && open > 0.5 && time > nextTick) { nextTick = time + 1.2 + rnd() * 2; const w = wheels[Math.floor(rnd() * 3)]; w.tick = 1; }
+    if (live && open > 0.5 && !working && time > nextTick) { nextTick = time + 1.2 + rnd() * 2; const w = wheels[Math.floor(rnd() * 3)]; w.tick = 1; }
     for (let i = 0; i < 3; i++) {
       const w = wheels[i]; if (w.tick > 0) { const step = Math.min(w.tick, dt * 3); w.tick -= step; w.angle += step * 45; }
       quat.fromEuler(Q, w.angle * DEG, WORKS_YAW * DEG, 0); m4.fromTRS(Mx, w.pos, Q, S3); wheelNode.instances.data.set(Mx, i * 20);
@@ -232,9 +258,9 @@ function build(engine = null, { light, low = false } = {}) {
       works: { pos: [WORKS[0] - 0.9, 0, WORKS[2] + 1.25], face: -150 }, bench: { pos: [BENCH[0], 0, BENCH[2] + 0.75], face: 180 }, drum: { pos: [DRUM[0] + 1.3, 0, DRUM[2] + 0.5], face: -110 }, plumb: PLUMB,
       back: [[1.3, 0.1], [2.1, -0.05], [2.9, 0.15], [-1.3, 0.1], [-2.1, -0.05], [-2.9, 0.15]],
     },
-    extra: { setPlate, setDrum, setCrowd, cue },
+    extra: { setPlate, setDrum, setCrowd, cue, task, setback, passLamp: setback },
   });
 }
 
-export const drumOpen = { id: 'drum-open', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const drumOpen = { id: 'drum-open', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default drumOpen;

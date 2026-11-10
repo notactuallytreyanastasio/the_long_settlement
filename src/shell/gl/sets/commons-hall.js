@@ -13,6 +13,8 @@
 // What this set can do for its story:
 //   setCrowd(0..1)        how full the hall is (night starts full, day at a quarter); they come and go one by one
 //   setNames(0 | 1 | 2)   MARAVEL I / VASKER R chalked in the IS OWED column (0: not yet)
+//   task('red-notice', i) -> { pos, stand, set(v) } ch2.s2's encounter: three notices on a trestle (night only), each answered at v = 1
+//   task('long-board')    -> { pos, set(v) } ch2.s7's encounter: the hall fills a little and COAL / SALT / A ROOF are chalked up
 //   cue(lineId)           ch2.s7.c05 chalks both names; ch2.s7.c01 wipes them; ch2.s2.c16 / c21 thin the hall for the late supper
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   board { pos, face }: where somebody stands to chalk   table { pos, face }: behind the writing table (Ilse's chair)
@@ -211,6 +213,19 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     if (id === 'ch2.s2.c16' || id === 'ch2.s2.c21') { setCrowd(0.25); return true; }
     return false;
   }
+  // ---- ch2.s2's encounter: three red-sealed notices propped on a trestle at the back of the strip; each gets its four-word reply
+  const NX = [0.95, 1.7, 2.45], NZ = 0.02, NY = 1.02;
+  scene.root.add(node('notice-trestle', merge(tint(place(box(2.3, 0.07, 0.5), 1.7, 0.74, NZ), SM.timberPale), tint(place(box(0.08, 0.74, 0.42), 0.7, 0.37, NZ), SM.timberDark), tint(place(box(0.08, 0.74, 0.42), 2.7, 0.37, NZ), SM.timberDark), tint(place(box(2.0, 0.06, 0.06), 1.7, 0.3, NZ), SM.timberDark)), M.prop, { visible: night }));
+  const noticeNodes = NX.map((x, i) => { const n = node('red-notice' + i, notice({ s: 0.5 }), M.prop, { pos: [x, NY, NZ + 0.12], rot: [-14, (i - 1) * -6, 0], visible: night }); n.castShadow = false; scene.root.add(n); return n; });
+  const replyNodes = NX.map((x, i) => { const n = node('reply' + i, merge(setGlow(tint(place(box(0.34, 0.2, 0.012), 0, 0, 0), '#fff8dc'), 0.5), ...[0, 1].map((k) => setOutline(tint(place(box(0.24 - k * 0.06, 0.022, 0.004), -k * 0.03, 0.035 - k * 0.07, 0.009), '#2a3f8f'), 0))), M.prop, { pos: [x + 0.03, NY - 0.1, NZ + 0.2], rot: [-14, (i - 1) * -6, 6 - i * 5], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
+  const replyGlows = NX.map((x) => sprites.add({ kind: 'glow', pos: [x, NY, NZ + 0.3], size: 0.9, color: '#fff2b0', alpha: 0 }));
+  const replyV = [0, 0, 0];
+  const NOTICES = NX.map((x, i) => ({ pos: [x, NY, NZ + 0.15], stand: [x - 0.42, NZ + 0.62], set(v) { replyV[i] = v; replyNodes[i].visible = v > 0.97; replyGlows[i].alpha = v > 0.97 ? 0.5 : v * 0.25; } }));
+  // ---- ch2.s7's encounter: the town comes in to look at its board, and three fresh entries are chalked on it
+  const entries = [['COAL', -3.9, -0.86], ['A ROOF', 0.7, -0.86], ['SALT', -1.9, -0.86]].map(([s, x, y], i) => { const n = node('entry' + i, pixelText(s, { s: 0.22, color: '#fff0a0', glow: 0.75, align: 'left', jitter: 0.1, seed: i + 11 }), M.flat, { pos: [BOARD[0] + x, BOARD[1] + y, BOARD[2] + 0.02], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
+  let boardV = 0;
+  const LONG_BOARD = { pos: [BOARD[0] - 1.5, BOARD[1] - 0.3, BOARD[2] + 0.1], set(v) { const c = 0.25 + 0.35 * v; if (Math.abs(c - want) > 0.004) setCrowd(c); for (let i = 0; i < 3; i++) { const on = v * 3 > i + 0.97; if (on && !entries[i].visible) sprites.sparkle(entries[i].position, { count: 5, size: 0.3, spread: 0.6, life: 0.9, color: '#fff6c0' }); entries[i].visible = on; } boardV = v; } };
+  const task = (type, i = 0) => (type === 'red-notice' ? NOTICES[i] || null : type === 'long-board' ? LONG_BOARD : null);
   function tick(time, dt, pw, live) {
     folk.update(time, dt, FOLK);
     if (!live) return;
@@ -228,7 +243,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
       client: { pos: [TABLE[0] + 0.45, 0, TABLE[2] + 0.85], face: TABLE_YAW + 180 }, stove: { pos: [STOVE[0] - 0.2, 0, STOVE[2] + 0.95], face: 180 },
       seat: { pos: [5.1, 0, -0.45], face: 180 },
     },
-    extra: { setCrowd, setNames, cue, crowd: folk },
+    extra: { setCrowd, setNames, cue, task, crowd: folk },
   });
 }
 

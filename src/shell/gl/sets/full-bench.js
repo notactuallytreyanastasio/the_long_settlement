@@ -10,7 +10,10 @@
 //
 // Same shape as sets/lantern-stalls.js. Figures face +Z, cameras look toward -Z (the bench), the strip x -3.2..3.2, z 0..1.6 is clear.
 //   speak(i)          which magistrate is speaking (0, 1, 2; -1 none): he leans forward and nods
-//   cue(lineId)       accepted; changes nothing (the light state is the build's)
+//   cue(lineId)       ch8.s1.* / ch8.s2.* / ch8.epi.05: the three desk lamps on the bench burn (the court is sitting)
+//   task('magistrate', i)   -> { pos (his head), stand: null, set(v) }: the scene-1 encounter. v 0..1 brings up the desk
+//                     lamp at his place and leans him in; asking for the task puts all three lamps out first.
+// Light names: 'morning' (the default: the core's 'day' builds it), 'afternoon', and the core's 'dusk' as an alias of 'afternoon'.
 // marks: a, b, c, two, party, opposition, plus focus (the window), dock { pos, face }, dock2 { pos, face } (the second place in the dock),
 //        stand { pos, face } (the witness stand), clerk { pos, face }, doorL / doorR { pos, face }, bench: [[x, y, z] x 3] (the magistrates' heads)
 
@@ -20,7 +23,7 @@ import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { anchorAt } from './kit.js';
-import { C8, materials8, shell8, cams, marks8, pick8, norm8, wallRun, highBench, magistrate, dock, greatWindow, bannerDrop, chequer, bucket, column8, shipLantern } from './kit-ch8.js';
+import { C8, materials8, shell8, cams, marks8, pick8, norm8, unit8, noteLean8, wallRun, highBench, magistrate, dock, greatWindow, bannerDrop, chequer, bucket, column8, shipLantern } from './kit-ch8.js';
 
 const BACK = -5.4, H = 8.2, DAIS = 0.42;
 
@@ -50,6 +53,7 @@ const LIGHTS = {
     glass: '#ffc888', head: ['#ff8fb4', '#ffb050', '#b890ff'], shaft: '#ffb070', patch: '#ffc078', lampCol: '#ffd0a0', winK: 0.6,
   },
 };
+LIGHTS.dusk = LIGHTS.afternoon;      // the core's name for it (core/stage.js LIGHTS); app.js builds a set's first light for any name it does not list
 
 const CAMERAS = cams({
   wide: { target: [0.05, 2.1, -0.6], dist: 8.6, yaw: 2, pitch: 1, fov: 47 },
@@ -114,6 +118,10 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   // ---- the three magistrates (they lean and nod, so each is its own node)
   const robes = [C8.oxblood, '#7a4fc4', '#2f8f9a'], judges = seats.map((s, i) => { const n = node('magistrate' + i, magistrate({ robe: robes[i], s: [1.12, 1.3, 1.0][i], fat: [1.0, 1.25, 0.86][i], seed: 3 + i * 4, specs: i === 2, skin: ['#ffd9b4', '#f2c098', '#e8b088'][i] }), M.prop, { pos: [s[0], s[1] + 0.3, s[2] + 0.12] }); scene.root.add(n); return n; });
   const heads = seats.map((s, i) => [s[0], s[1] + 0.4 + [1.1, 1.28, 0.98][i], s[2] + 0.14]);
+  // a desk lamp at each place on the bench: brass stem, a shade that is dark until that magistrate is satisfied
+  const deskAt = seats.map((s) => [s[0] + 0.72, DAIS + 1.62, BACK + 2.1 + 0.26]);
+  { const stems = group('desk-stems'); for (const p of deskAt) stems.add(node('stem', merge(tint(place(cylinder(0.1, 0.13, 0.04, 8), 0, 0.02, 0), C8.brassDark), tint(place(cylinder(0.022, 0.022, 0.3, 6), 0, 0.04, 0), C8.brass)), M.prop, { pos: p })); const st = mergeStatic(stems, 'desk-stems'); st.castShadow = false; scene.root.add(st); }
+  const shades = deskAt.map((p, i) => { const n = node('desk-shade' + i, setOutline(setGlow(tint(place(sphere(0.15, 10, 7), 0, 0.42, 0), '#ffffff'), 1), 0.7), M.lantern, { pos: p }); n.castShadow = false; scene.root.add(n); return n; });
   // the clock on the right wall: slow
   const CLK = [SR.anchors.mid[0] - 0.9, 4.4, SR.anchors.mid[2] - 1.9], clk = node('clock', merge(tint(place(box(0.9, 2.0, 0.26), 0, 0, 0), C8.woodRed), tint(place(cylinder(0.34, 0.34, 0.06, 12), 0, 0.5, 0.14, 90, 0, 0), C8.parchment), tint(place(box(0.03, 0.26, 0.02), 0, 0.62, 0.19), C8.navy), tint(place(box(0.03, 0.18, 0.02), 0.07, 0.52, 0.19, 0, 0, -70), C8.navy)), M.prop, { pos: CLK, rot: [0, SR.anchors.yaw, 0] }); clk.castShadow = false; scene.root.add(clk);
   const pend = node('pendulum', merge(tint(place(box(0.04, 0.8, 0.03), 0, -0.4, 0), C8.brassDark), tint(place(cylinder(0.14, 0.14, 0.04, 10), 0, -0.86, 0, 90, 0, 0), C8.brass)), M.prop, { pos: [0, 0.05, 0.16] }); pend.castShadow = false; clk.add(pend);
@@ -145,12 +153,22 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const glows = sconces.map((p, i) => ({ sprite: sprites.add({ kind: 'glow', pos: [p[0], p[1] - 0.25, p[2] + 0.14], size: 1.6, color: '#ffb450', alpha: 0 }), base: 0.6, lamp: i + 2 }));
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: FOCUS, size: 6.5, color: L.glass, alpha: 0 }), base: 0.34, fixed: true });
 
+  const deskGlow = deskAt.map((p) => sprites.add({ kind: 'glow', pos: [p[0], p[1] + 0.42, p[2] + 0.1], size: 1.5, color: '#ffd070', alpha: 0 }));
   let speaking = -1; const lean = [0, 0, 0];
   const speak = (i) => { speaking = i; };
+  // how far each magistrate has been brought round: 1 = his lamp burns (the court at rest), 0 = dark (scene 1 opens)
+  const won = [1, 1, 1], wonNow = [1, 1, 1];
+  const benchTasks = heads.map((h, i) => unit8([h[0], h[1] - 0.35, h[2] + 0.5], null, (v) => { won[i] = v; }));
+  const task = (type, i = 0) => { if (!/magistrate|bench/.test(String(type)) || !benchTasks[i]) return null; if (i === 0) { for (let k = 0; k < 3; k++) won[k] = wonNow[k] = 0; for (const u of benchTasks) u.reset(); } return benchTasks[i]; };
+  const cue = (id) => { noteLean8(id); if (!/^ch8\.(s1|s2|epi)\./.test(String(id))) return false; for (let k = 0; k < 3; k++) won[k] = 1; return true; };
   const P = [0, 0, 0], V = [0, -0.2, 0];
   let nextDrip = 1.2;
   function tick(time, dt, pw, live) {
-    for (let i = 0; i < 3; i++) { lean[i] += ((speaking === i ? 1 : 0) - lean[i]) * Math.min(1, dt * 4 + (dt === 0 ? 1 : 0)); judges[i].setRot(4 + lean[i] * 9 + Math.sin(time * (0.5 + i * 0.13) + i * 2) * 1.5 + lean[i] * Math.sin(time * 5) * 2.5, Math.sin(time * 0.31 + i * 1.7) * 7, Math.sin(time * 0.4 + i) * 1.5); }
+    for (let i = 0; i < 3; i++) {
+      const w = (wonNow[i] += (won[i] - wonNow[i]) * Math.min(1, dt * 3 + (dt === 0 ? 1 : 0))), t = shades[i].tint;
+      t[0] = 0.3 + 0.82 * w; t[1] = 0.32 + 0.6 * w; t[2] = 0.5 - 0.16 * w; shades[i].glow = w; deskGlow[i].alpha = 0.75 * w * (0.92 + 0.08 * Math.sin(time * 9 + i * 2));
+    }
+    for (let i = 0; i < 3; i++) { lean[i] += ((speaking === i || (won[i] > 0.5 && wonNow[i] < 0.97) ? 1 : 0) - lean[i]) * Math.min(1, dt * 4 + (dt === 0 ? 1 : 0)); judges[i].setRot(4 + lean[i] * 9 + Math.sin(time * (0.5 + i * 0.13) + i * 2) * 1.5 + lean[i] * Math.sin(time * 5) * 2.5, Math.sin(time * 0.31 + i * 1.7) * 7, Math.sin(time * 0.4 + i) * 1.5); }
     pend.setRot(0, 0, Math.sin(time * 1.4) * 14);
     if (live && time > nextDrip) { nextDrip = time + 2.3; P[0] = BUCKET[0]; P[1] = H - 0.4; P[2] = BUCKET[2]; V[1] = -1; sprites.spawn({ kind: 'dot', pos: P, vel: V, size: 0.07, life: 1.15, color: '#bfe4ff', gravity: 9 }); }
   }
@@ -163,7 +181,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
       dock: { pos: [DOCK[0] - 0.5, 0.14, DOCK[2] + 0.1], face: DOCK_YAW - 20 }, dock2: { pos: [DOCK[0] + 0.55, 0.14, DOCK[2] - 0.35], face: DOCK_YAW - 20 },
       stand: { pos: [STAND[0], 0.14, STAND[2] - 0.1], face: STAND_YAW + 20 }, clerk: { pos: [CLERK[0] + 1.6, 0, CLERK[2] + 0.3], face: -30 }, doorL: { pos: DL.pos, face: DL.yaw }, doorR: { pos: DR.pos, face: DR.yaw },
     },
-    extra: { speak },
+    extra: { speak, task, cue },
   });
 }
 

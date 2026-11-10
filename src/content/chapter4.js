@@ -87,7 +87,7 @@ export const chapter4 = {
       objective: { kind: 'count', ids: ['breakwaterRamp'], n: 3 },
       reward: { points: 8000, trust: 25 },
       encounter: {
-        set: 'wreck-shore', light: 'predawn', mode: 'walk',
+        set: 'wreck-shore', light: 'predawn', mode: 'work',
         party: ['ren', 'ilse', 'tobb'],
         opposition: { kind: 'force', who: ['long-rope'], name: 'THE CHURN' },
         extras: ['fishwife', 'townsman'],

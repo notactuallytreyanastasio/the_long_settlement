@@ -210,7 +210,21 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   function send(n = 1) { for (let k = 0; k < n; k++) { const start = Math.floor(rnd() * runs.length); for (let j = 0; j < runs.length; j++) { const q = runs[(start + j) % runs.length]; if (q.t < 0) { q.t = 0; q.dir = rnd() < 0.5 ? 1 : -1; break; } } } }
   const DRAWER_TASK = { pos: [LONG[0], LONG[1], LONG[2] + 0.4], stand: [LONG[0] + 0.5, LONG[2] + 1.2], set(v) { openDrawer(v); } };
   const RET_TASK = { pos: [RET[0], 1.5, RET[2]], stand: [RET[0] + 0.9, RET[2] + 0.4], set(v) { retOn = Math.max(0, Math.min(1, v)); } };
-  const task = (type) => (type === 'drawer' || type === 'island-book' ? DRAWER_TASK : type === 'returns' || type === 'schedule' ? RET_TASK : null);
+  // ch3.s4's encounter (between two rounds): the clerk at his lamp is the thing to get past; the tubes tick faster as Ren crosses
+  let roundV = 0;
+  const ROUND = { pos: [lampPos[0], lampPos[1] - 0.5, lampPos[2]], stand: [-2.6, 0.75], set(v) { setClerk(true); openDrawer(0); if (Math.floor(v * 6) > Math.floor(roundV * 6)) send(2); roundV = v; } };
+  const task = (type) => (type === 'drawer' || type === 'island-book' ? DRAWER_TASK : type === 'returns' || type === 'schedule' ? RET_TASK : type === 'night-round' ? ROUND : null);
+  /** Stage business by script line. */
+  function cue(id) {
+    switch (id) {
+      case 'ch3.s4.c01': setClerk(true); openDrawer(0); return true;
+      case 'ch3.s4.c04': retOn = 1; return true;
+      case 'ch3.s4.c13': setClerk(false); return true;
+      case 'ch3.s4.c14': openDrawer(1); retOn = 0; return true;
+      case 'ch3.s4.c21': setClerk(true); return true;
+      default: return false;
+    }
+  }
 
   function tick(time, dt, pw, live) {
     const k = dt === 0 ? 1 : Math.min(1, dt * 5);
@@ -245,7 +259,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
       ...MARKS, drawer: { pos: [DRAWER_TASK.stand[0], 0, DRAWER_TASK.stand[1]], face: 200 }, returns: { pos: [RET_TASK.stand[0], 0, RET_TASK.stand[1]], face: -110 },
       clerk: { pos: [SEAT[0], 0, SEAT[2]], face: DESKS[LIT].yaw }, window: { pos: [CTR[0] + 0.9, 0, CTR[2] + 0.5], face: -120 }, focus: lampPos,
     },
-    extra: { openDrawer, setClerk, send, task },
+    extra: { openDrawer, setClerk, send, task, cue },
   });
 }
 

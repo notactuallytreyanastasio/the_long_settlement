@@ -195,7 +195,9 @@ function build(engine = null, { light: lightName = 'dawn', low = false } = {}) {
   function setLine(v) { lineOn = Math.max(0, Math.min(1, v)); }
   function lightLamp(on = true) { lampOn = on ? 1 : 0; }
   const TASK = { pos: dq(-0.05, 0.2, 0.05), stand: [DESK[0] - 0.9, DESK[2] + 1.1], set(v) { placeFolder(v >= 0.5); } };
-  const task = (type) => (type === 'folder' || type === 'proctor-desk' ? TASK : null);
+  // ch3.s5's encounter: the folder goes down on the first step, and on the last the Line goes dim (his end is in a sock)
+  const CLIMB = { pos: TASK.pos, stand: TASK.stand, set(v) { placeFolder(v >= 0.45); setLine(v > 0.95 ? 0.15 : 1); } };
+  const task = (type) => (type === 'proctor-desk' ? TASK : type === 'folder' ? CLIMB : null);
 
   function tick(time, dt, pw, live) {
     bob.setRot(0, 0, Math.sin(time * 3.1) * 8);

@@ -25,6 +25,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, makeInstances, setInstance, createSprites, rayMesh, rayMaterial, material,
 } from '../index.js';
 import { PAL, kitMaterials, anchorAt, pickLight, setRig, desk, ledgerBook, candle, inkwell, quill, bookshelf, archWindow, flame } from './kit.js';
+import { trimSet } from '../scene.js';
 
 const DESK = [0, 0, -1.2], DESK_H = 0.8, WALL_Z = -3.7;
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
@@ -234,5 +235,5 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
   };
 }
 
-export const ledger = { id: 'ledger', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const ledger = { id: 'ledger', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
 export default ledger;

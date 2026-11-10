@@ -10,6 +10,9 @@
 //   pick8(id, LIGHTS, name)    a light state by name; an unknown name warns and uses the first
 //   putInst(inst, i, ...)      write one instance transform and colour without allocating
 //   materials8()               kitMaterials() + wall (encloses a room, casts nothing), shaft (additive), sea, glass
+//   unit8(pos, stand, apply)   an encounter's task unit whose set(v) only applies when v moves (so cue() wins in the lines)
+//   noteLean8(lineId), lean8() which ending the session is in, from the lines the sets have been cued with
+//   blendEnv8(env, a, b, t)    turn a built set to another hour (cresset-harbour: noon <-> night)
 // Cresset
 //   lampTower(opts)            the Founders' Lamp from outside: { body, glass } + anchors lamp, top, door
 //   cressetFar(opts)           the capital's geography, shared by the four harbour sets: the mole, the tower on its
@@ -36,7 +39,7 @@ import {
   sphere, ellipsoid, blob, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane, fromArrays,
   merge, tint, place, setGlow, setOutline, gradientY, deform, flip, scale as scaleMesh,
 } from '../mesh.js';
-import { node, group, material, mergeStatic } from '../scene.js';
+import { node, group, material, mergeStatic, lerpEnv } from '../scene.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { PAL, kitMaterials, wonk, townBank, quayEdge, cobble, scatter, cloudBank } from './kit.js';
 
@@ -60,6 +63,47 @@ export const norm8 = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; retur
 export const dirFrom = (azDeg, elDeg) => [Math.sin(azDeg * DEG) * Math.cos(elDeg * DEG), Math.sin(elDeg * DEG), -Math.cos(azDeg * DEG) * Math.cos(elDeg * DEG)];
 
 // ------------------------------------------------------------------------------------ the shell
+
+/**
+ * One thing a 'force' encounter is about, in the shape the director asks a set for (set.task -> { pos, stand, set(v) }).
+ * The director calls set(v) every frame, during the fight AND through the lines that follow on the same set, where it
+ * goes on passing the last value. So `apply` is only called when v has moved: once the lines start, the set's own
+ * cue(lineId) is the last word. reset() makes the next set(v) apply whatever v is (call it when task() hands the unit out).
+ */
+export function unit8(pos, stand, apply) {
+  let last = -1;
+  return { pos, stand, set(v) { if (Math.abs(v - last) < 0.002) return; last = v; apply(v); }, reset() { last = -1; return this; } };
+}
+
+// Which ending this session is in, as far as the sets can tell: nothing passes a set the leaning, so every chapter 8 set
+// reports the scene-6 lines it is cued with (ch8.s6.* is THE LANE HELD, ch8.m6.* / ch8.m7.* is THE SUM). The Assembly
+// reads it for the scene-7 encounter, which comes before any scene-7 line. null until a scene-6 line has been spoken
+// in this page (a game loaded straight into scene 7): then the house sits full until its first line says otherwise.
+let leanSeen = null;
+export function noteLean8(lineId) {
+  if (typeof lineId !== 'string') return;
+  if (/^ch8\.(s6|s7|epi)\./.test(lineId)) leanSeen = 'commons';
+  else if (/^ch8\.(m6|m7|mepi)\./.test(lineId)) leanSeen = 'mint';
+  else if (/^ch8\.(pro|s[1-5])\./.test(lineId)) leanSeen = null;        // an earlier scene: a new run through the chapter
+}
+export const lean8 = () => leanSeen;
+
+/**
+ * Turn a set's light to another hour without rebuilding it: blend the parts of the environment that are the hour
+ * (key, ambient, rim, fog, sky, water colours, the shadow's tint) from `a` to `b` into `env`, all three from makeEnv.
+ * Not scene.js lerpEnv on the whole env: that would also write through env.shadow.center, which a camera mark owns,
+ * and replace env.points and the water's shores, which the set owns.
+ */
+export function blendEnv8(env, a, b, t) {
+  for (const k of ['key', 'ambient', 'rim', 'fog']) if (a[k] && b[k]) lerpEnv(env[k], a[k], b[k], t);
+  const shores = env.water && env.water.shores, level = env.water && env.water.level;
+  if (a.water && b.water && env.water) { lerpEnv(env.water, a.water, b.water, t); env.water.shores = shores; env.water.level = level; }
+  if (a.sky && b.sky) { lerpEnv(env.sky, a.sky, b.sky, t); const d = env.sky.sunDir, l = Math.hypot(d[0], d[1], d[2]) || 1; d[0] /= l; d[1] /= l; d[2] /= l; }
+  const s = env.shadow, sa = a.shadow, sb = b.shadow;
+  for (let i = 0; i < 3; i++) s.tint[i] = sa.tint[i] + (sb.tint[i] - sa.tint[i]) * t;
+  s.lift = sa.lift + (sb.lift - sa.lift) * t; s.saturate = sa.saturate + (sb.saturate - sa.saturate) * t;
+  return env;
+}
 
 const _q = quat.create(), _p = [0, 0, 0], _s = [1, 1, 1], _m = m4.create();
 /** Write instance i of a node's instances: position, Euler degrees, scale, colour. Allocates nothing (for update loops). */

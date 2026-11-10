@@ -13,6 +13,12 @@
 //   setSky(0..1)        1 = the eye white with noon, 0 = grey (the Founders' Lamp has gone out); it eases
 //   setDraped(n)        how many of the twelve seats are still under grey cloth (12 .. 0)
 //   setHouse(0..1)      how many of the twenty-eight delegates are in their seats (m7: 0.5)
+//   task('seat-block', i)  -> { pos, stand: null, set(v) }: the scene-5 encounter. The house in three blocks, stage left
+//                       to stage right; v 0..1 brings block i to its feet. Asking for block 0 seats everyone under a white eye.
+//   task('casting-vote') -> { pos (the treaty), stand: null, set(v) }: the scene-7 encounter, in quarters: the house
+//                       finds its seats (half of it after THE SUM: kit-ch8 lean8()), one arm of the horseshoe stands,
+//                       then the other, then all sit and the treaty on its table is lit.
+// Light names: 'noon' (the default: the core's 'day' builds it) and 'grey'.
 //   cue(lineId)         ch8.s5.c21 the eye goes grey; ch8.s7.c13 on, the drapes come off; ch8.m7.* half the house
 // marks: a, b, c, two, party, opposition, plus focus (the treaty), lectern { pos, face }, bar { pos, face },
 //        gallery { pos, face } (y is the gallery floor), draped: [[x, y, z]...] the twelve seats, Saltmere last
@@ -23,7 +29,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { COATS, townsfolk, railing, brazier, flame, anchorAt } from './kit.js';
-import { C8, materials8, shell8, cams, marks8, pick8, norm8, arcWall, horseshoe, tierArc, seat, drape, domeInside, column8, lectern, greatWindow, bannerDrop, putInst } from './kit-ch8.js';
+import { C8, materials8, shell8, cams, marks8, pick8, norm8, unit8, noteLean8, lean8, arcWall, horseshoe, tierArc, seat, drape, domeInside, column8, lectern, greatWindow, bannerDrop, putInst } from './kit-ch8.js';
 
 const CZ = -3.3, RW = 9.6, WALL_H = 5.4;
 
@@ -100,7 +106,9 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const live = [], dead = [];
   HS.forEach((s, i) => { const c = rgb(CLOTH[(i * 5 + s.row * 3) % CLOTH.length]), d = DRAPED.indexOf(i); putInst(seats.instances, i, s.pos[0], s.pos[1], s.pos[2], 0, s.face, 0, 1, 1, 1, c[0], c[1], c[2]); if (d >= 0) dead[d] = s; else live.push(s); });
   seats.instances.count = 40;
-  const people = live.map((s, i) => ({ s, col: rgb(COATS[(i * 3) % COATS.length]), ph: r() * 6.28, k: 0.82 + r() * 0.16, order: r() }));
+  const people = live.map((s, i) => ({ s, col: rgb(COATS[(i * 3) % COATS.length]), ph: r() * 6.28, k: 0.82 + r() * 0.16, order: r(), block: 0, arm: 0, up: 0 }));
+  // three blocks of the house by where they sit, stage left to stage right, and its two arms
+  { const byX = people.slice().sort((a, b) => a.s.pos[0] - b.s.pos[0]); byX.forEach((p, i) => { p.block = Math.min(2, Math.floor(i * 3 / byX.length)); p.arm = i * 2 < byX.length ? 0 : 1; }); }
   const NG = low ? 8 : 14; for (let i = 0; i < NG; i++) { const a = (-96 + (192 * i) / (NG - 1) + (r() - 0.5) * 6) * DEG, c = rgb(COATS[(i * 5 + 2) % COATS.length]); putInst(gal.instances, i, Math.sin(a) * (RW - 0.95), GAL_Y, CZ - Math.cos(a) * (RW - 0.95), 0, -a / DEG, 0, 0.92, 0.92, 0.92, c[0], c[1], c[2]); }
   gal.instances.count = NG;
 
@@ -128,7 +136,26 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   let sky = L.sky, skyNow = L.sky, draped = 12, houseGoal = 1, houseNow = 1;
   const setSky = (v) => { sky = Math.max(0, Math.min(1, v)); }, setDraped = (n) => { draped = Math.max(0, Math.min(12, Math.round(n))); }, setHouse = (v) => { houseGoal = Math.max(0, Math.min(1, v)); };
+  const rise = [0, 0, 0], arms = [0, 0];
+  const blockAt = (b) => { let x = 0, y = 0, z = 0, n = 0; for (const p of people) if (p.block === b && p.s.row === 0) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } if (!n) for (const p of people) if (p.block === b) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } return [x / n, y / n + 1.3, z / n + 0.3]; };
+  const blockTasks = [0, 1, 2].map((b) => unit8(blockAt(b), null, (v) => { rise[b] = v; }));
+  const treatyGlow = sprites.add({ kind: 'glow', pos: [FOCUS[0], FOCUS[1] + 0.15, FOCUS[2] + 0.2], size: 2.4, color: '#fff2b0', alpha: 0 });
+  let treaty = 0, treatyNow = 0;
+  const ss = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const voteTask = unit8([FOCUS[0], FOCUS[1] + 0.2, FOCUS[2] + 0.2], null, (v) => {
+    const full = lean8() === 'mint' ? 0.5 : 1, sat = ss(0.8, 0.98, v);
+    setHouse(full * (0.4 + 0.6 * ss(0, 0.24, v))); arms[0] = ss(0.3, 0.5, v) * (1 - sat); arms[1] = ss(0.56, 0.75, v) * (1 - sat); treaty = sat;
+  });
+  const fresh = () => { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; treaty = 0; setSky(1); skyNow = 1; setDraped(12); };
+  const task = (type, i = 0) => {
+    const t = String(type);
+    if (t === 'seat-block' && blockTasks[i]) { if (i === 0) { fresh(); setHouse(1); houseNow = 1; for (const u of blockTasks) u.reset(); } return blockTasks[i]; }
+    if (t === 'casting-vote') { fresh(); houseNow = houseGoal = (lean8() === 'mint' ? 0.5 : 1) * 0.4; return voteTask.reset(); }
+    return null;
+  };
   function cue(id) {
+    noteLean8(id);
+    if (/^ch8\.(s5|s7|m7)\./.test(id)) { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; treaty = /^ch8\.(s7|m7)\./.test(id) ? 1 : 0; }
     if (id === 'ch8.s5.c21') { setSky(0); return true; }
     let m = /^ch8\.s7\.c(\d+)/.exec(id); if (m) { setSky(1); setHouse(1); setDraped(Number(m[1]) >= 13 ? 0 : 12); return true; }
     m = /^ch8\.m7\./.exec(id); if (m) { setSky(1); setHouse(0.5); setDraped(12); return true; }
@@ -146,7 +173,15 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     for (let i = 0; i < 12; i++) { const want = i < draped ? 1 : 0; cloth[i] += (want - cloth[i]) * Math.min(1, dt * 3 + e); if (cloth[i] < 0.03) continue; const s = dead[i]; putInst(drapes.instances, nd++, s.pos[0], s.pos[1], s.pos[2], 0, s.face, 0, 1, 0.15 + 0.85 * cloth[i], 1, 0.7, 0.73, 0.92); }
     drapes.instances.count = nd; drapes.visible = nd > 0;
     let np = 0;
-    for (let i = 0; i < people.length; i++) { const p = people[i]; if (p.order > houseNow + 0.001 && houseNow < 0.999) continue; const s = p.s, nod = Math.sin(time * 0.7 + p.ph) * 4; putInst(house.instances, np++, s.pos[0], s.pos[1] + 0.3, s.pos[2], nod * 0.4, s.face + Math.sin(time * 0.4 + p.ph * 2) * 10, 0, p.k, p.k, p.k, p.col[0], p.col[1], p.col[2]); }
+    treatyNow += (treaty - treatyNow) * Math.min(1, dt * 2.5 + e); treatyGlow.alpha = 0.85 * treatyNow * (0.9 + 0.1 * Math.sin(time * 4));
+    for (let i = 0; i < people.length; i++) {
+      const p = people[i], want = Math.max(rise[p.block], arms[p.arm]);
+      p.up += (want - p.up) * Math.min(1, dt * (2.2 + p.k * 2) + e);
+      if (p.order > houseNow + 0.001 && houseNow < 0.999) continue;
+      // on his feet he is taller, turned to the floor of the house, and out of the shade of his seat
+      const s = p.s, u = p.up, nod = Math.sin(time * 0.7 + p.ph) * 4, k = p.k * (1 + 0.1 * u), b = 1 + 0.3 * u;
+      putInst(house.instances, np++, s.pos[0], s.pos[1] + 0.3 + 0.36 * u, s.pos[2], nod * 0.4 * (1 - u), s.face + Math.sin(time * 0.4 + p.ph * 2) * 10 * (1 - u), 0, k, k, k, Math.min(1.3, p.col[0] * b), Math.min(1.3, p.col[1] * b), Math.min(1.3, p.col[2] * b));
+    }
     house.instances.count = np;
     for (let i = 0; i < fires.length; i++) { fires[i].setScale(0.9 + 0.12 * Math.sin(time * 11 + i), 0.9 + 0.2 * Math.sin(time * 7.3 + i * 2) * Math.sin(time * 4.1), 1); fires[i].setRot(0, time * 50 + i * 90, 0); }
   }
@@ -158,7 +193,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
       ...marks8(), focus: FOCUS, lectern: { pos: [LEC[0], 0, LEC[2] + 0.95], face: 180 }, bar: { pos: [4.2, 0, 0.8], face: -70 }, gallery: { pos: [Math.sin(34 * DEG) * (RW - 0.95), GAL_Y, CZ - Math.cos(34 * DEG) * (RW - 0.95)], face: -34 },
       draped: dead.map((s) => [s.pos[0], s.pos[1], s.pos[2]]),
     },
-    extra: { setSky, setDraped, setHouse, cue },
+    extra: { setSky, setDraped, setHouse, cue, task },
   });
 }
 

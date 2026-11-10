@@ -629,6 +629,50 @@ export function windingErrors(mesh) {
 }
 
 /**
+ * Sort a mesh's triangles by which of their two sides a camera can ever see, for a mesh that does not move
+ * and a camera that stays inside a box. Triangles are only reordered (in place); nothing is removed:
+ *
+ *   [ front only | either | back only | neither ]
+ *
+ * The colour pass culls back faces, so it only needs the first two groups; the outline pass draws back faces
+ * only (the inverted hull), so it only needs the middle two (less every triangle whose three outline widths
+ * are zero: those draw no line). The shadow pass sees from the light and draws them all. On a street of
+ * closed props seen from one side that is a quarter to a third of each pass never sent to the GPU, with no
+ * difference in the picture. `world` is the node's world matrix (column-major 4x4), `box` is { min, max } in
+ * world space, `margin` (the sine of an angle, default about 8 degrees) keeps triangles that are close to
+ * edge-on in both passes. Sets mesh.trim = { min, max, view: [first index, count], outline: [first index, count] }
+ * and returns it. The renderer uses it only while the camera is inside the box (see renderer.js).
+ * Not for double-sided materials, skinned or instanced meshes, or a mesh two nodes share.
+ */
+export function trimForView(mesh, world, box, margin = 0.14) {
+  const P = mesh.positions, I = mesh.indices, T = I.length / 3, W = world, ow = mesh.owidth;
+  const cls = new Uint8Array(T), count = [0, 0, 0, 0];                   // 0 front only, 1 either, 2 back only, 3 neither
+  const wx = new Float64Array(3), wy = new Float64Array(3), wz = new Float64Array(3);
+  for (let t = 0; t < T; t++) {
+    for (let k = 0; k < 3; k++) { const v = I[t * 3 + k] * 3, x = P[v], y = P[v + 1], z = P[v + 2]; wx[k] = W[0] * x + W[4] * y + W[8] * z + W[12]; wy[k] = W[1] * x + W[5] * y + W[9] * z + W[13]; wz[k] = W[2] * x + W[6] * y + W[10] * z + W[14]; }
+    const ux = wx[1] - wx[0], uy = wy[1] - wy[0], uz = wz[1] - wz[0], vx = wx[2] - wx[0], vy = wy[2] - wy[0], vz = wz[2] - wz[0];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const len = Math.hypot(nx, ny, nz);
+    if (len < 1e-12) { cls[t] = 3; count[3]++; continue; }             // no area: draws nothing in any pass
+    nx /= len; ny /= len; nz /= len;
+    let front = false, back = false;
+    for (let c = 0; c < 8 && !(front && back); c++) {
+      const ex = (c & 1 ? box.max[0] : box.min[0]) - wx[0], ey = (c & 2 ? box.max[1] : box.min[1]) - wy[0], ez = (c & 4 ? box.max[2] : box.min[2]) - wz[0];
+      const d = nx * ex + ny * ey + nz * ez, m = margin * Math.hypot(ex, ey, ez);
+      if (d > -m) front = true;
+      if (d < m) back = true;
+    }
+    if (back && ow && ow[I[t * 3]] === 0 && ow[I[t * 3 + 1]] === 0 && ow[I[t * 3 + 2]] === 0) back = false;   // no line to draw
+    const c = front ? (back ? 1 : 0) : back ? 2 : 3;
+    cls[t] = c; count[c]++;
+  }
+  const out = new I.constructor(I.length), at = [0, count[0], count[0] + count[1], count[0] + count[1] + count[2]];
+  for (let t = 0; t < T; t++) { const o = at[cls[t]]++ * 3; out[o] = I[t * 3]; out[o + 1] = I[t * 3 + 1]; out[o + 2] = I[t * 3 + 2]; }
+  I.set(out);
+  mesh.trim = { min: [box.min[0], box.min[1], box.min[2]], max: [box.max[0], box.max[1], box.max[2]], view: [0, (count[0] + count[1]) * 3], outline: [count[0] * 3, (count[1] + count[2]) * 3] };
+  return mesh.trim;
+}
+
+/**
  * Split a mesh into pieces by which cell of an XZ grid each triangle's centre falls in, so a big
  * merged set can be culled a piece at a time. Returns [{ key: 'ix,iz', mesh }], triangles and
  * attributes untouched (vertices shared across a cell edge are duplicated).

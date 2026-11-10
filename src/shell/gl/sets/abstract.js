@@ -22,6 +22,7 @@ import {
   node, group, makeEnv, createScene, mergeStatic, makeInstances, createSprites,
 } from '../index.js';
 import { PAL, kitMaterials, pickLight, setRig } from './kit.js';
+import { trimSet } from '../scene.js';
 
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
 
@@ -124,6 +125,6 @@ function buildBlack(engine = GL0, { light } = {}) {
   return shell('black', picked.name, scene.env, scene, { low: false });
 }
 
-export const line = { id: 'line', lights: Object.keys(LINE_LIGHTS), cameras: Object.keys(CAMERAS), build: buildLine };
-export const black = { id: 'black', lights: Object.keys(BLACK_LIGHTS), cameras: Object.keys(CAMERAS), build: buildBlack };
+export const line = { id: 'line', lights: Object.keys(LINE_LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = buildLine(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
+export const black = { id: 'black', lights: Object.keys(BLACK_LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = buildBlack(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
 export default { line, black };

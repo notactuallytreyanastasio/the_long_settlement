@@ -13,6 +13,11 @@
 //   setCap(0..1)        0 = the cap is down on the cup and the flame is out, 1 = hung high and the lamp burning (it eases)
 //   task(type)          any type naming the cap, the lamp or the winch -> { pos, stand, set(v) }: v 0..1 winds the cap up
 //   cue(lineId)         ch8.m6.c20 puts the cap down, ch8.m6.c24 ("She's caught") lets it burn again; ch8.s3.* it hangs
+//   task('watch-round') -> { pos (his lantern), stand, set(v) }: the scene-3 encounter. A watchman with a lantern stands his
+//                       post mid-floor at v 0 and has gone off down the stair by v 1. Asking for it posts him and hangs the cap.
+//   task('pinned-order') -> { pos, stand, set(v) }: the order pinned to the winch; v 0..1 brings it up out of the dark
+//   passLamp()          the encounter's setback: the watchman turns back with his lantern for a moment
+// Light names: 'lit' (the default: the core's 'night' builds it) and 'dark'.
 // marks: a, b, c, two, party, opposition, plus focus (the flame), winch, hopper, door { pos, face }, order (the pinned order)
 
 import { rng, DEG, rgb } from '../math.js';
@@ -20,9 +25,9 @@ import { merge, tint, place, box, cylinder, torus, sphere, setGlow, setOutline }
 import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
-import { anchorAt, flame, townBank, crate, sack } from './kit.js';
+import { anchorAt, flame, townBank, crate, sack, townsfolk } from './kit.js';
 import {
-  C8, materials8, shell8, cams, marks8, pick8, norm8, dirFrom,
+  C8, materials8, shell8, cams, marks8, pick8, norm8, dirFrom, unit8, noteLean8,
   lampPlinth, lampRing, brassCap, chain, winch, hopper, bin, shovel, arcWall, arcStair, glazing, domeInside, shipLantern,
 } from './kit-ch8.js';
 
@@ -140,14 +145,44 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   for (const h of HUNG) glows.push({ sprite: sprites.add({ kind: 'glow', pos: [h[0], h[1] - 0.63, h[2]], size: 1.7, color: '#ffb450', alpha: 0 }), base: 0.7, fixed: true });
   const lensGlow = rings.map(() => sprites.add({ kind: 'sparkle', pos: [0, 0, 0], size: 0.7, color: '#ffffff', alpha: 0 }));
 
+  // ---- scene 3: the watchman on his round, and the order pinned to the winch (the script's words: "pinned to the winch")
+  const WATCH_POST = 0.9, WATCH_GONE = DP[0] + 0.6, WATCH_Z = -1.15;
+  const watch = node('watchman', townsfolk({ seed: 5, hold: 'lantern', coat: C8.navy, detail: 1 }), M.prop, { pos: [WATCH_GONE, 0, WATCH_Z] }); watch.setScale(1.3, 1.3, 1.3); watch.visible = false; scene.root.add(watch);
+  const watchPos = [WATCH_GONE, 0.95, WATCH_Z + 0.15], watchGlow = sprites.add({ kind: 'glow', pos: watchPos, size: 1.9, color: '#ffb450', alpha: 0 });
+  const ORDER_W = [WINCH[0] - 0.62, 1.12, WINCH[2] + 0.62];
+  const orderNode = node('order', setOutline(merge(tint(place(box(0.4, 0.52, 0.02), 0, 0, 0, 0, 0, -3), C8.parchment), setGlow(tint(place(cylinder(0.05, 0.05, 0.02, 8), 0.02, -0.18, 0.012, 90, 0, 0), C8.oxblood), 0.3),
+    ...[0.14, 0.07, 0, -0.07].map((y) => tint(place(box(0.28, 0.018, 0.004), 0, y, 0.012, 0, 0, -3), C8.navy))), 0.8), M.prop, { pos: ORDER_W, rot: [0, -24, 0] });
+  orderNode.castShadow = false; scene.root.add(orderNode);
+  const orderGlow = sprites.add({ kind: 'glow', pos: [ORDER_W[0], ORDER_W[1], ORDER_W[2] + 0.1], size: 1.3, color: '#fff0c0', alpha: 0 });
+  let watchGoal = 1, watchNow = 1, watchBack = 0, orderGoal = 0.35, orderNow = 0.35;
+  const watchTask = unit8(watchPos, [-1.2, 0.75], (v) => { watchGoal = v; });
+  const orderTask = unit8([ORDER_W[0], ORDER_W[1], ORDER_W[2]], [WINCH[0] - 1.15, 0.75], (v) => { orderGoal = 0.35 + 0.65 * v; });
+  const passLamp = () => { if (watchGoal < 0.99 || watchNow < 0.99) watchBack = 1.3; };
   let capGoal = L.cap, capNow = L.cap, burn = L.cap, nextPuff = 0, nextSpark = 0;
   const setCap = (v) => { capGoal = Math.max(0, Math.min(1, v)); };
   const capTask = { pos: [0, CAP_UP, CZ], stand: [WINCH[0] - 0.9, WINCH[2] + 0.9], set: setCap };
-  const task = (type) => (/cap|lamp|winch|flame/.test(String(type)) ? capTask : null);
-  const cue = (id) => { if (id in CUES) { setCap(CUES[id]); return true; } if (/^ch8\.s3\./.test(id)) { setCap(1); return true; } return false; };
+  const task = (type) => {
+    const t = String(type);
+    if (t === 'watch-round') { watchGoal = watchNow = 0; watchBack = 0; orderGoal = orderNow = 0.35; setCap(1); capNow = 1; return watchTask.reset(); }
+    if (t === 'pinned-order') return orderTask.reset();
+    return /cap|lamp|winch|flame/.test(t) ? capTask : null;
+  };
+  const cue = (id) => { noteLean8(id); if (id in CUES) { setCap(CUES[id]); watchGoal = 1; return true; } if (/^ch8\.s3\./.test(id)) { setCap(1); watchGoal = 1; orderGoal = 1; return true; } return false; };
   const P = [0, 0, 0], rnd = rng(31);
   function tick(time, dt, pw, live) {
     capNow += (capGoal - capNow) * Math.min(1, dt * 1.6 + (dt === 0 ? 1 : 0));
+    {
+      // the watchman: at his post, walking off to the stair door, or turned back for a moment by a drain
+      watchBack = Math.max(0, watchBack - dt);
+      const goal = watchBack > 0 ? Math.max(0, watchGoal - 0.45) : watchGoal, before = watchNow;
+      watchNow += Math.max(-dt * 0.5, Math.min(dt * 0.38, goal - watchNow)); if (dt === 0) watchNow = goal;
+      const moving = Math.abs(watchNow - before) > 1e-5, dir = watchNow >= before ? -1 : 1, e = watchNow * watchNow * (3 - 2 * watchNow);
+      const wx = WATCH_POST + (WATCH_GONE - WATCH_POST) * e, seen = watchNow < 0.985;
+      watch.visible = seen; watch.setPos(wx, moving ? Math.abs(Math.sin(time * 9)) * 0.05 : 0, WATCH_Z); watch.setRot(0, moving ? dir * 80 : 24 + Math.sin(time * 0.6) * 14, 0);
+      watchPos[0] = wx + (moving ? dir * 0.25 : 0.3); watchGlow.alpha = seen ? 0.8 * (0.9 + 0.1 * Math.sin(time * 8)) * (watchBack > 0 ? 1.3 : 1) : 0; watchGlow.size = watchBack > 0 ? 2.8 : 1.9;
+      orderNow += (orderGoal - orderNow) * Math.min(1, dt * 3 + (dt === 0 ? 1 : 0));
+      const ot = orderNode.tint; ot[0] = ot[1] = 0.45 + 0.6 * orderNow; ot[2] = 0.6 + 0.4 * orderNow; orderGlow.alpha = Math.max(0, orderNow - 0.4) * 1.1 * (0.9 + 0.1 * Math.sin(time * 5));
+    }
     const want = capNow > 0.12 ? 1 : 0; burn += (want - burn) * Math.min(1, dt * 2.5 + (dt === 0 ? 1 : 0));
     const b = burn * Math.min(1.25, 0.35 + 0.65 * pw), sway = Math.sin(time * 0.7) * 1.2 * capNow;
     cap.setPos(0, CAP_DOWN + (CAP_UP - CAP_DOWN) * capNow, CZ); cap.setRot(sway, 0, Math.sin(time * 0.53 + 1) * 1.4 * capNow);
@@ -173,7 +208,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     id: 'founders-lamp', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, house: 0.6,
     motes: low ? null : { box: [-3.5, 3.5, 0.3, 4.2, -4.5, 1.2], every: 0.35, color: '#dfeaff', size: 0.07, vel: [0.02, 0.08, 0.03], life: 5, alpha: 0.7 },
     marks: { ...marks8(), focus: FOCUS, winch: { pos: [WINCH[0] - 0.95, 0, WINCH[2] + 0.75], face: 120 }, hopper: { pos: [HOP[0] - 0.2, 0, HOP[2] + 1.3], face: 170 }, door: { pos: [DP[0] + 1.3, 0, DP[2] + 0.6], face: 60 }, order: ORDER },
-    extra: { setCap, task, cue },
+    extra: { setCap, task, cue, passLamp },
   });
 }
 

@@ -28,6 +28,7 @@ import {
   crate, barrel, sack, bollard, ropeCoil, boat, lighthouse, headland, cloudBank, gull, rock,
   planks, railing, lifeRing, townBank, floatLight,
 } from './kit.js';
+import { trimSet } from '../scene.js';
 
 const WATER = -1.25, RAIL_Z = -2.6;
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
@@ -252,5 +253,5 @@ function build(engine = GL0, { light, low = false } = {}) {
 
 function tint2(mesh, color) { const c = rgb(color), C = mesh.colors; for (let i = 0; i < C.length; i += 3) { C[i] *= c[0]; C[i + 1] *= c[1]; C[i + 2] *= c[2]; } return mesh; }
 
-export const ferryDawn = { id: 'ferry-dawn', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const ferryDawn = { id: 'ferry-dawn', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
 export default ferryDawn;

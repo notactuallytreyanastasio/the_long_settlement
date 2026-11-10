@@ -34,6 +34,7 @@ export const chapter3 = {
     townsfolk: 'townsman',
   },
 
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch3.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',

@@ -30,6 +30,7 @@ import {
   KB, kitBMaterials, setShell, lightOf, wing, norm3, wall, windowFrame, shaftCards, lightPatch, skyline, ceiling, boards, wainscot, rug, curtain, doorway, doorLeaf,
   desk, chair, pew, stool, bookshelf, fileStack, paperPile, scroll, hangingLamp, deskLamp, sconce, scales, globe, inkstand,
 } from './kit-b.js';
+import { trimSet } from '../scene.js';
 
 const BW = 4.4, BACK = -4.4, FW = 7.0, WING_Z = 2.4, H = 5.7;
 
@@ -224,5 +225,5 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   });
 }
 
-export const bench = { id: 'bench', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const bench = { id: 'bench', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
 export default bench;

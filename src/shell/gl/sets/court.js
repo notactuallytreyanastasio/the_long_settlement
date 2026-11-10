@@ -12,6 +12,7 @@
 // What this set can do for its story:
 //   setMood(0..1)         how the hall stands: 0 dead still (the suspension is read out), 0.25 listening, 1 on its feet shouting
 //   setCrowd(0..1)        how many are in
+//   task('the-stay')      -> { pos, set(v) } ch2.s4's encounter: v = how far the argument has got (listening, dead still, leaning in; the gavel at 1)
 //   cue(lineId)           ch2.s4.c12 / c14 hush; c18 listening again; c24 the stay (the gavel: sparks at the bench); c25 thirty days (cheering); c26 settles
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   tribune { pos, face }: at the Tribune's table (her hand flat on it)   assessor { pos, face }: at the Assessor's table
@@ -171,6 +172,10 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
       default: return false;
     }
   }
+  // ch2.s4's encounter (the argument): the hall listens, goes still, then leans in; the gavel sparks when it is won
+  let stayV = 0;
+  const STAY = { pos: gavel, set(v) { setMood(v < 0.5 ? 0.25 - 0.4 * v : 0.05 + 1.0 * (v - 0.5)); if (v >= 0.999 && stayV < 0.999) sprites.sparkle(gavel, { count: 7, size: 0.4, spread: 0.7, life: 0.8, color: '#fff6c0' }); stayV = v; } };
+  const task = (type) => (type === 'the-stay' ? STAY : null);
   function tick(time, dt, pw, live) {
     moodNow += (mood - moodNow) * Math.min(1, dt * 3);
     FOLK.lively = moodNow; folk.update(time, dt, FOLK);
@@ -189,7 +194,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
       tribune: { pos: [TT[0] - 0.15, 0, TT[2] + 0.62], face: 150 }, assessor: { pos: [AT[0] + 0.15, 0, AT[2] + 0.62], face: -150 },
       bar: { pos: [0, 0, -1.9], face: 180 },
     },
-    extra: { setMood, setCrowd, cue, crowd: folk },
+    extra: { setMood, setCrowd, cue, task, crowd: folk },
   });
 }
 

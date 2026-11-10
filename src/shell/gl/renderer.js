@@ -22,6 +22,9 @@
 //   water         'full' | 'cheap' | 'flat'  (see WATER_Q in shaders.js)
 //   cull          true   skip nodes whose bounding sphere is outside the camera (or, for the shadow pass, the light's box)
 //   outlineMinPx  0      skip the outline of anything whose bounding sphere is smaller than this on screen
+//   trim          true   static meshes sorted by trimStatic() draw only the triangles that can face the camera (colour
+//                 pass) or away from it (outline pass) while the camera is inside the box they were sorted for
+//   batch         true   small blended decals (faces) that share a material are baked into one draw each frame
 //
 // A view may override per call: { shadow: 'off', shadowSize, maxLamps }.
 
@@ -35,9 +38,9 @@ const MAX_CAND = 32;
 
 /** The three tiers. `high` is what the slice was drawn with; `medium` is the phone default to start from. */
 export const QUALITY = {
-  high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0 },
-  medium: { name: 'medium', dprCap: 2, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4 },
-  low: { name: 'low', dprCap: 1.5, aa: 'none', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7 },
+  high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0, trim: true, batch: true },
+  medium: { name: 'medium', dprCap: 2, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4, trim: true, batch: true },
+  low: { name: 'low', dprCap: 1.5, aa: 'none', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7, trim: true, batch: true },
 };
 const WATER_Q = { full: 0, cheap: 1, flat: 2 };
 
@@ -71,7 +74,7 @@ export function createRenderer(canvas, opts = {}) {
   const ctx = createContext(canvas, { ...opts, antialias: false, dprCap: Math.min(hardDpr, Q.dprCap) }); // antialiasing is ours, so it can change
   const gl = ctx.gl;
   const PASSES = ['shadow', 'opaque', 'outline', 'water', 'sky', 'blended', 'beams', 'sprites'];
-  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0, pass: {}, figures: { draws: 0, tris: 0 } };
+  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0, trimMiss: 0, batched: 0, pass: {}, figures: { draws: 0, tris: 0 } };
   for (const k of PASSES) stats.pass[k] = { draws: 0, tris: 0 };
   let passNow = stats.pass.opaque, overdrawOnly = null;
   /** Every draw from here on is counted under this pass; a fill measurement of one pass masks the others' colour (they still write depth). */
@@ -229,6 +232,10 @@ export function createRenderer(canvas, opts = {}) {
           // how big it is on screen, for the outline pass (0 = unknown: always outlined)
           n._px = bounded ? sph[3] / (Math.max(Math.hypot(sph[0] - frame.camera.position[0], sph[1] - frame.camera.position[1], sph[2] - frame.camera.position[2]), 1e-3) * frame.pxUnit) : 0;
           n._r = bounded ? sph[3] : Infinity;
+          // a static mesh sorted for a camera box draws only the triangles that can face the right way, while the camera is in the box
+          const tr = n.static && Q.trim ? n.mesh.trim : null;
+          n._trim = false;
+          if (tr && sameMat(tr.world, n.world)) { const e = frame.camera.position; if (e[0] >= tr.min[0] && e[0] <= tr.max[0] && e[1] >= tr.min[1] && e[1] <= tr.max[1] && e[2] >= tr.min[2] && e[2] <= tr.max[2]) n._trim = true; else stats.trimMiss++; }
           if (mat.kind === 'beam') beams.push(n);
           else if (mat.texMode === 'blend') blended.push(n);
           else opaque.push(n);
@@ -315,7 +322,8 @@ export function createRenderer(canvas, opts = {}) {
     setCull(!m.doubleSided);
   }
 
-  function drawNode(p, n, opacity, shadowPass = false) {
+  /** part: 0 the whole mesh, 1 what the colour pass needs, 2 what the outline pass needs (see mesh.js trimForView). */
+  function drawNode(p, n, opacity, shadowPass = false, part = 0) {
     const u = p.u, inst = n.instances;
     const geo = geoOf(n.mesh, inst ? n : null);
     if (inst && (inst.dirty || !geo.instBuf)) { uploadInstances(gl, geo, inst.data, inst.count); inst.dirty = false; }
@@ -327,21 +335,94 @@ export function createRenderer(canvas, opts = {}) {
     if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
     if (u.uGlow) gl.uniform1f(u.uGlow, n.glow);
     gl.bindVertexArray(geo.vao);
-    const tris = inst ? geo.triangles * inst.count : geo.triangles;
+    let tris = inst ? geo.triangles * inst.count : geo.triangles;
     if (inst) gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count);
-    else gl.drawElements(gl.TRIANGLES, geo.count, geo.indexType, 0);
+    else if (part > 0 && n._trim) {
+      const r = part === 1 ? n.mesh.trim.view : n.mesh.trim.outline;
+      tris = r[1] / 3;
+      if (r[1] > 0) gl.drawElements(gl.TRIANGLES, r[1], geo.indexType, r[0] * (geo.indexType === gl.UNSIGNED_SHORT ? 2 : 4));
+      else return;
+    } else gl.drawElements(gl.TRIANGLES, geo.count, geo.indexType, 0);
     stats.triangles += tris; stats.drawCalls++; passNow.draws++; passNow.tris += tris;
     if (n.bones) { stats.figures.draws++; stats.figures.tris += tris; }
     if (shadowPass) { stats.shadowTriangles += tris; stats.shadowDraws++; }
   }
 
-  function drawToonList(list) {
+  // ---- small blended decals, baked into one stream a material ----
+  // A face is three little meshes (eyes, lids, mouth) on a head: three draws a figure, twenty in a busy band. Each frame
+  // the ones that share a material (and opacity and flash) are written into one buffer in world space and drawn at once,
+  // at the place in the order where the first of them stood. Their order within a material is kept.
+  const DECAL_VERTS = 200, MAX_BATCH = 12, IDENT4 = m4.create(), IDENT3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+  const batches = []; let nBatch = 0, decalCap = 0, decalIdxCap = 0, decalBuf = null, decalF = null, decalB = null, decalIdx = null, decalGpu = null;
+  const sameDecal = (a, b) => a.material === b.material && a.tint[3] === b.tint[3] && a.flash[0] === b.flash[0] && a.flash[1] === b.flash[1] && a.flash[2] === b.flash[2] && a.flash[3] === b.flash[3];
+  function batchDecals(list) {
+    nBatch = 0;
+    for (let i = 0; i < list.length; i++) {
+      const n = list[i], m = n.mesh; n._b = -1;
+      if (n.instances || n.bones || n.material.kind !== 'toon' || m.positions.length > DECAL_VERTS * 3) continue;
+      let k = 0; while (k < nBatch && !sameDecal(batches[k].ref, n)) k++;
+      if (k === nBatch) { if (nBatch === MAX_BATCH) continue; if (!batches[k]) batches[k] = { ref: null, nodes: 0, verts: 0, idx: 0, v0: 0, i0: 0, drawn: false }; const b = batches[k]; b.ref = n; b.nodes = 0; b.verts = 0; b.idx = 0; b.drawn = false; nBatch++; }
+      const b = batches[k]; b.nodes++; b.verts += m.positions.length / 3; b.idx += m.indices.length; n._b = k;
+    }
+    let V = 0, X = 0, any = false;
+    for (let k = 0; k < nBatch; k++) { const b = batches[k]; if (b.nodes < 2) { b.nodes = 0; continue; } b.v0 = V; b.i0 = X; V += b.verts; X += b.idx; b.verts = 0; b.idx = 0; any = true; }
+    if (!any || V > 65535) { for (let i = 0; i < list.length; i++) list[i]._b = -1; nBatch = 0; return; }
+    if (V > decalCap) { decalCap = Math.max(V, 256, decalCap * 2); decalBuf = new ArrayBuffer(decalCap * 48); decalF = new Float32Array(decalBuf); decalB = new Uint8Array(decalBuf); }
+    if (X > decalIdxCap) { decalIdxCap = Math.max(X, 512, decalIdxCap * 2); decalIdx = new Uint16Array(decalIdxCap); }
+    const q = (v) => (v <= 0 ? 0 : v >= 1 ? 255 : (v * 255 + 0.5) | 0);
+    for (let i = 0; i < list.length; i++) {
+      const n = list[i]; if (n._b < 0) continue;
+      const b = batches[n._b]; if (b.nodes < 2) { n._b = -1; continue; }
+      const m = n.mesh, P = m.positions, N = m.normals, U = m.uvs, C = m.colors, G = m.glow, I = m.indices, w = n.world, r = n.uvRect, t = n.tint, nv = P.length / 3, base = b.v0 + b.verts;
+      m4.normalMat3(nm3, w);
+      for (let v = 0; v < nv; v++) {
+        const o = (base + v) * 12, x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2], a = N[v * 3], bb = N[v * 3 + 1], c = N[v * 3 + 2];
+        decalF[o] = w[0] * x + w[4] * y + w[8] * z + w[12]; decalF[o + 1] = w[1] * x + w[5] * y + w[9] * z + w[13]; decalF[o + 2] = w[2] * x + w[6] * y + w[10] * z + w[14];
+        const nx = nm3[0] * a + nm3[3] * bb + nm3[6] * c, ny = nm3[1] * a + nm3[4] * bb + nm3[7] * c, nz = nm3[2] * a + nm3[5] * bb + nm3[8] * c, l = Math.hypot(nx, ny, nz) || 1;
+        decalF[o + 3] = nx / l; decalF[o + 4] = ny / l; decalF[o + 5] = nz / l; decalF[o + 6] = 0; decalF[o + 7] = 0; decalF[o + 8] = 0;
+        decalF[o + 9] = U[v * 2] * r[2] + r[0]; decalF[o + 10] = U[v * 2 + 1] * r[3] + r[1];
+        const cb = (base + v) * 48 + 44;
+        decalB[cb] = q(C[v * 3] * t[0]); decalB[cb + 1] = q(C[v * 3 + 1] * t[1]); decalB[cb + 2] = q(C[v * 3 + 2] * t[2]); decalB[cb + 3] = q((G ? G[v] : 0) * n.glow);
+      }
+      const io = b.i0 + b.idx; for (let k = 0; k < I.length; k++) decalIdx[io + k] = I[k] + base;
+      b.verts += nv; b.idx += I.length;
+    }
+    if (!decalGpu || decalGpu.gen !== ctx.generation) {
+      const vao = gl.createVertexArray(), vbo = gl.createBuffer(), ibo = gl.createBuffer(); gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 48, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 48, 12);
+      gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 48, 24); gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, 48, 36);
+      gl.enableVertexAttribArray(4); gl.vertexAttribPointer(4, 4, gl.UNSIGNED_BYTE, true, 48, 44);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo); gl.bindVertexArray(null);
+      decalGpu = { gen: ctx.generation, vao, vbo, ibo, vcap: 0, icap: 0 };
+    }
+    gl.bindVertexArray(decalGpu.vao); gl.bindBuffer(gl.ARRAY_BUFFER, decalGpu.vbo);
+    if (decalGpu.vcap < decalCap) { gl.bufferData(gl.ARRAY_BUFFER, decalCap * 48, gl.DYNAMIC_DRAW); decalGpu.vcap = decalCap; }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, decalB, 0, V * 48);
+    if (decalGpu.icap < decalIdxCap) { gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, decalIdxCap * 2, gl.DYNAMIC_DRAW); decalGpu.icap = decalIdxCap; }
+    gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, decalIdx, 0, X);
+    gl.bindVertexArray(null);
+  }
+  function drawBatch(p, b) {
+    const u = p.u, n = b.ref;
+    gl.uniformMatrix4fv(u.uModel, false, IDENT4); if (u.uNormalMat) gl.uniformMatrix3fv(u.uNormalMat, false, IDENT3);
+    if (u.uTint) gl.uniform4f(u.uTint, 1, 1, 1, n.tint[3] * n.material.opacity);
+    if (u.uUvRect) gl.uniform4f(u.uUvRect, 0, 0, 1, 1);
+    if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
+    if (u.uGlow) gl.uniform1f(u.uGlow, 1);
+    gl.bindVertexArray(decalGpu.vao);
+    gl.drawElements(gl.TRIANGLES, b.idx, gl.UNSIGNED_SHORT, b.i0 * 2);
+    stats.triangles += b.idx / 3; stats.drawCalls++; passNow.draws++; passNow.tris += b.idx / 3; stats.batched += b.nodes;
+    b.drawn = true;
+  }
+
+  function drawToonList(list, part = 0) {
     let p = null, mat = null;
     for (let i = 0; i < list.length; i++) {
       const n = list[i], want = prog('toon', variantOf(n));
       if (want !== p) { p = want; gl.useProgram(p.program); mat = null; }
       if (n.material !== mat) { mat = n.material; applyToonMaterial(p, mat); }
-      drawNode(p, n, mat.opacity);
+      if (part < 0 && n._b >= 0) { if (!batches[n._b].drawn) drawBatch(p, batches[n._b]); continue; }
+      drawNode(p, n, mat.opacity, false, part);
     }
   }
 
@@ -397,7 +478,7 @@ export function createRenderer(canvas, opts = {}) {
     }
     camera.update(W / H);
     for (let i = 0; i < PASSES.length; i++) { const ps = stats.pass[PASSES[i]]; ps.draws = 0; ps.tris = 0; }
-    stats.figures.draws = 0; stats.figures.tris = 0;
+    stats.figures.draws = 0; stats.figures.tris = 0; stats.trimMiss = 0; stats.batched = 0;
     stats.drawCalls = 0; stats.triangles = 0; stats.nodes = 0; stats.culled = 0; stats.shadowDraws = 0; stats.shadowTriangles = 0; stats.shadowFresh = false; stats.width = W; stats.height = H;
     frame = frame || {}; frame.env = env; frame.camera = camera; frame.time = time; frame.shadowTexel = 0.01; frame.shadowSize = 16;
     frame.pxUnit = (2 * Math.tan(camera.fov * DEG / 2)) / H; // world units per device pixel at depth 1
@@ -485,7 +566,7 @@ export function createRenderer(canvas, opts = {}) {
     setCull(true);
     frameUniforms(prog('toon')); frameUniforms(prog('toon', 'I')); frameUniforms(prog('toon', 'S'));
     enter('opaque');
-    drawToonList(opaque);
+    drawToonList(opaque, 1);
 
     // outlines: the same meshes again, pushed out along their smoothed normals, back faces only
     gl.cullFace(gl.FRONT); setCull(true);
@@ -505,7 +586,7 @@ export function createRenderer(canvas, opts = {}) {
           gl.uniform4f(p.u.uOutline, m.outline.width * env.outline.width * ctx.dpr, frame.pxUnit, ref, 0);
           gl.uniform4f(p.u.uOutlineColor, oc[0], oc[1], oc[2], m.outline.self);
         }
-        drawNode(p, n, 1);
+        drawNode(p, n, 1, false, 2);
       }
     }
     gl.cullFace(gl.BACK);
@@ -547,7 +628,8 @@ export function createRenderer(canvas, opts = {}) {
     if (blended.length) {
       gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-1, -2);
       enter('blended');
-      drawToonList(blended);
+      if (Q.batch) batchDecals(blended); else for (let i = 0; i < blended.length; i++) blended[i]._b = -1;
+      drawToonList(blended, -1);
       gl.disable(gl.POLYGON_OFFSET_FILL);
     }
 

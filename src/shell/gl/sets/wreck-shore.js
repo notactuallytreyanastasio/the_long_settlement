@@ -54,7 +54,8 @@ const LIGHTS = {
   },
 };
 
-const CAMERAS = cams({ wide: { target: [0.0, 1.55, -0.4], dist: 8.2, yaw: 4, pitch: 5 } });
+// low: pulled back from the kit's 6.4 so that four people (ch4.s1.c05 on) are all inside a portrait frame
+const CAMERAS = cams({ wide: { target: [0.0, 1.55, -0.4], dist: 8.2, yaw: 4, pitch: 5 }, low: { dist: 7.8 } });
 
 function build(engine = GL0, { light, low = false } = {}) {
   const picked = pickLight('wreck-shore', LIGHTS, light), L = picked.L; light = picked.name;
@@ -175,10 +176,16 @@ function build(engine = GL0, { light, low = false } = {}) {
     if (type !== 'long-rope') return null;
     if (ropeUnit) return ropeUnit;
     const X0 = 2.55, Z0 = 0.42;
-    const rope = node('long-rope', tint(tube(curve([[0, 0.035, 0], [-0.2, 0.035, 0.07], [-0.45, 0.035, -0.05], [-0.7, 0.035, 0.05], [-1, 0.035, 0]], 14), 0.028, 5, { crease: 180 }), PAL.rope), M.prop, { pos: [X0, 0, Z0] }); rope.castShadow = false;
-    const coil = node('rope-coil', ropeCoil({ r: 0.24 }), M.prop, { pos: [X0 + 0.25, 0, Z0 - 0.1] }); coil.castShadow = false;
+    const rope = node('long-rope', tint(tube(curve([[0, 0.05, 0], [-0.2, 0.05, 0.07], [-0.45, 0.05, -0.05], [-0.7, 0.05, 0.05], [-1, 0.05, 0]], 14), 0.045, 6, { crease: 180 }), '#ffe2a0'), M.prop, { pos: [X0, 0, Z0] }); rope.castShadow = false;
+    const coil = node('rope-coil', ropeCoil({ r: 0.3 }), M.prop, { pos: [X0 + 0.3, 0, Z0 - 0.15] }); coil.castShadow = false;
     scene.root.add(rope, coil);
-    const u = taskUnit([X0 - 1, 0.3, Z0], null, (v) => { const len = 0.9 + 3.3 * v; rope.setScale(len, 1, 1 + 0.5 * (1 - v)); u.pos[0] = X0 - len; setRescue(0.12 + 0.88 * v); setSurf(0.95 - 0.5 * v); });
+    let nextWash = 0;
+    const u = taskUnit([X0 - 1, 0.3, Z0], [X0 - 1.3, 0.8], (v, time) => {
+      const len = 0.9 + 2.4 * v; rope.setScale(len, 1, 1 + 0.5 * (1 - v)); u.pos[0] = X0 - len; u.stand[0] = X0 - len - 0.3;
+      setRescue(0.12 + 0.88 * v); setSurf(0.95 - 0.5 * v);
+      // the sea is still at their heels: it washes up the shingle round the three until they are out of it
+      if (v < 0.9 && time > nextWash) { nextWash = time + 0.55 + 0.9 * v; P[0] = -3.1 + rnd() * 1.9 * (1 - v); P[1] = 0.04; P[2] = 0.3 + rnd() * 1.1; sprites.splash(P, { size: 1.5 - 0.7 * v, life: 1.1, spray: v < 0.4 ? 3 : 1, color: '#fff0f6' }); }
+    });
     return (ropeUnit = u);
   }
   const setback = () => { surfNow = 1.35; P[0] = -2.3; P[1] = 0.05; P[2] = 0.95; sprites.splash(P, { size: 2.6, life: 1.2, spray: 9, color: '#ffffff' }); sprites.puff(P, { count: 6, size: 0.6, rise: 1.8, spread: 1.1, life: 1.1, color: '#f4ecff' }); };

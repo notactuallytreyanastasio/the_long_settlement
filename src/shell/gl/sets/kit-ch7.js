@@ -10,6 +10,7 @@
 //   STD_MARKS()                the marks every set has: a, b, c, two[2], party[3], opposition[3]
 //   STD_CAMERAS(over)          the six camera marks, with per-mark overrides
 //   shell7(spec)               what every set returns: lamps -> env.points, glows, setPower, frame, view, update
+//   coreLight, taskUnit, pulse what the live stage drives: core light names, an encounter's task unit, a setback's timer
 //   sunShafts(dir, list, col)  slants of light along a direction, one mesh for rayMaterial()
 //   rows(...)                  crowd spots in a block
 //   folk7(spec)                a crowd whose coats are dyed in the mesh (kit.js's crowd tints the whole figure, face and all)
@@ -124,6 +125,39 @@ export function shell7({ id, light, low = false, L, scene, cameras, marks, actor
   };
   update(0, 0);
   return set;
+}
+
+// ------------------------------------------------------------------------------------ what the live stage drives
+// (the same three helpers as kit-ch6.js, repeated here so that this kit still leans on kit.js and nothing else)
+
+/** The chapter's content names lights by the core's six; `map` is { coreName: ownName }. List Object.keys(map) in the set's exported `lights` too. */
+export const coreLight = (light, map) => (light != null && Object.hasOwn(map, light) ? map[light] : light);
+
+/**
+ * A unit for set.task(type, index, count): { pos, stand, set(v), arm() }. apply(v, fresh): v 0..1 of the objective;
+ * fresh on the first call after arm(), when the set must be put in that scene's opening state (two scenes share a set).
+ * EDGE-TRIGGERED: the director calls set(v) every frame, all through the cutscene too (v = 1). Applying v on every
+ * call is the obvious version and is wrong: the set's own cue(lineId) would lose to it on the next frame. The set is
+ * only touched when v has moved, so once the objective is complete the script's cues own the place.
+ */
+export function taskUnit({ pos, stand = null, apply }) {
+  let last = -1, armed = true;
+  return {
+    pos, stand,
+    arm() { armed = true; return this; },
+    set(v) {
+      const q = Math.round(v * 500) / 500;
+      if (q === last && !armed) return;
+      const fresh = armed; armed = false; last = q;
+      apply(q, fresh);
+    },
+  };
+}
+
+/** A one-shot timer for a setback: hit() starts it, value(dt) runs it and returns 0..1..0 over `secs` (0 when idle). */
+export function pulse(secs = 1.6) {
+  let t = -1;
+  return { hit() { t = 0; }, value(dt) { if (t < 0) return 0; t += dt; if (t >= secs) { t = -1; return 0; } return Math.sin(t / secs * Math.PI); } };
 }
 
 /**

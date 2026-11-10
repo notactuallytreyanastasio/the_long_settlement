@@ -13,6 +13,9 @@
 //   setSea(0..1)      how far the sea has stood up beyond the mole (it eases);  setLamp(0..1) the Founders' Lamp
 //   setBoats(0..1)    the small boats with their fire pans, strung across the roads inside the mole (commons ending)
 //   setCrowd(0..1)    how much of the city is on the quay
+//   task('quay-lights') -> { pos, stand: null, set(v) }: the scene-6 encounter (the same in both endings). v 0..1 brings
+//                     the city out of its doors onto the quay with whatever lights it owns, while the sea goes on
+//                     standing up. Asking for it starts from the cap just down: a few people, no boats.
 //   cue(lineId)       ch8.s5.c22 lamp out, sea 0.15; c25 sea 0.6; ch8.s6.c01 / ch8.m6.c01 sea 0.85; ch8.s6.c20 boats out, sea 0.5; ch8.m6.c14 sea 1, the quay nearly empty
 // marks: a, b, c, two, party, opposition, plus focus (the dark lamp), chalk { pos, face }, steps { pos, face } (on the Mint steps)
 
@@ -21,7 +24,7 @@ import { merge, tint, place, box } from '../mesh.js';
 import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { PAL, anchorAt, crate, barrel, sack, bollard, ropeCoil, lampPost, steps, brazier, flame, crowd, townsfolk } from './kit.js';
-import { C8, materials8, shell8, cams, marks8, pick8, norm8, dirFrom, harbourBase, seaWall, chalkWall, column8, skiff, putInst } from './kit-ch8.js';
+import { C8, materials8, shell8, cams, marks8, pick8, norm8, dirFrom, unit8, noteLean8, harbourBase, seaWall, chalkWall, column8, skiff, putInst } from './kit-ch8.js';
 
 const QUAY_Z = -5.6, WATER = -0.5;
 
@@ -109,7 +112,9 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   let sea = 0.85, seaNow = 0.85, lampGoal = 0, lampNow = 0, boatGoal = 0, boatNow = 0;
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
   const setSea = (v) => { sea = clamp01(v); }, setLamp = (v) => { lampGoal = clamp01(v); }, setBoats = (v) => { boatGoal = clamp01(v); }, setCrowd = (v) => folk.setAmount(v);
-  function cue(id) { const c = CUES[id]; if (!c) return false; if (c.sea != null) setSea(c.sea); if (c.lamp != null) setLamp(c.lamp); if (c.boats != null) setBoats(c.boats); if (c.crowd != null) setCrowd(c.crowd); return true; }
+  const quayTask = unit8([0.4, 1.3, -2.9], null, (v) => { setCrowd(0.2 + 0.8 * v); setSea(0.5 + 0.35 * v); });
+  const task = (type) => { if (String(type) !== 'quay-lights') return null; setLamp(0); lampNow = 0; setBoats(0); boatNow = 0; setCrowd(0.2); sea = seaNow = 0.5; return quayTask.reset(); };
+  function cue(id) { noteLean8(id); const c = CUES[id]; if (!c) return false; if (c.sea != null) setSea(c.sea); if (c.lamp != null) setLamp(c.lamp); if (c.boats != null) setBoats(c.boats); if (c.crowd != null) setCrowd(c.crowd); return true; }
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(17);
   let nextMist = 0, nextRing = 0.5, nextGust = 1;
   function tick(time, dt, pw, live) {
@@ -142,7 +147,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     id: 'mole-dark', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick,
     motes: low ? null : { box: [3.4, 4.1, 1.0, 1.4, -2.5, -1.9], every: 0.25, color: '#ffb050', size: 0.08, vel: [0.15, 0.7, 0.05], life: 2.4, alpha: 0.9 },
     marks: { ...marks8(), focus: A.lamp, chalk: { pos: [CHALK[0] + 0.5, 0, CHALK[2] + 0.9], face: 200 }, steps: { pos: [STEPS[0] + 0.4, 0.66, STEPS[2] - 0.2], face: -40 } },
-    extra: { setSea, setLamp, setBoats, setCrowd, cue },
+    extra: { setSea, setLamp, setBoats, setCrowd, cue, task },
   });
 }
 

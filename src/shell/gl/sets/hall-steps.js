@@ -11,6 +11,9 @@
 // from), cameras look toward -Z at the hall. The strip x -4.4..4.4, z -0.1..1.6 is the fourth step, y = 0. Added here:
 //   setSeal(on)         the Audit's seal across the doors ('afternoon' is built with it, 'noon' without)
 //   setBoard(state)     'odds' (his old odds, as left) | 'table' (the forty-light table, ringed)
+//   task('fourth-step') ch7.s3: setCrowd 0.2 -> 1 with the objective.   task('chalk-table') ch7.s7: odds, wiped ('wiped' is a
+//                       third board state), then the table growing up the board; a glow on it when it is whole
+//   setback()           the watchers press and a third give back (also passLamp). Core 'dusk' builds 'afternoon', 'day' builds 'noon'.
 //   setCrowd(0..1)      the dock come up to watch, at both ends of the step and on the flight below
 //   cue(lineId)         the above, keyed to the script (ch7.s3 / ch7.s7)
 //   marks.below         one step below the fourth, where the Assessor stops (y = -0.2);  marks.doors, marks.board
@@ -25,7 +28,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '.
 import { createSprites } from '../sprites.js';
 import { rayMaterial } from '../fx.js';
 import { PAL, kitMaterials, anchorAt, pickLight, cloudBank, gull, tree, bush } from './kit.js';
-import { C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, rows, folk7, dirFrom, norm7, stairs7, tiles, mintHall, auditSeal, lampStandard, banner7, oddsBoard } from './kit-ch7.js';
+import { C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, rows, folk7, dirFrom, norm7, stairs7, tiles, mintHall, auditSeal, lampStandard, banner7, oddsBoard, coreLight, taskUnit, pulse } from './kit-ch7.js';
 
 const HX = 0.85, Z_UP = -1.95, Z_DN = 2.45, RISE = 0.2, RUN = 0.42, N_UP = 6, FLOOR = RISE * N_UP, PORT_Z = Z_UP - RUN * N_UP;
 const SMOCKS = ['#4fc0d4', '#ff9470'];
@@ -58,6 +61,8 @@ const LIGHTS = {
   },
 };
 
+const CORE = { dusk: 'afternoon', day: 'noon' };      // the core's light names this set answers: ch7.s3 is 'dusk', ch7.s7 is 'day'
+
 const CAMERAS = STD_CAMERAS({
   wide: { target: [0.25, 1.95, -0.6], dist: 8.6, yaw: 4, pitch: 3.5, fov: 46, shadowCenter: [0.4, 0, -2.4], shadowRadius: 9 },
   low: { target: [0.4, 2.5, -0.4], dist: 6.4, yaw: -7, pitch: -15, fov: 58, shadowCenter: [0.4, 0, -2.4], shadowRadius: 9 },
@@ -66,7 +71,7 @@ const CAMERAS = STD_CAMERAS({
 });
 
 function build(engine = null, { light, low = false } = {}) {
-  const picked = pickLight('hall-steps', LIGHTS, light), L = picked.L; light = picked.name;
+  const picked = pickLight('hall-steps', LIGHTS, coreLight(light, CORE)), L = picked.L; light = picked.name;
   const M = kitMaterials(), r = rng(3303), lit = L.power > 0;
   const HALL = [HX, FLOOR, PORT_Z];
 
@@ -154,22 +159,46 @@ function build(engine = null, { light, low = false } = {}) {
   const gulls = node('gulls', gull({}), M.speck); gulls.instances = makeInstances(4); gulls.instances.count = 4; scene.root.add(gulls);
   const actors = group('actors'); scene.root.add(actors);
 
+  const boardGlow = sprites.add({ kind: 'glow', pos: [BOARD[0], BOARD[1] + 0.7, BOARD[2] + 0.3], size: 2.6, color: '#ffe27a', alpha: 0 });
+
   // ---- per-frame
   const P = [0, 0, 0], V = [0, 0, 0], S3 = [1, 1, 1], Q = quat.create(), Mx = m4.create(), rnd = rng(31);
   let nextMote = 0, seal = L.seal, sealNow = seal ? 1 : 0;
   const setSeal = (on) => { seal = !!on; };
-  const setBoard = (state) => { if (state !== 'odds' && state !== 'table') throw new Error(`hall-steps: no board state "${state}" (have odds, table)`); oddsNode.visible = state === 'odds'; tableNode.visible = state === 'table'; };
-  const setCrowd = (a) => folk.setAmount(a);
+  const setBoard = (state) => { if (state !== 'odds' && state !== 'table' && state !== 'wiped') throw new Error(`hall-steps: no board state "${state}" (have odds, wiped, table)`); oddsNode.visible = state === 'odds'; tableNode.visible = state === 'table'; tableNode.scale[1] = 1; };
+  let crowdA = 0.5, pressing = false, climbed = false, chalked = false, ringed = 0;
+  const setCrowd = (a) => { crowdA = a; folk.setAmount(a); };
+  // the live stage's two tasks
+  const press = pulse(1.8);
+  const stepUnit = taskUnit({
+    pos: [SEAL[0], SEAL[1], SEAL[2]], stand: null,
+    apply(v, fresh) { if (fresh) { setSeal(true); setBoard('odds'); climbed = true; chalked = false; ringed = 0; } setCrowd(0.2 + 0.8 * v); },
+  });
+  const chalkUnit = taskUnit({
+    pos: [BOARD[0], BOARD[1] + 0.7, BOARD[2] + 0.2], stand: null,
+    apply(v, fresh) {
+      if (fresh) { setSeal(false); setCrowd(0.7); chalked = true; climbed = false; }
+      if (v < 0.24) setBoard('odds'); else if (v < 0.49) setBoard('wiped'); else { setBoard('table'); tableNode.scale[1] = Math.max(0.05, Math.min(1, (v - 0.4) / 0.6)); }
+      ringed = v >= 0.999 ? 1 : 0; setCrowd(0.7 + 0.3 * v);
+    },
+  });
+  /** 'fourth-step' (ch7.s3): the dock comes up to watch, both ends of the step and the flight below. 'chalk-table' (ch7.s7): his old odds, wiped, then the forty-light table chalked up from the foot of the board. */
+  const task = (type) => (type === 'fourth-step' ? stepUnit.arm() : type === 'chalk-table' ? chalkUnit.arm() : null);
+  /** The drain: the watchers press up the flight and a third of them are waved back down. */
+  function setback() { press.hit(); }
   function cue(lineId) {
     const m = /^ch7\.(s\d)\.?[a-z]?(\d+)?/.exec(lineId || ''); if (!m) return false;
     const n = Number(m[2] || 0);
-    if (m[1] === 's3') { setSeal(true); setBoard('odds'); setCrowd(n >= 16 ? 1 : 0.5); return true; }
-    if (m[1] === 's7') { setSeal(false); setBoard(n >= 3 ? 'table' : 'odds'); setCrowd(1); return true; }
+    if (m[1] === 's3') { setSeal(true); setBoard('odds'); ringed = 0; if (climbed) { if (n >= 16) climbed = false; } else setCrowd(n >= 16 ? 1 : 0.5); return true; }   // after the encounter the dock is already up: c01 does not send it down
+    if (m[1] === 's7') { setSeal(false); if (chalked) { if (n >= 3) chalked = false; } else setBoard(n >= 3 ? 'table' : 'odds'); setCrowd(1); return true; }       // ...and the table is already chalked: c01 does not put the odds back
     return false;
   }
 
   function tick(time, dt, pw, live, power) {
-    folk.update(time, dt, { lit: 0, lively: 0.22 });
+    const pr = press.value(dt);
+    if (pr > 0 || pressing) { pressing = pr > 0; folk.setAmount(crowdA * (1 - 0.35 * pr)); }
+    boardGlow.alpha = ringed * (0.4 + 0.15 * Math.sin(time * 3));
+    folk.update(time, dt, { lit: 0, lively: 0.22 + 0.6 * pr });
     for (let i = 0; i < BAN.length; i++) { const b = BAN[i]; quat.fromEuler(Q, Math.sin(time * 0.9 + b.ph) * 2.2 * DEG, 0, Math.sin(time * 0.7 + b.ph * 2) * 1.6 * DEG); m4.fromTRS(Mx, b.pos, Q, S3); banNode.instances.data.set(Mx, i * 20); }
     banNode.instances.dirty = true;
     for (let i = 0; i < 4; i++) {
@@ -198,9 +227,9 @@ function build(engine = null, { light, low = false } = {}) {
       below: { pos: [0.5, -RISE, Z_DN + RUN * 0.5], face: 180 }, doors: { pos: [HX, FLOOR, PORT_Z - 2.3], face: 0 }, board: { pos: [BOARD[0] + 0.4, FLOOR, BOARD[2] + 0.9], face: -150 },
       back: [[1.3, 0.1], [2.1, -0.05], [2.9, 0.15], [-1.3, 0.1], [-2.1, -0.05], [-2.9, 0.15]],
     },
-    extra: { setSeal, setBoard, setCrowd, cue },
+    extra: { setSeal, setBoard, setCrowd, cue, task, setback, passLamp: setback },
   });
 }
 
-export const hallSteps = { id: 'hall-steps', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build };
+export const hallSteps = { id: 'hall-steps', lights: [...Object.keys(LIGHTS), ...Object.keys(CORE)], cameras: Object.keys(CAMERAS), build };
 export default hallSteps;

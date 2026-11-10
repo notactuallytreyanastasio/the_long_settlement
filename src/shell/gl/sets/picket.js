@@ -15,6 +15,7 @@
 //   setCrowd(0..1)        how many are on the line;  setMood(0..1): 0.2 a tired vigil, 1 shoving
 //   cue(lineId)           ch2.s1.c03 the line closes up; c15 it eases; c17 the side door opens; c22 it stands open
 //   task('side-door')     -> { pos, stand, set(v) } for an encounter that is about getting through
+//   task('picket-line')   -> { pos, set(v) } ch2.s1's encounter: v = how far up the road the party has come; the line fills and closes up
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   gate { pos, face }: before the chained leaves   door { pos, face }: at the side door   notice: world point of the paper
 //   focus: the left fire basket
@@ -198,7 +199,9 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     }
   }
   const TASK = { pos: [DOOR[0], 1.0, DOOR[2] + 0.2], stand: [DOOR[0] - 0.5, DOOR[2] + 1.2], set: openDoor };
-  const task = (type) => (type === 'side-door' ? TASK : null);
+  // ch2.s1's encounter (the walk up the road): the line fills and closes up as the party comes on; the door stays shut
+  const LINE = { pos: [NOTICE[0], NOTICE[1], NOTICE[2] + 0.3], set(v) { openDoor(0); setCrowd(0.25 + 0.75 * v); setMood(0.18 + 0.42 * v); } };
+  const task = (type) => (type === 'side-door' ? TASK : type === 'picket-line' ? LINE : null);
   function tick(time, dt, pw, live) {
     doorNow += (door - doorNow) * Math.min(1, dt * 4);
     leaf.setRot(0, 78 * doorNow, 0); hearth.visible = spill.visible = doorNow > 0.02; spill.setScale(0.3 + 0.7 * doorNow, 1, 1);

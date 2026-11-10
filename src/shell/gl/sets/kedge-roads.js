@@ -15,6 +15,12 @@
 //   'night'  the same, later: riding lights, the grey lamp, a warm quay lamp
 // Added here:
 //   setBoat(0..1)   the Compact's open boat: 0 not yet put out (hidden), then it rows out down the lane to the mouth
+//   setGrey(on)     only a 'dawn' build: turn it to 'grey' and back (the light blended over two seconds, the sea wall
+//                   rising, the cutter across the mouth, the far lamp's halo going violet). The far lamp-house's
+//                   modelled flame stays the white one under its halo: it is baked into the far mesh.
+//   task('gangway-walk')  ch6.s1: the quay crane lowers its slung cask to the stones as the objective goes
+//   setback()       the slung cask swings wide (also passLamp)
+//   cue also: ch6.pro.* and ch6.s1.* are dawn; ch6.s7.c16 on and ch6.epi.* are grey
 //   cue(lineId)     ch6.s7.c16 puts the boat out (it eases to the cutter over about a minute); ch6.s7.c26 sends it through
 //   marks.gangway, marks.focus (the lamp-house flame), marks.mouth (where the cutter lies)
 // low: true keeps a third of the far hulls and five of the nine clouds, drops the cranes' bracing, the gulls and the far clouds' outline.
@@ -109,7 +115,7 @@ function build(engine = null, { light, low = false } = {}) {
   set.add(node('moor2', tint(tube(curve([[3.6, 0.36, QUAY_Z + 0.6], [4.6, 0.0, QUAY_Z - 0.4], [6.4, 0.1, QUAY_Z - 2], [8.2, 1.4, QUAY_Z - 3.6]], 10), 0.035, 5, { crease: 180 }), PAL.rope), M.prop));
   // the quay's own crane, right of the stage: its jib swings in over the way down to the edge with a cask on the hook
   const QC = [5.0, 0, -3.5], QC_YAW = 172;
-  const quayCrane = gantry({ h: 7.4, reach: 6.0, seed: 9, color: K6.teal, roof: K6.coral, cab: K6.cream, detail: 1 });
+  const quayCrane = gantry({ h: 7.4, reach: 6.0, seed: 9, color: K6.teal, roof: K6.coral, cab: K6.cream, detail: 1, load: false });   // its load is a node of its own: see `slung`
   set.add(node('quay-crane', quayCrane, M.prop, { pos: QC, rot: [0, QC_YAW, 0] }));
   // signal flags from the lamp post out to the collier's mast: colour against the sky
   if (!low) set.add(node('flags', bunting([POST[0] - 0.2, 3.1, POST[2]], [-9, 6.6, -11], { sag: 0.9, count: 13, size: 0.3, seed: 4, colors: [K6.coral, K6.cream, K6.teal, K6.yellow] }), M.prop, { castShadow: false }));
@@ -237,6 +243,40 @@ function build(engine = null, { light, low = false } = {}) {
 
   const actors = group('actors'); scene.root.add(actors);
 
+  // ---- the cask on the quay crane's hook: slung at the jib until the live stage lowers it (task 'gangway-walk')
+  const HOOK = anchorAt(quayCrane, 'hook', QC, QC_YAW), CASK_H = 0.74;
+  const slung = node('slung-cask', cask({ r: 0.33, h: CASK_H }), M.prop, { pos: [HOOK[0], HOOK[1] - CASK_H, HOOK[2]] });
+  const fall = node('fall', tint(place(box(0.035, 1, 0.035), 0, 0.5, 0), PAL.rope), M.prop, { pos: [HOOK[0], HOOK[1], HOOK[2]] }); fall.castShadow = false; fall.visible = false;
+  scene.root.add(slung, fall);
+  let lowered = 0, loweredNow = 0;
+  const swing = pulse(2.4);
+  const walkUnit = taskUnit({
+    pos: [HOOK[0], 1.2, HOOK[2]], stand: null,
+    apply(v, fresh) { if (fresh) { setGrey(0, true); setBoat(0); loweredNow = v; } lowered = v; },
+  });
+  /** 'gangway-walk' (ch6.s1): work stops on the quay as they come down; the crane lowers its cask to the stones with the objective. */
+  const task = (type) => (type === 'gangway-walk' ? walkUnit.arm() : null);
+  /** The drain: the slung cask swings wide across the way down. */
+  function setback() { swing.hit(); }
+
+  // ---- 'dawn' turned to 'grey' by the script: the light, the sea stood up beyond the half-mile, the cutter across the mouth
+  let grey = L.wall ? 1 : 0, greyNow = grey, greyDrawn = -1;
+  const lampGlow = glows[1].sprite, GLOW_W = rgb(LIGHTS.dawn.lampGlow), GLOW_Q = rgb(K6.quarter);
+  function setGrey(v, snap = false) { if (!envDawn) return; grey = v ? 1 : 0; if (snap) greyNow = grey; }
+  function drawGrey() {
+    const g = greyNow, e = g * g * (3 - 2 * g);
+    if (envDawn) {
+      const points = env.points, shores = env.water.shores, level = env.water.level;
+      lerpEnv(env, envDawn, envGrey, e);
+      env.points = points; env.water.shores = shores; env.water.level = level;
+      for (let k = 0; k < 3; k++) lampGlow.color[k] = GLOW_W[k] + (GLOW_Q[k] - GLOW_W[k]) * e;
+      lampGlow.size[0] = lampGlow.size[1] = 26 - 8 * e; lampStar.size[0] = lampStar.size[1] = 12 - 7 * e;
+    }
+    for (const n of wallNodes) { n.visible = e > 0.02; n.scale[1] = Math.max(0.02, e); }
+    cutter.visible = e > 0.5; cutterGlow.alpha = e > 0.5 ? 0.5 : 0;
+    greyDrawn = g;
+  }
+
   // ---- per frame
   let boatGoal = 0, boatNow = 0, boatRate = 1 / 55, stroke = 0;
   const P = [0, 0, 0], V = [0, 0, 0], S3 = [1, 1, 1], Q = quat.create(), Mx = m4.create(), rnd = rng(77), rowlocks = boatMesh.anchors.rowlocks;
@@ -244,13 +284,23 @@ function build(engine = null, { light, low = false } = {}) {
   const BOAT_Z0 = QUAY_Z - 4.5, BOAT_HOLD = MOLE_Z + 15, BOAT_OUT = MOLE_Z - 14;
   function setBoat(v) { boatGoal = Math.max(0, Math.min(1, v)); if (boatGoal === 0) boatNow = 0; }
   function cue(lineId) {
-    if (typeof lineId !== 'string' || !lineId.startsWith('ch6.s7.c')) return false;
+    if (typeof lineId !== 'string') return false;
+    if (lineId.startsWith('ch6.pro.') || lineId.startsWith('ch6.s1.')) { setGrey(0, lineId === 'ch6.pro.04'); if (lineId === 'ch6.pro.04') setBoat(0); return true; }
+    if (lineId.startsWith('ch6.epi.')) { setGrey(1, lineId === 'ch6.epi.01'); if (lineId === 'ch6.epi.01') { setBoat(0); lowered = loweredNow = 1; } return true; }   // Kedge burning grey astern; the boat is long gone
+    if (!lineId.startsWith('ch6.s7.c')) return false;
     const n = Number(lineId.slice(8));
+    if (n >= 16) { setGrey(1, n === 16); lowered = loweredNow = 1; }      // first light after the cutting (the set is reached through ink at c16)
     if (n >= 26) { setBoat(1); return true; }
     if (n >= 16) { setBoat(0.82); return true; }       // rows out and lies under the cutter's rail until she is let through
     return false;
   }
   function tick(time, dt, pw, live) {
+    greyNow += Math.max(-dt * 0.5, Math.min(dt * 0.5, grey - greyNow));
+    if (greyNow !== greyDrawn) drawGrey();
+    loweredNow += (lowered - loweredNow) * Math.min(1, dt * 2.2);
+    const sw = swing.value(dt), drop = (HOOK[1] - CASK_H) * loweredNow, ang = (Math.sin(time * 1.1) * 2.5 * (1 - loweredNow) + Math.sin(time * 5.2) * 16 * sw);
+    slung.position[0] = HOOK[0] + Math.sin(ang * DEG) * (0.6 + drop); slung.position[1] = Math.max(0, HOOK[1] - CASK_H - drop); slung.setRot(0, 20, -ang * 0.6);
+    fall.visible = drop > 0.05; fall.position[0] = slung.position[0]; fall.position[1] = slung.position[1] + CASK_H; fall.scale[1] = Math.max(0.01, HOOK[1] - fall.position[1]); fall.setRot(0, 0, ang * 0.9);
     for (let i = 0; i < nearHulls.length; i++) { const h = nearHulls[i]; h.n.position[1] = WATER + Math.sin(time * 0.9 + h.ph) * 0.06; h.n.setRot(Math.sin(time * 0.8 + h.ph) * 1.6, h.yaw + Math.sin(time * 0.17 + h.ph) * 5, Math.sin(time * 1.1 + h.ph * 2) * 2.2); }
     cutter.position[1] = WATER + Math.sin(time * 0.8 + 1) * 0.05; cutter.setRot(Math.sin(time * 0.7) * 1.2, 98, Math.sin(time * 1.0) * 1.6);
     lampStar.alpha = 0.75 + 0.2 * Math.sin(time * 2.3); lampStar.rot = time * 0.1;
@@ -298,7 +348,7 @@ function build(engine = null, { light, low = false } = {}) {
   return shell({
     id: 'kedge-roads', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue,
     marks: { ...STD_MARKS(), gangway: { pos: [GANG[0] + 0.5, 0, GANG[2] + 0.9], face: 30 }, focus: LAMP, mouth: MOUTH_POS },
-    extra: { setBoat },
+    extra: { setBoat, setGrey, task, setback, passLamp: setback },
   });
 }
 

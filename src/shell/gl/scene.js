@@ -2,7 +2,7 @@
 // build a scene anywhere (tests included) and hand it to renderer.js to draw.
 
 import { v3, m4, quat, rgb, DEG } from './math.js';
-import { clone, transform, merge, bounds, splitByCell } from './mesh.js';
+import { clone, transform, merge, bounds, splitByCell, trimForView } from './mesh.js';
 
 // ------------------------------------------------------------------------------------ materials
 
@@ -202,6 +202,58 @@ export function mergeStatic(root, name = root.name + '-static', opts = {}) {
     for (const p of pieces) { const c = new Node(p.key ? label + '@' + p.key : label, { mesh: p.mesh, material: mat }); c.castShadow = cast; c.static = true; out.add(c); }
   }
   return out;
+}
+
+/**
+ * The box a set's cameras stay in: around every camera mark ({ target, dist, yaw, pitch }, with the drift
+ * set.frame adds), the director's own close shots over the stage strip (a head-high slab in front of it),
+ * and `pad` world units of air. For trimStatic().
+ */
+export function viewBox(cameras, { pad = 0.8, strip = { min: [-5, 0.6, 1.2], max: [5, 2.6, 6] } } = {}) {
+  const min = strip ? strip.min.slice() : [Infinity, Infinity, Infinity], max = strip ? strip.max.slice() : [-Infinity, -Infinity, -Infinity];
+  for (const c of Object.values(cameras || {})) {
+    if (!c || !c.target || !(c.dist > 0)) continue;
+    for (const dy of [-3, 3]) for (const dp of [-1.5, 1.5]) for (const dd of [0.93, 1.02]) {     // the drift, and the push-in of a punch
+      const y = ((c.yaw || 0) + dy) * DEG, p = ((c.pitch || 0) + dp) * DEG, d = c.dist * dd;
+      const e = [c.target[0] + Math.sin(y) * Math.cos(p) * d, c.target[1] + Math.sin(p) * d, c.target[2] + Math.cos(y) * Math.cos(p) * d];
+      for (let k = 0; k < 3; k++) { if (e[k] < min[k]) min[k] = e[k]; if (e[k] > max[k]) max[k] = e[k]; }
+    }
+  }
+  for (let k = 0; k < 3; k++) { min[k] -= pad; max[k] += pad; }
+  return { min, max };
+}
+
+/**
+ * For a set whose cameras stay inside `box` (see viewBox): sort the triangles of every static mesh under
+ * `root` so the colour pass can skip those that always face away and the outline pass those that always
+ * face the camera (mesh.js trimForView). Nothing is removed and the picture does not change; outside the
+ * box the renderer draws the whole mesh again. Call once, after the set is assembled and before it is first
+ * drawn. Returns { meshes, triangles, view, outline }: how many triangles each pass still draws.
+ */
+export function trimStatic(root, box, { margin = 0.14 } = {}) {
+  root.updateWorld(root.parent ? root.parent.world : null);
+  const sum = { meshes: 0, triangles: 0, view: 0, outline: 0 }, seen = new Set();
+  const walk = (n) => {
+    const m = n.mesh, mat = n.material;
+    if (m && mat && n.static && !n.instances && !n.bones && mat.kind === 'toon' && mat.texMode !== 'blend' && !mat.doubleSided && m.indices.length >= 300) {
+      if (seen.has(m) || m.trim) m.trim = null;                 // shared by two nodes: one order cannot serve two places
+      else { const t = trimForView(m, n.world, box, margin); t.world = new Float32Array(n.world); sum.meshes++; sum.triangles += m.indices.length / 3; sum.view += t.view[1] / 3; sum.outline += mat.outline && mat.outline.width > 0 ? t.outline[1] / 3 : 0; }
+      seen.add(m);
+    }
+    for (const c of n.children) walk(c);
+  };
+  walk(root);
+  return sum;
+}
+
+/**
+ * trimStatic for a built set ({ scene, cameras }), once: its camera marks say where the cameras stay.
+ * A static node that is later moved (or sits under something that moves) is noticed by the renderer and drawn whole.
+ */
+export function trimSet(set, opts = {}) {
+  if (!set || !set.scene || set.trimmed) return set ? set.trimmed : null;
+  set.trimmed = trimStatic(set.scene.root, viewBox(set.cameras, opts), opts);
+  return set.trimmed;
 }
 
 /**

@@ -33,6 +33,7 @@ export const chapter2 = {
     townsfolk: 'docker',
   },
 
+
   prologue: [
     { id: 'ch2.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
       text: 'Entered at Saltmere, first city of the Circuit. A town that dug the money out of the ground and could not afford its own light.' },
@@ -167,8 +168,8 @@ export const chapter2 = {
         beats: [
           { at: 0, cue: 'table-and-queue', name: 'A table, and a queue', show: 'The hall is full and the stove going. Three notices with red seals lie propped on the trestle; Ilse stands over them, Ren beside her with his sleeves up.' },
           { at: 1, cue: 'show-me-the-order', name: 'Show me the order', show: 'The first notice has a reply pinned over its seal, four words long. The queue has moved up one.' },
-          { at: 2, cue: 'second-reply', name: "A clerk's afternoon", show: 'Two replies written. Some of the hall has eaten and gone.' },
-          { at: 3, cue: 'thirtieth', name: 'Make them owe a reply', show: 'All three notices are answered. The queue is short, the hall thinner, the big lamp steady.' },
+          { at: 2, cue: 'second-reply', name: "A clerk's afternoon", show: 'Two replies written. The second in the queue has stepped up to the trestle.' },
+          { at: 3, cue: 'thirtieth', name: 'Make them owe a reply', show: 'All three notices are answered, a lit reply on each. The hall is still full behind them, eating.' },
         ],
       },
       briefing: [
@@ -238,8 +239,8 @@ export const chapter2 = {
         setback: { cue: 'lamp-gutters', show: 'The hook lamp gutters in a breath of bad air and the gallery goes blue; they stop where they are until it steadies.' },
         beats: [
           { at: 0, cue: 'cage-lands', name: 'The cage lands', show: 'The cage stands at the foot of the shaft, stage left. Hesper leads them out under the first cap beam; the gallery beyond is dark.' },
-          { at: 8, cue: 'gallery-nine', name: 'Gallery nine', show: 'The cage has been hauled away up the shaft. They are walking the tub rails; the lamp reaches further down the gallery.' },
-          { at: 16, cue: 'only-rock', name: 'It is only rock', show: 'The walls are bare. A few last blue shards catch the lamp in the cracks as they pass.' },
+          { at: 8, cue: 'gallery-nine', name: 'Gallery nine', show: 'The cage waits at the foot of the shaft behind them. They are walking the tub rails under the timber sets; the first blue shards show in the cracks.' },
+          { at: 16, cue: 'only-rock', name: 'It is only rock', show: 'The walls are bare rock. More of the last shards catch the lamp as they pass, and that is all there is.' },
           { at: 24, cue: 'green-cloth', name: 'The assay book', show: 'They have reached the gallery office. The book lies shut in its green cloth on the stand, lit.' },
         ],
       },
@@ -396,7 +397,7 @@ export const chapter2 = {
       encounter: {
         set: 'ledger-room', light: 'night', mode: 'stealth',
         party: ['ren', 'tobb'],
-        opposition: { kind: 'force', who: ['lien-drawer', 'lien-drawer', 'lien-drawer', 'lien-drawer'], name: 'FOUR DRAWERS' },
+        opposition: { kind: 'force', who: ['lien-drawer', 'lien-drawer'], name: 'FOUR DRAWERS' },
         setback: { cue: 'clerk-stirs', show: 'The night clerk stirs on his chair and his candle flares; Ren and Tobb stand like furniture until he settles.' },
         beats: [
           { at: 0, cue: 'powder-vault', name: 'The old powder vault', show: 'Moon through the grille on a cabinet of deed drawers, all shut. The clerk sleeps by the iron door, stage left. Ren and Tobb keep low.' },

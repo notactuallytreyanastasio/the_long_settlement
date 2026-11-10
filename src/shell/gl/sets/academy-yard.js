@@ -15,7 +15,8 @@
 // What this set can do for its story:
 //   setRanks(0..1)      how much of the parade is on the ground (the epilogue wants an empty yard: 0)
 //   setEscort(on)       the escort of twelve, in the Proctor's teal, falls in behind the stage right marks
-//   task(type)          null for every type (nothing here is worked on)
+//   task('parade')      -> { pos, set(v) } ch3.s1's encounter: the ranks fall in, then the escort; any other type: null
+//   cue(lineId)         ch3.s1.c01 the whole parade and the escort; ch3.epi.05 / .09 the yard empty
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   quay { pos, face }: at the sea wall, level with the ferry     gate { pos, face }: under the tower arch
 //   banner (world point: the bob)     lamp (world point: the lit window)     focus = banner
@@ -241,7 +242,17 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   function setEscort(on) { escortOn = !!on; }
   // (a rank that has wholly fallen out is not drawn at all)
   const settle = (g, goal, k) => { const n = Math.round(goal * g.count); let any = n > 0; for (let i = 0; i < g.count; i++) { const p = g.list[i], d = (i < n ? 1 : 0) - p.here; if (d > 0.004 || d < -0.004) { p.here += d * k; g.write(i); any = true; } } g.node.visible = any; };
-  const task = () => null;
+  // ch3.s1's encounter (twice round the yard): the ranks fall in over the first lap, the escort of twelve on the second
+  const PARADE = { pos: BOB, set(v) { setRanks(0.3 + 0.7 * Math.min(1, v * 2)); setEscort(v > 0.97); } };
+  const task = (type) => (type === 'parade' ? PARADE : null);
+  /** Stage business by script line. */
+  function cue(id) {
+    switch (id) {
+      case 'ch3.s1.c01': setRanks(1); setEscort(true); return true;
+      case 'ch3.epi.05': case 'ch3.epi.09': setRanks(0); setEscort(false); return true;
+      default: return false;
+    }
+  }
 
   function update(time, dt = 0) {
     const pw = L.power * power, k = dt === 0 ? 1 : Math.min(1, dt * 5);
@@ -312,7 +323,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
     id: 'academy-yard', light, scene, env, actors, foreground,
     cameras: CAMERAS, frame: rig.frame, view: rig.view,
     marks: { ...MARKS, quay: { pos: [4.6, 0, WALL_Z + 0.75], face: 150 }, gate: { pos: [TOWER[0], 0, TOWER[2] + 0.9], face: 0 }, banner: BOB, lamp: LAMP, focus: BOB },
-    lamps, setPower, setRanks, setEscort, task, update,
+    lamps, setPower, setRanks, setEscort, task, cue, update,
   };
 }
 

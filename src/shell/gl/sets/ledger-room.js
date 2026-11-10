@@ -184,7 +184,10 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     }
   }
   const TASKS = drawers.map((d, i) => ({ pos: [d.x, DY, d.z + 0.2], stand: [d.x * 0.8 + 0.2, CAB[2] + 1.3], set(v) { setDrawer(i, v); } }));
-  const task = (type, i = 0) => (type === 'lien-drawer' ? TASKS[i] || null : null);
+  // an encounter may list at most three things: with two 'lien-drawer' units each answers for a pair (L I, then E N)
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  const PAIRS = [0, 1].map((k) => ({ pos: [(drawers[2 * k].x + drawers[2 * k + 1].x) / 2, DY, drawers[2 * k].z + 0.2], stand: TASKS[2 * k + (k ? 1 : 0)].stand, set(v) { setDrawer(2 * k, clamp01(v * 2)); setDrawer(2 * k + 1, clamp01(v * 2 - 1)); } }));
+  const task = (type, i = 0, count = 4) => (type !== 'lien-drawer' ? null : count === 2 ? PAIRS[i] || null : TASKS[i] || null);
   function tick(time, dt, pw, live) {
     let lit = 0;
     for (let i = 0; i < 4; i++) { const d = drawers[i]; d.now += (d.v - d.now) * Math.min(1, dt * 6 + (dt === 0 ? 1 : 0)); d.n.position[2] = d.z + 0.26 * d.now; d.glow.alpha = 0.75 * d.now * (0.85 + 0.15 * Math.sin(time * 3 + i)); d.n.flash[0] = 1; d.n.flash[1] = 0.85; d.n.flash[2] = 0.5; d.n.flash[3] = 0.1 * d.now; lit += d.now; }
@@ -206,7 +209,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
       register: { pos: [STAND[0] - 0.2, 0, STAND[2] + 0.75], face: 165 }, lamp: { pos: [STAND[0] + 0.75, 0, STAND[2] + 0.9], face: -150 },
       drawers: { pos: [0.2, 0, CAB[2] + 1.3], face: 180 }, door: { pos: [DOOR.x + 0.6, 0, BACK + 1.3], face: 20 },
     },
-    extra: { setDrawer, setRegister, stir, cue, task, vaultY },
+    extra: { setDrawer, setRegister, stir, passLamp: stir, cue, task, vaultY },   // passLamp: the name the director calls on a drain
   });
 }
 

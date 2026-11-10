@@ -247,7 +247,28 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
   for (let i = 0; i < N; i++) { person(i).here = want[i]; writeP(i); }
   for (let i = 0; i < cadets.count; i++) { cadets.list[i].here = gallery; cadets.write(i); }
   const TASK = { pos: [0, 2.2, -8], stand: [-1.0, 0.7], set(v) { setStanding(v * 0.6); } };
-  const task = (type) => (type === 'witness' || type === 'hall' ? TASK : null);
+  // the three encounters played here. Each sets everything it depends on, because scenes 2 and 6 share one built hall.
+  const HOUSE_TASK = { pos: [0, 2.2, -8], set(v) { setGallery(0); const c = 0.3 + 0.7 * Math.min(1, v * 1.5); if (Math.abs(c - crowd) > 0.004) setCrowd(c); const s = v > 0.93 ? 1 : 0; if (s !== standing) setStanding(s); } };      // ch3.s2: it fills by rows, then rises
+  const GALLERY = { pos: [0, GAL_Y + 0.6, GAL_Z], set(v) { if (crowd !== 1) setCrowd(1); if (standing !== 0) setStanding(0); setGallery(v); } };                             // ch3.s6: the cadets are put upstairs
+  let footV = -1;
+  const footGlows = [-1.5, -0.5, 0.5, 1.5].map((x) => sprites.add({ kind: 'glow', pos: [x, 0.22, LIP + 0.3], size: 1.0, color: '#ffd27a', alpha: 0 }));
+  const RECORD = { pos: [0, 0.3, LIP + 0.3], set(v) { footV = v; lamps[1].base = lamps[2].base = 0.2 + 0.75 * v; } };                                                                                                      // ch3.s7: the footlights come up one by one
+  const task = (type) => (type === 'witness' || type === 'hall' ? TASK : type === 'silent-house' ? HOUSE_TASK : type === 'gallery' ? GALLERY : type === 'the-record' ? RECORD : null);
+  /** Stage business by script line. */
+  function cue(id) {
+    switch (id) {
+      case 'ch3.s2.c01': setGallery(0); setCrowd(1); setStanding(0); return true;
+      case 'ch3.s2.c21': setCrowd(0.5); return true;
+      case 'ch3.s2.c22': setCrowd(0.12); return true;
+      case 'ch3.s6.c01': setCrowd(1); setStanding(0); setGallery(1); return true;
+      case 'ch3.s6.c14': case 'ch3.s6.c15': case 'ch3.s6.c16': standOne(); return true;
+      case 'ch3.s6.c18': setStanding(0.3); return true;
+      case 'ch3.s6.c19': setStanding(0); return true;
+      case 'ch3.s7.c01': placeShell(false); return true;
+      case 'ch3.s7.c07': placeShell(true); return true;
+      default: return false;
+    }
+  }
 
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(17);
   let nextMote = 0;
@@ -262,6 +283,7 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     for (let i = 0; i < cadets.count; i++) { const p = cadets.list[i], d = gallery - p.here; if (d > 0.004 || d < -0.004) { p.here += d * k; cadets.write(i); } }
     cadets.node.visible = gallery > 0.01 || cadets.list[0].here > 0.02; near.node.visible = far.node.visible = crowd > 0 || person(order[0]).here > 0.02;
     cone.visible = pw > 0.05;
+    if (footV >= 0) for (let i = 0; i < 4; i++) footGlows[i].alpha = Math.max(0, Math.min(1, footV * 4 - i)) * (0.75 + 0.08 * Math.sin(time * 7 + i));
     shellGlow.alpha = shellOn ? 0.45 + 0.35 * Math.sin(time * 5.2) : 0;
     if (!live || low) return;
     if (time > nextMote) { // dust in the great window's light
@@ -277,7 +299,7 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
       gallery: { pos: [-1.1, GAL_Y, GAL_Z - 0.5], face: 0 }, guard: { pos: [-0.55, GAL_Y, GAL_Z - 1.15], face: 0 },
       shell: SHELL, focus: lampPos, window: [0, 8, BACK],
     },
-    extra: { setCrowd, setStanding, standOne, setGallery, placeShell, task },
+    extra: { setCrowd, setStanding, standOne, setGallery, placeShell, task, cue },
   });
 }
 

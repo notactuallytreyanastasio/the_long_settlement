@@ -17,6 +17,7 @@
 //   dropCage(0..1)        the cage: 0 at the gallery floor, 1 hauled up out of sight
 //   cue(lineId)           ch2.s3.c01 the cage lands; c06 the book is handed over; c09 it is open; c23 it is shut again
 //   task('assay-book')    -> { pos, stand, set(v) } (v >= 1 opens it)
+//   task('gallery-nine')  -> { pos, set(v) } ch2.s3's encounter: v = how far down the gallery; the shards show, the shut book glows at 1
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   book { pos, face }: at the stand   cage { pos, face }: stepping out of the cage   wall { pos, face }: at the bare wall Hesper shows them
 //   focus: the hook lamp   page: world point of the open book
@@ -193,15 +194,20 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
     switch (id) {
       case 'ch2.s3.c01': setBook(0); dropCage(0); return true;
       case 'ch2.s3.c06': setBook(0); sprites.sparkle(top, { count: 4, size: 0.3, spread: 0.4, life: 0.8, color: '#c8ffd8' }); return true;
-      case 'ch2.s3.c09': setBook(1); return true;
+      case 'ch2.s3.c09': setBook(1); walkV = -1; return true;
       case 'ch2.s3.c23': setBook(0); return true;
       default: return false;
     }
   }
   const TASK = { pos: [top[0], top[1] + 0.1, top[2]], stand: [STAND[0] - 0.35, STAND[2] + 0.75], set(v) { setBook(v >= 1 ? 1 : 0); } };
-  const task = (type) => (type === 'assay-book' ? TASK : null);
+  // ch2.s3's encounter (the walk down gallery nine): the last shards catch the lamp as they go, and the book in its cloth is lit when they reach it
+  const bookGlow = sprites.add({ kind: 'glow', pos: [top[0], top[1] + 0.12, top[2] + 0.1], size: 1.3, color: '#9dffc0', alpha: 0 });
+  let walkV = -1;
+  const WALK = { pos: [top[0], top[1] + 0.1, top[2]], set(v) { walkV = v; setBook(0); setSeam(0.1 + 0.9 * v); } };
+  const task = (type) => (type === 'assay-book' ? TASK : type === 'gallery-nine' ? WALK : null);
   function tick(time, dt, pw, live) {
     cageNow += (cageUp - cageNow) * Math.min(1, dt * 2.2);
+    bookGlow.alpha = walkV > 0.9 ? (walkV - 0.9) * 10 * (0.55 + 0.15 * Math.sin(time * 3)) : 0;
     cageNode.position[1] = cageNow * 6.2 + (cageNow > 0.02 && cageNow < 0.98 ? Math.sin(time * 30) * 0.01 : 0); cageNode.visible = cageNow < 0.97;
     { const k = 0.62 + 0.38 * Math.min(1.3, pw / L.power) + 0.02 * Math.sin(time * 4.7); pool.setScale(k, 1, k); }
     const tw = 0.82 + 0.18 * Math.sin(time * 1.7);
