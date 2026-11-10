@@ -1138,10 +1138,11 @@ export function createRenderer(canvas) {
     }
 
     eachLabelled(table, (kind, e) => label(g, tf, labelText(table, e), labelSpot(table, kind, e), A(PAPER, 0.45)));
+    paintGlassShadow(g);
   }
 
-  // The frame round the glass: inner shadow, then the two brass side rails.
-  function paintBezel(g) {
+  // The shadow the frame throws on the glass. Part of the table layer.
+  function paintGlassShadow(g) {
     for (const [x0, x1] of [[0, 14], [TW, TW - 14]]) {
       const sh = g.createLinearGradient(x0, 0, x1, 0);
       sh.addColorStop(0, 'rgba(0,0,0,0.6)');
@@ -1154,14 +1155,19 @@ export function createRenderer(canvas) {
     top.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = top;
     g.fillRect(0, 0, TW, 30);
-    for (const x of [-8, TW]) {
-      const rg = g.createLinearGradient(x, 0, x + 8, 0);
+  }
+
+  // The two brass rails either side of the glass, painted into the frame layer at T.
+  function paintRails(g, T, H) {
+    for (const x of [T.x - 8 * T.scale, T.x + TW * T.scale]) {
+      const w = 8 * T.scale;
+      const rg = g.createLinearGradient(x, 0, x + w, 0);
       rg.addColorStop(0, BRASS_LO);
       rg.addColorStop(0.35, BRASS_HI);
       rg.addColorStop(0.6, BRASS);
       rg.addColorStop(1, '#3d2c12');
       g.fillStyle = rg;
-      g.fillRect(x, 0, 8, TH);
+      g.fillRect(x, T.y, w, H - T.y);
     }
   }
 
@@ -1563,25 +1569,23 @@ export function createRenderer(canvas) {
     }
   }
 
-  // The table inside its frame at T = {x, y, scale}, shaken on impact.
+  // The table at T = {x, y, scale}, shaken on impact. The frame round it is the caller's.
   function drawTableAt(g, L, T, content, game, fx, table, scene, lit, threadCol, dt) {
     const s = T.scale;
     const now = fx.timeMs;
-    const res = view.ds * s;
-    const tf = Math.ceil(MIN_TYPE / s);
     const sh = clamp(fx.shake || 0, 0, 1);
     g.save();
     g.beginPath();
     g.rect(T.x, T.y, TW * s, Math.max(0, L.H - T.y));
     g.clip();
+    if (sh > 0) {
+      // a shaken table uncovers a sliver of what is behind it
+      g.fillStyle = '#000';
+      g.fillRect(T.x, T.y, TW * s, L.H - T.y);
+    }
     g.translate(T.x + Math.sin(now / 17) * 7 * sh * s, T.y + Math.cos(now / 13) * 5 * sh * s);
     g.scale(s, s);
-    drawTable(g, table, game, scene, lit, threadCol, now, dt, res, tf);
-    g.restore();
-    g.save();
-    g.translate(T.x, T.y);
-    g.scale(s, s);
-    g.drawImage(layer('bezel', TW + 16, TH, res, (c) => { c.translate(8, 0); paintBezel(c); }), -8, 0, TW + 16, TH);
+    drawTable(g, table, game, scene, lit, threadCol, now, dt, view.ds * s, Math.ceil(MIN_TYPE / s));
     g.restore();
   }
 
@@ -2412,7 +2416,17 @@ export function createRenderer(canvas) {
     const ts = (L.table.scale * (full - dy)) / full;
     const T = { x: L.table.x + (TW * (L.table.scale - ts)) / 2, y: L.table.y + dy, scale: ts };
 
-    g.drawImage(layer('woodP', L.W, L.H, view.ds, (c) => paintWood(c, L.W, L.H)), 0, 0, L.W, L.H);
+    // The frame: wood and the two rails. Only what the head and the table leave showing is drawn.
+    {
+      const frame = layer(`frameP:${dy}`, L.W, L.H, view.ds, (c) => { paintWood(c, L.W, L.H); paintRails(c, T, L.H); });
+      const k = view.ds;
+      const strip = (x, y, w, h) => { if (w > 0 && h > 0) g.drawImage(frame, x * k, y * k, w * k, h * k, x, y, w, h); };
+      const tw = TW * ts;
+      strip(0, 0, L.W, L.hud.y + dy);
+      strip(0, T.y, T.x, L.H - T.y);
+      strip(T.x + tw, T.y, L.W - T.x - tw, L.H - T.y);
+      strip(T.x, T.y + TH * ts, tw, L.H - T.y - TH * ts);
+    }
     drawTableAt(g, L, T, content, game, fx, table, scene, lit, threadCol, dt);
 
     const state = launchState(chapter, game);
@@ -2617,6 +2631,7 @@ export function createRenderer(canvas) {
     }
     g.fillStyle = '#000';
     g.fillRect(TX, 0, TW, H);
+    paintRails(g, L.table, H);
   }
 
   function drawStoryW(g, L, content, game, fx, chapter, scene, table, threadCol, state) {
@@ -3191,7 +3206,14 @@ export function createRenderer(canvas) {
     const now = fx.timeMs;
     const state = launchState(chapter, game);
 
-    g.drawImage(layer('chromeW', L.W, L.H, view.ds, (c) => paintChrome(c, L)), 0, 0, L.W, L.H);
+    // the frame either side of the glass; the table paints its own rectangle
+    {
+      const chrome = layer('chromeW', L.W, L.H, view.ds, (c) => paintChrome(c, L));
+      const k = view.ds;
+      const right = L.table.x + TW * L.table.scale;
+      g.drawImage(chrome, 0, 0, L.table.x * k, L.H * k, 0, 0, L.table.x, L.H);
+      g.drawImage(chrome, right * k, 0, (L.W - right) * k, L.H * k, right, 0, L.W - right, L.H);
+    }
     drawTableAt(g, L, L.table, content, game, fx, table, scene, lit, threadCol, dt);
     const prompt = promptFor(state, view.touch);
     if (prompt) {
@@ -3224,6 +3246,12 @@ export function createRenderer(canvas) {
         c.fillStyle = `rgba(220,225,255,${0.45 * hash(i + 300)})`;
         c.fillRect(hash(i) * W, hash(i + 500) * H * 0.5, 1.4, 1.4);
       }
+      const m = Math.max(W, H);
+      const v = c.createRadialGradient(W / 2, H * 0.45, m * 0.2, W / 2, H / 2, m * 0.66);
+      v.addColorStop(0, 'rgba(0,0,0,0)');
+      v.addColorStop(1, 'rgba(0,0,0,0.85)');
+      c.fillStyle = v;
+      c.fillRect(0, 0, W, H);
     }), 0, 0, W, H);
     // the sea, and ten thousand paper lanterns going out on it
     const horizon = H * 0.56;
@@ -3236,20 +3264,14 @@ export function createRenderer(canvas) {
       const drift = (now / 1000) * (4 + depth * 10) * (hash(i + 77) > 0.5 ? 1 : -1);
       const x = mod(hash(i + 23) * W + drift, W + 40) - 20;
       const s = 1.2 + depth * 5;
-      const fl = 0.7 + 0.3 * Math.sin(now / 300 + i);
-      glow(g, x, y, s * 5, LANTERN, 0.22 * fl * warm);
+      // lanterns dim toward the edges of the picture, as the sky does
+      const edge = 1 - 0.75 * clamp((Math.hypot(x - W / 2, y - H / 2) / Math.max(W, H) - 0.2) / 0.46, 0, 1);
+      const fl = (0.7 + 0.3 * Math.sin(now / 300 + i)) * edge;
+      glow(g, x, y, s * 6, LANTERN, 0.3 * fl * warm);
       g.globalAlpha = 0.9 * fl * warm;
       g.fillRect(x - s * 0.5, y - s * 0.8, s, s * 1.4);
     }
     g.globalAlpha = 1;
-    g.drawImage(layer('skyVignette', W, H, 1, (c) => {
-      const m = Math.max(W, H);
-      const v = c.createRadialGradient(W / 2, H * 0.45, m * 0.2, W / 2, H / 2, m * 0.66);
-      v.addColorStop(0, 'rgba(0,0,0,0)');
-      v.addColorStop(1, 'rgba(0,0,0,0.85)');
-      c.fillStyle = v;
-      c.fillRect(0, 0, W, H);
-    }), 0, 0, W, H);
   }
 
   function orreryRings(g, cx, cy, k, now, a) {
