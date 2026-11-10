@@ -171,8 +171,8 @@ function vessery() {
     ],
     shots: [
       // the pier ramp carries the ball over the water to the right inlane
-      { id: 'pierRamp', a: [14, 372], b: [64, 372], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 140] } },
-      { id: 'dockOrbit', a: [mx(64), 372], b: [mx(14), 372], dir: [0, -1] },
+      { id: 'pierRamp', a: [28, 398], b: [77, 398], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 140] } },
+      { id: 'dockOrbit', a: [mx(77), 398], b: [mx(28), 398], dir: [0, -1] },
     ],
     saucers: [
       { id: 'bench', pos: [76, 196], r: 14, eject: [250, 170], holdMs: 900 },
@@ -275,8 +275,8 @@ function saltmere() {
     ],
     shots: [
       // the causeway returns to the left inlane, so the same flipper can shoot the court
-      { id: 'causewayRamp', a: [10, 395], b: [58, 395], dir: [0, -1], exit: { pos: lo.inL, vel: [0, 140] } },
-      { id: 'courtOrbit', a: [mx(56), 385], b: [mx(12), 385], dir: [0, -1] },
+      { id: 'causewayRamp', a: [26, 425], b: [72, 425], dir: [0, -1], exit: { pos: lo.inL, vel: [0, 140] } },
+      { id: 'courtOrbit', a: [mx(72), 420], b: [mx(28), 420], dir: [0, -1] },
     ],
     saucers: [
       { id: 'orrery', pos: [189, 160], r: 12, eject: [-40, 317], holdMs: 1400 },

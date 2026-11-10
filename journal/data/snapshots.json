@@ -741,5 +741,55 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T04:30:13.939Z",
+  "files": 576,
+  "lines": 14717,
+  "bytes": 14910251,
+  "linesByDir": {
+   ".": 25,
+   "assets/voice": 2735,
+   "src/content": 1785,
+   "src/core": 1682,
+   "src/shell": 6082,
+   "story/BIBLE.md": 241,
+   "test/economy.test.js": 198,
+   "test/game.test.js": 650,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 191,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 144,
+   "test/story.test.js": 96,
+   "test/tables.test.js": 196,
+   "tools/render-voices.mjs": 266
+  },
+  "changed": [
+   "M src/content/tables.js"
+  ],
+  "tests": {
+   "total": 94,
+   "pass": 92,
+   "fail": 2,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 4524,
+   "failures": [
+    "seed 4: the bot plays from the title to the end of chapter two",
+    "no scene is too hard: the bot needs under four minutes for each, on average over the seeds"
+   ]
+  },
+  "nodes": {
+   "goal": 1,
+   "option": 4,
+   "decision": 1,
+   "observation": 2,
+   "action": 1,
+   "revisit": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]
