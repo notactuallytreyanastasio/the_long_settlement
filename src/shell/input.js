@@ -12,7 +12,7 @@
 //         launch/lever   Space (hold, release)           confirm        Enter
 //         skip a scene   S                               mute           M
 //
-// Touch, anywhere:      the mute button mutes.
+// Touch, outside a cinematic: the mute button mutes (a cinematic does not draw one; M still works).
 // Touch, in play:       the launch button is the plunger and the lever (hold, release) and never flips;
 //                       any other touch holds the left flipper on the left half of the SCREEN and the
 //                       right flipper on the right half. The letterbox beside the canvas counts, so a
@@ -94,7 +94,7 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
     const [x, y] = toLogical(L, canvas.getBoundingClientRect(), e.clientX, e.clientY);
     const m = watchMode();
 
-    if (inCircle(L.mute, x, y)) { onMute(); return; }
+    if (m !== 'cine' && inCircle(L.mute, x, y)) { onMute(); return; }
 
     if (m === 'play') {
       if (inCircle(L.launch, x, y)) { touches.set(e.pointerId, 'plunge'); return; }

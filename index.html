@@ -49,7 +49,7 @@
     background: radial-gradient(ellipse at 50% 40%, #17110a, #050403);
     text-align: center; touch-action: manipulation;
   }
-  #gate[hidden], #fatal[hidden], #muted[hidden], #resume[hidden] { display: none; }
+  #gate[hidden], #fatal[hidden], #resume[hidden] { display: none; }
   #gate .card { max-width: 34rem; padding: 1.5rem; }
   #gate .over { letter-spacing: clamp(0.18em, 1.6vw, 0.5em); font-size: 0.75rem; color: #c9a25a; text-transform: uppercase; margin: 0 0 1rem 0.5em; }
   #gate h1 { font-weight: 600; font-size: clamp(2rem, 6vw, 3.4rem); margin: 0; color: #fff3d6; text-shadow: 0 0 28px rgba(255, 170, 70, 0.45); }
@@ -73,7 +73,6 @@
     #gate dl.touch { display: grid; }
   }
 
-  #muted { position: fixed; top: calc(0.3rem + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); pointer-events: none; font-size: 0.8rem; letter-spacing: 0.2em; color: #c9a25a; text-transform: uppercase; }
   #fatal {
     position: fixed; inset: 0; margin: 0; padding: 2rem; overflow: auto; white-space: pre-wrap;
     background: rgba(20, 4, 2, 0.96); color: #ffb9a8; font: 13px/1.5 "SF Mono", Menlo, Consolas, monospace;
@@ -106,7 +105,6 @@
 </div>
 
 <div id="safe"></div>
-<div id="muted" hidden>muted</div>
 <pre id="fatal" hidden></pre>
 
 <script type="module" src="src/shell/main.js"></script>

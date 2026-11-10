@@ -452,18 +452,36 @@ function tickReels(content, game, dt) {
 /**
  * What a press of the plunger button would do as the lever, or null when it is not the lever
  * (a ball is on the table or a writ will bring one).
- *   'wait'  the reels are still turning, or the table emptied a moment ago
- *   'free'  the chapter's scripted first pull
- *   'pull'  pays SPIN_COST and spins
- *   'loan'  cannot pay: the press borrows, and the next press pulls
+ *   'wait'    the reels are still turning, or the table emptied a moment ago
+ *   'free'    the chapter's scripted first pull
+ *   'credit'  the Commons is passing the hat and the player will not wait for it: the pull
+ *             is drawn on the Mint, a loan and a spin in the one press, whatever is in the purse
+ *   'pull'    pays SPIN_COST and spins
+ *   'loan'    cannot pay: the press borrows, and the next press pulls
+ *
+ * 'credit' is what makes the ending a choice. Without it the lever only ever borrows when
+ * the purse is empty, the count of loans measures luck and skill, and a player who turns
+ * the Commons down every time ends with the same book as one who never does: over 16
+ * seeds the two bots took 0-16 and 3-21 loans. See TRUST_PER_LOAN in economy.js.
  */
 export function leverStatus(content, game) {
   if (game.mode !== 'play' || game.phys.balls.length > 0 || game.econ.writs > 0) return null;
   if (turning(game.reels) || game.emptyT < LEVER_DELAY) return 'wait';
   if (!game.spunThisChapter && currentChapter(content, game).riggedSpin) return 'free';
+  if (aidAvailable(game.econ)) return 'credit';
   if (canSpin(game.econ)) return 'pull';
   if (needsLoan(game.econ)) return 'loan';
   throw new Error(`game: an empty table that can neither pay for a spin nor borrow: ${JSON.stringify(game.econ)}`);
+}
+
+const borrow = (content, game, text) => then(
+  ok(toast({ ...game, econ: takeLoan(game.econ) }, 'loan', text), [sfx('loan')]),
+  (g) => bark(content, g, 'loan', true),
+);
+
+function paidPull(game) {
+  const { rng, result } = spin(game.rng, 'lever');
+  return spinReels({ ...game, rng, econ: paySpin(game.econ), emptyT: 0 }, 'lever', result.reels);
 }
 
 const LEVER = {
@@ -473,14 +491,12 @@ const LEVER = {
     { ...game, econ: { ...game.econ, spins: game.econ.spins + 1 }, emptyT: 0 },
     'lever', currentChapter(content, game).riggedSpin.reels,
   ),
-  pull: (content, game) => {
-    const { rng, result } = spin(game.rng, 'lever');
-    return spinReels({ ...game, rng, econ: paySpin(game.econ), emptyT: 0 }, 'lever', result.reels);
-  },
-  loan: (content, game) => {
-    const lent = toast({ ...game, econ: takeLoan(game.econ) }, 'loan', 'The Mint advances you marks, at interest. Pull again.');
-    return then(ok(lent, [sfx('loan')]), (g) => bark(content, g, 'loan', true));
-  },
+  credit: (content, game) => then(
+    borrow(content, game, 'You would not wait for the hat. The Mint advances the pull, at interest.'),
+    paidPull,
+  ),
+  pull: (content, game) => paidPull(game),
+  loan: (content, game) => borrow(content, game, 'The Mint advances you marks, at interest. Pull again.'),
 };
 
 /** The plunger button was pressed this tick. */

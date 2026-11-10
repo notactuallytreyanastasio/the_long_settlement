@@ -60,7 +60,7 @@ const WIDE = Object.freeze({
   table: Object.freeze({ x: 440, y: 0, scale: 1 }),
   story: rect(10, 10, 420, 780),
   hud: rect(850, 10, 420, 780),
-  launch: disc(1196, 446, 46),
+  launch: disc(1196, 412, 46),
   mute: disc(1242, 38, 14),
   skip: rect(1146, 22, 112, 40),
   cine: Object.freeze({ art: rect(0, 0, 1280, 800), text: rect(160, 600, 960, 170) }),

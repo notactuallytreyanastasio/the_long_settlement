@@ -2342,5 +2342,75 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T05:52:50.275Z",
+  "files": 1474,
+  "lines": 27183,
+  "bytes": 42085951,
+  "linesByDir": {
+   ".": 138,
+   "assets/voice": 7180,
+   "src/content": 4176,
+   "src/core": 2261,
+   "src/shell": 9797,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 177,
+   "test/economy.test.js": 277,
+   "test/game.test.js": 741,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 243,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 156,
+   "test/story.test.js": 163,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M index.html",
+   "M src/core/economy.js",
+   "M src/core/game.js",
+   "M src/core/types.js",
+   "M src/shell/input.js",
+   "M src/shell/layout.js",
+   "M src/shell/main.js",
+   "M src/shell/render.js"
+  ],
+  "tests": {
+   "total": 140,
+   "pass": 88,
+   "fail": 52,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 18391,
+   "failures": [
+    "the rigged first spin is three orbs and pays what the reels would pay in writs",
+    "initEcon affords exactly three spins and nothing else",
+    "awardPoints adds score and converts to marks; mult touches marks only",
+    "a loan advances LOAN.marks, books LOAN.owed, and garnishes every mark until repaid",
+    "trustEarned takes every positive gain whole, past the clamp, and never goes down",
+    "TRUST_PER_LOAN against the five chapters: two loans a chapter leans commons, four leans mint",
+    "applyPayout grants writs and marks and rejects malformed payouts",
+    "mutual aid: one ball per 25 trust per chapter, free of debt",
+    "200k spins: a 60-marks-a-ball player stays about level",
+    "200k spins: a 40-marks-a-ball player drifts into debt slowly, not instantly",
+    "200k spins: an 80-marks-a-ball player gets ahead and rarely borrows",
+    "over one sitting"
+   ]
+  },
+  "nodes": {
+   "goal": 3,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 3,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

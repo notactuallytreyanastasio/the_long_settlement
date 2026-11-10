@@ -336,7 +336,7 @@ async function boot() {
       mode: () => game.mode,
       layout: () => layout,
       onMsg: dispatch,
-      onMute() { fx.muted = !fx.muted; audio.setMuted(fx.muted); $('muted').hidden = !fx.muted; },
+      onMute() { fx.muted = !fx.muted; audio.setMuted(fx.muted); },      // the renderer draws the button's state
     });
     canvas.focus();
     if (!loadSave) return;
