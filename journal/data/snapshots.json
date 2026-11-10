@@ -4325,5 +4325,61 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T09:01:24.636Z",
+  "files": 1484,
+  "lines": 33991,
+  "bytes": 42555415,
+  "linesByDir": {
+   ".": 182,
+   "assets/voice": 7180,
+   "src/content": 4878,
+   "src/core": 2545,
+   "src/shell": 13114,
+   "story/BIBLE.md": 1710,
+   "test/content.test.js": 237,
+   "test/economy.test.js": 351,
+   "test/ending.test.js": 384,
+   "test/game.test.js": 1220,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 377,
+   "test/rng.test.js": 102,
+   "test/shell.test.js": 129,
+   "test/slot.test.js": 240,
+   "test/story.test.js": 228,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M src/core/story.js",
+   "M src/shell/cinema/backdrops-c.js",
+   "M test/game.test.js",
+   "?? src/content/chapter6.js",
+   "?? test/ending.test.js"
+  ],
+  "tests": {
+   "total": 181,
+   "pass": 181,
+   "fail": 0,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 0,
+   "ms": 17567,
+   "failures": []
+  },
+  "nodes": {
+   "goal": 3,
+   "option": 8,
+   "decision": 3,
+   "observation": 2,
+   "action": 5,
+   "revisit": 1,
+   "outcome": 3
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

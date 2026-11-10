@@ -446,7 +446,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   r = send(r.game, CONFIRM);
   assert.equal(r.game.mode, 'play');
   assert.deepEqual(moods(r.effects), ['mine']);
-  assert.deepEqual(saves(r.effects).map((s) => [s.v, s.chapter, s.scene]), [[3, 1, 0]]);
+  assert.deepEqual(saves(r.effects).map((s) => [s.v, s.chapter, s.scene]), [[4, 1, 0]]);
 
   // no rigged pull here, and with the writs gone the lever is a real, paid draw from the rng
   r = ticks({ ...r.game, econ: { ...r.game.econ, writs: 0 } }, seconds(LEVER_DELAY) + 2);
@@ -479,6 +479,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.deepEqual(moods(r.effects), ['dread']);
   r = send(r.game, SKIP);
   assert.equal(r.game.mode, 'end');
+  assert.equal(r.game.ending, 'commons', 'the ledger was read when the last objective of the last chapter completed');
   assert.deepEqual(saves(r.effects), []);
   const done = sendAll(r.game, [CONFIRM, SKIP, tickMsg()]);
   assert.equal(done.game.mode, 'end');

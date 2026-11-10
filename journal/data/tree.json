@@ -7230,6 +7230,11 @@
   "lines": 669
  },
  {
+  "path": "src/content/chapter6.js",
+  "bytes": 58169,
+  "lines": 702
+ },
+ {
   "path": "src/content/index.js",
   "bytes": 505,
   "lines": 16
@@ -7266,8 +7271,8 @@
  },
  {
   "path": "src/core/story.js",
-  "bytes": 16060,
-  "lines": 346
+  "bytes": 16441,
+  "lines": 351
  },
  {
   "path": "src/core/types.js",
@@ -7296,8 +7301,8 @@
  },
  {
   "path": "src/shell/cinema/backdrops-c.js",
-  "bytes": 679,
-  "lines": 12
+  "bytes": 51273,
+  "lines": 630
  },
  {
   "path": "src/shell/cinema/backdrops-d.js",
@@ -7360,9 +7365,14 @@
   "lines": 351
  },
  {
+  "path": "test/ending.test.js",
+  "bytes": 24337,
+  "lines": 384
+ },
+ {
   "path": "test/game.test.js",
-  "bytes": 66653,
-  "lines": 1219
+  "bytes": 66772,
+  "lines": 1220
  },
  {
   "path": "test/physics.test.js",

@@ -166,23 +166,28 @@ export function heardLines(lines, game) {
 
 /**
  * Is the ledger read (frozen into game.ending) when the objective of this scene completes?
- * Only in the final chapter, and there at the first scene of which either is true:
- *   it is the last scene;
- *   its own cutscene, or the briefing or cutscene of any later scene, carries a lean line.
- * So the reading is always taken before the first line that depends on it, and an ending
- * cannot change sides half way through. The obvious rule, "read it at the last objective and
- * nowhere else", lets a chapter whose sixth scene already branches play one ending's sixth
- * scene and the other's seventh if a loan falls between them.
- * A lean line in a prologue, or anywhere in an earlier chapter, is chosen by the live books.
+ * Only in the final chapter. There the reading is taken once, at the last completion that
+ * comes before the first lean line of the chapter's scenes:
+ *   a lean line in a scene's cutscene      that scene's own completion (the cutscene follows it);
+ *   a lean line in a scene's briefing      the completion of the scene before (the briefing
+ *                                          is spoken as its own scene opens);
+ *   none in any scene                      the last scene's completion, before the epilogue.
+ * This function is true for that scene and every later one; game.js reads at the first.
+ * So an ending cannot change sides half way through. The obvious rule, "read it at the last
+ * objective and nowhere else", lets a chapter whose sixth scene already branches play one
+ * ending's sixth scene and the other's seventh if a loan falls between them.
+ * Lean lines in a prologue, in the first scene's briefing, or anywhere in an earlier chapter
+ * come before any reading and are chosen by the live books.
  */
 export function readsLeaning(content, chapterIndex, sceneIndex) {
   const chapter = content.chapters[chapterIndex];
   if (!chapter) throw new Error(`story: no chapter at index ${chapterIndex}`);
-  if (!chapter.scenes[sceneIndex]) throw new Error(`story: chapter ${chapter.id} has no scene at index ${sceneIndex}`);
+  const { scenes } = chapter;
+  if (!scenes[sceneIndex]) throw new Error(`story: chapter ${chapter.id} has no scene at index ${sceneIndex}`);
   if (chapterIndex !== content.chapters.length - 1) return false;
-  if (sceneIndex === chapter.scenes.length - 1) return true;
-  if (hasLean(chapter.scenes[sceneIndex].cutscene)) return true;
-  return chapter.scenes.slice(sceneIndex + 1).some((sc) => hasLean(sc.briefing) || hasLean(sc.cutscene));
+  if (sceneIndex === scenes.length - 1) return true;
+  return scenes.slice(0, sceneIndex + 1).some((sc) => hasLean(sc.cutscene))
+    || scenes.slice(0, sceneIndex + 2).some((sc) => hasLean(sc.briefing));
 }
 
 /**
