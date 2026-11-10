@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T20:31:58.533Z",
+ "generated": "2026-11-10T20:42:57.323Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -51,63 +51,63 @@
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T20:30:49.970Z",
+ "last": "2026-11-10T20:41:29.850Z",
  "total": {
-  "responses": 4226,
-  "input": 8824,
-  "write5m": 30866422,
-  "write1h": 1615484,
-  "read": 1009595116,
-  "output": 8983116,
-  "thinking": 3285506,
+  "responses": 4234,
+  "input": 8842,
+  "write5m": 31077483,
+  "write1h": 1620199,
+  "read": 1011160868,
+  "output": 8988591,
+  "thinking": 3286837,
   "cost": {
-   "input": 0.0654,
-   "write5m": 308.6642,
-   "write1h": 19.6112,
-   "read": 201.919,
-   "output": 352.9507,
-   "total": 883.2105
+   "input": 0.0655,
+   "write5m": 310.7748,
+   "write1h": 19.6866,
+   "read": 202.2322,
+   "output": 353.1697,
+   "total": 885.9289
   },
-  "uncachedCost": 8002.4797,
+  "uncachedCost": 8016.9511,
   "unpriced": 0
  },
  "byGroup": {
   "lead": {
-   "responses": 108,
-   "input": 288,
+   "responses": 111,
+   "input": 296,
    "write5m": 0,
-   "write1h": 817540,
-   "read": 16791090,
-   "output": 184275,
-   "thinking": 43335,
+   "write1h": 822255,
+   "read": 17537129,
+   "output": 185912,
+   "thinking": 43494,
    "cost": {
-    "input": 0.0023,
+    "input": 0.0024,
     "write5m": 0,
-    "write1h": 13.0806,
-    "read": 3.3582,
-    "output": 7.371,
-    "total": 23.8122
+    "write1h": 13.1561,
+    "read": 3.5074,
+    "output": 7.4365,
+    "total": 24.1024
    },
-   "uncachedCost": 148.2423,
+   "uncachedCost": 154.3139,
    "unpriced": 0
   },
   "helpers": {
-   "responses": 3567,
-   "input": 7230,
-   "write5m": 30866422,
+   "responses": 3572,
+   "input": 7240,
+   "write5m": 31077483,
    "write1h": 0,
-   "read": 821764375,
-   "output": 8479634,
-   "thinking": 3186043,
+   "read": 822584088,
+   "output": 8483472,
+   "thinking": 3187215,
    "cost": {
-    "input": 0.0578,
-    "write5m": 308.6642,
+    "input": 0.0579,
+    "write5m": 310.7748,
     "write1h": 0,
-    "read": 164.3529,
-    "output": 339.1854,
-    "total": 812.2603
+    "read": 164.5168,
+    "output": 339.3389,
+    "total": 814.6884
    },
-   "uncachedCost": 7160.2896,
+   "uncachedCost": 7168.6894,
    "unpriced": 0
   },
   "journal": {
@@ -132,22 +132,22 @@
  },
  "byModel": {
   "claude-fable-5-2": {
-   "responses": 3676,
-   "input": 7520,
-   "write5m": 30866422,
-   "write1h": 835917,
-   "read": 838586553,
-   "output": 8664419,
-   "thinking": 3229484,
+   "responses": 3684,
+   "input": 7538,
+   "write5m": 31077483,
+   "write1h": 840632,
+   "read": 840152305,
+   "output": 8669894,
+   "thinking": 3230815,
    "cost": {
-    "input": 0.0602,
-    "write5m": 308.6642,
-    "write1h": 13.3747,
-    "read": 167.7173,
-    "output": 346.5768,
-    "total": 836.3931
+    "input": 0.0603,
+    "write5m": 310.7748,
+    "write1h": 13.4501,
+    "read": 168.0305,
+    "output": 346.7958,
+    "total": 839.1115
    },
-   "uncachedCost": 7308.9481,
+   "uncachedCost": 7323.4194,
    "unpriced": 0
   },
   "claude-opus-5-5": {
@@ -1391,8 +1391,20 @@
   },
   {
    "at": "2026-11-10T20:35:00.000Z",
-   "lead": 23.8122,
+   "lead": 23.8861,
    "helpers": 812.2603,
+   "journal": 47.1381
+  },
+  {
+   "at": "2026-11-10T20:40:00.000Z",
+   "lead": 24.1024,
+   "helpers": 812.2603,
+   "journal": 47.1381
+  },
+  {
+   "at": "2026-11-10T20:45:00.000Z",
+   "lead": 24.1024,
+   "helpers": 814.6884,
    "journal": 47.1381
   }
  ],
@@ -1419,9 +1431,9 @@
    "mcp__deciduous__query_nodes": 2
   },
   "helpers": {
-   "Read": 1825,
+   "Read": 1827,
    "Write": 138,
-   "Bash": 2714,
+   "Bash": 2717,
    "Edit": 24,
    "ToolSearch": 61,
    "mcp__deciduous__read_messages": 138,
@@ -1430,7 +1442,7 @@
    "mcp__deciduous__query_nodes": 6
   },
   "lead": {
-   "Bash": 36,
+   "Bash": 38,
    "ToolSearch": 4,
    "Skill": 1,
    "mcp__deciduous__capture_conversation_turn": 6,

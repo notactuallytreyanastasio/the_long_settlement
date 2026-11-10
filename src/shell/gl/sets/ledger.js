@@ -230,8 +230,9 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
     lastT = time;
   }
 
-  // The account's last lines (both endings): the Ledger is a person. The director seats her figure at marks.cast[1],
-  // which is the writer's place, so the hooded writer and his pen arm leave the chair for exactly those lines.
+  // The account's last lines (both endings): the Ledger is a person. The director stands her figure at marks.cast[1], in
+  // front of the desk and a little to one side (behind the desk a figure is hidden to the eyes by desk and book), so the
+  // hooded writer and his pen arm leave the chair for exactly those lines: one Ledger in the frame, and the empty chair.
   function cue(id) {
     if (typeof id !== 'string' || id.includes('.bark.') || id.includes('.brief')) return false;
     const reveal = REVEAL.has(id);
@@ -245,7 +246,7 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
   return {
     id: 'ledger', light, low, scene, env, actors, foreground,
     cameras: CAMERAS, frame: rig.frame, view: rig.view,
-    marks: { ...MARKS, cast: { 1: [{ pos: [SEAT[0], 0, SEAT[2] - 0.12], face: 0 }] }, page: onPage(-1, 0, 0), focus: FL },
+    marks: { ...MARKS, cast: { 1: [{ pos: [0.42, 0, 0.72], face: -8 }] }, page: onPage(-1, 0, 0), focus: FL },
     lamps, setPower, setWritten, cue, task: () => null,
     update,
   };
