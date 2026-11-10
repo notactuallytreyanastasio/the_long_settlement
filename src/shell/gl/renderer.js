@@ -27,9 +27,9 @@ export function createRenderer(canvas, opts = {}) {
   function build() {
     const mk = (name, vs, fs, defs = '') => createProgram(gl, name, vs, fs, defs);
     P = {
-      toon: mk('toon', S.TOON_VS, S.TOON_FS), toonI: mk('toon-instanced', S.TOON_VS, S.TOON_FS, '#define INSTANCED'),
-      outline: mk('outline', S.OUTLINE_VS, S.OUTLINE_FS), outlineI: mk('outline-instanced', S.OUTLINE_VS, S.OUTLINE_FS, '#define INSTANCED'),
-      depth: mk('shadow-depth', S.DEPTH_VS, S.DEPTH_FS), depthI: mk('shadow-depth-instanced', S.DEPTH_VS, S.DEPTH_FS, '#define INSTANCED'),
+      toon: mk('toon', S.TOON_VS, S.TOON_FS), toonI: mk('toon-instanced', S.TOON_VS, S.TOON_FS, '#define INSTANCED'), toonS: mk('toon-skinned', S.TOON_VS, S.TOON_FS, '#define SKINNED'),
+      outline: mk('outline', S.OUTLINE_VS, S.OUTLINE_FS), outlineI: mk('outline-instanced', S.OUTLINE_VS, S.OUTLINE_FS, '#define INSTANCED'), outlineS: mk('outline-skinned', S.OUTLINE_VS, S.OUTLINE_FS, '#define SKINNED'),
+      depth: mk('shadow-depth', S.DEPTH_VS, S.DEPTH_FS), depthI: mk('shadow-depth-instanced', S.DEPTH_VS, S.DEPTH_FS, '#define INSTANCED'), depthS: mk('shadow-depth-skinned', S.DEPTH_VS, S.DEPTH_FS, '#define SKINNED'),
       beam: mk('beam', S.BEAM_VS, S.BEAM_FS), sky: mk('sky', S.SKY_VS, S.SKY_FS), water: mk('water', S.WATER_VS, S.WATER_FS),
       sprite: mk('sprite', S.SPRITE_VS, S.SPRITE_FS),
     };
@@ -66,7 +66,7 @@ export function createRenderer(canvas, opts = {}) {
     }
     return c.geo;
   }
-  function dropGeo(geo) { gl.deleteVertexArray(geo.vao); gl.deleteBuffer(geo.vbo); gl.deleteBuffer(geo.ibo); if (geo.instBuf) gl.deleteBuffer(geo.instBuf); }
+  function dropGeo(geo) { gl.deleteVertexArray(geo.vao); gl.deleteBuffer(geo.vbo); gl.deleteBuffer(geo.ibo); if (geo.instBuf) gl.deleteBuffer(geo.instBuf); if (geo.boneBuf) gl.deleteBuffer(geo.boneBuf); }
   function texOf(t) {
     if (!t) return white;
     let c = t._gpu;
@@ -79,6 +79,7 @@ export function createRenderer(canvas, opts = {}) {
 
   // ---- per-frame scratch ----
   const opaque = [], blended = [], beams = [], casters = [];
+  const boneMats = new Float32Array(S.MAX_BONES * 16);
   const nm3 = new Float32Array(9), tint4 = new Float32Array(4), lightView = m4.create(), lightProj = m4.create(), shadowVP = m4.create();
   const eye = v3.create(), tmp = v3.create(), UP = v3.create(0, 1, 0), UPX = v3.create(1, 0, 0), IDENT = m4.create();
   const candPos = new Float32Array(MAX_CAND * 4), candCol = new Float32Array(MAX_CAND * 4), candScore = new Float32Array(MAX_CAND);
@@ -111,7 +112,8 @@ export function createRenderer(canvas, opts = {}) {
     for (let i = 0; i < c.length; i++) collect(c[i]);
   }
 
-  const orderKey = (n) => (n.instances ? 1e6 : 0) + n.material.id;
+  const orderKey = (n) => (n.instances ? 1e6 : n.bones ? 2e6 : 0) + n.material.id;
+  const variant = (n, plain, inst, skin) => (n.instances ? inst : n.bones ? skin : plain);
   function sortByMaterial(list) { // insertion sort: the list barely changes between frames
     for (let i = 1; i < list.length; i++) {
       const x = list[i], k = orderKey(x); let j = i - 1;
@@ -163,7 +165,8 @@ export function createRenderer(canvas, opts = {}) {
     const u = p.u, inst = n.instances;
     const geo = geoOf(n.mesh, inst ? n : null);
     if (inst && (inst.dirty || !geo.instBuf)) { uploadInstances(gl, geo, inst.data, inst.count); inst.dirty = false; }
-    gl.uniformMatrix4fv(u.uModel, false, n.world);
+    if (n.bones) { const b = n.bones; for (let i = 0; i < b.length; i++) boneMats.set(b[i].world, i * 16); gl.uniformMatrix4fv(u.uBones, false, boneMats); }
+    else gl.uniformMatrix4fv(u.uModel, false, n.world);
     if (u.uNormalMat) gl.uniformMatrix3fv(u.uNormalMat, false, m4.normalMat3(nm3, n.world));
     if (u.uTint) { tint4[0] = n.tint[0]; tint4[1] = n.tint[1]; tint4[2] = n.tint[2]; tint4[3] = n.tint[3] * opacity; gl.uniform4fv(u.uTint, tint4); }
     if (u.uUvRect) gl.uniform4fv(u.uUvRect, n.uvRect);
@@ -177,7 +180,7 @@ export function createRenderer(canvas, opts = {}) {
   function drawToonList(list) {
     let p = null, mat = null;
     for (let i = 0; i < list.length; i++) {
-      const n = list[i], want = n.instances ? P.toonI : P.toon;
+      const n = list[i], want = variant(n, P.toon, P.toonI, P.toonS);
       if (want !== p) { p = want; gl.useProgram(p.program); mat = null; }
       if (n.material !== mat) { mat = n.material; applyToonMaterial(p, mat); }
       drawNode(p, n, mat.opacity);
@@ -235,7 +238,7 @@ export function createRenderer(canvas, opts = {}) {
       gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5, 3);
       let p = null;
       for (let i = 0; i < casters.length; i++) {
-        const n = casters[i], want = n.instances ? P.depthI : P.depth;
+        const n = casters[i], want = variant(n, P.depth, P.depthI, P.depthS);
         if (want !== p) { p = want; gl.useProgram(p.program); gl.uniformMatrix4fv(p.u.uViewProj, false, shadowVP); }
         setCull(!n.material.doubleSided);
         drawNode(p, n, 1);
@@ -250,7 +253,7 @@ export function createRenderer(canvas, opts = {}) {
     const fc = env.fog.color || env.sky.horizon;
     gl.clearColor(fc[0], fc[1], fc[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setCull(true);
-    frameUniforms(P.toon); frameUniforms(P.toonI);
+    frameUniforms(P.toon); frameUniforms(P.toonI); frameUniforms(P.toonS);
     drawToonList(opaque);
 
     // outlines: the same meshes again, pushed out along their smoothed normals, back faces only
@@ -261,7 +264,7 @@ export function createRenderer(canvas, opts = {}) {
       for (let i = 0; i < opaque.length; i++) {
         const n = opaque[i], m = n.material;
         if (!m.outline || m.outline.width <= 0) continue;
-        const want = n.instances ? P.outlineI : P.outline;
+        const want = variant(n, P.outline, P.outlineI, P.outlineS);
         if (want !== p) { p = want; frameUniforms(p); mat = null; }
         if (m !== mat) {
           mat = m;

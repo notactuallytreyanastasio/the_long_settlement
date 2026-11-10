@@ -5,7 +5,7 @@
 // everything is simply rebuilt on next use. Nothing here allocates per frame.
 
 /** Vertex layout shared by every mesh program. 48 bytes per vertex. */
-export const ATTR = { pos: 0, normal: 1, onormal: 2, uv: 3, color: 4, inst0: 5, inst1: 6, inst2: 7, inst3: 8, instColor: 9 };
+export const ATTR = { pos: 0, normal: 1, onormal: 2, uv: 3, color: 4, inst0: 5, inst1: 6, inst2: 7, inst3: 8, instColor: 9, bone: 10 };
 const STRIDE = 48;
 
 /**
@@ -61,7 +61,7 @@ export function createProgram(gl, name, vsSrc, fsSrc, defines = '') {
   gl.attachShader(p, vs); gl.attachShader(p, fs);
   gl.bindAttribLocation(p, ATTR.pos, 'aPos'); gl.bindAttribLocation(p, ATTR.normal, 'aNormal'); gl.bindAttribLocation(p, ATTR.onormal, 'aONormal');
   gl.bindAttribLocation(p, ATTR.uv, 'aUv'); gl.bindAttribLocation(p, ATTR.color, 'aColor');
-  gl.bindAttribLocation(p, ATTR.inst0, 'aInst'); gl.bindAttribLocation(p, ATTR.instColor, 'aInstColor');
+  gl.bindAttribLocation(p, ATTR.inst0, 'aInst'); gl.bindAttribLocation(p, ATTR.instColor, 'aInstColor'); gl.bindAttribLocation(p, ATTR.bone, 'aBone');
   gl.linkProgram(p);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) throw new Error(`gl: program "${name}" failed to link\n${gl.getProgramInfoLog(p)}`);
   gl.deleteShader(vs); gl.deleteShader(fs);
@@ -74,6 +74,7 @@ export function createProgram(gl, name, vsSrc, fsSrc, defines = '') {
 /**
  * Upload a mesh (see mesh.js) as one interleaved buffer and a VAO.
  * Layout: position 3f, normal 3f, outline normal * width 3f, uv 2f, colour rgb + glow as 4 bytes.
+ * A mesh with a `bones` array (see batchFigure in scene.js) also gets a one-byte bone index per vertex.
  * Returns { vao, vbo, ibo, count, indexType, triangles }.
  */
 export function createGeometry(gl, mesh) {
@@ -96,11 +97,16 @@ export function createGeometry(gl, mesh) {
   gl.enableVertexAttribArray(ATTR.onormal); gl.vertexAttribPointer(ATTR.onormal, 3, gl.FLOAT, false, STRIDE, 24);
   gl.enableVertexAttribArray(ATTR.uv); gl.vertexAttribPointer(ATTR.uv, 2, gl.FLOAT, false, STRIDE, 36);
   gl.enableVertexAttribArray(ATTR.color); gl.vertexAttribPointer(ATTR.color, 4, gl.UNSIGNED_BYTE, true, STRIDE, 44);
+  let boneBuf = null;
+  if (mesh.bones) { // one byte per vertex: which bone (node) of a batched figure moves it
+    boneBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, boneBuf); gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(mesh.bones), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(ATTR.bone); gl.vertexAttribPointer(ATTR.bone, 1, gl.UNSIGNED_BYTE, false, 1, 0);
+  }
   const small = n <= 65535;
   const ibo = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, small ? new Uint16Array(mesh.indices) : mesh.indices, gl.STATIC_DRAW);
   gl.bindVertexArray(null);
-  return { vao, vbo, ibo, count: mesh.indices.length, indexType: small ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT, triangles: mesh.indices.length / 3, instBuf: null, instCap: 0 };
+  return { vao, vbo, ibo, count: mesh.indices.length, indexType: small ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT, triangles: mesh.indices.length / 3, instBuf: null, instCap: 0, boneBuf };
 }
 
 /**

@@ -76,6 +76,7 @@ const IDENT_RECT = [0, 0, 1, 1];
  *   uvRect [u, v, su, sv] remaps the mesh's 0..1 uvs into an atlas rectangle (swap eyes, mouths)
  *   light                { color, radius, intensity } makes the node a lantern at its world position
  *   instances            from makeInstances(): draw the mesh many times in one call
+ *   bones                set by batchFigure(): the nodes whose world matrices move this mesh's vertices
  */
 export class Node {
   constructor(name = '', opts = {}) {
@@ -84,7 +85,7 @@ export class Node {
     this.mesh = opts.mesh || null; this.material = opts.material || null;
     this.children = []; this.parent = null; this.visible = true; this.castShadow = true;
     this.tint = new Float32Array([1, 1, 1, 1]); this.flash = new Float32Array(4); this.uvRect = new Float32Array(IDENT_RECT);
-    this.light = null; this.instances = null;
+    this.light = null; this.instances = null; this.bones = null;
     this.local = m4.create(); this.world = m4.create();
     if (opts.pos) this.setPos(opts.pos[0], opts.pos[1], opts.pos[2]);
     if (opts.rot) this.setRot(opts.rot[0], opts.rot[1], opts.rot[2]);
@@ -179,6 +180,51 @@ export function mergeStatic(root, name = root.name + '-static') {
   };
   walk(root);
   for (const { material: mat, cast, parts } of byMat.values()) { const c = new Node(name + ':' + (mat.name || mat.id), { mesh: merge(parts), material: mat }); c.castShadow = cast; out.add(c); }
+  return out;
+}
+
+/**
+ * Draw a whole jointed figure in one call (plus one for its outline and one for its shadow) instead
+ * of three per segment. Every drawable segment under `root` that shares a material is merged into
+ * one mesh in which each vertex remembers which node moves it; the nodes stay where they are as
+ * joints, so poses, idle() and springs keep working unchanged. Returns the new skin nodes (already
+ * added under root). Call once, after the figure is built and before createRig().
+ *
+ * Not batched (left as ordinary nodes): 'blend' decals such as faces, beams, instanced nodes, and
+ * anything under a node named in `skip`. Limits: 32 segments per material; per-segment tint and
+ * flash are gone (tint or flash the returned skin node instead); normals under a squashed segment
+ * are approximate.
+ */
+export function batchFigure(root, { skip = [] } = {}) {
+  const groups = new Map();
+  const walk = (n, skipped) => {
+    const sk = skipped || skip.includes(n.name);
+    if (!sk && n.mesh && n.material && !n.instances && !n.bones && n.material.kind === 'toon' && n.material.texMode !== 'blend') {
+      const key = n.material.id + (n.castShadow ? ':c' : ':n');
+      if (!groups.has(key)) groups.set(key, { material: n.material, cast: n.castShadow, nodes: [] });
+      groups.get(key).nodes.push(n);
+    }
+    for (const c of n.children) walk(c, sk);
+  };
+  walk(root, false);
+  const out = [];
+  for (const g of groups.values()) {
+    if (g.nodes.length < 2) continue;
+    if (g.nodes.length > 32) throw new Error(`batchFigure: "${root.name}" has ${g.nodes.length} segments in material "${g.material.name || g.material.id}"; the limit is 32. Merge the meshes of parts that move together`);
+    const parts = g.nodes.map((n) => {
+      const m = clone(n.mesh);
+      if (n.tint[0] !== 1 || n.tint[1] !== 1 || n.tint[2] !== 1) for (let i = 0; i < m.colors.length; i += 3) { m.colors[i] *= n.tint[0]; m.colors[i + 1] *= n.tint[1]; m.colors[i + 2] *= n.tint[2]; }
+      return m;
+    });
+    const mesh = merge(parts);
+    mesh.bones = new Uint8Array(mesh.positions.length / 3);
+    let v = 0;
+    parts.forEach((p, k) => { const c = p.positions.length / 3; mesh.bones.fill(k, v, v + c); v += c; });
+    const skin = new Node('', { mesh, material: g.material });
+    skin.castShadow = g.cast; skin.bones = g.nodes.slice();
+    for (const n of g.nodes) n.mesh = null;
+    root.add(skin); out.push(skin);
+  }
   return out;
 }
 
@@ -282,7 +328,7 @@ const SUNSET = {
   fog: { color: null, density: 0.005, max: 0.94, start: 10 },
   sky: {
     zenith: '#473fae', mid: '#f0728c', midAt: 0.3, horizon: '#ffc46a', below: '#f0a070', glow: '#fff0a0', glowAmount: 0.7,
-    sun: { color: '#fff4c8', size: 3.6, halo: '#ffb24a', haloAmount: 0.6 }, moon: 0, stars: 0,
+    sun: { color: '#fff6d0', size: 3.2, halo: '#ffc060', haloAmount: 0.5 }, moon: 0, stars: 0,
   },
   water: {
     level: 0, deep: '#2b4db5', mid: '#4a7fd8', shallow: '#7fdcd2', foam: '#fff4e0', glint: '#ffe9a8', glintDensity: 0.2,

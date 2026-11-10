@@ -8,7 +8,7 @@ import {
   m4, rng, DEG,
   sphere, ellipsoid, superellipsoid, blob, cylinder, cone, lathe, limb, torus, box, roundedBox, extrude, tube, curve, spherePatch, disc,
   merge, tint, paint, place, deform, setGlow, setOutline, mirrorX, gradientY, clone, scale as scaleMesh,
-  Node, node, group, material, makeEnv, createScene, createCamera, mergeStatic, makeInstances, setInstance, makeLight,
+  Node, node, group, material, makeEnv, createScene, createCamera, mergeStatic, batchFigure, makeInstances, setInstance, makeLight,
   createRig, idle, blink, createSpring, springs, aimAxis, squash,
   createSprites, createClouds, rayMesh, rayMaterial, createAtlas,
 } from './index.js';
@@ -201,7 +201,7 @@ function buildKid(mat, faceMat, atlas) {
     // the fringe: a zigzag hairline across the brow, swept to one side
     const zig = 0.13 * Math.abs(((ang * 2.6 + 0.4) % 1 + 1) % 1 - 0.5) * 2;
     const line = -1.0 + (1.33 + zig) * s;
-    if (p[1] < line) { p[1] = line + (p[1] - line) * 0.05; p[0] *= 0.86; p[2] *= 0.86; } // tuck the rest inside the skull
+    if (p[1] < line) { p[1] = line + (p[1] - line) * 0.05; p[0] *= 0.74; p[2] *= 0.74; } // tuck the rest inside the skull
   }), 0, 0.012, -0.02, 0, 0, 0, HR[0] * 1.075, HR[1] * 1.1, HR[2] * 1.085), C.hair);
   // two soft locks over the brow, lying close to the head
   const lock = (pts, r0) => tint(tube(curve(pts, 8), (t) => r0 * Math.sin(Math.min(1, t * 1.6 + 0.25) * Math.PI * 0.5) * (1 - t * t * 0.9) + 0.003, 8, { squash: 0.45, crease: 180 }), C.hair);
@@ -243,6 +243,9 @@ function buildKid(mat, faceMat, atlas) {
   const lamp = node('lamp', lanternMesh(1.25), mat, { pos: [0, -0.2, 0.0], parent: foreL });
   const lampLight = new Node('lampLight', { pos: [0, -0.26, 0], parent: lamp, light: makeLight({ color: '#ffb658', radius: 3.0, intensity: 1 }) });
 
+  // the mesh list is a function of the figure, so nodeBounds etc. still work before this point;
+  // from here on the twelve segments are one draw call
+  batchFigure(root);
   const rig = createRig(root);
   const bounce = springs([
     createSpring(tuft, { axis: [0.4, 1, 0], length: 0.16, stiffness: 120, damping: 7, limit: 40 }),
@@ -298,6 +301,10 @@ export function buildDemo(lightName = 'sunset') {
   set.add(node('jetty', jetty(), mat));
   set.add(node('crate1', crate(), mat, { pos: [-0.75, 0.52, 3.55], rot: [0, 18, 0] }), node('crate2', crate(), mat, { pos: [-0.68, 0.97, 3.5], rot: [0, -12, 0], scale: 0.8 }), node('barrel', barrel(), mat, { pos: [-1.3, 0.34, 3.3] }));
   for (const [x, z, s] of [[0.5, 3.0, 0.3], [0.35, 2.45, 0.26], [0.55, 3.5, 0.28]]) set.add(node('step', tint(scaleMesh(blob({ lumps: 0.3, seed: x * 10, seg: 10, rings: 6 }), s, 0.06, s * 0.8), '#e6dcc0'), mat, { pos: [x, z > 3.2 ? 0.4 : z > 2.7 ? 0.62 : 0.9, z] }));
+  // far islets, to give the fog something to fade
+  for (const [x, z, s, seed] of [[-95, -210, 16, 3], [70, -260, 22, 5], [130, -150, 11, 8], [-190, -120, 14, 2]]) {
+    set.add(node('islet', gradientY(scaleMesh(blob({ lumps: 0.7, seed, flatBottom: 0.8, seg: 14, rings: 9 }), s, s * 0.55, s * 0.8), C.sand, C.grassDark), groundMat, { pos: [x, -0.5, z] }));
+  }
   scene.root.add(mergeStatic(set, 'set'));
 
   // grass tufts: one mesh, instanced
@@ -343,7 +350,7 @@ export function buildDemo(lightName = 'sunset') {
     { name: 'figure', target: [0.32, 1.52, 1.75], dist: 3.5, yaw: 20, pitch: 5, fov: 30 },
     { name: 'jetty', target: [-0.9, 0.9, 5.9], dist: 9.5, yaw: -38, pitch: 13, fov: 34 },
     { name: 'high', target: [0, 0.6, 2.2], dist: 25, yaw: 0, pitch: 52, fov: 34 },
-    { name: 'into the light', target: [-0.9, 4.4, -1.0], dist: 15, yaw: lightName === 'sunset' ? 62 : 150, pitch: -6, fov: 40 },
+    { name: 'into the light', target: [-0.9, 4.6, -1.0], dist: 15, yaw: lightName === 'sunset' ? 122 : lightName === 'night' ? 143 : 232, pitch: -9, fov: 42 },
     { name: 'portrait', target: [0.34, 1.6, 1.75], dist: 2.3, yaw: 8, pitch: 2, fov: 28 },
   ];
   let shot = shots[0], orbit = true;
@@ -396,7 +403,7 @@ export function buildDemo(lightName = 'sunset') {
     // particles (skipped when time jumps, e.g. the first frame of a fixed-time screenshot)
     if (lastT >= 0 && time - lastT < 0.5) {
       if (time > nextPuff) { nextPuff = time + 0.55; P3[0] = 2.05; P3[1] = 2.85; P3[2] = -0.75; sprites.puff(P3, { count: 1, size: 0.42, rise: 0.55, life: 2.6, color: lightName === 'night' ? '#b9c6f2' : '#ffffff' }); }
-      if (time > nextGust) { nextGust = time + 1.3; P3[0] = -6 + Math.random() * 5; P3[1] = 1.6 + Math.random() * 4.5; P3[2] = -2 + Math.random() * 7; V3[0] = 2.2; V3[1] = 0.1; V3[2] = 0.3; sprites.gust(P3, { vel: V3, size: 1.5 + Math.random() * 0.8, life: 2.4, alpha: 0.85 }); }
+      if (time > nextGust) { nextGust = time + 1.3; P3[0] = -6 + Math.random() * 5; P3[1] = 1.6 + Math.random() * 4.5; P3[2] = -2 + Math.random() * 7; V3[0] = 2.2; V3[1] = 0.1; V3[2] = 0.3; sprites.gust(P3, { vel: V3, size: 0.9 + Math.random() * 0.5, life: 2.2, alpha: 0.9 }); }
       if (time > nextSparkle) { nextSparkle = time + 0.22; const lw2 = kid.lampLight.world; P3[0] = lw2[12]; P3[1] = lw2[13]; P3[2] = lw2[14]; sprites.sparkle(P3, { count: 1, size: 0.11, spread: 0.4, life: 0.8, color: '#ffe9a0' }); }
       if (time > nextSplash) { nextSplash = time + 3.2; P3[0] = 2.5 + Math.random() * 3; P3[1] = 0.03; P3[2] = 5.5 + Math.random() * 3; sprites.splash(P3, { size: 1.3 }); }
       sprites.update(dt);

@@ -3,6 +3,7 @@
 
 export const MAX_POINTS = 8;
 export const MAX_FOAM = 16;
+export const MAX_BONES = 32;
 
 const COMMON_VS = `
 precision highp float;
@@ -10,14 +11,20 @@ in vec3 aPos; in vec3 aNormal; in vec3 aONormal; in vec2 aUv; in vec4 aColor;
 #ifdef INSTANCED
 in mat4 aInst; in vec4 aInstColor;
 #endif
+#ifdef SKINNED
+in float aBone; uniform mat4 uBones[${MAX_BONES}];
+#endif
 uniform mat4 uViewProj; uniform mat4 uView; uniform mat4 uProj; uniform mat4 uModel; uniform mat3 uNormalMat;
 uniform vec4 uTint;
 `;
 
 const MODEL = `
-#ifdef INSTANCED
+#if defined(INSTANCED)
   mat4 model = uModel * aInst; mat3 nm = mat3(model);
   vec4 tint = uTint * aInstColor;
+#elif defined(SKINNED)
+  mat4 model = uBones[int(aBone + 0.5)]; mat3 nm = mat3(model);
+  vec4 tint = uTint;
 #else
   mat4 model = uModel; mat3 nm = uNormalMat;
   vec4 tint = uTint;
@@ -246,7 +253,7 @@ void main() {
     float star = (1.0 - smoothstep(sz * 0.6, sz, abs(o.x) + abs(o.y))) * step(0.82, rnd) * tw;
     col += vec3(1.0, 0.97, 0.86) * star * uStars.x * smoothstep(0.02, 0.2, h);
   }
-  float halo = (1.0 - smoothstep(r * 1.75 - aa, r * 1.75 + aa, ang)) * 0.55 + (1.0 - smoothstep(r * 2.9 - aa, r * 2.9 + aa, ang)) * 0.28 + (1.0 - smoothstep(r * 4.6 - aa, r * 4.6 + aa, ang)) * 0.17;
+  float halo = (1.0 - smoothstep(r * 1.45 - aa, r * 1.45 + aa, ang)) * 0.5 + (1.0 - smoothstep(r * 2.1 - aa, r * 2.1 + aa, ang)) * 0.3 + (1.0 - smoothstep(r * 3.0 - aa, r * 3.0 + aa, ang)) * 0.2;
   col += uSunHalo.rgb * halo * uSunHalo.a;
   float disc = 1.0 - smoothstep(r - aa, r + aa, ang);
   if (uMoon.w > 0.5) {
@@ -384,7 +391,7 @@ void main() {
     c = mix(uInk, c, inner);
     o = vec4(c, 1.0) * body * vColor.a;
   } else if (vKind < 3.5) {     // 3 curl: a wind streak that runs in and winds up
-    const float R = 0.52, SPAN = 9.42478, T0 = -1.570796; const float B = 0.42 / SPAN;
+    const float R = 0.5, SPAN = 7.5, T0 = -1.570796; const float B = 0.4 / SPAN;
     vec2 c = vec2(0.36, 0.08); vec2 q = p - c; float rho = length(q), phi = atan(q.y, q.x);
     float est = T0 + (R - rho) / B;
     float th = clamp(phi + 6.2831853 * floor((est - phi) / 6.2831853 + 0.5), T0, T0 + SPAN);
@@ -393,9 +400,9 @@ void main() {
     float y0 = c.y - R; float tx = clamp(p.x, -1.0, c.x);
     float dT = length(p - vec2(tx, y0)); float sT = 0.42 * (tx + 1.0) / (c.x + 1.0);
     float dC = dS, s = sS; if (dT < dS) { dC = dT; s = sT; }
-    float head = vPhase * 1.6; float win = (s - (head - 0.6)) / 0.6;
-    float w = 0.042 * sin(clamp(win, 0.0, 1.0) * 3.14159);
-    float ce = fwidth(dC);
+    float head = vPhase * 1.5; float win = (s - (head - 0.5)) / 0.5;
+    float w = 0.05 * sin(clamp(win, 0.0, 1.0) * 3.14159) * (1.0 - 0.45 * s);
+    float ce = min(fwidth(dC), 0.02);
     float a = (1.0 - smoothstep(w - ce, w + ce, dC)) * step(0.004, w);
     o = vec4(vColor.rgb, 1.0) * a * vColor.a;
   } else if (vKind < 4.5) {     // 4 ring: an expanding foam ring on the ground; phase thins it
