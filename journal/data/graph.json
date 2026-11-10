@@ -891,6 +891,132 @@
    "prompt": "Now build out a game inside the game where you go from pinball to turn based combat that’s hack and slash survival of waves with upgrades and weapons centralized around mowing down lots of enemies",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "1b8f1033-30ee-4388-8304-6b678dcfc11a",
+   "type": "observation",
+   "status": "active",
+   "title": "The story bible forbids monsters and makes force a licensed, serious thing: mowing down crowds of people on the 3D stage would fight the tone",
+   "description": null,
+   "created": "2026-11-10T23:52:45.290378Z",
+   "updated": "2026-11-10T23:52:45.290378Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "42f31f39-76cb-4286-b5df-e1121b7fc5fe",
+   "type": "observation",
+   "status": "active",
+   "title": "Marks decide the ending (loans vs trust), so a horde mode that pays marks would distort the Commons/Mint choice",
+   "description": null,
+   "created": "2026-11-10T23:52:45.293258Z",
+   "updated": "2026-11-10T23:52:45.293258Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "59abba74-3fbf-4e35-a4a7-998f4a129523",
+   "type": "observation",
+   "status": "active",
+   "title": "The saucer already holds the ball for a set time: a natural place to leave the table and come back",
+   "description": null,
+   "created": "2026-11-10T23:52:45.295175Z",
+   "updated": "2026-11-10T23:52:45.295175Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "72ca4d36-9753-4bce-99d8-a9527f98e10a",
+   "type": "option",
+   "status": "completed",
+   "title": "Turn-based survivors-like on a 9x11 board: one tap per turn moves the hero, weapons fire by themselves in patterns, the horde advances",
+   "description": "Fits one-thumb iPhone portrait play; weapons with area patterns are what make 'mowing down' work in turns",
+   "created": "2026-11-10T23:52:45.296988Z",
+   "updated": "2026-11-10T23:52:45.296988Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "4797b6f5-31a7-44b3-b39b-74dfbaac24c1",
+   "type": "option",
+   "status": "rejected",
+   "title": "Menu-driven JRPG battles (attack/skill/item) against a few enemies",
+   "description": "Turn based, but a handful of enemies is not hack-and-slash against a horde",
+   "created": "2026-11-10T23:52:45.298025Z",
+   "updated": "2026-11-10T23:52:45.298025Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "315b3048-f617-41be-9593-d76c57437551",
+   "type": "option",
+   "status": "rejected",
+   "title": "Real-time arena brawler",
+   "description": "The request says turn based",
+   "created": "2026-11-10T23:52:45.298701Z",
+   "updated": "2026-11-10T23:52:45.298701Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "4cae4d11-b7e0-4bd2-86c9-b529b95675ef",
+   "type": "option",
+   "status": "completed",
+   "title": "Enter from the saucer when a meter charged by bumpers/slings/targets is lit; ball waits in the saucer",
+   "description": null,
+   "created": "2026-11-10T23:52:45.299260Z",
+   "updated": "2026-11-10T23:52:45.299260Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "9296a598-2399-493e-8097-11b382e4fa4a",
+   "type": "option",
+   "status": "rejected",
+   "title": "Enter from the title screen as a separate mode",
+   "description": "The request is to go from pinball into it",
+   "created": "2026-11-10T23:52:45.300020Z",
+   "updated": "2026-11-10T23:52:45.300020Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "type": "decision",
+   "status": "completed",
+   "title": "Lanewar: a tin-soldier board game inside the world, turn-based auto-weapon horde survival, entered from the lit saucer; beats JRPG menus and a title-screen mode",
+   "description": "A toy board game is an in-world reason to cut down hundreds of figures, is naturally turn based, and tin soldiers are cheap to draw in crowds in the toon engine. It pays score and a ball save, never marks, and uses its own rng so the ledger and the table's randomness are untouched. Loadout and wave persist between visits.",
+   "created": "2026-11-10T23:52:45.300712Z",
+   "updated": "2026-11-10T23:52:45.300712Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1306,6 +1432,69 @@
    "type": "leads_to",
    "rationale": "Result",
    "created": "2026-11-10T22:25:00.110221Z"
+  },
+  {
+   "from": "323e4f39-3319-413b-bf3e-210a7ef1b273",
+   "to": "1b8f1033-30ee-4388-8304-6b678dcfc11a",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T23:52:45.292613Z"
+  },
+  {
+   "from": "323e4f39-3319-413b-bf3e-210a7ef1b273",
+   "to": "42f31f39-76cb-4286-b5df-e1121b7fc5fe",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T23:52:45.294720Z"
+  },
+  {
+   "from": "323e4f39-3319-413b-bf3e-210a7ef1b273",
+   "to": "59abba74-3fbf-4e35-a4a7-998f4a129523",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T23:52:45.296507Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "72ca4d36-9753-4bce-99d8-a9527f98e10a",
+   "type": "chosen",
+   "rationale": "A toy board game is an in-world reason to cut down hundreds of figures, is naturally turn based, and tin soldiers are cheap to draw in crowds in the toon engine. It pays score and a ball save, never marks, and uses its own rng so the ledger and the table's randomness are untouched. Loadout and wave persist between visits.",
+   "created": "2026-11-10T23:52:45.302298Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "4797b6f5-31a7-44b3-b39b-74dfbaac24c1",
+   "type": "rejected",
+   "rationale": "A toy board game is an in-world reason to cut down hundreds of figures, is naturally turn based, and tin soldiers are cheap to draw in crowds in the toon engine. It pays score and a ball save, never marks, and uses its own rng so the ledger and the table's randomness are untouched. Loadout and wave persist between visits.",
+   "created": "2026-11-10T23:52:45.303596Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "315b3048-f617-41be-9593-d76c57437551",
+   "type": "rejected",
+   "rationale": "A toy board game is an in-world reason to cut down hundreds of figures, is naturally turn based, and tin soldiers are cheap to draw in crowds in the toon engine. It pays score and a ball save, never marks, and uses its own rng so the ledger and the table's randomness are untouched. Loadout and wave persist between visits.",
+   "created": "2026-11-10T23:52:45.304649Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "4cae4d11-b7e0-4bd2-86c9-b529b95675ef",
+   "type": "chosen",
+   "rationale": "A toy board game is an in-world reason to cut down hundreds of figures, is naturally turn based, and tin soldiers are cheap to draw in crowds in the toon engine. It pays score and a ball save, never marks, and uses its own rng so the ledger and the table's randomness are untouched. Loadout and wave persist between visits.",
+   "created": "2026-11-10T23:52:45.305646Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "9296a598-2399-493e-8097-11b382e4fa4a",
+   "type": "rejected",
+   "rationale": "A toy board game is an in-world reason to cut down hundreds of figures, is naturally turn based, and tin soldiers are cheap to draw in crowds in the toon engine. It pays score and a ball save, never marks, and uses its own rng so the ledger and the table's randomness are untouched. Loadout and wave persist between visits.",
+   "created": "2026-11-10T23:52:45.306598Z"
+  },
+  {
+   "from": "323e4f39-3319-413b-bf3e-210a7ef1b273",
+   "to": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "type": "leads_to",
+   "rationale": "Decided",
+   "created": "2026-11-10T23:52:45.307538Z"
   }
  ]
 }
