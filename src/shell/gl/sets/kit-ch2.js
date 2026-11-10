@@ -32,6 +32,8 @@
 //   courtTable(opts), ropeRail(opts), lampRack(opts)
 //   driftFire(opts) (anchors: fire), duneGrass(opts), seaWall(opts), driftNet(opts), dryingRack(opts), beachedBoat via kit.boat
 //   tideMarker(opts), saltRoad(opts)
+//   flameBank(opts)             every open fire of a set as one instanced draw: { node, spots, update }
+//   placard(opts)               a painted board on a stick
 //   ch2Materials()              kitMaterials() plus wall / shaft / rock
 //   shell(spec)                 what every set returns: cameras, frame(), view(), lamps, flames, setPower(), update()
 
@@ -40,8 +42,8 @@ import {
   sphere, ellipsoid, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane, quad, fromArrays, blob,
   merge, tint, paint, place, setGlow, setOutline, gradientY, deform, scale as scaleMesh,
 } from '../mesh.js';
-import { material, group } from '../scene.js';
-import { PAL, wonk, kitMaterials, setRig, townsfolk } from './kit.js';
+import { material, group, Node, makeInstances } from '../scene.js';
+import { PAL, wonk, kitMaterials, setRig, townsfolk, flame } from './kit.js';
 
 /** Saltmere's colours. */
 export const SM = {
@@ -868,6 +870,39 @@ export function saltRoad({ path, w = 5, w1 = null, drop = 0.5, n = 28, top = SM.
   return m;
 }
 
+// ------------------------------------------------------------------------------------ fire
+
+/**
+ * Every open fire of a set as ONE instanced draw: flameBank({ spots: [{ pos, s }], material }) (use ch2Materials().speck:
+ * no outline) -> { node, spots, update(time, level) }. Each flame licks and turns on its own phase; `level` 0..1.3
+ * scales them all (a fire that is fed by the table), and spot.level (default 1) scales one. No allocation in update.
+ */
+export function flameBank({ spots, material: mat, r = 0.2, h = 0.6 }) {
+  const n = new Node('flames', { mesh: flame({ r, h }), material: mat }); n.castShadow = false; n.cull = false;
+  const inst = makeInstances(Math.max(1, spots.length)); inst.count = spots.length; n.instances = inst;
+  const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create();
+  const list = spots.map((sp, i) => ({ pos: sp.pos, s: sp.s || 1, ph: i * 2.39 + 0.7, level: sp.level ?? 1, flick: 1 }));
+  return {
+    node: n, spots: list,
+    update(time, level = 1) {
+      for (let i = 0; i < list.length; i++) {
+        const f = list[i], fl = 0.8 + 0.2 * Math.sin(time * 9.1 + f.ph) * Math.sin(time * 5.3 + f.ph * 2.3), k = f.s * Math.max(0.001, level * f.level);
+        f.flick = fl;
+        quat.fromEuler(Q, 0, time * 0.8 + f.ph, Math.sin(time * 3.3 + f.ph) * 0.09); S3[0] = S3[2] = k * (0.92 + 0.08 * Math.sin(time * 6.3 + f.ph)); S3[1] = k * (0.55 + 0.6 * fl);
+        m4.fromTRS(Mx, f.pos, Q, S3); inst.data.set(Mx, i * 20);
+      }
+      inst.dirty = true;
+    },
+  };
+}
+
+/** A placard on a stick, planted or held up: a board with two lines of paint. Origin: the foot of the stick. Faces +Z. */
+export function placard({ lines = ['OUR', 'LIGHT'], h = 2.0, w = 0.9, color = SM.salt, ink = SM.rust, stick = SM.timberDark } = {}) {
+  const bh = 0.28 * lines.length + 0.14, parts = [cyl(0.03, 0.035, h, 5, 0, 0, -0.03, stick), rb(w, bh, 0.05, 0.02, 0, h - bh / 2 + 0.1, 0, color)];
+  lines.forEach((t, i) => parts.push(place(pixelText(t, { s: Math.min(0.2, (w - 0.12) / (t.length * 0.8 - 0.2) ), color: ink, glow: 0.05 }), 0, h + 0.1 - 0.2 - i * 0.28, 0.03)));
+  return merge(parts);
+}
+
 // ------------------------------------------------------------------------------------ the shell every set shares
 
 /**
@@ -876,13 +911,14 @@ export function saltRoad({ path, w = 5, w1 = null, drop = 0.5, n = 28, top = SM.
  *           lamps  [{ name, pos, color, radius, base, flicker? }]     -> env.points (at most 6)
  *           glows  [{ sprite, base, fixed? (ignores power), flick? (0..1: follows flame flicker) }]
  *           flames [{ node, s (base scale), ph, lamp? (index into lamps: its light flickers with the flame), k? (how much power feeds it, default 1) }]
+ *           fire   a flameBank: scaled by power; a lamp with fire: i flickers with flame i
  *           house  true: setPower also scales the scene key and ambient (a room lit by its lamps); false: lamps only
  *           motes  { box [x0, x1, y0, y1, z0, z1], every, color, size, vel, life, alpha, kind } | null
  *           tick(time, dt, pw, live)   the set's own animation; pw = L.power * power; live = false on a time jump
  *           extra  set-specific fields merged into the result }
  * setPower(p): 0 = the table is empty (lamps guttering, room at half), 1 = as designed, 1.5 = a little over.
  */
-export function shell({ id, light, L, scene, cameras, marks, actors, foreground, lamps = [], glows = [], flames = [], motes = null, tick = null, house = true, extra = {} }) {
+export function shell({ id, light, L, scene, cameras, marks, actors, foreground, lamps = [], glows = [], flames = [], fire = null, motes = null, tick = null, house = true, extra = {} }) {
   const env = scene.env, sprites = scene.sprites;
   if (lamps.length > 6) throw new Error(`${id}: ${lamps.length} fixed lamps; the limit is 6 (the engine draws 8, two stay free for carried lamps)`);
   env.points = lamps.map((l) => ({ pos: l.pos, color: rgb(l.color), radius: l.radius, intensity: l.base * L.power }));
@@ -904,6 +940,7 @@ export function shell({ id, light, L, scene, cameras, marks, actors, foreground,
       f.node.setScale(k * (0.92 + 0.08 * Math.sin(time * 6.3 + f.ph)), k * fl, k); f.node.setRot(0, time * 40 + f.ph * 57, Math.sin(time * 3.3 + f.ph) * 5);
       if (f.lamp != null) env.points[f.lamp].intensity *= 0.85 + 0.3 * (fl - 0.82) / 0.18 * 0.5;
     }
+    if (fire) { fire.update(time, 0.45 + 0.55 * Math.min(1.3, low * (power > 1 ? power : 1))); for (let i = 0; i < lamps.length; i++) { const l = lamps[i]; if (l.fire != null) env.points[i].intensity *= 0.72 + 0.35 * fire.spots[l.fire].flick; } }
     for (let i = 0; i < glows.length; i++) { const g = glows[i]; g.sprite.alpha = g.base * (g.fixed ? 1 : Math.min(1.3, L.power * (power <= 1 ? low : power))) * (g.flick ? 0.9 + 0.1 * Math.sin(time * 9.1 + i * 1.7) : 1); }
     if (tick) tick(time, dt, pw, live);
     if (live) {

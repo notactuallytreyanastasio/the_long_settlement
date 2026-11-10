@@ -8,6 +8,7 @@
 //                              view(), lamps -> env.points, setPower(), update() (lamp flicker, glows, motes, sprites)
 //   cams(over), marks8()       the standard camera marks and standing marks, with per-set overrides
 //   pick8(id, LIGHTS, name)    a light state by name; an unknown name warns and uses the first
+//   putInst(inst, i, ...)      write one instance transform and colour without allocating
 //   materials8()               kitMaterials() + wall (encloses a room, casts nothing), shaft (additive), sea, glass
 // Cresset
 //   lampTower(opts)            the Founders' Lamp from outside: { body, glass } + anchors lamp, top, door
@@ -29,7 +30,7 @@
 //   lampHouse(opts)            the stone lamp-house: anchors door, lamp, top
 //   kelpRack(opts), goat(opts), pebble(), beach(opts), drystone(opts), bowlTable()
 
-import { m4, rng, DEG, rgb } from '../math.js';
+import { m4, quat, rng, DEG, rgb } from '../math.js';
 import {
   sphere, ellipsoid, blob, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane, fromArrays,
   merge, tint, place, setGlow, setOutline, gradientY, deform, flip, scale as scaleMesh,
@@ -59,12 +60,20 @@ export const dirFrom = (azDeg, elDeg) => [Math.sin(azDeg * DEG) * Math.cos(elDeg
 
 // ------------------------------------------------------------------------------------ the shell
 
+const _q = quat.create(), _p = [0, 0, 0], _s = [1, 1, 1], _m = m4.create();
+/** Write instance i of a node's instances: position, Euler degrees, scale, colour. Allocates nothing (for update loops). */
+export function putInst(inst, i, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx, cr = 1, cg = 1, cb = 1) {
+  quat.fromEuler(_q, rx * DEG, ry * DEG, rz * DEG); _p[0] = x; _p[1] = y; _p[2] = z; _s[0] = sx; _s[1] = sy; _s[2] = sz;
+  m4.fromTRS(_m, _p, _q, _s);
+  const d = inst.data, o = i * 20; d.set(_m, o); d[o + 16] = cr; d[o + 17] = cg; d[o + 18] = cb; d[o + 19] = 1; inst.dirty = true;
+}
+
 export function materials8() {
   return {
     ...kitMaterials(),
     wall: material({ name: 'ch8-wall', rim: 0, bandEdge: -0.2, outline: { width: 1.9, self: 0.65 }, castShadow: false }),
     shaft: material({ kind: 'beam', name: 'ch8-shaft', beam: { power: 0.7, near: 0.34, far: 0.03, steps: 0 }, outline: false }),
-    sea: material({ name: 'ch8-sea', rim: 0, emissive: 0.5, bandEdge: -0.3, outline: { width: 2.2, self: 0.8 }, castShadow: false, receiveShadow: false, fog: 0.35 }),
+    sea: material({ name: 'ch8-sea', rim: 0, emissive: 0.9, bandEdge: -0.3, outline: { width: 2.2, self: 0.8 }, castShadow: false, receiveShadow: false, fog: 0.35 }),
     glass: material({ name: 'ch8-glass', rim: 0, outline: false, castShadow: false, receiveShadow: false, fog: 0.3 }),
   };
 }
@@ -204,12 +213,13 @@ export function dome({ r = 6, drum = 4, seg = 14 } = {}) {
  * the Assembly dome. Returns { nodes (far statics, unmerged, to add to a far group), glass (a node: the lamp room's
  * panes, for putting the lamp out), anchors: { lamp, top, dome, windows[], moleZ } }.
  */
-export function cressetFar({ M, low = false, tower = [3.4, -1.2, -52], h = 16, moleZ = -52, water = -0.5, town = [-17, -0.5, -40], townYaw = 62, lit = 0.8, seed = 3 } = {}) {
+export function cressetFar({ M, low = false, tower = [3.4, -1.2, -52], h = 16, moleZ = -52, water = -0.5, town = [-17, -0.5, -40], townYaw = 62, lit = 0.8, seed = 3, towerGlow = 0, moleDir = -1, moleLen = 110 } = {}) {
   const FAR = low ? M.farFlat : M.far, nodes = [];
   const moleY = water + 1.9;
-  nodes.push(node('mole', mole({ len: 110, w: 4, drop: 2.6, parapet: 1.3, seed, block: 3.2, arches: !low }), FAR, { pos: [tower[0] - 52, moleY, moleZ] }));
+  nodes.push(node('mole', mole({ len: moleLen, w: 4, drop: 2.6, parapet: 1.3, seed, block: 4.4, arches: false }), FAR, { pos: [tower[0] + moleDir * (moleLen / 2 - 3), moleY, moleZ] }));
   nodes.push(node('mole-head', tint(cylinder(5.2, 5.6, 3.0, low ? 10 : 14), C8.marble2), FAR, { pos: [tower[0], moleY - 2.9, moleZ] }));
   const T = lampTower({ h, r: h * 0.135, seg: low ? 10 : 14 }), TP = [tower[0], moleY, moleZ];
+  if (towerGlow > 0) setGlow(T.body, towerGlow);
   nodes.push(node('tower', T.body, FAR, { pos: TP }));
   const glass = node('tower-glass', T.glass, M.glass, { pos: TP }); glass.castShadow = false;
   const bank = townBank({ w: 46, d: 18, h: 14, rows: low ? 3 : 4, seed: seed + 2, lit, walls: [C8.marble, '#ffe6c4', '#ffd9c8', '#fff6dc'], tower: false });
@@ -236,8 +246,8 @@ export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, wat
   g.traverse((n) => { n.castShadow = false; });
   scene.root.add(mergeStatic(g, 'ground'));
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
-  scatter(cob, low ? 150 : 420, (i) => {
-    const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = quayZ + 0.95 + row * (low ? 0.95 : 0.42) + (r() - 0.5) * 0.12;
+  scatter(cob, low ? 150 : 320, (i) => {
+    const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = quayZ + 0.95 + row * (low ? 0.95 : 0.55) + (r() - 0.5) * 0.12;
     if (r() < 0.42) return null;
     const sc = 0.2 + r() * 0.09; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobbles[Math.floor(r() * cobbles.length)] };
   });
@@ -269,16 +279,16 @@ export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, wat
  * the viewer with a lip of foam. Origin: the middle of its foot. Scale the node in Y to raise it. Use materials8().sea.
  */
 export function seaWall({ w = 120, h = 9, seg = 28, seed = 1, bow = 0, deep = '#1c3ca8', mid = '#2f7fe0', high = '#63d6e6', foam = '#f4ffff' } = {}) {
-  const prof = [[7, 0], [3.4, 0.04], [1.3, 0.26], [0.2, 0.56], [0.25, 0.82], [1.3, 0.97], [2.3, 1.0], [2.9, 0.9], [2.6, 0.82]], cols = [deep, deep, mid, mid, high, high, foam, foam, foam].map((c) => rgb(c));
+  const prof = [[7, 0], [3.4, 0.04], [1.3, 0.26], [0.2, 0.56], [0.1, 0.8], [0.5, 0.93], [1.2, 1.0], [1.9, 0.94], [1.7, 0.86]], cols = [deep, deep, mid, mid, high, foam, foam, foam, foam].map((c) => rgb(c));
   const pos = [], idx = [], np = prof.length, C = [];
   for (let i = 0; i <= seg; i++) {
-    const u = i / seg, x = (u - 0.5) * w, lump = 1 + 0.1 * Math.sin(u * 23 + seed) + 0.07 * Math.sin(u * 57 + seed * 2.3), back = bow * (u - 0.5) * (u - 0.5) * 4;
-    for (let j = 0; j < np; j++) { const k = j >= 4 ? lump : 1; pos.push(x, prof[j][1] * h * k, prof[j][0] * (h / 9) - back + (j >= 5 ? Math.sin(u * 31 + seed) * 0.5 : 0)); C.push(cols[j]); }
+    const u = i / seg, x = (u - 0.5) * w, lump = 1 + 0.1 * Math.sin(u * 23 + seed) + 0.07 * Math.sin(u * 57 + seed * 2.3) + (i % 2 ? 0.035 : -0.035), back = bow * (u - 0.5) * (u - 0.5) * 4;
+    for (let j = 0; j < np; j++) { const k = j >= 4 ? lump : 1; pos.push(x, prof[j][1] * h * k, prof[j][0] * (h / 9) - back + (j >= 5 ? Math.sin(u * 31 + seed) * 0.5 : 0)); const cc = cols[j], rib = j > 0 && j < 5 && i % 2 ? 1.12 : 1; C.push([Math.min(1, cc[0] * rib), Math.min(1, cc[1] * rib), Math.min(1, cc[2] * rib)]); }
   }
   for (let i = 0; i < seg; i++) for (let j = 0; j < np - 1; j++) { const a = i * np + j, b = (i + 1) * np + j; idx.push(a, b, b + 1, a, b + 1, a + 1); }
   const m = fromArrays(pos, idx, null, 180);
   for (let i = 0; i < C.length; i++) { m.colors[i * 3] = C[i][0]; m.colors[i * 3 + 1] = C[i][1]; m.colors[i * 3 + 2] = C[i][2]; }
-  return setOutline(m, (x, y) => (y > h * 0.75 ? 1 : 0));
+  return setOutline(m, (x, y) => (y > h * 0.7 ? 1 : 0));
 }
 
 /** A tubby open boat for instancing (pale: the instance colour paints it), bow toward +Z, waterline at y = 0. anchors: pan (the fire pan on its bow post), seats[2] */

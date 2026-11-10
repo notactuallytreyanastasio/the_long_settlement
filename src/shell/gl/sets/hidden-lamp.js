@@ -173,7 +173,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     const X = norm3([-d[2], 0, d[0]]), Z = [X[1] * -d[2] - X[2] * -d[1], X[2] * -d[0] - X[0] * -d[2], X[0] * -d[1] - X[1] * -d[0]];
     return deform(mesh, (p) => { const x = p[0], y = p[1], z = p[2]; p[0] = X[0] * x - d[0] * y + Z[0] * z; p[1] = X[1] * x - d[1] * y + Z[1] * z; p[2] = X[2] * x - d[2] * y + Z[2] * z; });
   };
-  const beam = node('beam', along(tint(rayMesh(46, 0.16, 5.5, 14), '#8fe4ff'), AIM), rayMaterial({ power: 1.4, near: 0.5, far: 0 }), { pos: FLAME });
+  const beam = node('beam', along(tint(rayMesh(46, 0.16, 5.5, 14), '#8fe4ff'), AIM), rayMaterial({ power: 0.6, near: 1.3, far: 0.05 }), { pos: FLAME });
   beam.visible = false; scene.root.add(beam);
   const spill = node('spill', tint(rayMesh(2.6, 0.2, 2.3, 14), '#7fd8ff'), rayMaterial({ power: 1.6, near: 0.3, far: 0 }), { pos: [FLAME[0], FLAME[1] + 0.1, FLAME[2]] }); scene.root.add(spill);
   if (L.shaft > 0) { // slants of first light through the mouth onto the sand
@@ -210,7 +210,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     fl.setScale(0.9 + 0.5 * Math.min(1.5, pw) * L.flame, (0.9 + 0.6 * Math.min(1.5, pw) * L.flame) * (0.92 + 0.16 * flick), 0.9 + 0.5 * Math.min(1.5, pw) * L.flame); fl.setRot(Math.sin(time * 3.1) * 5, time * 40, Math.sin(time * 2.3) * 6);
     flameGlow.alpha = 0.62 * f; flameGlow.size[0] = flameGlow.size[1] = 2.0 + 0.9 * pw; flameCore.alpha = 0.8 * f;
     lamps[0].k = (0.62 + 0.38 * shutNow) * L.flame * flick;
-    beam.visible = shutNow > 0.2 && pw > 0.05; beam.material.beam.near = 0.5 * Math.min(1, (shutNow - 0.2) / 0.5) * Math.min(1.2, pw) * (light === 'day' ? 0.4 : 1);
+    beam.visible = shutNow > 0.2 && pw > 0.05; beam.material.beam.near = 1.3 * Math.min(1, (shutNow - 0.2) / 0.5) * Math.min(1.2, pw) * (light === 'day' ? 0.4 : 1);
     spill.material.beam.near = 0.26 * f;
     cf.setScale(1, 0.9 + 0.2 * Math.sin(time * 11), 1); candleGlow.alpha = 0.6 * L.candle;
     // the answers: each island keeps its own slow time

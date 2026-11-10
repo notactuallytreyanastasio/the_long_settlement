@@ -248,8 +248,10 @@ export function longboat({ len = 8.4, beam = 3.1, side = 0.5, hull = '#f2e6c8', 
   parts.push(tint(place(roundedBox(0.9, 0.07, beam * 0.62, 0.02, 1), -hl + 0.75, 0.36, 0), '#e2a35e'));
   // the bow staff: a crooked pole with a little arm to hang the lantern from
   const sx = hl - 0.75, top = [sx + 0.12, staff, 0], hook = [sx - 0.3, staff - 0.08, 0];
-  parts.push(tint(tube(curve([[sx, 0, 0], [sx - 0.04, staff * 0.5, 0], top], 6), (t) => 0.06 - 0.02 * t, 6, { crease: 180 }), trim));
-  parts.push(tint(tube(curve([top, [sx - 0.1, staff + 0.08, 0], hook], 6), 0.025, 5, { crease: 180 }), PAL.iron));
+  if (staff > 0) {
+    parts.push(tint(tube(curve([[sx, 0, 0], [sx - 0.04, staff * 0.5, 0], top], 6), (t) => 0.06 - 0.02 * t, 6, { crease: 180 }), trim));
+    parts.push(tint(tube(curve([top, [sx - 0.1, staff + 0.08, 0], hook], 6), 0.025, 5, { crease: 180 }), PAL.iron));
+  }
   return keep(merge(parts), { staff: hook, bow: [hl + 0.12, sheer(hl) + 0.45, 0], stern: [-hl - 0.06, sheer(-hl) + 0.3, 0], seats: seatsAt, locks, nearLocks, side });
 }
 

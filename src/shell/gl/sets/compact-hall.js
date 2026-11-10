@@ -72,14 +72,14 @@ function build(engine = null, { light, low = false } = {}) {
   const WR = WALK_EAVE + 1.5;
   room.add(node('walk-roof', merge(slab(-WALK_HW - 0.2, WALK_EAVE, 0, WR, WALK_END, BACK - 0.2, ROOF2), slab(0, WR, WALK_HW + 0.2, WALK_EAVE, WALK_END, BACK - 0.2, ROOF2)), M.wall));
   room.add(node('walk-floor', tint(place(plane(WALK_HW * 2, BACK - WALK_END), 0, 0.01, (BACK + WALK_END) / 2), '#e0a878'), M.wall));
-  for (const sx of [-1, 1]) room.add(node('walk-wall', plankWall({ w: BACK - WALK_END, h: WALK_EAVE, t: 0.2, colors: ['#3f8fe0', '#3478d0', '#4a9cea'], board: 0.9, seed: 9 + sx, posts: 3.94, post: K6.timberRed }), M.wall, { pos: [sx * WALK_HW, 0, (BACK + WALK_END) / 2], rot: [0, -sx * 90, 0] }));
+  for (const sx of [-1, 1]) room.add(node('walk-wall', plankWall({ w: BACK - WALK_END, h: WALK_EAVE, t: 0.2, colors: ['#3f8fe0', '#3478d0', '#4a9cea'], board: 0.9, seed: 9 + sx, posts: 3.94, post: '#2f9fc4' }), M.wall, { pos: [sx * WALK_HW, 0, (BACK + WALK_END) / 2], rot: [0, -sx * 90, 0] }));
   // the far gable and its door, standing open on the quay lamps
   room.add(node('gable', plankWall({ w: WALK_HW * 2, h: WR, t: 0.2, colors: ['#3f8fe0', '#3478d0'], board: 0.8, openings: [{ x: 0, w: 2.2, sill: 0, top: 3.0 }], seed: 2, post: K6.timberRed }), M.wall, { pos: [0, 0, WALK_END] }));
   room.add(node('gable-glow', setOutline(setGlow(tint(place(box(2.2, 3.0, 0.05), 0, 1.5, WALK_END - 0.3), '#ffc870'), 1), 0), M.flat));
 
   // roof frames: two over the head-house, then one every four metres down the walk
   for (const z of [BACK + 0.5, -0.9, 2.6]) props.add(node('truss', truss({ span: HW * 2, rise: RISE - 0.1, color: K6.timberRed, beam: 0.3 }), M.prop, { pos: [0, EAVE, z], castShadow: false }));
-  const walkTruss = truss({ span: WALK_HW * 2, rise: 1.4, color: K6.timberRed, beam: 0.22, brace: false });
+  const walkTruss = truss({ span: WALK_HW * 2, rise: 1.4, color: '#2f9fc4', beam: 0.22, brace: false });
   const WT = []; for (let z = BACK - 3.2; z > WALK_END + 1; z -= 4.2) WT.push(z);
   for (const z of WT) props.add(node('wtruss', walkTruss, M.prop, { pos: [0, WALK_EAVE, z], castShadow: false }));
 
@@ -123,11 +123,11 @@ function build(engine = null, { light, low = false } = {}) {
   const moon = '#9fb8ff';
   const sh = [], pt = group('patches');
   for (const o of SIDE_WIN) { // the left wall's windows: world z = centre - o.x (the wall is turned to face +X)
-    const z = (FRONT + BACK) / 2 + o.x;
-    sh.push(place(shaft({ w: o.w * 0.9, h: (o.top - o.sill) * 0.8, dir: [1, -0.8, 0.12], len: 5.2, cards: 3, color: moon, spread: 0.2 }), -HW + 0.1, (o.sill + o.top) / 2, z, 0, 90, 0));
+    const z = (FRONT + BACK) / 2 - o.x;
+    sh.push(place(shaft({ w: o.w * 0.9, h: (o.top - o.sill) * 0.8, dir: [-0.12, -0.8, 1], len: 5.2, cards: 3, color: moon, spread: 0.2 }), -HW + 0.1, (o.sill + o.top) / 2, z, 0, 90, 0));
     pt.add(node('patch', patch({ w: 1.4, d: 2.6, panes: 2, shear: 0, color: '#aebfff', glow: 0.5 }), M.flat, { pos: [-HW + 3.7, 0.012, z + 0.4], rot: [0, 90, 0] }));
   }
-  if (!low) for (let i = 0; i < WT.length - 1; i += 2) { const z = WT[i] - 2.1; sh.push(place(shaft({ w: 1.2, h: 0.3, dir: [0.45, -1, 0.1], len: 4.6, cards: 2, color: moon, spread: 0.5 }), -1.2, WALK_EAVE + 0.6, z, 90, 0, 0)); pt.add(node('wp', patch({ w: 1.3, d: 1.5, panes: 2, shear: 0.1, color: '#93a8ff', glow: 0.45 }), M.flat, { pos: [0.8, 0.02, z + 0.4] })); }
+  if (!low) for (let i = 1; i < WT.length - 1; i += 2) { const z = WT[i] - 2.1; sh.push(place(shaft({ w: 1.2, h: 0.3, dir: [0.45, 0.1, 1], len: 4.6, cards: 1, color: '#3440b0', spread: 0.5 }), -1.2, WALK_EAVE + 0.6, z, 90, 0, 0)); pt.add(node('wp', patch({ w: 1.3, d: 1.5, panes: 2, shear: 0.1, color: '#93a8ff', glow: 0.45 }), M.flat, { pos: [0.8, 0.02, z + 0.4] })); }
   scene.root.add(node('shafts', merge(sh), M.shaft), mergeStatic(pt, 'patches'));
   // the lamp's own cone
   const cone = node('lamp-cone', tint(place(rayMesh(3.0, 0.2, 2.4, 18), LAMP[0], LAMP[1] - 0.1, LAMP[2]), '#ffc468'), M.cone);
@@ -143,9 +143,9 @@ function build(engine = null, { light, low = false } = {}) {
   for (const sx of [-1, 1]) for (let i = 0; i < 5; i++) nearSpots.push({ pos: [sx * (4.2 + r() * 1.6), 0, BACK + 1.9 + i * 0.95 + (r() - 0.5) * 0.3 + (sx > 0 ? 1.2 : 0.4)], face: -sx * (62 + r() * 24), s: 1.02 + r() * 0.2 });
   const farRows = low ? 9 : 16;
   for (let row = 0; row < farRows; row++) for (let i = 0; i < 6; i++) farSpots.push({ pos: [-2.2 + i * 0.88 + (r() - 0.5) * 0.4 + (row % 2) * 0.35, 0, BACK - 4.0 - row * (low ? 2.2 : 1.35) + (r() - 0.5) * 0.4], face: (r() - 0.5) * 30, s: 1.0 + r() * 0.2 });
-  const dockerCoats = ['#ffd9c4', '#cfe4ff', '#ffe9b8', '#d8f2e4', '#ffd0d8', '#e2d8ff', '#fff0d8', '#c8ecf0'];
+  const dockerCoats = ['#ffbc9c', '#a8d0ff', '#ffdc90', '#b4ecd0', '#ffb4c4', '#cdbcff', '#ffd0a8', '#9ce0e8'], farCoats = ['#f09a80', '#7fb4f0', '#f0c868', '#84d8b8', '#f094b0', '#b49cf0'];
   const nearCrowd = crowd({ spots: nearSpots, material: M.prop, sprites, seed: 5, detail: 1, hold: 'lantern', colors: dockerCoats, glowSize: 0.7, variants: 2 });
-  const farCrowd = crowd({ spots: farSpots, material: M.speck, sprites, seed: 9, detail: 0, hold: 'lantern', colors: dockerCoats, glowSize: 0.8, variants: 1 });
+  const farCrowd = crowd({ spots: farSpots, material: M.speck, sprites, seed: 9, detail: 0, hold: 'lantern', colors: farCoats, glowSize: 0.8, variants: 1 });
   scene.root.add(nearCrowd.node, farCrowd.node);
   // the lanterns that go up for the vote: one above every docker, on a stick
   const all = [...nearSpots, ...farSpots];
@@ -176,7 +176,7 @@ function build(engine = null, { light, low = false } = {}) {
   const glows = [
     { sprite: sprites.add({ kind: 'glow', pos: LAMP, size: 3.6, color: '#ffb048', alpha: 0 }), base: 0.5 },
     { sprite: sprites.add({ kind: 'glow', pos: [-4.55, 3.7, BACK + 0.6], size: 1.3, color: '#ffb450', alpha: 0 }), base: 0.5 },
-    { sprite: sprites.add({ kind: 'glow', pos: [0, 1.7, WALK_END + 0.4], size: 7, color: '#ffc060', alpha: 0 }), base: 0.5, fixed: true },
+    { sprite: sprites.add({ kind: 'glow', pos: [0, 1.7, WALK_END + 0.4], size: 5, color: '#ffb050', alpha: 0 }), base: 0.35, fixed: true },
   ];
   for (const p of walkLamps) glows.push({ sprite: sprites.add({ kind: 'glow', pos: p, size: 1.5, color: '#ffb450', alpha: 0 }), base: 0.55 });
   const lampStar = sprites.add({ kind: 'sparkle', pos: LAMP, size: 1.5, color: '#fff6d0', alpha: 0.7 });
@@ -185,6 +185,7 @@ function build(engine = null, { light, low = false } = {}) {
   let vote = L.vote, voteNow = L.vote, keyOn = false;
   const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), P = [0, 0, 0], rnd = rng(31);
   let nextSpark = 0;
+  const CO = { lit: 0, lively: 0 };
   function setVote(v) { vote = Math.max(0, Math.min(1, v)); }
   function setKey(on) { keyOn = !!on; keyNode.visible = keyOn; }
   function cue(lineId) {
@@ -205,8 +206,8 @@ function build(engine = null, { light, low = false } = {}) {
     cone.position[0] = LAMP[0] - LAMP_HOOK[0]; cone.position[2] = LAMP[2] - LAMP_HOOK[2]; cone.visible = pw > 0.05;
     lampStar.alpha = 0.6 * Math.min(1, pw) * (0.8 + 0.2 * Math.sin(time * 9)); lampStar.rot = time * 0.2;
     const carried = 0.16 + 0.5 * voteNow;                      // the lanterns they came with: low and mostly dark until the vote
-    nearCrowd.update(time, dt, { lit: carried * Math.min(1.3, 0.4 + pw), lively: 0.22 + 0.3 * voteNow });
-    farCrowd.update(time, dt, { lit: carried * Math.min(1.3, 0.4 + pw), lively: 0.2 + 0.3 * voteNow });
+    CO.lit = carried * Math.min(1.3, 0.4 + pw); CO.lively = 0.22 + 0.3 * voteNow;
+    nearCrowd.update(time, dt, CO); farCrowd.update(time, dt, CO);
     const d = upNode.instances.data;
     for (let i = 0; i < ups.length; i++) {
       const u = ups[i], k = Math.max(0, Math.min(1, (voteNow * 1.35 - u.at * 0.35) * 4 - 0.0)), e = k * k * (3 - 2 * k), bob = Math.sin(time * 1.7 + u.ph) * 0.05;
@@ -226,7 +227,7 @@ function build(engine = null, { light, low = false } = {}) {
     id: 'compact-hall', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue, house: 0.55,
     motes: low ? null : { box: [-4, 4, 0.6, 4.2, -4, 1.5], every: 0.3, color: '#ffd890', size: 0.07, vel: [0.04, 0.05, 0.02], life: 5, alpha: 0.75 },
     marks: { ...STD_MARKS(), coil: { pos: [COIL[0], 0.42, COIL[2]], face: 20 }, table: [TABLE[0], 0.82, TABLE[2]], focus: LAMP },
-    extra: { setVote, setKey, get vote() { return voteNow; } },
+    extra: { setVote, setKey, voteLevel: () => voteNow },
   });
 }
 

@@ -19,7 +19,7 @@
 
 import { rng } from '../math.js';
 import { merge, tint, place, box, setGlow } from '../mesh.js';
-import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
+import { node, group, makeEnv, createScene, mergeStatic, material } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { anchorAt, crowd } from './kit.js';
 import {
@@ -34,7 +34,7 @@ const LIGHTS = {
   day: {
     preset: 'day', power: 0.3,
     env: {
-      key: { dir: norm3([-0.42, 0.76, 0.5]), color: '#fff2d8' },
+      key: { dir: norm3([-0.42, 0.76, 0.5]), color: '#f4e4cc' },
       shadow: { tint: '#8a86ee', lift: 0.08, saturate: 1.4 },
       ambient: { sky: '#cfe0ff', ground: '#ffd0b8', amount: 0.13 },
       rim: { color: '#fff2c0', amount: 0.6, edge: 0.76 },
@@ -42,12 +42,12 @@ const LIGHTS = {
       sky: { sunDir: norm3([-0.5, 0.5, -1]) },
       water: null,
     },
-    glass: '#fff8d0', glass2: '#bfe6ff', shaft: '#ffe08a', patch: '#fff0b0',
+    glass: '#fff8d0', glass2: '#bfe6ff', shaft: '#ffd870', patch: '#fff0b0',
   },
 };
 
 const CAMERAS = {
-  wide: { target: [0, 2.1, -0.6], dist: 9.0, yaw: 2, pitch: 3, fov: 50, aspect: 0.46, shadowCenter: [0, 0, -1.6], shadowRadius: 8 },
+  wide: { target: [-0.35, 2.1, -0.7], dist: 9.0, yaw: 17, pitch: 3, fov: 50, aspect: 0.46, shadowCenter: [0, 0, -1.6], shadowRadius: 8 },
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -15, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 21, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
   low: { target: [0.1, 2.3, -0.9], dist: 6.4, yaw: -6, pitch: -12, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 8 },
@@ -61,7 +61,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const WL = splay(-1, BW, BACK, FW, WING_Z), WR = splay(1, BW, BACK, FW, WING_Z);
   const deco = (n) => { n.castShadow = false; return n; };
-  const WALL = '#dfe2ff', WALL2 = '#cdd2fb';
+  const WALL = '#bcc2fa', WALL2 = '#a8acee';
 
   // ---- the hall
   const room = group('room');
@@ -109,16 +109,15 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   // the Assessor's side has brought files; the Tribune's has one brief
   { const parts = []; for (let i = 0; i < 6; i++) parts.push(tint(place(box(0.34, 0.07, 0.26), (i % 2) * 0.03, 0.035 + i * 0.07, 0, 0, i * 7 - 12, 0), [SM.paper, '#ffe6b0', '#dfe8ff'][i % 3]), tint(place(box(0.35, 0.02, 0.05), (i % 2) * 0.03, 0.07 + i * 0.07, 0, 0, i * 7 - 12, 0), SM.seal)); props.add(deco(node('files', merge(parts), M.prop, { pos: [AT[0] + 0.5, 0.69, AT[2] - 0.05] })), deco(node('files2', merge(parts), M.prop, { pos: [AT[0] + 1.25, 0, AT[2] - 0.3], rot: [0, 30, 0] }))); }
   // stepped forms down both sides for the town to stand on, behind rope rails
-  const tiers = (sx) => { const parts = []; for (let j = 0; j < 4; j++) parts.push(tint(place(box(4.2, 0.24 * (j + 1), 0.66), sx * 5.0, 0.12 * (j + 1), -2.0 - j * 0.66), j % 2 ? SM.timber : SM.timberPale)); return merge(parts); };
+  const tiers = (sx) => { const parts = []; for (let j = 0; j < 4; j++) parts.push(tint(place(box(4.4, 0.24 * (j + 1), 0.66), sx * 4.85, 0.12 * (j + 1), -2.0 - j * 0.66), j % 2 ? SM.timber : SM.timberPale)); return merge(parts); };
   for (const sx of [-1, 1]) {
     props.add(node('tiers', tiers(sx), M.prop));
-    props.add(node('rail', ropeRail({ len: 3.4, rope: SM.wine }), M.prop, { pos: [sx * 4.75, 0, -1.45] }));
-    props.add(node('rail2', ropeRail({ len: 2.4, rope: SM.wine }), M.prop, { pos: [sx * 2.95, 0, -2.75], rot: [0, 90, 0] }));
+    props.add(node('rail', ropeRail({ len: 3.4, rope: SM.wine }), M.prop, { pos: [sx * 4.6, 0, -1.45] }));
   }
   // miners' lamps on the wings, a form by the door
   for (const Wg of [WL, WR]) props.add(deco(node('rack', lampRack({ n: 6, len: 2.6 }), M.prop, { pos: Wg.at(-0.5, 0.06, 2.35), rot: [0, Wg.yaw, 0] })));
   props.add(node('form', form({ len: 2.4 }), M.prop, { pos: WR.at(2.6, 0.5), rot: [0, WR.yaw + 90, 0] }));
-  const HL = [0, H + 0.05, -1.6], hl = hangLamp({ drop: 1.3, r: 0.55, shade: SM.wine });
+  const HL = [3.3, H + 0.05, -0.9], hl = hangLamp({ drop: 1.3, r: 0.5, shade: SM.wine });
   props.add(deco(node('lamp', hl, M.prop, { pos: HL })));
   scene.root.add(mergeStatic(props, 'props'));
 
@@ -127,12 +126,12 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     const parts = [];
     for (const o of WWIN) { const p = WL.at(o.x, 0.1, (o.sill + o.top) / 2); parts.push(place(shafts({ w: 1.2, h: 1.7, dir: [0, -0.62, 1], len: 9.5, cards: 3, color: L.shaft, spread: 0.3 }), p[0], p[1], p[2], 0, WL.yaw, 0)); }
     for (const o of BWIN) parts.push(place(shafts({ w: 1.2, h: 1.7, dir: [-o.x * 0.05, -0.8, 1], len: 6, cards: 2, color: L.shaft, spread: 0.2 }), o.x, (o.sill + o.top) / 2, BACK + 0.05));
-    scene.root.add(node('shafts', merge(parts), M.shaft));
+    scene.root.add(node('shafts', merge(parts), material({ kind: 'beam', name: 'court-shaft', beam: { power: 0.6, near: 0.5, far: 0.08, steps: 0 }, outline: false })));
   }
 
   // ---- the town
   const spots = [];
-  for (const sx of [-1, 1]) for (let j = 0; j < 4; j++) for (let i = 0; i < 7; i++) spots.push({ pos: [sx * (3.15 + i * 0.56 + (r() - 0.5) * 0.14), 0.24 * (j + 1), -2.0 - j * 0.66 + (r() - 0.5) * 0.1], face: -sx * (38 + r() * 26), s: 0.86 + r() * 0.2 });
+  for (const sx of [-1, 1]) for (let j = 0; j < 4; j++) for (let i = 0; i < 7; i++) spots.push({ pos: [sx * (2.85 + i * 0.56 + (r() - 0.5) * 0.14), 0.24 * (j + 1), -2.0 - j * 0.66 + (r() - 0.5) * 0.1], face: -sx * (38 + r() * 26), s: 0.86 + r() * 0.2 });
   for (let i = 0; i < 8; i++) { const sx = i % 2 ? 1 : -1; spots.push({ pos: [sx * (5.2 + (i >> 1) * 0.55), 0, -0.9 + (r() - 0.5) * 0.3], face: -sx * 70, s: 0.9 + r() * 0.16 }); }
   for (let i = spots.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = spots[i]; spots[i] = spots[j]; spots[j] = t; }
   const sprites = scene.sprites = createSprites(low ? 128 : 320);
@@ -140,19 +139,20 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   scene.root.add(folk.node);
 
   const actors = group('actors'); scene.root.add(actors);
-  const foreground = mergeStatic(group('fg', {}, node('fg-rail', ropeRail({ len: 2.6, rope: SM.wine }), M.prop, { pos: [-2.6, 0, 3.0], rot: [0, 10, 0] }), node('fg-rail2', ropeRail({ len: 2.6, rope: SM.wine }), M.prop, { pos: [2.6, 0, 3.0], rot: [0, -10, 0] })), 'foreground');
+  const fg = group('fg', {}, node('fg-rail', ropeRail({ len: 2.6, rope: SM.wine }), M.prop, { pos: [-2.7, 0, 3.0], rot: [0, 10, 0] }), node('fg-rail2', ropeRail({ len: 2.6, rope: SM.wine }), M.prop, { pos: [2.7, 0, 3.0], rot: [0, -10, 0] }));
+  const foreground = mergeStatic(fg, 'foreground');
   scene.root.add(foreground);
 
   // ---- lamps
   const seat = anchorAt(benchMesh, 'seat', BENCH), gavel = anchorAt(benchMesh, 'gavel', BENCH), lampAt = [HL[0], HL[1] + hl.anchors.lamp[1], HL[2]];
   const lamps = [
-    { name: 'roll', pos: [0, 4.2, BACK + 1.6], color: '#ffe6a0', radius: 5.5, base: 4.2, flicker: 0, fixed: true },
-    { name: 'sun-floor', pos: [0.2, 1.6, -1.2], color: '#fff0c0', radius: 6.5, base: 3.0, flicker: 0, fixed: true },
+    { name: 'roll', pos: [0, 4.2, BACK + 1.6], color: '#ffe6a0', radius: 5.5, base: 1.5, flicker: 0, fixed: true },
+    { name: 'sun-floor', pos: [0.2, 1.6, -1.2], color: '#fff0c0', radius: 6.5, base: 1.1, flicker: 0, fixed: true },
     { name: 'hall', pos: lampAt, color: '#ffc870', radius: 7, base: 1.2 },
-    { name: 'win-l', pos: [-4.2, 3.2, BACK + 1.6], color: '#fff0c8', radius: 4.6, base: 2.6, flicker: 0, fixed: true },
-    { name: 'win-r', pos: [4.2, 3.2, BACK + 1.6], color: '#fff0c8', radius: 4.6, base: 2.6, flicker: 0, fixed: true },
+    { name: 'win-l', pos: [-4.2, 3.2, BACK + 1.6], color: '#fff0c8', radius: 4.6, base: 1.2, flicker: 0, fixed: true },
+    { name: 'win-r', pos: [4.2, 3.2, BACK + 1.6], color: '#fff0c8', radius: 4.6, base: 1.2, flicker: 0, fixed: true },
   ];
-  const glows = [{ sprite: sprites.add({ kind: 'glow', pos: [lampAt[0], lampAt[1] - 0.1, lampAt[2]], size: 2.2, color: '#ffc060', alpha: 0 }), base: 1.2 }];
+  const glows = [{ sprite: sprites.add({ kind: 'glow', pos: [lampAt[0], lampAt[1] - 0.1, lampAt[2]], size: 1.8, color: '#ffc060', alpha: 0 }), base: 1.0 }];
   for (const o of BWIN) glows.push({ sprite: sprites.add({ kind: 'glow', pos: [o.x, (o.sill + o.top) / 2, BACK + 0.3], size: 4.2, color: '#fff2b0', alpha: 0 }), base: 0.42, fixed: true });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [ROLL[0], ROLL[1] + 3.3, ROLL[2] + 0.2], size: 1.6, color: '#ffd24a', alpha: 0 }), base: 0.6, fixed: true });
 

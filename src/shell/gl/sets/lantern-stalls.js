@@ -107,7 +107,7 @@ const MARKS = {
 
 // ------------------------------------------------------------------------------------ build
 
-function build(engine = GL0, { light = 'dusk' } = {}) {
+function build(engine = GL0, { light = 'dusk', low = false } = {}) {
   const L = LIGHTS[light];
   if (!L) throw new Error(`lantern-stalls: unknown light "${light}" (have ${Object.keys(LIGHTS).join(', ')})`);
   const M = kitMaterials(), r = rng(4242);
@@ -131,12 +131,15 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
 
   // ---- static geometry, baked to one mesh per material
   const set = group('set-static');
+  // what stands well out to either side is baked apart from the middle, so the live band (which sees x -3..3 of the
+  // strip) culls it whole: the two outer stalls, the two outer houses and the corner bushes are 14k of the set's 38k triangles
+  const sideL = group('set-left'), sideR = group('set-right'), sideOf = (x) => (x < -4.8 ? sideL : x > 4.8 ? sideR : set);
   set.add(node('ground', tint(place(plane(90, 24, 1, 1), 0, 0, QUAY_Z + 0.3 + 12), '#ecd7a6'), M.ground));
   set.add(node('quay', quayEdge({ len: 26, drop: 1.7, seed: 4 }), M.ground, { pos: [0, 0, QUAY_Z] }));
   for (const sx of [-1, 1]) set.add(node('quay-far', tint(place(box(32, 1.9, 0.5), sx * 29, -0.95, QUAY_Z + 0.3), PAL.stone2), M.ground));
 
-  const stalls = stallDefs.map((d) => { const m = stall(d.opts); set.add(node('stall-' + d.name, m, M.prop, { pos: d.pos, rot: [0, d.yaw, 0] })); return { ...d, mesh: m }; });
-  const houses = houseDefs.map((d, i) => { const m = house(d.opts); set.add(node('house' + i, m, M.prop, { pos: d.pos, rot: [0, d.yaw, 0] })); return { ...d, mesh: m }; });
+  const stalls = stallDefs.map((d) => { const m = stall(d.opts); sideOf(d.pos[0]).add(node('stall-' + d.name, m, M.prop, { pos: d.pos, rot: [0, d.yaw, 0] })); return { ...d, mesh: m }; });
+  const houses = houseDefs.map((d, i) => { const m = house(d.opts); sideOf(d.pos[0]).add(node('house' + i, m, M.prop, { pos: d.pos, rot: [0, d.yaw, 0] })); return { ...d, mesh: m }; });
 
   const poleL = pole({ h: 5.3, seed: 2 }), poleR = pole({ h: 4.9, seed: 6, knob: PAL.coral });
   set.add(node('poleL', poleL, M.prop, { pos: POLE_L }), node('poleR', poleR, M.prop, { pos: POLE_R }));
@@ -156,7 +159,7 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
   const fallen = [[-0.95, 0.13, -0.75, 80, 20, 0, PAL.lanterns[1]], [-1.35, 0.12, -0.35, -84, 70, 0, PAL.lanterns[2]], [-0.55, 0.13, -1.25, 86, -40, 10, PAL.lanterns[5]]];
   for (const [x, y, z, rx, ry, rz, col] of fallen) { const m = setGlow(paperLantern({ r: 0.13, seg: 8, cord: 0.01 }), 0); for (let i = 0; i < m.colors.length; i += 3) { const c = GL0.rgb(col); m.colors[i] *= c[0] * 0.85; m.colors[i + 1] *= c[1] * 0.85; m.colors[i + 2] *= c[2] * 0.85; } set.add(node('fallen', place(m, 0, 0.3, 0), M.prop, { pos: [x, y - 0.13, z], rot: [rx, ry, rz] })); }
   // green things in the corners
-  set.add(node('bush1', bush({ seed: 2, s: 1.3 }), M.prop, { pos: [-6.6, 0.1, -3.0] }), node('bush2', bush({ seed: 5, s: 1.1, color: PAL.leaf }), M.prop, { pos: [7.0, 0.1, -3.1] }));
+  sideL.add(node('bush1', bush({ seed: 2, s: 1.3 }), M.prop, { pos: [-6.6, 0.1, -3.0] })); sideR.add(node('bush2', bush({ seed: 5, s: 1.1, color: PAL.leaf }), M.prop, { pos: [7.0, 0.1, -3.1] }));
 
   // strings: wires are static, lanterns are instanced below
   const strings = [], wires = [];
@@ -194,12 +197,12 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
   if (env.sky.sunDir) env.sky.sunDir = norm(env.sky.sunDir);
   env.water.level = WATER;
   env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], [BOAT[0], BOAT[2], 0.95, 0.5], [BOAT[0] + 0.9, BOAT[2] + 0.15, 0.62, 0.45], [BOAT[0] - 0.9, BOAT[2] - 0.15, 0.62, 0.45], [-7.5, -19, 1.25, 0.6], [9.5, -24, 1.6, 0.7], [19, -40, 2.2, 0.8], [-5.5, -30, 1.3, 0.6], [-52, -135, 46, 1.6], [78, -150, 39, 1.6]];
-  scene.root.add(mergeStatic(set, 'set'), mergeStatic(far, 'far'));
+  scene.root.add(mergeStatic(set, 'set'), mergeStatic(sideL, 'set-left'), mergeStatic(sideR, 'set-right'), mergeStatic(far, 'far'));
 
   // ---- cobbles: one instanced draw
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
   const cobCols = ['#fbeac4', '#e4cc9c', '#f6dfb2', '#e0c696', '#f2d8aa'];
-  scatter(cob, 520, (i) => {
+  scatter(cob, low ? 300 : 520, (i) => {      // low: the rows from the quay to just past the stage strip; nearer the wide camera the ground is bare
     const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = QUAY_Z + 0.95 + row * 0.5 + (r() - 0.5) * 0.12;
     if (r() < 0.38) return null;
     const sc = 0.2 + r() * 0.09; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobCols[Math.floor(r() * cobCols.length)] };
@@ -288,7 +291,7 @@ function build(engine = GL0, { light = 'dusk' } = {}) {
   }
 
   // ---- sky: clouds, gulls
-  const clouds = cloudBank({ count: 9, seed: 7, arc: [158, 204], radius: [250, 430], height: [14, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
+  const clouds = cloudBank({ count: 9, seed: 7, arc: [158, 204], radius: [250, 430], height: [14, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud, style: low ? 'painted' : 'solid' });   // low: the engine's two-triangle painted clouds
   scene.root.add(clouds.node);
   const gulls = node('gulls', gull({}), M.speck); gulls.instances = makeInstances(5); gulls.instances.count = 5;
   if (light !== 'night') scene.root.add(gulls);

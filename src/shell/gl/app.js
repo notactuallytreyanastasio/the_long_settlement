@@ -230,7 +230,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   }
 
   function tableNow(content, id) {
-    const view = GL.createTableView(content, id);
+    const view = GL.createTableView(content, id, { detail: lowSets ? 0.75 : 1 });     // a phone's table is cut a little coarser (engine: 63-73k -> 50-57k triangles)
     view.fitKey = null;
     tables.set(id, view);
     app.stats.built++;

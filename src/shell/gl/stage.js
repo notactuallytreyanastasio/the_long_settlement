@@ -720,7 +720,7 @@ function fightOn(S, opts = {}) {
     else if (mode === MODES.walk) x = s[0] - 1.3 + 2.9 * p;
     else if (mode === MODES.talk && i === 0) x = -0.55;
     else if (kind === 'people') x = s[0] - 0.25 + 0.45 * p;
-    out[0] = x; out[1] = z; return out;
+    out[0] = clamp(x, -HALF_W + 0.45 + 0.1 * i, HALF_W - 0.45); out[1] = z; return out;      // never out of the band's frame
   }
 
   /** A new scene's encounter on this stage. Figures already here walk to their new places; cut: everyone is simply there. */

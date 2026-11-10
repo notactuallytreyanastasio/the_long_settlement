@@ -12,6 +12,7 @@
 //   shell7(spec)               what every set returns: lamps -> env.points, glows, setPower, frame, view, update
 //   sunShafts(dir, list, col)  slants of light along a direction, one mesh for rayMaterial()
 //   rows(...)                  crowd spots in a block
+//   folk7(spec)                a crowd whose coats are dyed in the mesh (kit.js's crowd tints the whole figure, face and all)
 // Dock things
 //   trestle, fishBox, fish, basket, dryingNet, skiff, cutter (the Audit cutter: one mast, one search lamp), moleWall, quay7
 //   slate (the hearing's tally slate on an easel), oddsBoard (Tobb's board: 'odds' | 'table'), chalk, numerals, tallies
@@ -30,9 +31,9 @@ import {
   sphere, ellipsoid, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane, fromArrays,
   merge, tint, paint, place, deform, setGlow, setOutline, gradientY, scale as scaleMesh,
 } from '../mesh.js';
-import { group } from '../scene.js';
+import { group, Node, makeInstances } from '../scene.js';
 import { rayMesh } from '../fx.js';
-import { PAL, wonk, setRig } from './kit.js';
+import { PAL, wonk, setRig, townsfolk } from './kit.js';
 
 export const C7 = {
   stone: '#fff0cf', stone2: '#f6dfb6', stoneShade: '#e9c9a0', peach: '#ffcfa8', rose: '#ffb9a2',
@@ -144,6 +145,52 @@ export function rows(seed, n, x0, x1, z0, z1, face = 0, y = 0) {
     out.push({ pos, face: typeof face === 'function' ? face(pos) : face + (r() - 0.5) * 24 });
   }
   return out;
+}
+
+/**
+ * A crowd in daylight. kit.js's crowd() dresses its people with the instance colour, which tints faces too, so its coats
+ * have to stay nearly white; by day that reads as a row of ghosts. Here each variant's coat is dyed in the mesh and the
+ * instance colour only shifts it a little, so a docker has a teal smock and a face.
+ *   spots [{ pos, face, s? }] in the order they arrive;  coats: one colour per variant (each variant is two draws)
+ *   hold 'none' | 'lantern' | 'torch';  sprites: for a glow on each light (or null)
+ * Returns { node, people, amount, pace, setAmount(0..1), update(time, dt, { lit, lively }) }, as kit.js's crowd.
+ */
+export function folk7({ spots, material, coats = ['#58c4d6', '#ff9a78'], tints = ['#ffffff', '#fff0d8', '#e6f0ff', '#ffe8ee', '#f0ffe8', '#e8e0f6'], hold = 'none', sprites = null, glow = '#ffc060', glowSize = 0.75, seed = 1, amount = 1, detail = 1 }) {
+  const r = R(seed), n = new Node('folk'), V = Math.max(1, Math.min(coats.length, spots.length || 1)), kinds = [];
+  for (let v = 0; v < V; v++) {
+    const mesh = townsfolk({ seed: seed + v * 3.7, hold, detail, coat: coats[v] }), k = new Node('folk' + v, { mesh, material });
+    k.castShadow = false; k.instances = makeInstances(Math.max(1, Math.ceil(spots.length / V) + 1)); k.instances.count = 0; n.add(k); kinds.push({ node: k, A: mesh.anchors.light, n: 0 });
+  }
+  const people = spots.map((sp, i) => ({ kind: kinds[i % V], pos: sp.pos, face: sp.face || 0, s: sp.s || 0.9 + r() * 0.24, ph: r() * 6.283, col: rgb(tints[Math.floor(r() * tints.length) % tints.length]), here: i < Math.round(amount * spots.length) ? 1 : 0, glow: sprites && hold !== 'none' ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: glowSize, color: glow, alpha: 0 }) : null }));
+  const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), P = [0, 0, 0];
+  let arrived = Math.round(amount * spots.length);
+  const c = {
+    node: n, people, amount, pace: 9,
+    setAmount(a) { c.amount = Math.max(0, Math.min(1, a)); },
+    update(time, dt = 0, { lit = 1, lively = 0.3 } = {}) {
+      const want = Math.round(c.amount * people.length), pace = c.pace * dt;
+      arrived = dt === 0 ? want : arrived + Math.max(-pace, Math.min(pace, want - arrived));
+      for (let v = 0; v < V; v++) kinds[v].n = 0;
+      for (let i = 0; i < people.length; i++) {
+        const p = people[i], goal = i < arrived ? 1 : 0, kind = p.kind, d = kind.node.instances.data, k = kind.n, A = kind.A;
+        p.here += (goal - p.here) * Math.min(1, dt * 7 + (dt === 0 ? 1 : 0));
+        if (p.here < 0.02) { if (p.glow) p.glow.alpha = 0; continue; }
+        const hop = Math.abs(Math.sin(time * (2.2 + lively * 2.6) + p.ph)) * 0.05 * lively, sw = Math.sin(time * 1.1 + p.ph * 1.7) * (2 + 5 * lively) * DEG, yaw = (p.face + Math.sin(time * 0.6 + p.ph) * 8 * lively) * DEG;
+        const s = p.s * (0.2 + 0.8 * p.here) * (1 + 0.12 * Math.sin(Math.min(1, p.here) * Math.PI));
+        P[0] = p.pos[0]; P[1] = p.pos[1] + hop; P[2] = p.pos[2];
+        quat.fromEuler(Q, 0, yaw, sw); S3[0] = S3[1] = S3[2] = s;
+        m4.fromTRS(Mx, P, Q, S3); d.set(Mx, k * 20);
+        d[k * 20 + 16] = p.col[0]; d[k * 20 + 17] = p.col[1]; d[k * 20 + 18] = p.col[2]; d[k * 20 + 19] = 1; kind.n++;
+        if (p.glow) {
+          const cy = Math.cos(yaw), sy = Math.sin(yaw), g = p.glow, ax = A[0] - Math.sin(sw) * A[1];
+          g.pos[0] = P[0] + (ax * cy + A[2] * sy) * s; g.pos[1] = P[1] + A[1] * s; g.pos[2] = P[2] + (-ax * sy + A[2] * cy) * s;
+          g.alpha = 0.6 * Math.min(1.3, lit) * p.here * (0.9 + 0.1 * Math.sin(time * 8 + p.ph * 3));
+        }
+      }
+      for (let v = 0; v < V; v++) { const kn = kinds[v].node; kn.instances.count = kinds[v].n; kn.instances.dirty = true; kn.visible = kinds[v].n > 0; }
+    },
+  };
+  return c;
 }
 
 // ------------------------------------------------------------------------------------ chalk

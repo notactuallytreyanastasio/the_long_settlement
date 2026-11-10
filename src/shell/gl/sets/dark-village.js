@@ -138,26 +138,27 @@ function build(engine = GL0, { light, low = false } = {}) {
     yard.add(node('sack', sack({ seed: 4, s: 0.3 }), M.prop, { pos: [-4.4, 0, 0.5] }), node('coil', ropeCoil({ r: 0.26 }), M.prop, { pos: [4.1, 0, 0.9] }), node('weed', kelp({ s: 0.7, seed: 4 }), M.flat, { pos: [-2.9, 0.01, -1.7] }));
   }
   // houses either side of the hall and up the lane behind: every shutter to, nothing in any window
-  for (const [x, z, yaw, o] of [[-7.6, -4.6, 22, { seed: 2, w: 3.2, h: 2.4 }], [7.9, -4.9, -24, { seed: 5, w: 3.0, h: 2.9, roofH: 1.7 }], [-11.5, -1.5, 50, { seed: 8, w: 3.0, h: 2.2 }], [11.6, -1.2, -52, { seed: 11, w: 3.2, h: 2.3 }], [-6.5, -10.5, 8, { seed: 14, w: 3.0, h: 2.8 }], [6.2, -11, -6, { seed: 17, w: 3.3, h: 2.5 }]]) town.add(node('hut', stoneHut(o), M.prop, { pos: [x, 0, z], rot: [0, yaw, 0] }));
+  for (const [x, z, yaw, o] of [[-7.6, -4.6, 22, { seed: 2, w: 3.2, h: 2.4 }], [7.9, -4.9, -24, { seed: 5, w: 3.0, h: 2.9, roofH: 1.7 }], [-11.5, -1.5, 50, { seed: 8, w: 3.0, h: 2.2 }], [11.6, -1.2, -52, { seed: 11, w: 3.2, h: 2.3 }]].slice(0, low ? 2 : 4)) town.add(node('hut', stoneHut(o), M.prop, { pos: [x, 0, z], rot: [0, yaw, 0] }));
   town.add(node('bush1', bush({ seed: 3, s: 1.3, color: '#3fa888' }), M.prop, { pos: [-5.4, 0.1, -3.9] }), node('bush2', bush({ seed: 6, s: 1.1, color: '#4fc4a0' }), M.prop, { pos: [5.6, 0.1, -4.2] }));
 
   // ---- the hill behind, and the island's light on it with its cap on
-  const far = group('far'), HILL = [-4, -1.5, -40], TOWER = [-5.2, 0, -31];
+  const far = group('far'), HILL = [-4, -1.5, -40], TOWER = [-4.3, 0, -30];
   const hillMesh = headland({ w: 90, d: 40, h: 12, seed: 6, grass: night ? '#2f8a8e' : '#5fd0a0', cliff: night ? '#6a70d0' : '#c8c0f0', foot: '#8a80d8', capAt: 0.3, ...(low ? { seg: 24, rings: 10 } : {}) });
   far.add(node('hill', hillMesh, FAR, { pos: HILL, rot: [0, 180, 0] }));
   { let top = 0; const Pm = hillMesh.positions; for (let i = 0; i < Pm.length; i += 3) if (Math.hypot(-Pm[i] + HILL[0] - TOWER[0], -Pm[i + 2] + HILL[2] - TOWER[2]) < 5 && Pm[i + 1] > top) top = Pm[i + 1]; TOWER[1] = HILL[1] + top - 0.6; }
-  const tower = cappedLamp({ h: 5.6, r: 1.25 });
+  const tower = cappedLamp({ h: 7.2, r: 1.6 });
   far.add(node('tower', tower, FAR, { pos: TOWER }));
-  if (!low) for (const [x, z, s, seed] of [[5, -27, 1.5, 3], [10.5, -29, 1.3, 7], [-13, -28, 1.4, 9], [16, -33, 1.6, 12], [1, -34, 1.2, 15]]) far.add(node('up-hut', stoneHut({ seed, w: 2.6 * s, d: 2.2 * s, h: 2.0 * s, roofH: 1.4 * s }), FAR, { pos: [x, HILL[1] + 5.6 + (seed % 5) * 0.5, z], rot: [0, (seed % 7) * 9 - 20, 0] }));
+  if (!low) for (const [x, z, s, seed] of [[5, -27, 1.5, 3], [10.5, -29, 1.3, 7], [1, -34, 1.2, 15]]) far.add(node('up-hut', stoneHut({ seed, w: 2.6 * s, d: 2.2 * s, h: 2.0 * s, roofH: 1.4 * s }), FAR, { pos: [x, HILL[1] + 5.6 + (seed % 5) * 0.5, z], rot: [0, (seed % 7) * 9 - 20, 0] }));
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir); env.water.level = WATER;
   const insideNode = mergeStatic(inside, 'inside');
-  scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(town, 'town'), insideNode, mergeStatic(yard, 'yard'), mergeStatic(far, 'far'));
+  for (const k of yard.children.slice()) town.add(k);
+  scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(town, 'town'), insideNode, mergeStatic(far, 'far'));
 
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
   const cobCols = ['#eceafc', '#c8c6f0', '#dcd4f6', '#bcc4f0', '#e6d6f0'];
-  scatter(cob, low ? 220 : 420, (i) => { const col = i % 20, row = Math.floor(i / 20), x = -6.6 + col * 0.68 + (row % 2) * 0.34 + (r() - 0.5) * 0.16, z = HALL_Z + 0.5 + row * 0.5 + (r() - 0.5) * 0.12; if (r() < 0.4) return null; const sc = 0.2 + r() * 0.1; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobCols[Math.floor(r() * cobCols.length)] }; });
+  scatter(cob, low ? 160 : 300, (i) => { const col = i % 20, row = Math.floor(i / 20), x = -6.6 + col * 0.68 + (row % 2) * 0.34 + (r() - 0.5) * 0.16, z = HALL_Z + 0.5 + row * 0.5 + (r() - 0.5) * 0.12; if (r() < 0.4) return null; const sc = 0.2 + r() * 0.1; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobCols[Math.floor(r() * cobCols.length)] }; });
   scene.root.add(cob);
 
   const fg = group('fg');
@@ -169,15 +170,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   const spots = [];
   for (const [z, y] of [[zb + 1.55, 0.26], [zb + 0.95, 0.52]]) for (let i = 0; i < 6; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (1.0 + i * 0.42), y, z], face: sx * -14, s: 0.86 });
   for (let i = 0; i < 5; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (1.15 + i * 0.44), 0.02, zb + 2.25], face: sx * -18, s: 0.86 });
-  for (let i = 0; i < 14; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (3.55 + (i % 4) * 0.52 + r() * 0.14), 0, -1.9 + Math.floor(i / 4) * 0.62 + r() * 0.2], face: sx * -62 });
-  const folk = crowd({ spots, material: M.prop, sprites: null, hold: 'none', detail: 1, variants: low ? 2 : 3, seed: 5, amount: L.crowd });
+  for (let i = 0; i < (low ? 5 : 9); i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (3.55 + (i % 4) * 0.52 + r() * 0.14), 0, -1.9 + Math.floor(i / 4) * 0.62 + r() * 0.2], face: sx * -62 });
+  const folk = crowd({ spots, material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 5, amount: L.crowd });
   scene.root.add(folk.node);
 
   // the stove's fire, the light out of the doors
   const fire = node('fire', flame({ r: 0.1, h: 0.2 }), M.lantern, { pos: [FIRE[0], FIRE[1] - 0.12, FIRE[2] + 0.02] }); fire.castShadow = false; scene.root.add(fire);
   const fireGlow = sprites.add({ kind: 'glow', pos: FIRE, size: 2.0, color: '#ffa040', alpha: 0 }), doorGlow = sprites.add({ kind: 'glow', pos: [0, 1.5, HALL_Z - 0.6], size: 5.2, color: '#ff9a48', alpha: 0 }), ventGlow = sprites.add({ kind: 'glow', pos: [0, EAVE + 1.25, HALL_Z + 0.1], size: 1.5, color: '#ffb050', alpha: 0 });
   const spill = node('spill', tint(deform(plane(1, 1, 4, 6), (p) => { const t = p[2] + 0.5; p[0] *= 3.3 + t * 3.6; p[2] = HALL_Z + 0.2 + t * 5.6; p[1] = 0.03; }), '#ffb060'), rayMaterial({ power: 0.9, near: L.spill, far: 0 })); scene.root.add(spill);
-  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 7, seed: 5, arc: [150, 210], radius: [260, 420], height: [40, 150], size: [0.7, 1.4], speed: 0.05, ...L.cloud });
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 5, seed: 5, arc: [150, 210], radius: [260, 420], height: [40, 150], size: [0.7, 1.4], speed: 0.05, ...L.cloud });
   scene.root.add(clouds.node);
   const gulls = node('gulls', gull({}), M.speck); gulls.instances = makeInstances(3); gulls.instances.count = 3; if (!night) scene.root.add(gulls);
   const actors = group('actors'); scene.root.add(actors);
