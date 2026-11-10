@@ -4,9 +4,9 @@
 // texture source) under a key that carries the context generation, so after a context loss
 // everything is simply rebuilt on next use. Nothing here allocates per frame.
 
-/** Vertex layout shared by every mesh program. 44 bytes per vertex. */
+/** Vertex layout shared by every mesh program. 48 bytes per vertex. */
 export const ATTR = { pos: 0, normal: 1, onormal: 2, uv: 3, color: 4, inst0: 5, inst1: 6, inst2: 7, inst3: 8, instColor: 9 };
-const STRIDE = 44;
+const STRIDE = 48;
 
 /**
  * Make a WebGL2 context on a canvas.
@@ -81,12 +81,12 @@ export function createGeometry(gl, mesh) {
   const buf = new ArrayBuffer(n * STRIDE), f = new Float32Array(buf), b = new Uint8Array(buf);
   const q = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
   for (let i = 0; i < n; i++) {
-    const o = i * 11, w = mesh.owidth ? mesh.owidth[i] : 1;
+    const o = i * 12, w = mesh.owidth ? mesh.owidth[i] : 1;
     f[o] = mesh.positions[i * 3]; f[o + 1] = mesh.positions[i * 3 + 1]; f[o + 2] = mesh.positions[i * 3 + 2];
     f[o + 3] = mesh.normals[i * 3]; f[o + 4] = mesh.normals[i * 3 + 1]; f[o + 5] = mesh.normals[i * 3 + 2];
     f[o + 6] = mesh.onormals[i * 3] * w; f[o + 7] = mesh.onormals[i * 3 + 1] * w; f[o + 8] = mesh.onormals[i * 3 + 2] * w;
     f[o + 9] = mesh.uvs[i * 2]; f[o + 10] = mesh.uvs[i * 2 + 1];
-    const c = i * STRIDE + 40;
+    const c = i * STRIDE + 44;
     b[c] = q(mesh.colors[i * 3]); b[c + 1] = q(mesh.colors[i * 3 + 1]); b[c + 2] = q(mesh.colors[i * 3 + 2]); b[c + 3] = q(mesh.glow ? mesh.glow[i] : 0);
   }
   const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -95,7 +95,7 @@ export function createGeometry(gl, mesh) {
   gl.enableVertexAttribArray(ATTR.normal); gl.vertexAttribPointer(ATTR.normal, 3, gl.FLOAT, false, STRIDE, 12);
   gl.enableVertexAttribArray(ATTR.onormal); gl.vertexAttribPointer(ATTR.onormal, 3, gl.FLOAT, false, STRIDE, 24);
   gl.enableVertexAttribArray(ATTR.uv); gl.vertexAttribPointer(ATTR.uv, 2, gl.FLOAT, false, STRIDE, 36);
-  gl.enableVertexAttribArray(ATTR.color); gl.vertexAttribPointer(ATTR.color, 4, gl.UNSIGNED_BYTE, true, STRIDE, 40);
+  gl.enableVertexAttribArray(ATTR.color); gl.vertexAttribPointer(ATTR.color, 4, gl.UNSIGNED_BYTE, true, STRIDE, 44);
   const small = n <= 65535;
   const ibo = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, small ? new Uint16Array(mesh.indices) : mesh.indices, gl.STATIC_DRAW);

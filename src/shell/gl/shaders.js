@@ -34,31 +34,44 @@ vec3 applyFog(vec3 c, float dist, float amount) {
 `;
 
 const SHADOW = `
-uniform highp sampler2DShadow uShadowMap; uniform float uShadowOn;
+uniform highp sampler2DShadow uShadowMap; uniform vec2 uShadowOn; // on, texel size in uv
 float shadowAt(vec4 sc) {
-  if (uShadowOn < 0.5) return 1.0;
+  if (uShadowOn.x < 0.5) return 1.0;
   vec3 p = sc.xyz / sc.w * 0.5 + 0.5;
   if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0) return 1.0;
-  float s = texture(uShadowMap, vec3(p.xy, p.z - 0.0012));
-  return smoothstep(0.3, 0.7, s); // hardware 2x2 compare gives the antialiasing; this keeps the edge hard
+  // four hardware-filtered taps (a 3x3 tent in all), then squeezed back to a hard edge: the edge
+  // stays crisp but its stair-steps are rounded off
+  float z = p.z - 0.0012, o = uShadowOn.y * 0.75;
+  float s = texture(uShadowMap, vec3(p.xy + vec2(-o, -o), z)) + texture(uShadowMap, vec3(p.xy + vec2(o, -o), z))
+          + texture(uShadowMap, vec3(p.xy + vec2(-o, o), z)) + texture(uShadowMap, vec3(p.xy + vec2(o, o), z));
+  return smoothstep(0.3, 0.7, s * 0.25);
 }
 `;
 
 const POINTS = `
-uniform vec4 uPointPos[${MAX_POINTS}]; uniform vec3 uPointCol[${MAX_POINTS}]; uniform int uPointCount;
+uniform vec4 uPointPos[${MAX_POINTS}]; uniform vec4 uPointCol[${MAX_POINTS}]; uniform int uPointCount; // (xyz, radius) (rgb, intensity)
 // Lantern light: two hard steps of falloff, and a hard terminator on the surface.
-vec3 pointLights(vec3 P, vec3 N, float wrap) {
-  vec3 sum = vec3(0.0);
+// Returns the blended lamp colour in rgb and how strongly the lamps reach this point (0..1) in a.
+vec4 pointLights(vec3 P, vec3 N, float wrap) {
+  vec3 sum = vec3(0.0); float wsum = 0.0, miss = 1.0;
   for (int i = 0; i < ${MAX_POINTS}; i++) {
     if (i >= uPointCount) break;
     vec3 d = uPointPos[i].xyz - P; float dist = length(d);
     float x = 1.0 - dist / uPointPos[i].w;
     if (x <= 0.0) continue;
-    float a = smoothstep(0.0, 0.025, x) * 0.42 + smoothstep(0.36, 0.385, x) * 0.58;
+    float a = smoothstep(0.0, 0.025, x) * 0.4 + smoothstep(0.36, 0.385, x) * 0.6;
     float nd = smoothstep(-0.06 - wrap, 0.06 - wrap, dot(N, d / max(dist, 1e-4)));
-    sum += uPointCol[i] * a * nd;
+    float w = clamp(a * nd * uPointCol[i].a, 0.0, 1.0);
+    sum += uPointCol[i].rgb * w; wsum += w; miss *= 1.0 - w;
   }
-  return sum;
+  return vec4(sum / max(wsum, 1e-4), 1.0 - miss);
+}
+// A lamp does not add to what is there (that burns out to white in daylight): it pulls the surface
+// toward "this colour, lit by the lamp", fully in the dark and only a little where the sun already is.
+vec3 lampLit(vec3 col, vec3 base, vec4 pl) {
+  vec3 lit = base * pl.rgb * 1.12 + pl.rgb * 0.04;
+  float room = clamp(1.25 - dot(col, vec3(0.3, 0.55, 0.15)) / max(dot(lit, vec3(0.3, 0.55, 0.15)), 0.05), 0.22, 1.0);
+  return mix(col, lit, pl.a * room);
 }
 `;
 
@@ -114,8 +127,7 @@ void main() {
   vec3 shade = base * tintS; shade = mix(vec3(dot(shade, vec3(0.3, 0.55, 0.15))), shade, uShadowLift.y); shade = max(mix(shade, tintS * 0.55, uShadowLift.x), 0.0);
   vec3 col = mix(shade, base * uKeyColor, lit);
   col += base * mix(uAmbGround, uAmbSky, smoothstep(-0.35, 0.35, N.y));
-  vec3 pl = pointLights(vWorld, N, 0.0);
-  col += base * pl + pl * 0.05;
+  col = lampLit(col, base, pointLights(vWorld, N, 0.0));
   // hard specular dot
   float ndh = dot(N, normalize(uKeyDir + V));
   float sa = fwidth(ndh) * 0.75 + 0.002;
@@ -326,8 +338,8 @@ void main() {
   foam = max(foam, (1.0 - smoothstep(rw - e, rw + e, ring)) * broken * step(lap, d) * step(0.02, rw));
   col = mix(col, uFoamColor * mix(uShadowTint * 1.15, vec3(1.0), sh), foam);
   // lantern light pools on the water, stretched toward the eye like a reflection
-  vec3 pl = pointLights(vWorld, vec3(0.0, 1.0, 0.0), 0.3);
-  col += pl * (0.16 + 0.34 * col);
+  vec4 pl = pointLights(vWorld, vec3(0.0, 1.0, 0.0), 0.3);
+  col += pl.rgb * pl.a * (0.16 + 0.34 * col);
   frag = vec4(applyFog(col, dist, 1.0), 1.0);
 }`;
 
@@ -358,7 +370,7 @@ void main() {
   vec2 p = vP; float r = length(p); float e = fwidth(r) * 1.2;
   vec4 o = vec4(0.0);
   if (vKind < 0.5) {            // 0 glow: stepped halo, additive
-    float a = pow(max(1.0 - r, 0.0), 2.0) * 0.55 + (1.0 - smoothstep(0.5 - e, 0.5 + e, r)) * 0.14 + (1.0 - smoothstep(0.24 - e, 0.24 + e, r)) * 0.3;
+    float a = pow(max(1.0 - r, 0.0), 2.2) * 0.62 + (1.0 - smoothstep(0.46, 0.56, r)) * 0.07 + (1.0 - smoothstep(0.2 - e, 0.22 + e, r)) * 0.3;
     o = vec4(vColor.rgb * a * vColor.a, 0.0);
   } else if (vKind < 1.5) {     // 1 sparkle: four-point star, additive
     float d = sqrt(abs(p.x)) + sqrt(abs(p.y));

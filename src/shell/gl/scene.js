@@ -275,7 +275,7 @@ const DAY = {
 };
 
 const SUNSET = {
-  key: { dir: [-0.78, 0.33, 0.28], color: '#ffd09a' },
+  key: { dir: [-0.7, 0.34, 0.5], color: '#ffd9a6' },
   shadow: { tint: '#7c6fd0', lift: 0.08, saturate: 1.35, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#ff9d8a', ground: '#7a5cc0', amount: 0.1 },
   rim: { color: '#ffd27a', amount: 0.9, edge: 0.74 },

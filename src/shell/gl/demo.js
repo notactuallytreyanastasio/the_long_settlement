@@ -195,16 +195,20 @@ function buildKid(mat, faceMat, atlas) {
   const skull = tint(blob({ rx: HR[0], ry: HR[1], rz: HR[2], pear: 0.12, seg: 24, rings: 16 }), C.skin);
   // the cap is a slightly larger ball whose lower part is squeezed up to a hairline: high over the
   // face, down to the nape at the back
-  const cap = tint(place(deform(sphere(1, 22, 14), (p) => {
-    const f = Math.max(0, Math.min(1, (p[2] + 0.35) / 0.65)), line = -1.0 + 1.5 * f * f * (3 - 2 * f);
-    if (p[1] < line) p[1] = line + (p[1] - line) * 0.08;
-  }), 0, 0.012, -0.022, 0, 0, 0, HR[0] * 1.07, HR[1] * 1.09, HR[2] * 1.08), C.hair);
-  const lock = (pts, r0) => tint(tube(curve(pts, 6), (t) => r0 * (1 - t * 0.85) + 0.004, 7, { squash: 0.6 }), C.hair);
+  const cap = tint(place(deform(sphere(1, 28, 16), (p) => {
+    const ang = Math.atan2(p[0], p[2]); // 0 = dead ahead
+    const f = Math.max(0, Math.min(1, (p[2] + 0.35) / 0.65)), s = f * f * (3 - 2 * f);
+    // the fringe: a zigzag hairline across the brow, swept to one side
+    const zig = 0.13 * Math.abs(((ang * 2.6 + 0.4) % 1 + 1) % 1 - 0.5) * 2;
+    const line = -1.0 + (1.33 + zig) * s;
+    if (p[1] < line) { p[1] = line + (p[1] - line) * 0.05; p[0] *= 0.86; p[2] *= 0.86; } // tuck the rest inside the skull
+  }), 0, 0.012, -0.02, 0, 0, 0, HR[0] * 1.075, HR[1] * 1.1, HR[2] * 1.085), C.hair);
+  // two soft locks over the brow, lying close to the head
+  const lock = (pts, r0) => tint(tube(curve(pts, 8), (t) => r0 * Math.sin(Math.min(1, t * 1.6 + 0.25) * Math.PI * 0.5) * (1 - t * t * 0.9) + 0.003, 8, { squash: 0.45, crease: 180 }), C.hair);
   const fringe = [
-    lock([[-0.1, 0.19, 0.15], [-0.17, 0.12, 0.21], [-0.215, 0.04, 0.17]], 0.075),
-    lock([[0.0, 0.2, 0.17], [-0.05, 0.13, 0.245], [-0.1, 0.07, 0.23]], 0.075),
-    lock([[0.1, 0.19, 0.15], [0.1, 0.13, 0.235], [0.045, 0.085, 0.235]], 0.07),
-    lock([[0.16, 0.16, 0.1], [0.215, 0.08, 0.16], [0.225, 0.0, 0.13]], 0.07),
+    lock([[0.07, 0.2, 0.13], [-0.01, 0.15, 0.228], [-0.08, 0.085, 0.243], [-0.12, 0.05, 0.225]], 0.085),
+    lock([[0.14, 0.17, 0.1], [0.15, 0.12, 0.2], [0.13, 0.07, 0.225], [0.09, 0.04, 0.235]], 0.07),
+    lock([[-0.12, 0.17, 0.1], [-0.2, 0.1, 0.16], [-0.235, 0.03, 0.13], [-0.24, -0.01, 0.1]], 0.07),
   ];
   const ears = [tint(place(ellipsoid(0.045, 0.06, 0.035, 8, 6), 0.252, -0.03, 0.0), C.skin), tint(place(ellipsoid(0.045, 0.06, 0.035, 8, 6), -0.252, -0.03, 0.0), C.skin)];
   const headMesh = place(merge(skull, cap, fringe, ears), 0, 0.2, 0);
@@ -223,9 +227,9 @@ function buildKid(mat, faceMat, atlas) {
   mouth.uvRect.set(atlas.rect('mouth-smile'));
 
   // springy bits: a top tuft, a ponytail, the scarf tail
-  const tuft = node('tuft', tint(tube(curve([[0, 0, 0], [0.02, 0.09, 0.0], [0.07, 0.15, 0.02], [0.13, 0.15, 0.03]], 6), (t) => 0.035 * (1 - t * 0.8) + 0.004, 6), C.hair), mat, { pos: [0.02, 0.43, 0.0], parent: head });
-  const tail = node('tail', tint(merge(place(sphere(0.05, 8, 6), 0, 0, 0), tube(curve([[0, 0, 0], [0, -0.1, -0.06], [0, -0.22, -0.07], [0, -0.3, -0.03]], 6), (t) => 0.035 + 0.05 * Math.sin(t * 2.6) * (1 - t * 0.5), 8)), C.hair), mat, { pos: [0, 0.3, -0.25], parent: head });
-  const scarfTail = node('scarfTail', tint(tube(curve([[0, 0, 0], [0.01, -0.1, -0.03], [0.0, -0.22, -0.02], [0.02, -0.33, 0.0]], 6), (t) => 0.05 - 0.012 * t, 7, { squash: 0.35 }), C.scarf), mat, { pos: [-0.09, 0.3, -0.1], rot: [20, 0, 0], parent: chest });
+  const tuft = node('tuft', tint(tube(curve([[0, 0, 0], [0.02, 0.09, 0.0], [0.07, 0.15, 0.02], [0.13, 0.15, 0.03]], 8), (t) => 0.035 * (1 - t * 0.8) + 0.004, 8, { crease: 180 }), C.hair), mat, { pos: [0.02, 0.43, 0.0], parent: head });
+  const tail = node('tail', tint(merge(place(sphere(0.05, 8, 6), 0, 0, 0), tube(curve([[0, 0, 0], [0, -0.1, -0.06], [0, -0.22, -0.07], [0, -0.3, -0.03]], 6), (t) => 0.035 + 0.05 * Math.sin(t * 2.6) * (1 - t * 0.5), 10, { crease: 180 })), C.hair), mat, { pos: [0, 0.3, -0.25], parent: head });
+  const scarfTail = node('scarfTail', tint(tube(curve([[0, 0, 0], [0.01, -0.1, -0.03], [0.0, -0.22, -0.02], [0.02, -0.33, 0.0]], 6), (t) => 0.05 - 0.012 * t, 8, { squash: 0.35, crease: 180 }), C.scarf), mat, { pos: [-0.09, 0.3, -0.1], rot: [20, 0, 0], parent: chest });
 
   // arms: two segments and a mitten
   const upper = tint(limb(0.058, 0.052, 0.11), C.coat);
@@ -237,7 +241,7 @@ function buildKid(mat, faceMat, atlas) {
 
   // the lamp, hanging from the left mitten
   const lamp = node('lamp', lanternMesh(1.25), mat, { pos: [0, -0.2, 0.0], parent: foreL });
-  const lampLight = new Node('lampLight', { pos: [0, -0.26, 0], parent: lamp, light: makeLight({ color: '#ffb04a', radius: 3.6, intensity: 1 }) });
+  const lampLight = new Node('lampLight', { pos: [0, -0.26, 0], parent: lamp, light: makeLight({ color: '#ffb658', radius: 3.0, intensity: 1 }) });
 
   const rig = createRig(root);
   const bounce = springs([
@@ -268,12 +272,11 @@ export function buildDemo(lightName = 'sunset') {
   if (!LIGHTS.includes(lightName)) throw new Error(`demo: unknown light "${lightName}" (have ${LIGHTS.join(', ')})`);
   const lamps = { day: 0.0, sunset: 0.95, night: 1.25 }[lightName];
   const env = makeEnv(lightName, {
-    shadow: { center: [0, 2, 2], radius: 10 },
     water: { shores: [[0, 0, 4.85, 1.0], [4.9, 3.6, 0.55, 0.6], [-5.6, 2.2, 0.75, 0.6], [5.6, -3.2, 0.9, 0.7], [-3.4, 6.0, 0.62, 0.5], [0, 5.6, 0.62, 0.45], [0, 7.0, 0.62, 0.45]] },
     points: [
-      { pos: JETTY_LAMP, color: '#ffab45', radius: 5.0, intensity: lamps * 0.6 },
-      { pos: [-0.9, 6.5, -1.0], color: '#ffd77a', radius: 3.2, intensity: lamps * 0.6 },
-      { pos: [1.2, 1.5, 0.5], color: '#ffb85a', radius: 2.2, intensity: lamps * 0.6 },
+      { pos: JETTY_LAMP, color: '#ffb050', radius: 5.5, intensity: lamps },
+      { pos: [-0.9, 6.5, -1.0], color: '#ffe08a', radius: 3.4, intensity: lamps },
+      { pos: [1.2, 1.5, 0.5], color: '#ffc066', radius: 2.4, intensity: lamps },
     ],
   });
   const scene = createScene(env);
@@ -344,7 +347,11 @@ export function buildDemo(lightName = 'sunset') {
     { name: 'portrait', target: [0.34, 1.6, 1.75], dist: 2.3, yaw: 8, pitch: 2, fov: 28 },
   ];
   let shot = shots[0], orbit = true;
-  function setShot(n, still = false) { shot = shots[((n % shots.length) + shots.length) % shots.length]; orbit = !still; camera.fov = shot.fov; }
+  function setShot(n, still = false) {
+    shot = shots[((n % shots.length) + shots.length) % shots.length]; orbit = !still; camera.fov = shot.fov;
+    // the shadow map covers what the shot looks at: tight for close-ups, the whole island for wide ones
+    env.shadow.center = shot.target; env.shadow.radius = Math.max(2.2, Math.min(10, shot.dist * 0.62));
+  }
   setShot(0);
 
   const lampPos = [0, 0, 0], down = [0, -1, 0], P3 = [0, 0, 0], V3 = [0, 0, 0];
@@ -375,9 +382,9 @@ export function buildDemo(lightName = 'sunset') {
     kid.mouth.uvRect.set(atlas.rect(w > 0.3 ? 'mouth-open' : 'mouth-smile'));
     // lamp light flicker, and its glow sprite follows it
     const fl = 0.9 + 0.1 * Math.sin(time * 13) * Math.sin(time * 7.3);
-    kid.lampLight.light.intensity = Math.max(lamps, 0.25) * fl;
+    kid.lampLight.light.intensity = Math.max(lamps, 0.3) * fl;
     const lw = kid.lampLight.world; gKid.pos[0] = lw[12]; gKid.pos[1] = lw[13]; gKid.pos[2] = lw[14];
-    env.points[0].intensity = lamps * 0.6 * (0.93 + 0.07 * Math.sin(time * 11.1) * Math.sin(time * 5.7));
+    env.points[0].intensity = lamps * (0.93 + 0.07 * Math.sin(time * 11.1) * Math.sin(time * 5.7));
     gJetty.size[0] = gJetty.size[1] = 2.4 * (0.95 + 0.05 * Math.sin(time * 11.1));
 
     // boat
@@ -390,7 +397,7 @@ export function buildDemo(lightName = 'sunset') {
     if (lastT >= 0 && time - lastT < 0.5) {
       if (time > nextPuff) { nextPuff = time + 0.55; P3[0] = 2.05; P3[1] = 2.85; P3[2] = -0.75; sprites.puff(P3, { count: 1, size: 0.42, rise: 0.55, life: 2.6, color: lightName === 'night' ? '#b9c6f2' : '#ffffff' }); }
       if (time > nextGust) { nextGust = time + 1.3; P3[0] = -6 + Math.random() * 5; P3[1] = 1.6 + Math.random() * 4.5; P3[2] = -2 + Math.random() * 7; V3[0] = 2.2; V3[1] = 0.1; V3[2] = 0.3; sprites.gust(P3, { vel: V3, size: 1.5 + Math.random() * 0.8, life: 2.4, alpha: 0.85 }); }
-      if (time > nextSparkle) { nextSparkle = time + 0.22; const lw2 = kid.lampLight.world; P3[0] = lw2[12]; P3[1] = lw2[13]; P3[2] = lw2[14]; sprites.sparkle(P3, { count: 1, size: 0.16, spread: 0.45, life: 0.8, color: '#ffe9a0' }); }
+      if (time > nextSparkle) { nextSparkle = time + 0.22; const lw2 = kid.lampLight.world; P3[0] = lw2[12]; P3[1] = lw2[13]; P3[2] = lw2[14]; sprites.sparkle(P3, { count: 1, size: 0.11, spread: 0.4, life: 0.8, color: '#ffe9a0' }); }
       if (time > nextSplash) { nextSplash = time + 3.2; P3[0] = 2.5 + Math.random() * 3; P3[1] = 0.03; P3[2] = 5.5 + Math.random() * 3; sprites.splash(P3, { size: 1.3 }); }
       sprites.update(dt);
     }

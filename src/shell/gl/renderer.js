@@ -81,15 +81,15 @@ export function createRenderer(canvas, opts = {}) {
   const opaque = [], blended = [], beams = [], casters = [];
   const nm3 = new Float32Array(9), tint4 = new Float32Array(4), lightView = m4.create(), lightProj = m4.create(), shadowVP = m4.create();
   const eye = v3.create(), tmp = v3.create(), UP = v3.create(0, 1, 0), UPX = v3.create(1, 0, 0), IDENT = m4.create();
-  const candPos = new Float32Array(MAX_CAND * 4), candCol = new Float32Array(MAX_CAND * 3), candScore = new Float32Array(MAX_CAND);
-  const pointPos = new Float32Array(S.MAX_POINTS * 4), pointCol = new Float32Array(S.MAX_POINTS * 3), foam = new Float32Array(S.MAX_FOAM * 4);
+  const candPos = new Float32Array(MAX_CAND * 4), candCol = new Float32Array(MAX_CAND * 4), candScore = new Float32Array(MAX_CAND);
+  const pointPos = new Float32Array(S.MAX_POINTS * 4), pointCol = new Float32Array(S.MAX_POINTS * 4), foam = new Float32Array(S.MAX_FOAM * 4);
   let nCand = 0, nPoints = 0, nFoam = 0, frame = null;
 
   function addLight(x, y, z, color, radius, intensity, target) {
     if (nCand >= MAX_CAND || intensity <= 0 || radius <= 0) return;
     const k = nCand++;
     candPos[k * 4] = x; candPos[k * 4 + 1] = y; candPos[k * 4 + 2] = z; candPos[k * 4 + 3] = radius;
-    candCol[k * 3] = color[0] * intensity; candCol[k * 3 + 1] = color[1] * intensity; candCol[k * 3 + 2] = color[2] * intensity;
+    candCol[k * 4] = color[0]; candCol[k * 4 + 1] = color[1]; candCol[k * 4 + 2] = color[2]; candCol[k * 4 + 3] = intensity;
     candScore[k] = Math.hypot(x - target[0], y - target[1], z - target[2]) - radius;
   }
 
@@ -136,8 +136,8 @@ export function createRenderer(canvas, opts = {}) {
     if (u.uAmbSky) { const a = env.ambient.amount, s = env.ambient.sky, g = env.ambient.ground; gl.uniform3f(u.uAmbSky, s[0] * a, s[1] * a, s[2] * a); gl.uniform3f(u.uAmbGround, g[0] * a, g[1] * a, g[2] * a); }
     if (u.uRimColor) { const a = env.rim.amount, c = env.rim.color; gl.uniform3f(u.uRimColor, c[0] * a, c[1] * a, c[2] * a); gl.uniform1f(u.uRimEdge, env.rim.edge); }
     if (u.uFogColor) { const f = env.fog, c = f.color || env.sky.horizon; gl.uniform3fv(u.uFogColor, c); gl.uniform3f(u.uFogParams, f.density, f.max, f.start); }
-    if (u.uPointCount) { gl.uniform1i(u.uPointCount, nPoints); if (nPoints > 0) { gl.uniform4fv(u.uPointPos, pointPos); gl.uniform3fv(u.uPointCol, pointCol); } }
-    if (u.uShadowMap) { gl.uniform1i(u.uShadowMap, 1); gl.uniform1f(u.uShadowOn, frame.shadowOn ? 1 : 0); }
+    if (u.uPointCount) { gl.uniform1i(u.uPointCount, nPoints); if (nPoints > 0) { gl.uniform4fv(u.uPointPos, pointPos); gl.uniform4fv(u.uPointCol, pointCol); } }
+    if (u.uShadowMap) { gl.uniform1i(u.uShadowMap, 1); gl.uniform2f(u.uShadowOn, frame.shadowOn ? 1 : 0, 1 / (shadowSize || 1)); }
     if (u.uMap) gl.uniform1i(u.uMap, 0);
     if (u.uTime) gl.uniform1f(u.uTime, frame.time);
   }
@@ -220,7 +220,7 @@ export function createRenderer(canvas, opts = {}) {
       let best = -1, bs = Infinity;
       for (let i = 0; i < nCand; i++) if (candScore[i] < bs) { bs = candScore[i]; best = i; }
       candScore[best] = Infinity;
-      pointPos.set(candPos.subarray(best * 4, best * 4 + 4), nPoints * 4); pointCol.set(candCol.subarray(best * 3, best * 3 + 3), nPoints * 3); nPoints++;
+      pointPos.set(candPos.subarray(best * 4, best * 4 + 4), nPoints * 4); pointCol.set(candCol.subarray(best * 4, best * 4 + 4), nPoints * 4); nPoints++;
     }
     stats.lights = nPoints;
 

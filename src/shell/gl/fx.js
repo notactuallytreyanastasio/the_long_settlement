@@ -2,23 +2,29 @@
 // Pure (no GL). These are conveniences; everything here can be rebuilt by hand from mesh.js/scene.js.
 
 import { m4, rng, DEG } from './math.js';
-import { sphere, deform, merge, place, tint, cylinder, setOutline } from './mesh.js';
+import { sphere, lathe, merge, place, tint, cylinder, setOutline } from './mesh.js';
 import { Node, material, makeInstances, setInstance } from './scene.js';
 
 /**
  * One chunky cumulus: a row of overlapping balls with a flattened underside, about `width` wide,
  * centred on the origin. White; tint it or let the material's shadow tint colour the underside.
  */
+function dome(r) {
+  const prof = [[0, 0], [r * 0.93, 0]];
+  for (let i = 1; i <= 7; i++) { const a = (i / 7) * Math.PI / 2; prof.push([i === 7 ? 0 : Math.cos(a) * r, Math.sin(a) * r * 0.92]); }
+  return lathe(prof, 14, { crease: 180 });
+}
 export function cloudMesh(seed = 1, { width = 10, puffs = 5 } = {}) {
   const r = rng(seed * 977 + 13), parts = [];
   for (let i = 0; i < puffs; i++) {
     const u = puffs === 1 ? 0.5 : i / (puffs - 1), mid = Math.sin(u * Math.PI);
-    const rad = width * (0.09 + 0.1 * mid + r() * 0.04);
-    // every ball sits on the same flat base, so the underside is one straight line
-    parts.push(place(sphere(rad, 14, 10), (u - 0.5) * width * 0.78 + (r() - 0.5) * width * 0.05, rad * 0.45, (r() - 0.5) * width * 0.1));
+    const rad = width * (0.1 + 0.07 * mid + r() * 0.035);
+    // every dome sits on the same flat base, so the underside is one straight line
+    parts.push(place(dome(rad * (0.8 + 0.4 * mid)), (u - 0.5) * width * 0.8 + (r() - 0.5) * width * 0.04, 0, (r() - 0.5) * width * 0.08, 0, r() * 360, 0));
   }
-  const m = merge(parts);
-  return setOutline(deform(m, (p) => { if (p[1] < 0) p[1] = 0; }), 0);
+  // and two or three smaller ones ride on top, off-centre
+  for (let i = 0; i < 2 + (seed % 2); i++) { const rad = width * (0.07 + r() * 0.05); parts.push(place(sphere(rad, 12, 8), (r() - 0.5) * width * 0.42, width * (0.13 + r() * 0.06), (r() - 0.5) * width * 0.06)); }
+  return setOutline(merge(parts), 0);
 }
 
 /**
