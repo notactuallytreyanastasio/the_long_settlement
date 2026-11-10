@@ -496,6 +496,20 @@
    "prompt": "and it should play out live like a game",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "c057fb8b-6106-4a9b-8338-7bc231e37bdd",
+   "type": "goal",
+   "status": "pending",
+   "title": "Pinball and slots power the characters' world: reels physically on the table, combos that escalate with scoring, dialogue follows in the same live scene",
+   "description": null,
+   "created": "2026-11-10T15:41:51.056503Z",
+   "updated": "2026-11-10T15:41:51.056503Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "like you see the combat and progress\n\nand then the dialogue happens\n\nits like playing the pinball slots (which the slot should show on the pinball table) powers their world\n\nand as you score more they will do combos and stuff",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -729,6 +743,13 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T15:41:02.322406Z"
+  },
+  {
+   "from": "96fa9c47-8f50-42c1-a146-1983ddb26d47",
+   "to": "c057fb8b-6106-4a9b-8338-7bc231e37bdd",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T15:41:51.059147Z"
   }
  ]
 }
