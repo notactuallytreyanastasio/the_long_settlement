@@ -292,9 +292,11 @@
  *   {type:'lineDone', id:string}              shell: the voice finished this blocking line
  *   {type:'load', save:Save}
  *
- * @typedef {{v:2, chapter:number, scene:number, econ:Econ, seed:number}} Save
- *        v:1 saves (same fields, written at the old slot screen) still load. Either loads into
- *        'play' at the start of its scene, with a fresh table and fresh reels.
+ * @typedef {{v:3, chapter:number, scene:number, econ:Econ, seed:number,
+ *            reels:{cells:[Cell,Cell,Cell], source:Source|null, armed:boolean, charge:number}}} Save
+ *        Loads into 'play' at the start of its scene, with a fresh table and the reels as they
+ *        stood when it was written (a line that had just paid is saved as cleared). v:1 and v:2
+ *        saves have no `reels` and still load, with fresh reels.
  *
  * THE LEVER. In play, with no ball anywhere and no writs, a press of Input.plunge is the lever
  * (leverStatus says what it will do): the chapter's rigged pull, free; or SPIN_COST marks and a
@@ -323,6 +325,7 @@
  * export const FILL_SECONDS, PAY_SECONDS, REELS_NEED, AID_WAIT, LEVER_DELAY: number
  * export function init(seedN: number): Game
  * export function update(content: Content, game: Game, msg: Msg): { game: Game, effects: Effect[] }
+ * export const SAVE_VERSION: 3
  * export function toSave(game: Game): Save
  * export function leverStatus(content, game): null|'wait'|'free'|'credit'|'pull'|'loan'
  *        what a press of the plunge button would do as the lever; null when it is not the lever

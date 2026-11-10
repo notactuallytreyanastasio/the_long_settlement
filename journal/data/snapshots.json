@@ -3298,5 +3298,61 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T07:29:14.345Z",
+  "files": 1480,
+  "lines": 29594,
+  "bytes": 42223584,
+  "linesByDir": {
+   ".": 138,
+   "assets/voice": 7180,
+   "src/content": 4176,
+   "src/core": 2315,
+   "src/shell": 11327,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 237,
+   "test/economy.test.js": 312,
+   "test/game.test.js": 1182,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 311,
+   "test/rng.test.js": 102,
+   "test/shell.test.js": 99,
+   "test/slot.test.js": 240,
+   "test/story.test.js": 203,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M src/core/game.js",
+   "M src/core/types.js",
+   "M src/shell/main.js",
+   "M test/game.test.js"
+  ],
+  "tests": {
+   "total": 163,
+   "pass": 162,
+   "fail": 1,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 12348,
+   "failures": [
+    "save: the reels are kept: what they show, whether the shots are lit, and the charge"
+   ]
+  },
+  "nodes": {
+   "goal": 3,
+   "option": 8,
+   "decision": 3,
+   "observation": 2,
+   "action": 4,
+   "revisit": 1,
+   "outcome": 2
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

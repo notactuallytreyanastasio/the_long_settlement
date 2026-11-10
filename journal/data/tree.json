@@ -7246,8 +7246,8 @@
  },
  {
   "path": "src/core/game.js",
-  "bytes": 34510,
-  "lines": 749
+  "bytes": 37461,
+  "lines": 797
  },
  {
   "path": "src/core/physics.js",
@@ -7271,8 +7271,8 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 21643,
-  "lines": 343
+  "bytes": 21854,
+  "lines": 346
  },
  {
   "path": "src/shell/audio.js",
@@ -7316,8 +7316,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 15686,
-  "lines": 360
+  "bytes": 15772,
+  "lines": 361
  },
  {
   "path": "src/shell/render.js",
@@ -7351,8 +7351,8 @@
  },
  {
   "path": "test/game.test.js",
-  "bytes": 59138,
-  "lines": 1114
+  "bytes": 63954,
+  "lines": 1182
  },
  {
   "path": "test/physics.test.js",

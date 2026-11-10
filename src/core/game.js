@@ -14,7 +14,7 @@
 // three, and with no ball and no writ the plunger button is the lever.
 
 import { initPhys, addBall, addLiveBall, releaseHeld, stepPhysics } from './physics.js';
-import { spin, drawSym, payoutFor } from './slot.js';
+import { spin, drawSym, payoutFor, SYMBOLS, SOURCES } from './slot.js';
 import {
   initEcon, awardPoints, canSpin, paySpin, applyPayout, needsLoan, takeLoan,
   spendWrit, addTrust, aidAvailable, takeAid,
@@ -156,21 +156,69 @@ export function init(seedN) {
   };
 }
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+/** Save versions load() accepts. 1 was written at the old slot screen, 2 before the reels were kept. */
+const LOADABLE = [1, 2, SAVE_VERSION];
+
+/**
+ * The part of the reels that outlives a session: what each reel shows (or is turning toward),
+ * what set them going, whether the spin shots are lit and how far the charge has got. A line
+ * that has just paid is not kept: it has paid, and the cells would clear in a second anyway.
+ */
+function reelsToSave(reels) {
+  const r = reels.phase === 'paying' ? clearCells(reels) : reels;
+  return { cells: r.cells.map((c) => ({ sym: c.sym, spin: c.spin })), source: r.source, armed: r.armed, charge: r.charge };
+}
 
 export function toSave(game) {
-  return { v: SAVE_VERSION, chapter: game.chapter, scene: game.scene, econ: { ...game.econ }, seed: game.rng.s };
+  return {
+    v: SAVE_VERSION, chapter: game.chapter, scene: game.scene, econ: { ...game.econ }, seed: game.rng.s,
+    reels: reelsToSave(game.reels),
+  };
+}
+
+/**
+ * The reels a save describes. A v:1 or v:2 save has none and gets fresh ones, as it always did.
+ * A v:3 save must describe them properly: a reel showing a symbol nobody knows would pay
+ * nothing nameable when the line completed, so that is refused here, at the door.
+ */
+function reelsFromSave(save) {
+  if (save.v !== SAVE_VERSION) return freshReels();
+  const r = save.reels;
+  const bad = (why) => new Error(`game: save has bad reels (${why}): ${JSON.stringify(r)}`);
+  if (!r || typeof r !== 'object') throw bad('not an object');
+  if (!Array.isArray(r.cells) || r.cells.length !== 3) throw bad('cells must be three');
+  if (typeof r.armed !== 'boolean') throw bad('armed must be true or false');
+  if (!Number.isInteger(r.charge) || r.charge < 0) throw bad('charge must be a whole number, zero or more');
+  if (r.source !== null && !SOURCES.includes(r.source)) throw bad('unknown source');
+  const maxSpin = Math.max(...REEL_STOPS, FILL_SECONDS);
+  const cells = r.cells.map((c) => {
+    if (!c || typeof c !== 'object') throw bad('a cell is not an object');
+    if (c.sym !== null && !SYMBOLS.includes(c.sym)) throw bad(`unknown symbol ${JSON.stringify(c.sym)}`);
+    if (typeof c.spin !== 'number' || !(c.spin >= 0) || c.spin > maxSpin) throw bad(`a reel cannot have ${JSON.stringify(c.spin)} seconds left to turn`);
+    if (c.sym === null && c.spin > 0) throw bad('a reel is turning toward nothing');
+    return c.sym === null ? EMPTY_CELL : { sym: c.sym, spin: c.spin };
+  });
+  const shown = cells.some((c) => c.sym !== null);
+  if (shown && r.source === null) throw bad('reels showing symbols need a source');
+  // The need is the build's, not the save's: a retuned REELS_NEED applies to old saves too.
+  const armed = r.armed || r.charge >= REELS_NEED;
+  const base = { ...freshReels(), armed, charge: armed ? REELS_NEED : r.charge };
+  // Three locked reels with nothing turning cannot happen in play (the line pays on the tick
+  // the last one locks). Nothing would ever settle them, so they are cleared.
+  if (!shown || cells.every((c) => c.sym !== null && c.spin === 0)) return base;
+  return { ...base, cells, source: r.source };
 }
 
 const saveEffect = (game) => ({ type: 'save', save: toSave(game) });
 
 /**
- * Restore a save: the start of that scene, at the table, with a fresh table and fresh reels.
- * A v:1 save was written at the slot screen, which no longer exists; it holds the same
- * fields and loads the same way.
+ * Restore a save: the start of that scene, at the table, with a fresh table and the reels as
+ * they stood (v:3). A v:1 save was written at the slot screen, which no longer exists, and a
+ * v:2 before the reels were kept; both hold the other fields and load with fresh reels.
  */
 function load(content, save) {
-  if (!save || (save.v !== 1 && save.v !== SAVE_VERSION)) {
+  if (!save || !LOADABLE.includes(save.v)) {
     throw new Error(`game: cannot load save version ${JSON.stringify(save && save.v)}`);
   }
   const chapter = content.chapters[save.chapter];
@@ -182,7 +230,7 @@ function load(content, save) {
   // A save from before the lifetime totals existed has neither: it starts both at zero.
   // (A total that is present but not a number is not excused; economy.js throws on it.)
   const econ = { trustEarned: 0, loansTaken: 0, ...save.econ };
-  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ };
+  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ, reels: reelsFromSave(save) };
   const game = {
     ...base,
     phys: initPhys(tableOf(content, base)),

@@ -238,6 +238,8 @@ const toastKinds = (game) => game.toasts.map((t) => t.kind);
 const syms = (game) => game.reels.cells.map((c) => c.sym);
 const emptyTable = (g) => g.phys.balls.length === 0 && g.econ.writs === 0;
 const EMPTY = [{ sym: null, spin: 0 }, { sym: null, spin: 0 }, { sym: null, spin: 0 }];
+/** What toSave writes for reels nobody has touched: empty, lit, fully charged. */
+const FRESH_SAVED = { cells: EMPTY, source: null, armed: true, charge: REELS_NEED };
 const QUIET = 1e9;   // a bark cooldown nothing outlasts: no bark, so no rng drawn for one
 
 /**
@@ -304,7 +306,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.equal(r.game.mode, 'play');
   assert.equal(r.game.cine, null);
   assert.deepEqual(moods(r.effects), ['tense']);
-  assert.deepEqual(saves(r.effects), [{ v: 2, chapter: 0, scene: 0, econ: initEcon(), seed: seed(7).s }]);
+  assert.deepEqual(saves(r.effects), [{ v: 3, chapter: 0, scene: 0, econ: initEcon(), seed: seed(7).s, reels: FRESH_SAVED }]);
 
   // no writ, so no ball: the table is empty and the plunger button is the lever
   assert.equal(leverStatus(content, r.game), 'wait', 'not in the instant play begins');
@@ -401,7 +403,8 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.equal(r.game.scene, 1);
   assert.deepEqual([r.game.hits, r.game.seq], [{}, 0]);
   assert.equal(r.effects[0].type, 'hush');
-  assert.deepEqual(saves(r.effects), [{ v: 2, chapter: 0, scene: 1, econ: r.game.econ, seed: r.game.rng.s }]);
+  assert.deepEqual(saves(r.effects), [toSave(r.game)]);
+  assert.deepEqual([saves(r.effects)[0].v, saves(r.effects)[0].chapter, saves(r.effects)[0].scene], [3, 0, 1]);
   assert.deepEqual(moods(r.effects), ['tense']);
   assert.equal(r.game.boons.ballSave, 5);
   assert.deepEqual(litIds(content, r.game), ['r3']);
@@ -442,7 +445,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   r = send(r.game, CONFIRM);
   assert.equal(r.game.mode, 'play');
   assert.deepEqual(moods(r.effects), ['mine']);
-  assert.deepEqual(saves(r.effects).map((s) => [s.v, s.chapter, s.scene]), [[2, 1, 0]]);
+  assert.deepEqual(saves(r.effects).map((s) => [s.v, s.chapter, s.scene]), [[3, 1, 0]]);
 
   // no rigged pull here, and with the writs gone the lever is a real, paid draw from the rng
   r = ticks({ ...r.game, econ: { ...r.game.econ, writs: 0 } }, seconds(LEVER_DELAY) + 2);
@@ -630,7 +633,7 @@ test('load: restores the start of the saved scene, at the table, from any mode',
   assert.deepEqual(r.game.reels, init(1).reels, 'fresh reels');
   assert.equal(r.game.spunThisChapter, true, 'past scene 0 the rigged pull is history');
   assert.deepEqual(r.effects, [{ type: 'hush' }, { type: 'music', mood: 'tense' }]);
-  assert.deepEqual(toSave(r.game), save, 'a loaded game saves back to the same save');
+  assert.deepEqual(toSave(r.game), { ...save, v: 3, reels: FRESH_SAVED }, 'a loaded v:2 game saves back as v:3, with its reels');
 
   // the writs bring a ball, and the scene's briefing is spoken again when it is launched
   r = playUntil(r.game, (x, fx) => count(fx, 'launch') >= 1);
@@ -651,14 +654,14 @@ test('load: a v:1 save, written at the slot screen that no longer exists, loads 
   assert.equal(r.game.mode, 'play');
   assert.deepEqual([r.game.chapter, r.game.scene], [1, 0]);
   assert.deepEqual(r.game.econ, econ);
-  assert.deepEqual(toSave(r.game), { ...old, v: 2 }, 'and is written back as v:2');
+  assert.deepEqual(toSave(r.game), { ...old, v: 3, reels: FRESH_SAVED }, 'and is written back as v:3');
   assert.equal(send(r.game, tickMsg()).game.phys.balls.length, 1, 'its writ brings a ball');
 });
 
 test('load: a save written by the game round-trips', () => {
   const toTable = sendAll(init(5), [CONFIRM, CONFIRM, SKIP]);
   const [save] = saves(toTable.effects);
-  assert.equal(save.v, 2);
+  assert.equal(save.v, 3);
   const r = send(init(123), { type: 'load', save: JSON.parse(JSON.stringify(save)) });
   assert.deepEqual(toSave(r.game), save);
   assert.equal(r.game.mode, 'play');
@@ -704,10 +707,75 @@ test('totals: trust and aid reset with the chapter, trustEarned and loansTaken n
 test('load: refuses a save it cannot honour', () => {
   const save = { v: 2, chapter: 0, scene: 0, econ: initEcon(), seed: 1 };
   const load = (s) => () => update(content, init(1), { type: 'load', save: s });
-  assert.throws(load({ ...save, v: 3 }), /save version 3/);
+  assert.throws(load({ ...save, v: 4 }), /save version 4/);
+  assert.throws(load({ ...save, v: 3 }), /bad reels \(not an object\)/, 'a v:3 save must carry its reels');
   assert.throws(load({ ...save, v: undefined }), /save version undefined/);
   assert.throws(load({ ...save, chapter: 9 }), /chapter index 9/);
   assert.throws(load({ ...save, scene: 2 }), /scene index 2/);
+});
+
+test('save: the reels are kept: what they show, whether the shots are lit, and the charge', () => {
+  const econ = { ...initEcon(), writs: 2 };
+  const reels = {
+    cells: [{ sym: 'coin', spin: 0 }, { sym: null, spin: 0 }, { sym: 'orb', spin: 0.25 }],
+    source: 'lanes', armed: false, charge: 17,
+  };
+  const save = deepFreeze({ v: 3, chapter: 2, scene: 3, econ, seed: 8, reels });
+  let r = send(init(1), { type: 'load', save });
+  assert.equal(r.game.mode, 'play');
+  assert.deepEqual(r.game.reels, { ...init(1).reels, ...reels, need: REELS_NEED }, 'the reels as saved, in an open phase');
+  assert.deepEqual(toSave(r.game), save, 'and they save back unchanged');
+  assert.deepEqual(JSON.parse(JSON.stringify(toSave(r.game))), save, 'through JSON too');
+  // the turning reel runs down and locks on what it was already going to show; nothing pays on two reels
+  r = ticks(r.game, seconds(0.25) + 2);
+  assert.deepEqual(r.game.reels.cells, [{ sym: 'coin', spin: 0 }, { sym: null, spin: 0 }, { sym: 'orb', spin: 0 }]);
+  assert.equal(r.game.reels.phase, 'open');
+  assert.equal(r.game.reels.charge, 17);
+});
+
+test('save: a line that has just paid is saved as cleared, and unlit reels stay unlit', () => {
+  const g = { ...playAt(0, 1), reels: {
+    cells: [{ sym: 'coin', spin: 0 }, { sym: 'coin', spin: 0 }, { sym: 'scale', spin: 0 }],
+    phase: 'paying', t: 0.4, result: { reels: ['coin', 'coin', 'scale'], payout: { writs: 0, marks: 12, boon: null, name: 'x', blurb: 'y' } },
+    source: 'shot', armed: false, charge: 3, need: REELS_NEED,
+  } };
+  const save = toSave(g);
+  assert.deepEqual(save.reels, { cells: EMPTY, source: null, armed: false, charge: 3 });
+  const back = send(init(1), { type: 'load', save: JSON.parse(JSON.stringify(save)) }).game;
+  assert.deepEqual([back.reels.armed, back.reels.charge, back.reels.phase, back.reels.result], [false, 3, 'open', null]);
+});
+
+test('save: a full spin under way when the scene was cleared finishes and pays after a load', () => {
+  const reels = { cells: [{ sym: 'crown', spin: 0 }, { sym: 'crown', spin: 0.1 }, { sym: 'crown', spin: 0.5 }], source: 'shot', armed: false, charge: 0 };
+  const save = { v: 3, chapter: 0, scene: 1, econ: { ...initEcon(), writs: 1 }, seed: 2, reels };
+  let r = send(init(1), { type: 'load', save });
+  const before = r.game.econ.marks;
+  r = playUntil(r.game, (x) => x.reels.phase === 'paying');
+  assert.equal(r.game.reels.result.payout.name, 'Three Crowns: The Mint Pays Out');
+  assert.ok(r.game.econ.marks > before);
+});
+
+test('save: reels this build cannot honour are refused or repaired, never played', () => {
+  const ok = { cells: EMPTY, source: null, armed: false, charge: 5 };
+  const save = { v: 3, chapter: 0, scene: 0, econ: initEcon(), seed: 1, reels: ok };
+  const load = (reels) => () => update(content, init(1), { type: 'load', save: { ...save, reels } });
+  assert.equal(load(ok)().game.reels.charge, 5);
+  assert.throws(load(null), /bad reels \(not an object\)/);
+  assert.throws(load({ ...ok, cells: [EMPTY[0], EMPTY[1]] }), /cells must be three/);
+  assert.throws(load({ ...ok, armed: 1 }), /armed must be true or false/);
+  assert.throws(load({ ...ok, charge: -1 }), /charge must be a whole number/);
+  assert.throws(load({ ...ok, charge: 2.5 }), /charge must be a whole number/);
+  assert.throws(load({ ...ok, source: 'luck' }), /unknown source/);
+  assert.throws(load({ ...ok, source: 'lanes', cells: [{ sym: 'anchor', spin: 0 }, EMPTY[1], EMPTY[2]] }), /unknown symbol "anchor"/);
+  assert.throws(load({ ...ok, source: 'lanes', cells: [{ sym: 'coin', spin: 99 }, EMPTY[1], EMPTY[2]] }), /cannot have 99 seconds/);
+  assert.throws(load({ ...ok, cells: [{ sym: null, spin: 0.2 }, EMPTY[1], EMPTY[2]] }), /turning toward nothing/);
+  assert.throws(load({ ...ok, cells: [{ sym: 'coin', spin: 0 }, EMPTY[1], EMPTY[2]] }), /need a source/);
+  // a charge at or past the need (REELS_NEED was retuned downward since the save) is lit
+  const lit = load({ ...ok, charge: REELS_NEED + 10 })().game.reels;
+  assert.deepEqual([lit.armed, lit.charge, lit.need], [true, REELS_NEED, REELS_NEED]);
+  // three locked reels with nothing turning would never settle: they are cleared
+  const stuck = load({ ...ok, source: 'lanes', cells: [{ sym: 'coin', spin: 0 }, { sym: 'coin', spin: 0 }, { sym: 'coin', spin: 0 }] })().game.reels;
+  assert.deepEqual([stuck.cells, stuck.source], [EMPTY, null]);
 });
 
 // ───────────────────────── the reels on the table ─────────────────────────
