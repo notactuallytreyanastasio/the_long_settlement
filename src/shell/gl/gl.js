@@ -4,9 +4,13 @@
 // texture source) under a key that carries the context generation, so after a context loss
 // everything is simply rebuilt on next use. Nothing here allocates per frame.
 
-/** Vertex layout shared by every mesh program. 48 bytes per vertex. */
-export const ATTR = { pos: 0, normal: 1, onormal: 2, uv: 3, color: 4, inst0: 5, inst1: 6, inst2: 7, inst3: 8, instColor: 9, bone: 10 };
-const STRIDE = 48;
+/** Vertex layout shared by every mesh program. 36 bytes per vertex (see createGeometry). */
+export const ATTR = { pos: 0, normal: 1, onormal: 2, uv: 3, color: 4, inst0: 5, inst1: 6, inst2: 7, inst3: 8, instColor: 9, bone: 10, owidth: 11 };
+export const STRIDE = 36;
+/** The outline width scale is stored as a 16-bit fraction of this (shaders.js multiplies it back): steps of 0.001. */
+export const OWIDTH_MAX = 64;
+/** A unit vector as 10 bits a component (GL's INT_2_10_10_10_REV): a tenth of a degree, in 4 bytes where floats take 12. */
+const pack10 = (x, y, z) => ((Math.round(Math.max(-1, Math.min(1, x)) * 511) & 1023) | ((Math.round(Math.max(-1, Math.min(1, y)) * 511) & 1023) << 10) | ((Math.round(Math.max(-1, Math.min(1, z)) * 511) & 1023) << 20)) >>> 0;
 
 /**
  * Make a WebGL2 context on a canvas.
@@ -61,6 +65,7 @@ export function createProgram(gl, name, vsSrc, fsSrc, defines = '') {
   gl.attachShader(p, vs); gl.attachShader(p, fs);
   gl.bindAttribLocation(p, ATTR.pos, 'aPos'); gl.bindAttribLocation(p, ATTR.normal, 'aNormal'); gl.bindAttribLocation(p, ATTR.onormal, 'aONormal');
   gl.bindAttribLocation(p, ATTR.uv, 'aUv'); gl.bindAttribLocation(p, ATTR.color, 'aColor');
+  gl.bindAttribLocation(p, ATTR.owidth, 'aOWidth');
   gl.bindAttribLocation(p, ATTR.inst0, 'aInst'); gl.bindAttribLocation(p, ATTR.instColor, 'aInstColor'); gl.bindAttribLocation(p, ATTR.bone, 'aBone');
   gl.linkProgram(p);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) throw new Error(`gl: program "${name}" failed to link\n${gl.getProgramInfoLog(p)}`);
@@ -73,30 +78,41 @@ export function createProgram(gl, name, vsSrc, fsSrc, defines = '') {
 
 /**
  * Upload a mesh (see mesh.js) as one interleaved buffer and a VAO.
- * Layout: position 3f, normal 3f, outline normal * width 3f, uv 2f, colour rgb + glow as 4 bytes.
+ * Layout, 36 bytes: position 3f | normal, 10 bits a component | outline normal, the same | uv 2f | colour rgb + glow
+ * as 4 bytes | outline width as a 16-bit fraction of OWIDTH_MAX (and 2 bytes of padding to a multiple of four).
+ * It was 48 with the two normals as floats (the outline normal scaled by the width): a quarter less to keep on the GPU
+ * and to fetch for every vertex of every pass. Positions and uvs stay floats: sets are tens of metres across with
+ * millimetre detail, and uvs tile.
  * A mesh with a `bones` array (see batchFigure in scene.js) also gets a one-byte bone index per vertex.
  * Returns { vao, vbo, ibo, count, indexType, triangles }.
  */
 export function createGeometry(gl, mesh) {
   const n = mesh.positions.length / 3;
-  const buf = new ArrayBuffer(n * STRIDE), f = new Float32Array(buf), b = new Uint8Array(buf);
+  const buf = new ArrayBuffer(n * STRIDE), f = new Float32Array(buf), b = new Uint8Array(buf), u32 = new Uint32Array(buf), u16 = new Uint16Array(buf);
   const q = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
+  const N = mesh.normals, ON = mesh.onormals;
   for (let i = 0; i < n; i++) {
-    const o = i * 12, w = mesh.owidth ? mesh.owidth[i] : 1;
+    const o = i * 9;
     f[o] = mesh.positions[i * 3]; f[o + 1] = mesh.positions[i * 3 + 1]; f[o + 2] = mesh.positions[i * 3 + 2];
-    f[o + 3] = mesh.normals[i * 3]; f[o + 4] = mesh.normals[i * 3 + 1]; f[o + 5] = mesh.normals[i * 3 + 2];
-    f[o + 6] = mesh.onormals[i * 3] * w; f[o + 7] = mesh.onormals[i * 3 + 1] * w; f[o + 8] = mesh.onormals[i * 3 + 2] * w;
-    f[o + 9] = mesh.uvs[i * 2]; f[o + 10] = mesh.uvs[i * 2 + 1];
-    const c = i * STRIDE + 44;
+    const nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2], nl = Math.hypot(nx, ny, nz) || 1;
+    u32[o + 3] = pack10(nx / nl, ny / nl, nz / nl);
+    // the outline normal's own length used to scale the width (it went up multiplied by it): keep that meaning
+    const ox = ON[i * 3], oy = ON[i * 3 + 1], oz = ON[i * 3 + 2], ol = Math.hypot(ox, oy, oz), w = ol * (mesh.owidth ? mesh.owidth[i] : 1);
+    if (!(w >= 0 && w <= OWIDTH_MAX)) throw new Error(`gl: vertex ${i} of a mesh of ${n} has an outline width of ${w} (owidth ${mesh.owidth ? mesh.owidth[i] : 1}, outline normal length ${ol}); it must be 0..${OWIDTH_MAX}`);
+    u32[o + 4] = ol > 0 ? pack10(ox / ol, oy / ol, oz / ol) : 0;
+    f[o + 5] = mesh.uvs[i * 2]; f[o + 6] = mesh.uvs[i * 2 + 1];
+    const c = i * STRIDE + 28;
     b[c] = q(mesh.colors[i * 3]); b[c + 1] = q(mesh.colors[i * 3 + 1]); b[c + 2] = q(mesh.colors[i * 3 + 2]); b[c + 3] = q(mesh.glow ? mesh.glow[i] : 0);
+    u16[i * 18 + 16] = Math.round(w / OWIDTH_MAX * 65535);
   }
   const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
   const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.bufferData(gl.ARRAY_BUFFER, buf, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(ATTR.pos); gl.vertexAttribPointer(ATTR.pos, 3, gl.FLOAT, false, STRIDE, 0);
-  gl.enableVertexAttribArray(ATTR.normal); gl.vertexAttribPointer(ATTR.normal, 3, gl.FLOAT, false, STRIDE, 12);
-  gl.enableVertexAttribArray(ATTR.onormal); gl.vertexAttribPointer(ATTR.onormal, 3, gl.FLOAT, false, STRIDE, 24);
-  gl.enableVertexAttribArray(ATTR.uv); gl.vertexAttribPointer(ATTR.uv, 2, gl.FLOAT, false, STRIDE, 36);
-  gl.enableVertexAttribArray(ATTR.color); gl.vertexAttribPointer(ATTR.color, 4, gl.UNSIGNED_BYTE, true, STRIDE, 44);
+  gl.enableVertexAttribArray(ATTR.normal); gl.vertexAttribPointer(ATTR.normal, 4, gl.INT_2_10_10_10_REV, true, STRIDE, 12);
+  gl.enableVertexAttribArray(ATTR.onormal); gl.vertexAttribPointer(ATTR.onormal, 4, gl.INT_2_10_10_10_REV, true, STRIDE, 16);
+  gl.enableVertexAttribArray(ATTR.uv); gl.vertexAttribPointer(ATTR.uv, 2, gl.FLOAT, false, STRIDE, 20);
+  gl.enableVertexAttribArray(ATTR.color); gl.vertexAttribPointer(ATTR.color, 4, gl.UNSIGNED_BYTE, true, STRIDE, 28);
+  gl.enableVertexAttribArray(ATTR.owidth); gl.vertexAttribPointer(ATTR.owidth, 1, gl.UNSIGNED_SHORT, true, STRIDE, 32);
   let boneBuf = null;
   if (mesh.bones) { // one byte per vertex: which bone (node) of a batched figure moves it
     boneBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, boneBuf); gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(mesh.bones), gl.STATIC_DRAW);

@@ -18,6 +18,7 @@
 // shows an overlay); at lod 'stage' three decals, 2.2k to 3.8k triangles instead of 7k to 11k.
 // Everything a def can ask for is listed above CAST near the bottom of this file.
 
+import { hypot } from './math.js';
 import { v3, m4, quat, DEG, rgb, rng } from './math.js';
 import {
   sphere, ellipsoid, superellipsoid, blob, cylinder, cone, lathe, limb, torus, roundedBox, curve, fromArrays,
@@ -30,7 +31,7 @@ import { EMOTES, EMOTE, FACE, useCell } from './faces.js';
 export { EMOTES };
 
 const mixc = (a, b, t) => { const x = rgb(a), y = rgb(b); return [x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t]; };
-const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const norm = (v) => { const l = hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
 const smooth = (t) => { const x = t < 0 ? 0 : t > 1 ? 1 : t; return x * x * (3 - 2 * x); };
 const approach = (a, b, k) => a + (b - a) * (k > 1 ? 1 : k);
 
@@ -52,7 +53,7 @@ function strand(path, w, th, seg = 8, ref = null, ink = null) {
     const T = norm([b[0] - a[0], b[1] - a[1], b[2] - a[2]]);
     let R = ref || p; const d = R[0] * T[0] + R[1] * T[1] + R[2] * T[2];
     R = [R[0] - T[0] * d, R[1] - T[1] * d, R[2] - T[2] * d];
-    if (Math.hypot(R[0], R[1], R[2]) < 1e-5) R = Math.abs(T[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    if (hypot(R[0], R[1], R[2]) < 1e-5) R = Math.abs(T[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
     R = norm(R);
     const S = [T[1] * R[2] - T[2] * R[1], T[2] * R[0] - T[0] * R[2], T[0] * R[1] - T[1] * R[0]];
     const t = i / (n - 1), ww = w(t), tt = th(t);
@@ -976,7 +977,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     if (lo && def.face?.marks?.blush !== 0) { // at stage size the cheeks are painted on the skull: one draw fewer than a marks decal
       const pink = def.face?.marks?.blushColor ? rgb(def.face.marks.blushColor) : mixc(headSkin, '#ff5a5a', 0.62), amt = (def.face?.marks?.blush ?? 0.5) * 1.5, C = sk.colors;
       for (let i = 0; i < unit.length; i += 3) {
-        const yaw = Math.atan2(unit[i], unit[i + 2]) / DEG, pitch = Math.asin(Math.max(-1, Math.min(1, unit[i + 1]))) / DEG, wgt = Math.min(1, amt) * smooth(1 - Math.hypot((Math.abs(yaw) - 36) / 15, (pitch + 25) / 12));
+        const yaw = Math.atan2(unit[i], unit[i + 2]) / DEG, pitch = Math.asin(Math.max(-1, Math.min(1, unit[i + 1]))) / DEG, wgt = Math.min(1, amt) * smooth(1 - hypot((Math.abs(yaw) - 36) / 15, (pitch + 25) / 12));
         if (wgt > 0) { C[i] += (pink[0] - C[i]) * wgt; C[i + 1] += (pink[1] - C[i + 1]) * wgt; C[i + 2] += (pink[2] - C[i + 2]) * wgt; }
       }
     }
@@ -1031,7 +1032,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   // brows: small 3D strands that pivot about the head's centre, so pitch raises them and roll tilts them
   const browSpec = { color: def.hair?.brow || mixc(def.hair?.color || '#7a4a2a', '#1a1040', 0.25), w: 0.019, len: 23, at: [FACE.eyeYaw + 1, 14.5], ...(def.face?.brow || {}) };
   {
-    const rr = Math.hypot(...hd.at(browSpec.at[0], browSpec.at[1])) * 1.03, pts = [];
+    const rr = hypot(...hd.at(browSpec.at[0], browSpec.at[1])) * 1.03, pts = [];
     for (let i = 0; i <= 6; i++) { const u = i / 6 - 0.5, a = u * browSpec.len * DEG, e = (0.25 - u * u) * 9 * DEG; pts.push([Math.sin(a) * Math.cos(e) * rr, Math.sin(e) * rr, Math.cos(a) * Math.cos(e) * rr]); }
     const wf = (t) => browSpec.w * (0.55 + 0.45 * Math.sin(Math.min(1, t * 2.2 + 0.25) * Math.PI / 2)) * (1 - 0.55 * t * t);
     const th = (t) => 0.008 + 0.004 * (1 - t);
@@ -1247,7 +1248,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
         m4.invert(inv, J.head.world); // the head as posed, before the look is added
         v3.transformPoint(tmp, target, inv);
         tmp[1] -= dim.headC;
-        const yaw = Math.atan2(tmp[0], tmp[2]) / DEG, pitch = Math.atan2(tmp[1], Math.hypot(tmp[0], tmp[2])) / DEG;
+        const yaw = Math.atan2(tmp[0], tmp[2]) / DEG, pitch = Math.atan2(tmp[1], hypot(tmp[0], tmp[2])) / DEG;
         const cyaw = Math.max(-75, Math.min(75, yaw)), cp = Math.max(-35, Math.min(35, pitch));
         ly = cyaw * 0.72; lp = cp * 0.6;
         ex = Math.max(-1, Math.min(1, (cyaw - ly) / 18)); ey = Math.max(-1, Math.min(1, (cp - lp) / 14));

@@ -48,7 +48,7 @@ const PRELOAD_MAX = 8;          // voice files asked for at one time; the rest l
 const LOAD_WAIT_MS = 1500;      // how long Continue waits for sound before going on without it
 
 // The 3D renderer. ?gl=1 asks for it, ?gl=0 refuses it, and with neither GL_DEFAULT decides: the integrator
-// flipped this one constant to true once chapter 1 played through in 3D. ?q=low|mid|high pins its quality tier.
+// flipped this one constant to true once chapter 1 played through in 3D. ?q=min|low|mid|high pins its quality tier.
 const GL_DEFAULT = true;
 const QUERY = new URLSearchParams(window.location.search);
 const GL_ASKED = QUERY.get('gl') === '1';                                  // asked for by name: its errors are fatal
@@ -171,7 +171,7 @@ async function loadGl(glCanvas, hudCanvas) {
   if (!GL_WANTED || !glCanvas || !hasWebGL2()) return null;                // no WebGL2: never touch the GL path
   try {
     const { createGlApp } = await import('./gl/app.js');
-    const app = createGlApp(glCanvas, hudCanvas, { quality: GL_QUALITY === 'low' || GL_QUALITY === 'mid' || GL_QUALITY === 'high' ? GL_QUALITY : null });
+    const app = createGlApp(glCanvas, hudCanvas, { quality: GL_QUALITY === 'min' || GL_QUALITY === 'low' || GL_QUALITY === 'mid' || GL_QUALITY === 'high' ? GL_QUALITY : null });
     return app.ok ? app : null;
   } catch (e) {
     if (GL_ASKED) throw e;

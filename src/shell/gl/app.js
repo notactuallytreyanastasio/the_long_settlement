@@ -1,6 +1,6 @@
 // The 3D renderer the shell draws with when the device has WebGL2: one WebGL canvas, one 2D HUD canvas over it.
 //
-//   const app = createGlApp(glCanvas, hudCanvas, { quality: 'low' | 'mid' | 'high' | null });
+//   const app = createGlApp(glCanvas, hudCanvas, { quality: 'min' | 'low' | 'mid' | 'high' | null });
 //   app.ok                              false when there is no WebGL2, and from the moment the context is lost
 //   app.canDraw(content, game)          true when every set the current chapter needs exists
 //   app.observe(content, before, msg, after)   once per core tick in play: the table's events (bumper, reelStop, ...)
@@ -28,7 +28,7 @@
 // (one long frame, logged). Each new set is drawn once into a few pixels so its buffers are on the GPU before the
 // frame that needs them.
 //
-// QUALITY. Three tiers. With no ?q= the app starts at 'high' and steps down whenever 120 frames of play or
+// QUALITY. Four tiers (high, mid, low, min). With no ?q= the app starts at 'high' and steps down whenever 120 frames of play or
 // cinematic average more than BUDGET_MS apart. It never steps back up. The first cinematic is the whole canvas of
 // stage, the heaviest thing there is, so a phone that cannot hold 'high' has usually left it before the first ball.
 
@@ -40,6 +40,7 @@ import { drawHud, HUD_BAND_HEAD, HUD_BAND_FOOT } from './hud.js';
 import { createDirector } from './stage.js';
 
 const INK = '#1d2146';
+const INK_RGB = GL.rgb(INK);     // the same ink as the renderer's frame clear
 const GROW = 0.75;              // seconds for the band to grow to the whole canvas, or shrink back
 const VEIL = 0.45;              // seconds an ink veil takes to lift after a screen gives way to the stage
 const PUMP_EVERY = 5;           // frames between background builds
@@ -59,8 +60,13 @@ export const TIERS = Object.freeze({
   high: Object.freeze({ engine: 'high', band: Object.freeze({}) }),
   mid: Object.freeze({ engine: 'medium', band: Object.freeze({ shadowSize: 512 }) }),
   low: Object.freeze({ engine: 'low', band: Object.freeze({ shadow: 'off' }) }),
+  // The last resort, for a device that cannot hold 'low' at 48 frames a second: 'low' at three quarters of a CSS pixel
+  // (0.56 of low's fragments, and fill is what such a device is out of), one lamp, outlines only on what is 12 px or more.
+  // Not the renderer's own 'min': that one compiles shadows out altogether, and only the fight has blob shades to stand
+  // in for them (stage.js S.blobs); a cinematic at 'min' would have its cast floating.
+  min: Object.freeze({ engine: Object.freeze({ base: 'low', name: 'min', dprCap: 0.75, maxLamps: 1, outlineMinPx: 12 }), band: Object.freeze({ shadow: 'off' }) }),
 });
-const TIER_ORDER = ['high', 'mid', 'low'];
+const TIER_ORDER = ['high', 'mid', 'low', 'min'];
 
 /** The table's three looks (table3d setLight), by the core's light names for an encounter (core/stage.js LIGHTS). */
 const TABLE_LIGHT = Object.freeze({ dusk: 'dusk', night: 'night', predawn: 'night', dawn: 'dawn', day: 'day', interior: 'night' });
@@ -116,7 +122,7 @@ function chapterPairs(chapter) {
 /**
  * @param {HTMLCanvasElement} glCanvas   gets the WebGL2 context. Must not have a context yet
  * @param {HTMLCanvasElement} hudCanvas  the 2D canvas over it; this file clears it every frame
- * @param {{quality?: 'low'|'mid'|'high'|null}} [opts]
+ * @param {{quality?: 'min'|'low'|'mid'|'high'|null}} [opts]
  */
 export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const pinned = opts.quality && TIERS[opts.quality] ? opts.quality : null;
@@ -338,7 +344,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   function measure(realMs, mode, builtNow) {
     ema += (realMs - ema) * 0.05;
     app.stats.frameMs = ema;
-    if (pinned || tierName === 'low') return;
+    if (pinned || tierName === TIER_ORDER[TIER_ORDER.length - 1]) return;
     if (builtNow || (mode !== 'play' && mode !== 'cine') || realMs > 100) { settle = SETTLE; return; }
     if (settle > 0) { settle--; acc = 0; accN = 0; return; }
     acc += realMs; accN++;
@@ -379,8 +385,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       const set = k ? built.get(k) : null;
       titleSet = set ? { chapter: game.chapter, set } : null;
     }
-    clearAll(INK);
-    if (!titleSet) return;
+    if (!titleSet) { clearAll(INK); return; }
     const set = titleSet.set, name = layout.kind === 'wide' && set.cameras.landscape ? 'landscape' : 'wide', c = set.cameras[name];
     set.update(time, dt);
     if (set.setPower) set.setPower(1);
@@ -390,7 +395,11 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     titleCam.fov = c.fov;
     titleCam.orbit(c.target, c.dist * Math.max(1, c.aspect / (cssW / cssH)), c.yaw + Math.sin(time * 0.11) * 13, c.pitch + Math.sin(time * 0.07) * 1.5);
     troupe.aim(titleCam);
-    count(renderer.render(set.scene, titleCam, time, { x: 0, y: 0, w: cssW, h: cssH, ...set.view(name) }), 'screen');
+    const view = { x: 0, y: 0, w: cssW, h: cssH, ...set.view(name) };
+    renderer.begin(INK_RGB);
+    renderer.prepare(set.scene, titleCam, time, view);
+    count(renderer.render(set.scene, titleCam, time, view), 'screen');
+    renderer.end();
   }
 
   function drawStage(content, game, fx, layout, time, dt, cssW, cssH, k, stage) {
@@ -413,19 +422,27 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     F.pad.top = (HUD_BAND_HEAD + Math.max(0, fx.safe ? fx.safe.top : 0)) * k * (1 - e); F.pad.bottom = HUD_BAND_FOOT * k * (1 - e);
     director.update(dt, time, F);
 
-    clearAll(INK);
-    if (e < 0.999) {
+    // One frame for the renderer (renderer.js, "a frame of several views"): both shadow maps first, then the table and the
+    // band back to back into one buffer, then one copy to the canvas. Two self-presenting render() calls made a phone's
+    // GPU leave the canvas half drawn and come back to it.
+    const showTable = e < 0.999, set = director.set;
+    let sview = null;
+    if (showTable) {
       // the table slides off the foot of the canvas as the band grows over it
       tview.update(game, frameEvents, dt);
       tview.rect.y = tview.baseY + e * (cssH - tview.baseY + 4);
-      count(tview.render(renderer, time), 'table');
     }
-    const set = director.set;
     if (set) {
       const extra = cineW === 0 ? TIERS[tierName].band : null;
-      count(renderer.render(set.scene, stageCam, time, { x: bandCss.x, y: bandCss.y, w: bandCss.w, h: bandCss.h, ...director.view, ...extra }), 'stage');
+      sview = { x: bandCss.x, y: bandCss.y, w: bandCss.w, h: bandCss.h, ...director.view, ...extra };
     }
+    renderer.begin(INK_RGB);
+    if (showTable) renderer.prepare(tview.scene, tview.camera, time, tview.rect);
+    if (sview) renderer.prepare(set.scene, stageCam, time, sview);
+    if (showTable) count(tview.render(renderer, time), 'table');
+    if (sview) count(renderer.render(set.scene, stageCam, time, sview), 'stage');
     drawInset(fx, layout, time, dt, k, e);
+    renderer.end();
   }
 
   // ───────────────────────── the caller's inset ─────────────────────────

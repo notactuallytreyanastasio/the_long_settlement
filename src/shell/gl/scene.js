@@ -1,6 +1,7 @@
 // The scene description: nodes, materials, cameras, the lighting environment. Pure data, no GL:
 // build a scene anywhere (tests included) and hand it to renderer.js to draw.
 
+import { hypot } from './math.js';
 import { v3, m4, quat, rgb, DEG } from './math.js';
 import { clone, transform, merge, bounds, splitByCell, trimForView } from './mesh.js';
 
@@ -461,7 +462,7 @@ function normaliseEnv(src, path = '') {
   for (const [k, v] of Object.entries(src)) {
     if (v == null) out[k] = null;
     else if (COLOR_KEYS.has(k) && (typeof v === 'string' || (Array.isArray(v) && typeof v[0] === 'number'))) out[k] = rgb(v);
-    else if (k === 'dir') { const l = Math.hypot(v[0], v[1], v[2]) || 1; out[k] = [v[0] / l, v[1] / l, v[2] / l]; }
+    else if (k === 'dir') { const l = hypot(v[0], v[1], v[2]) || 1; out[k] = [v[0] / l, v[1] / l, v[2] / l]; }
     else if (typeof v === 'object') out[k] = normaliseEnv(v, path + k + '.');
     else out[k] = v;
   }
@@ -497,7 +498,7 @@ export function makeEnv(preset = 'day', overrides = {}) {
   if (!base) throw new Error(`makeEnv: unknown preset ${JSON.stringify(preset)} (have ${Object.keys(PRESETS).join(', ')})`);
   return normaliseEnv(deepMerge(base, overrides));
 }
-export function setKeyDir(env, x, y, z) { const l = Math.hypot(x, y, z) || 1; env.key.dir[0] = x / l; env.key.dir[1] = y / l; env.key.dir[2] = z / l; return env; }
+export function setKeyDir(env, x, y, z) { const l = hypot(x, y, z) || 1; env.key.dir[0] = x / l; env.key.dir[1] = y / l; env.key.dir[2] = z / l; return env; }
 
 /**
  * Blend two environments made by makeEnv into `out` (also made by makeEnv): every number and colour
@@ -512,7 +513,7 @@ export function lerpEnv(out, a, b, t) {
       if (k === 'points' || k === 'shores' || !Array.isArray(y) || typeof x[0] !== 'number') { out[k] = x; continue; }
       const o = out[k] && out[k] !== x && out[k] !== y ? out[k] : (out[k] = x.slice());
       for (let i = 0; i < x.length; i++) o[i] = x[i] + (y[i] - x[i]) * t;
-      if (k === 'dir') { const l = Math.hypot(o[0], o[1], o[2]) || 1; o[0] /= l; o[1] /= l; o[2] /= l; }
+      if (k === 'dir') { const l = hypot(o[0], o[1], o[2]) || 1; o[0] /= l; o[1] /= l; o[2] /= l; }
     } else if (x && typeof x === 'object' && y && typeof y === 'object') { if (!out[k] || out[k] === x || out[k] === y) out[k] = {}; lerpEnv(out[k], x, y, t); }
     else out[k] = x;
   }

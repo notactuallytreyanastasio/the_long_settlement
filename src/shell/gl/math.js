@@ -4,6 +4,13 @@
 // Matrices are column-major Float32Array(16), as WebGL wants them. Quaternions are [x, y, z, w].
 // Angles are radians here; the scene and rig layers take degrees and convert.
 
+/**
+ * Length of (a, b[, c[, d]]). Use this, not Math.hypot, in anything that runs every frame: V8's Math.hypot takes its
+ * arguments as an array it allocates on each call (it was a quarter of what a play frame allocated, and several times
+ * slower than this). It does not guard against overflow the way Math.hypot does; nothing here is near 1e154.
+ */
+export function hypot(a, b = 0, c = 0, d = 0) { return Math.sqrt(a * a + b * b + c * c + d * d); }
+
 export const DEG = Math.PI / 180;
 
 export const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
@@ -31,10 +38,10 @@ export const v3 = {
     const x = a[1] * b[2] - a[2] * b[1], y = a[2] * b[0] - a[0] * b[2], z = a[0] * b[1] - a[1] * b[0];
     o[0] = x; o[1] = y; o[2] = z; return o;
   },
-  len: (a) => Math.hypot(a[0], a[1], a[2]),
-  dist: (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]),
+  len: (a) => hypot(a[0], a[1], a[2]),
+  dist: (a, b) => hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]),
   normalize: (o, a) => {
-    const l = Math.hypot(a[0], a[1], a[2]);
+    const l = hypot(a[0], a[1], a[2]);
     if (l > 1e-12) { o[0] = a[0] / l; o[1] = a[1] / l; o[2] = a[2] / l; } else { o[0] = 0; o[1] = 1; o[2] = 0; }
     return o;
   },
@@ -96,7 +103,7 @@ export const quat = {
     return o;
   },
   normalize: (o, a) => {
-    const l = Math.hypot(a[0], a[1], a[2], a[3]) || 1;
+    const l = hypot(a[0], a[1], a[2], a[3]) || 1;
     o[0] = a[0] / l; o[1] = a[1] / l; o[2] = a[2] / l; o[3] = a[3] / l; return o;
   },
   slerp: (o, a, b, t) => {
@@ -113,8 +120,8 @@ export const quat = {
     const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     if (d < -0.99999) { // opposite: any perpendicular axis
       let x = 0, y = -a[2], z = a[1];
-      if (Math.hypot(x, y, z) < 1e-4) { x = -a[1]; y = a[0]; z = 0; }
-      const l = Math.hypot(x, y, z); o[0] = x / l; o[1] = y / l; o[2] = z / l; o[3] = 0; return o;
+      if (hypot(x, y, z) < 1e-4) { x = -a[1]; y = a[0]; z = 0; }
+      const l = hypot(x, y, z); o[0] = x / l; o[1] = y / l; o[2] = z / l; o[3] = 0; return o;
     }
     o[0] = a[1] * b[2] - a[2] * b[1]; o[1] = a[2] * b[0] - a[0] * b[2]; o[2] = a[0] * b[1] - a[1] * b[0]; o[3] = 1 + d;
     return quat.normalize(o, o);
@@ -201,9 +208,9 @@ export const m4 = {
   },
   lookAt: (o, eye, target, up) => {
     let zx = eye[0] - target[0], zy = eye[1] - target[1], zz = eye[2] - target[2];
-    let l = Math.hypot(zx, zy, zz) || 1; zx /= l; zy /= l; zz /= l;
+    let l = hypot(zx, zy, zz) || 1; zx /= l; zy /= l; zz /= l;
     let xx = up[1] * zz - up[2] * zy, xy = up[2] * zx - up[0] * zz, xz = up[0] * zy - up[1] * zx;
-    l = Math.hypot(xx, xy, xz) || 1; xx /= l; xy /= l; xz /= l;
+    l = hypot(xx, xy, xz) || 1; xx /= l; xy /= l; xz /= l;
     const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
     o[0] = xx; o[1] = yx; o[2] = zx; o[3] = 0;
     o[4] = xy; o[5] = yy; o[6] = zy; o[7] = 0;
@@ -246,7 +253,7 @@ export function mixRgb(a, b, t) {
 export function frustumPlanes(out, m) {
   const row = (k, sign, r) => {
     let x = m[3] + sign * m[r], y = m[7] + sign * m[4 + r], z = m[11] + sign * m[8 + r], d = m[15] + sign * m[12 + r];
-    const l = Math.hypot(x, y, z) || 1;
+    const l = hypot(x, y, z) || 1;
     out[k * 4] = x / l; out[k * 4 + 1] = y / l; out[k * 4 + 2] = z / l; out[k * 4 + 3] = d / l;
   };
   row(0, 1, 0); row(1, -1, 0); row(2, 1, 1); row(3, -1, 1); row(4, 1, 2); row(5, -1, 2);

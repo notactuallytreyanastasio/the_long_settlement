@@ -4,6 +4,22 @@
 // blended decals -> additive beams -> sprites -> present (antialiasing). One pass each.
 // The render loop allocates nothing; all scratch storage is created once below.
 //
+// A FRAME OF SEVERAL VIEWS (a stage band over a table) should be drawn as one frame, not as several render() calls that
+// each present themselves:
+//
+//   renderer.begin(clearColor)                       // start the frame
+//   renderer.prepare(sceneA, camA, time, viewA)      // every view's shadow map first...
+//   renderer.prepare(sceneB, camB, time, viewB)
+//   renderer.render(sceneA, camA, time, viewA)       // ...then every view's picture, back to back, into one off-screen buffer
+//   renderer.render(sceneB, camB, time, viewB)
+//   renderer.end()                                   // one resolve, one copy to the canvas
+//
+// Why the obvious version (render(), render()) is wrong on a phone: its GPU draws a render target tile by tile and has to
+// write the target out to memory and read it back every time the target changes and comes back. Two self-contained
+// render() calls go shadow map -> buffer -> canvas -> shadow map -> buffer -> canvas: six targets, and the canvas is left
+// and returned to, so the half-presented canvas is stored and reloaded. A frame goes shadow, shadow, buffer, canvas: four,
+// none of them revisited. render() outside begin()/end() still works alone, as before (tools, the warm-up draws).
+//
 // QUALITY. Everything that costs the GPU is a field of one quality object, changed while running
 // with renderer.setQuality('high' | 'medium' | 'low' | 'min' | { ...fields }):
 //
@@ -29,9 +45,10 @@
 //
 // A view may override per call: { shadow: 'off', shadowSize, maxLamps }.
 
+import { hypot } from './math.js';
 import { v3, m4, DEG, frustumPlanes, sphereInFrustum, maxScale } from './math.js';
 import { boundingSphere, trimForView } from './mesh.js';
-import { createContext, createProgram, createGeometry, uploadInstances, createTexture, createShadowTarget, createColorTarget, copyShadow } from './gl.js';
+import { createContext, createProgram, createGeometry, uploadInstances, createTexture, createShadowTarget, createColorTarget, copyShadow, STRIDE } from './gl.js';
 import * as S from './shaders.js';
 import { SPRITE_FLOATS } from './sprites.js';
 
@@ -155,7 +172,7 @@ export function createRenderer(canvas, opts = {}) {
   // ---- lazily uploaded resources ----
   // What is on the GPU, in bytes, counted as it is made and dropped (an estimate: drivers pad). Things whose JS owner was
   // garbage collected without release() stay counted until the context is rebuilt.
-  const geoBytes = (mesh) => (mesh.positions.length / 3) * (48 + (mesh.bones ? 1 : 0)) + mesh.indices.length * (mesh.positions.length / 3 <= 65535 ? 2 : 4);
+  const geoBytes = (mesh) => (mesh.positions.length / 3) * (STRIDE + (mesh.bones ? 1 : 0)) + mesh.indices.length * (mesh.positions.length / 3 <= 65535 ? 2 : 4);
   function geoOf(mesh, owner) {
     const holder = owner || mesh; // instanced nodes own a private copy, because the instance buffer lives on the VAO
     let c = holder._gpu;
@@ -191,6 +208,8 @@ export function createRenderer(canvas, opts = {}) {
   const pointPos = new Float32Array(S.MAX_POINTS * 4), pointCol = new Float32Array(S.MAX_POINTS * 4), foam = new Float32Array(S.MAX_FOAM * 4);
   const planes = new Float32Array(24), sph = new Float32Array(4);
   let nCand = 0, nPoints = 0, nFoam = 0, frame = null, staticHash = 0, shadowR = 0, wantCasters = false;
+  // a frame of several views (begin/prepare/render/end): its serial, whether one is open, whether its buffer is cleared yet
+  let inFrame = false, frameSerial = 0, frameCleared = false; const frameClear = new Float32Array([0, 0, 0, 1]);
 
   function addLight(x, y, z, color, radius, intensity, target) {
     if (nCand >= MAX_CAND || intensity <= 0 || radius <= 0) return;
@@ -198,7 +217,7 @@ export function createRenderer(canvas, opts = {}) {
     const k = nCand++;
     candPos[k * 4] = x; candPos[k * 4 + 1] = y; candPos[k * 4 + 2] = z; candPos[k * 4 + 3] = radius;
     candCol[k * 4] = color[0]; candCol[k * 4 + 1] = color[1]; candCol[k * 4 + 2] = color[2]; candCol[k * 4 + 3] = intensity;
-    candScore[k] = Math.hypot(x - target[0], y - target[1], z - target[2]) - radius;
+    candScore[k] = hypot(x - target[0], y - target[1], z - target[2]) - radius;
   }
 
   /** World bounding sphere of what a node draws, into `sph`. False when it cannot be bounded (then it is never culled). */
@@ -209,7 +228,7 @@ export function createRenderer(canvas, opts = {}) {
       for (let i = 0; i < b.length; i++) { const w = b[i].world; cx += w[12]; cy += w[13]; cz += w[14]; }
       cx /= b.length; cy /= b.length; cz /= b.length;
       let r = 0, sc = 1;
-      for (let i = 0; i < b.length; i++) { const w = b[i].world, d = Math.hypot(w[12] - cx, w[13] - cy, w[14] - cz); if (d > r) r = d; const s = maxScale(w); if (s > sc) sc = s; }
+      for (let i = 0; i < b.length; i++) { const w = b[i].world, d = hypot(w[12] - cx, w[13] - cy, w[14] - cz); if (d > r) r = d; const s = maxScale(w); if (s > sc) sc = s; }
       if (mesh._boneR === undefined) { const P = mesh.positions; let m = 0; for (let i = 0; i < P.length; i += 3) { const d = P[i] * P[i] + P[i + 1] * P[i + 1] + P[i + 2] * P[i + 2]; if (d > m) m = d; } mesh._boneR = Math.sqrt(m); }
       sph[0] = cx; sph[1] = cy; sph[2] = cz; sph[3] = r + mesh._boneR * sc;
       return true;
@@ -224,9 +243,9 @@ export function createRenderer(canvas, opts = {}) {
           const o = i * 20, x = D[o + 12], y = D[o + 13], z = D[o + 14];
           if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z;
           const s = Math.sqrt(Math.max(D[o] * D[o] + D[o + 1] * D[o + 1] + D[o + 2] * D[o + 2], D[o + 4] * D[o + 4] + D[o + 5] * D[o + 5] + D[o + 6] * D[o + 6], D[o + 8] * D[o + 8] + D[o + 9] * D[o + 9] + D[o + 10] * D[o + 10]));
-          const p = (Math.hypot(bs[0], bs[1], bs[2]) + bs[3]) * s; if (p > pad) pad = p;
+          const p = (hypot(bs[0], bs[1], bs[2]) + bs[3]) * s; if (p > pad) pad = p;
         }
-        ib[0] = (x0 + x1) / 2; ib[1] = (y0 + y1) / 2; ib[2] = (z0 + z1) / 2; ib[3] = Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + pad; ib[4] = inst.count;
+        ib[0] = (x0 + x1) / 2; ib[1] = (y0 + y1) / 2; ib[2] = (z0 + z1) / 2; ib[3] = hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + pad; ib[4] = inst.count;
       }
       sph[0] = w[0] * ib[0] + w[4] * ib[1] + w[8] * ib[2] + w[12]; sph[1] = w[1] * ib[0] + w[5] * ib[1] + w[9] * ib[2] + w[13]; sph[2] = w[2] * ib[0] + w[6] * ib[1] + w[10] * ib[2] + w[14];
       sph[3] = ib[3] * maxScale(w);
@@ -283,7 +302,7 @@ export function createRenderer(canvas, opts = {}) {
         const seen = !bounded || sphereInFrustum(planes, sph[0], sph[1], sph[2], sph[3]);
         if (seen) {
           // how big it is on screen, for the outline pass (0 = unknown: always outlined)
-          n._px = bounded ? sph[3] / (Math.max(Math.hypot(sph[0] - frame.camera.position[0], sph[1] - frame.camera.position[1], sph[2] - frame.camera.position[2]), 1e-3) * frame.pxUnit) : 0;
+          n._px = bounded ? sph[3] / (Math.max(hypot(sph[0] - frame.camera.position[0], sph[1] - frame.camera.position[1], sph[2] - frame.camera.position[2]), 1e-3) * frame.pxUnit) : 0;
           n._r = bounded ? sph[3] : Infinity;
           n._trim = Q.trim && n.static && !n.instances && trimmed(n);
           if (mat.kind === 'beam') beams.push(n);
@@ -455,7 +474,7 @@ export function createRenderer(canvas, opts = {}) {
       for (let v = 0; v < nv; v++) {
         const o = (base + v) * 12, x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2], a = N[v * 3], bb = N[v * 3 + 1], c = N[v * 3 + 2];
         decalF[o] = w[0] * x + w[4] * y + w[8] * z + w[12]; decalF[o + 1] = w[1] * x + w[5] * y + w[9] * z + w[13]; decalF[o + 2] = w[2] * x + w[6] * y + w[10] * z + w[14];
-        const nx = nm3[0] * a + nm3[3] * bb + nm3[6] * c, ny = nm3[1] * a + nm3[4] * bb + nm3[7] * c, nz = nm3[2] * a + nm3[5] * bb + nm3[8] * c, l = Math.hypot(nx, ny, nz) || 1;
+        const nx = nm3[0] * a + nm3[3] * bb + nm3[6] * c, ny = nm3[1] * a + nm3[4] * bb + nm3[7] * c, nz = nm3[2] * a + nm3[5] * bb + nm3[8] * c, l = hypot(nx, ny, nz) || 1;
         decalF[o + 3] = nx / l; decalF[o + 4] = ny / l; decalF[o + 5] = nz / l; decalF[o + 6] = 0; decalF[o + 7] = 0; decalF[o + 8] = 0;
         decalF[o + 9] = U[v * 2] * r[2] + r[0]; decalF[o + 10] = U[v * 2 + 1] * r[3] + r[1];
         const cb = (base + v) * 48 + 44;
@@ -597,7 +616,8 @@ export function createRenderer(canvas, opts = {}) {
     }
   }
 
-  function render(scene, camera, time = 0, view = null) {
+  /** phase 0: the whole of a view, presented (render() alone). 1: its shadow map only (prepare()). 2: its picture, inside a frame. */
+  function draw(scene, camera, time = 0, view = null, phase = 0) {
     if (ctx.lost) return stats;
     const t0 = performance.now();
     ctx.dprCap = Math.min(hardDpr, Q.dprCap);
@@ -619,8 +639,17 @@ export function createRenderer(canvas, opts = {}) {
     frustumPlanes(planes, camera.viewProj);
 
     // ---- shadow map: decide first whether this call redraws it, so the gather knows whether to list casters ----
-    let entry = null, redraw = false, shadowTex = null;
-    if (frame.shadowOn) {
+    let entry = null, redraw = false, shadowTex = null, prepared = false;
+    if (frame.shadowOn && phase === 2) {
+      // prepare() already decided about this scene's map in this frame, and drew it if it was due
+      const e = shadowOf.get(scene);
+      if (e && e.gen === ctx.generation && e.prepared === frameSerial && e.lastTex) {
+        entry = e; prepared = true; shadowVP.set(e.vp); frame.shadowTexel = e.texel; frame.shadowSize = e.size;
+        stats.drawCalls = stats.shadowDraws = stats.pass.shadow.draws = e.carryDraws; stats.triangles = stats.shadowTriangles = stats.pass.shadow.tris = e.carryTris;
+        stats.shadowFresh = e.carryDraws > 0 || e.carryFresh; stats.shadowKept = e.carryKept;
+      }
+    }
+    if (frame.shadowOn && !prepared) {
       const size = Math.min((view && view.shadowSize) || env.shadow.size || 1024, Q.shadowSize);
       entry = shadowEntry(scene, size);
       const texel = fitShadow(env, camera, view, size, entry);
@@ -630,6 +659,7 @@ export function createRenderer(canvas, opts = {}) {
       frame.shadowTexel = entry.texel; frame.shadowSize = size;
     }
     wantCasters = redraw;
+    if (phase === 1 && !redraw) { if (entry) { entry.prepared = frameSerial; entry.carryDraws = 0; entry.carryTris = 0; entry.carryFresh = false; entry.carryKept = ''; } return stats; }
 
     // ---- gather ----
     scene.root.updateWorld(null);
@@ -643,7 +673,8 @@ export function createRenderer(canvas, opts = {}) {
       let best = -1, bs = Infinity;
       for (let i = 0; i < nCand; i++) if (candScore[i] < bs) { bs = candScore[i]; best = i; }
       candScore[best] = Infinity;
-      pointPos.set(candPos.subarray(best * 4, best * 4 + 4), nPoints * 4); pointCol.set(candCol.subarray(best * 4, best * 4 + 4), nPoints * 4); nPoints++;
+      for (let c = 0; c < 4; c++) { pointPos[nPoints * 4 + c] = candPos[best * 4 + c]; pointCol[nPoints * 4 + c] = candCol[best * 4 + c]; }   // (no subarray: that is two objects a lamp a view a frame)
+      nPoints++;
     }
     stats.lights = nPoints;
 
@@ -679,7 +710,9 @@ export function createRenderer(canvas, opts = {}) {
         gl.disable(gl.POLYGON_OFFSET_FILL);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       } else shadowTex = entry.lastTex;
+      if (phase === 1) { entry.prepared = frameSerial; entry.carryDraws = stats.shadowDraws; entry.carryTris = stats.shadowTriangles; entry.carryFresh = stats.shadowFresh; entry.carryKept = stats.shadowKept; return stats; }
     } else {
+      if (phase === 1) return stats;
       if (!nullShadow) nullShadow = createShadowTarget(gl, 16);
       shadowTex = nullShadow.tex;
     }
@@ -692,6 +725,12 @@ export function createRenderer(canvas, opts = {}) {
       if (!colorTarget || colorTarget.w !== ctx.width || colorTarget.h !== ctx.height || (colorTarget.samples > 1) !== (samples > 1)) { if (colorTarget) colorTarget.dispose(); colorTarget = createColorTarget(gl, ctx.width, ctx.height, samples); }
       gl.bindFramebuffer(gl.FRAMEBUFFER, colorTarget.fbo);
     } else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); if (colorTarget) { colorTarget.dispose(); colorTarget = null; } }
+    if (phase === 2 && !frameCleared) {
+      // the first view of a frame: the whole buffer starts from the frame's colour (to a tile-based GPU a full clear is the
+      // cheapest way to start a target: nothing is read back), so what no view covers is that colour on the glass
+      frameCleared = true;
+      if (!overdraw) { gl.disable(gl.SCISSOR_TEST); gl.clearColor(frameClear[0], frameClear[1], frameClear[2], 1); gl.clearDepth(1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); }
+    }
     gl.viewport(VX, VY, W, H);
     gl.enable(gl.SCISSOR_TEST); gl.scissor(VX, VY, W, H);
     const fc = env.fog.color || env.sky.horizon;
@@ -787,7 +826,7 @@ export function createRenderer(canvas, opts = {}) {
       const p = prog('sprite'), u = p.u; frameUniforms(p); setCull(false); enter('sprites');
       blend('premul');
       gl.uniform3fv(u.uCamRight, camera.right); gl.uniform3fv(u.uCamUp, camera.upDir);
-      const L = env.key.dir; let lx = v3.dot(L, camera.right), ly = v3.dot(L, camera.upDir); const ll = Math.hypot(lx, ly) || 1;
+      const L = env.key.dir; let lx = v3.dot(L, camera.right), ly = v3.dot(L, camera.upDir); const ll = hypot(lx, ly) || 1;
       gl.uniform2f(u.uLight2, lx / ll, ly / ll);
       const ink = env.outline.color; if (ink) gl.uniform3fv(u.uInk, ink); else gl.uniform3f(u.uInk, 0.11, 0.15, 0.26);
       if (u.uSpriteMap) { gl.uniform1i(u.uSpriteMap, 0); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texOf(sp.texture)); }
@@ -800,10 +839,19 @@ export function createRenderer(canvas, opts = {}) {
 
     gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null); gl.colorMask(true, true, true, true);
 
-    // ---- present ----
-    if (aa !== 'none') {
+    // ---- present (a frame of several views presents once, in end()) ----
+    if (aa !== 'none' && phase !== 2) present(VX, VY, W, H);
+    gl.disable(gl.SCISSOR_TEST);
+    stats.cpuMs = performance.now() - t0;
+    return stats;
+  }
+
+  /** The off-screen buffer's rectangle, antialiased, onto the canvas. */
+  function present(VX, VY, W, H) {
+    const aa = Q.aa;
+    {
       colorTarget.resolve(VX, VY, W, H);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(VX, VY, W, H); gl.scissor(VX, VY, W, H);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(VX, VY, W, H); gl.enable(gl.SCISSOR_TEST); gl.scissor(VX, VY, W, H);
       const p = prog('present'); gl.useProgram(p.program);
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false); setCull(false);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, colorTarget.tex);
@@ -813,12 +861,44 @@ export function createRenderer(canvas, opts = {}) {
       colorTarget.discard();   // presented: nothing in it is read again (the next view clears its own rectangle)
     }
     gl.disable(gl.SCISSOR_TEST);
-    stats.cpuMs = performance.now() - t0;
-    return stats;
   }
+
+  /** render() as callers see it: a view of its own, or one view of the frame that is open. */
+  function render(scene, camera, time = 0, view = null) { return draw(scene, camera, time, view, inFrame ? 2 : 0); }
 
   const api = {
     ctx, gl, stats, render,
+    /**
+     * Start a frame of several views (see the head of this file). `clear` [r, g, b] is what shows where no view draws.
+     * Between begin() and end(), render() draws into the frame and does not present.
+     */
+    begin(clear = null) {
+      if (ctx.lost) return;   // (a frame left open by an exception is simply started again)
+      ctx.dprCap = Math.min(hardDpr, Q.dprCap); ctx.resize();
+      inFrame = true; frameSerial++; frameCleared = false;
+      if (clear) { frameClear[0] = clear[0]; frameClear[1] = clear[1]; frameClear[2] = clear[2]; }
+      if (overdraw) frameCleared = true;   // a fill measurement cleared the canvas itself and counts what is added to it
+      else if (Q.aa === 'none') {          // views draw straight onto the canvas: it is cleared now
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, ctx.width, ctx.height);
+        gl.clearColor(frameClear[0], frameClear[1], frameClear[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
+        frameCleared = true;
+      }
+    },
+    /** A view's shadow map, ahead of its picture: call for every view of the frame before the first render(). Same arguments as render(). */
+    prepare(scene, camera, time = 0, view = null) { if (!inFrame) return stats; return draw(scene, camera, time, view, 1); },
+    /** Finish the frame: the buffer goes to the canvas, once. */
+    end() {
+      if (!inFrame) return;
+      inFrame = false;
+      if (ctx.lost) return;
+      if (overdraw || Q.aa === 'none') return;
+      if (!frameCleared || !colorTarget) {   // no view drew: the canvas is the frame's colour
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, ctx.width, ctx.height);
+        gl.clearColor(frameClear[0], frameClear[1], frameClear[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
+        return;
+      }
+      present(0, 0, ctx.width, ctx.height);
+    },
     get quality() { return Q; },
     /**
      * Change the quality tier (or some fields of it) while running. Shaders whose compile-time switches

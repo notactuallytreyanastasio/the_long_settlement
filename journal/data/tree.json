@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 33770,
-  "lines": 592
+  "bytes": 35235,
+  "lines": 609
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 200744,
-  "lines": 2535
+  "bytes": 200754,
+  "lines": 2536
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12511,8 +12511,8 @@
  },
  {
   "path": "src/shell/gl/gl.js",
-  "bytes": 14573,
-  "lines": 225
+  "bytes": 16291,
+  "lines": 241
  },
  {
   "path": "src/shell/gl/hud.js",
@@ -12526,8 +12526,8 @@
  },
  {
   "path": "src/shell/gl/math.js",
-  "bytes": 14045,
-  "lines": 265
+  "bytes": 14455,
+  "lines": 272
  },
  {
   "path": "src/shell/gl/mesh.js",
@@ -12536,18 +12536,18 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 63599,
-  "lines": 897
+  "bytes": 69343,
+  "lines": 977
  },
  {
   "path": "src/shell/gl/rig.js",
-  "bytes": 10695,
-  "lines": 207
+  "bytes": 10725,
+  "lines": 208
  },
  {
   "path": "src/shell/gl/scene.js",
-  "bytes": 30824,
-  "lines": 526
+  "bytes": 30844,
+  "lines": 527
  },
  {
   "path": "src/shell/gl/sets/abstract.js",
@@ -12871,8 +12871,8 @@
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 28594,
-  "lines": 559
+  "bytes": 28718,
+  "lines": 562
  },
  {
   "path": "src/shell/gl/sprites.js",
@@ -12881,8 +12881,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 109770,
-  "lines": 1480
+  "bytes": 109800,
+  "lines": 1481
  },
  {
   "path": "src/shell/gl/table-art.js",
@@ -12891,8 +12891,8 @@
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 110353,
-  "lines": 1483
+  "bytes": 110313,
+  "lines": 1484
  },
  {
   "path": "src/shell/input.js",
@@ -12906,7 +12906,7 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 25163,
+  "bytes": 25191,
   "lines": 523
  },
  {
@@ -13011,7 +13011,7 @@
  },
  {
   "path": "tools/gl-perf.html",
-  "bytes": 23337,
+  "bytes": 23343,
   "lines": 259
  },
  {

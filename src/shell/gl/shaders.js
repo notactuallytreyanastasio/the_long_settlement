@@ -7,6 +7,8 @@
 //   PCF      0|1|4  shadow map taps (0 = no shadow lookups compiled in at all)
 //   WATER_Q  0|1|2  0 full, 1 cheap (one stroke layer, no shadow, no lamps), 2 flat (bands and foam only)
 //   CUTOUT          depth programs only: sample the material's texture and discard under its alpha cut
+import { OWIDTH_MAX } from './gl.js';
+
 export const MAX_POINTS = 8;
 export const MAX_FOAM = 16;
 export const MAX_BONES = 32;
@@ -14,6 +16,7 @@ export const MAX_BONES = 32;
 const COMMON_VS = `
 precision highp float;
 in vec3 aPos; in vec3 aNormal; in vec3 aONormal; in vec2 aUv; in vec4 aColor;
+in float aOWidth; // the outline's width scale, as a fraction of OWIDTH_MAX (gl.js)
 #ifdef INSTANCED
 in mat4 aInst; in vec4 aInstColor;
 #endif
@@ -188,8 +191,8 @@ out vec3 vColor; out float vDist;
 void main() {
   ${MODEL}
   vec4 view = uView * (model * vec4(aPos, 1.0));
-  float w = length(aONormal);
-  vec3 vn = mat3(uView) * normalize(nm * (aONormal / max(w, 1e-5)));
+  float w = aOWidth * ${OWIDTH_MAX.toFixed(1)};
+  vec3 vn = mat3(uView) * normalize(nm * aONormal);
   float depth = max(-view.z, 0.01);
   // constant width on screen, thinning (never below 40%) for things far beyond the reference depth
   float s = clamp(uOutline.z / depth, 0.4, 1.3);

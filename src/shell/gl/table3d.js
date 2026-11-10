@@ -27,6 +27,7 @@
 // px), which is where a stage above continues the line. view.hits lists this update's hits with
 // their screen positions; view.port(out) is the collector; view.screenOf(event, out) any event.
 
+import { hypot } from './math.js';
 import {
   m4, rgb, rng, DEG,
   sphere, ellipsoid, cylinder, lathe, torus, box, roundedBox, extrude, tube, fromArrays,
@@ -68,7 +69,7 @@ function prism(outline, y0, y1, bevel = 0) {
 }
 /** Plan outline of a fat line from a to b: radius r0 at a, r1 at b. */
 function stadium(ax, az, bx, bz, r0, r1 = r0, n = 4) {
-  const dx = bx - ax, dz = bz - az, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l, nx = -uz, nz = ux, pts = [];
+  const dx = bx - ax, dz = bz - az, l = hypot(dx, dz) || 1, ux = dx / l, uz = dz / l, nx = -uz, nz = ux, pts = [];
   for (let i = 0; i <= n; i++) { const a = -Math.PI / 2 + (Math.PI * i) / n, c = Math.cos(a), s = Math.sin(a); pts.push([bx + (ux * c + nx * s) * r1, bz + (uz * c + nz * s) * r1]); }
   for (let i = 0; i <= n; i++) { const a = Math.PI / 2 + (Math.PI * i) / n, c = Math.cos(a), s = Math.sin(a); pts.push([ax + (ux * c + nx * s) * r0, az + (uz * c + nz * s) * r0]); }
   return pts;
@@ -207,7 +208,7 @@ function railMesh(path, P) {
   const L = [], R = [], parts = [];
   for (let i = 0; i < path.length; i++) {
     const a = path[Math.max(0, i - 1)], b = path[Math.min(path.length - 1, i + 1)];
-    const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, p = path[i];
+    const dx = b[0] - a[0], dz = b[2] - a[2], l = hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, p = path[i];
     L.push([p[0] + nx * 0.088, p[1] + 0.05, p[2] + nz * 0.088]); R.push([p[0] - nx * 0.088, p[1] + 0.05, p[2] - nz * 0.088]);
     if (i % 3 === 1) parts.push(tint(tube([L[i], [p[0] + nx * 0.07, p[1] - 0.035, p[2] + nz * 0.07], [p[0] - nx * 0.07, p[1] - 0.035, p[2] - nz * 0.07], R[i]], 0.008, sg(5, 4), { crease: 180 }), P.steel));
   }
@@ -357,7 +358,7 @@ function paintKit(g, table, P) {
     planks(pts, a, b, { fill = P.plank, line = P.plankDark, step = 11 } = {}) {
       path(pts); g.fillStyle = fill; g.fill();
       g.save(); path(pts); g.clip();
-      const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l;
+      const dx = b[0] - a[0], dy = b[1] - a[1], l = hypot(dx, dy), ux = dx / l, uy = dy / l;
       g.strokeStyle = line; g.lineWidth = 1.4;
       for (let s = -200; s < l + 200; s += step) { const x = a[0] + ux * s, y = a[1] + uy * s; g.beginPath(); g.moveTo(x - uy * 300, y + ux * 300); g.lineTo(x + uy * 300, y - ux * 300); g.stroke(); }
       g.restore();
@@ -467,11 +468,11 @@ function paintFunctional(kit, layout, at = {}) {
 function layoutOf(table) {
   const centre = [187, 330];
   const shots = table.shots.map((s) => {
-    const mid = [(s.a[0] + s.b[0]) / 2, (s.a[1] + s.b[1]) / 2], l = Math.hypot(s.dir[0], s.dir[1]) || 1, dir = [s.dir[0] / l, s.dir[1] / l];
-    return { id: s.id, mid, dir, lamp: [mid[0] - dir[0] * 22, mid[1] - dir[1] * 22], exit: s.exit || null, width: Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]) };
+    const mid = [(s.a[0] + s.b[0]) / 2, (s.a[1] + s.b[1]) / 2], l = hypot(s.dir[0], s.dir[1]) || 1, dir = [s.dir[0] / l, s.dir[1] / l];
+    return { id: s.id, mid, dir, lamp: [mid[0] - dir[0] * 22, mid[1] - dir[1] * 22], exit: s.exit || null, width: hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]) };
   });
   const targets = table.targets.map((t) => {
-    const mid = [(t.a[0] + t.b[0]) / 2, (t.a[1] + t.b[1]) / 2], dx = t.b[0] - t.a[0], dy = t.b[1] - t.a[1], l = Math.hypot(dx, dy) || 1;
+    const mid = [(t.a[0] + t.b[0]) / 2, (t.a[1] + t.b[1]) / 2], dx = t.b[0] - t.a[0], dy = t.b[1] - t.a[1], l = hypot(dx, dy) || 1;
     let front = [-dy / l, dx / l];
     if (front[0] * (centre[0] - mid[0]) + front[1] * (centre[1] - mid[1]) < 0) front = [-front[0], -front[1]];
     return { id: t.id, group: t.group || '', mid, dir: [dx / l, dy / l], len: l, front };
@@ -483,7 +484,7 @@ function layoutOf(table) {
   const onAnother = (p) => table.walls.some((w) => {
     if (w.a === p || w.b === p) return false;
     const ex = w.b[0] - w.a[0], ey = w.b[1] - w.a[1], l2 = ex * ex + ey * ey || 1, t = Math.max(0, Math.min(1, ((p[0] - w.a[0]) * ex + (p[1] - w.a[1]) * ey) / l2));
-    return Math.hypot(p[0] - w.a[0] - ex * t, p[1] - w.a[1] - ey * t) < 2;
+    return hypot(p[0] - w.a[0] - ex * t, p[1] - w.a[1] - ey * t) < 2;
   });
   const posts = [...ends.values()].filter((e) => e.n === 1 && e.p[1] < 795 && e.p[0] > 12 && e.p[0] < 388 && !onAnother(e.p)).map((e) => e.p);
   return { shots, targets, posts };
@@ -491,8 +492,8 @@ function layoutOf(table) {
 
 /** The wireform of a ramp: table-space points [x, y, height] from its gate to its exit. */
 function rampPath(shot, n = 24) {
-  const p0 = shot.mid, p3 = shot.exit.pos, v = shot.exit.vel, vl = Math.hypot(v[0], v[1]) || 1;
-  const reach = Math.min(130, Math.hypot(p3[0] - p0[0], p3[1] - p0[1]) * 0.5);
+  const p0 = shot.mid, p3 = shot.exit.pos, v = shot.exit.vel, vl = hypot(v[0], v[1]) || 1;
+  const reach = Math.min(130, hypot(p3[0] - p0[0], p3[1] - p0[1]) * 0.5);
   const via = shot.exit.via || [[p0[0] + shot.dir[0] * reach, p0[1] + shot.dir[1] * reach], [p3[0] - (v[0] / vl) * reach, p3[1] - (v[1] / vl) * reach]];
   const out = [];
   for (let i = 0; i <= n; i++) {
@@ -701,7 +702,7 @@ export function createTableView(content, tableId, opts = {}) {
     const world = pts.map((p) => [WX(p[0]), p[2], WZ(p[1])]);
     set.add(node('ramp', railMesh(world, P), setMat));
     // a plank flap up onto the wire, and a post at each end
-    const a = world[0], b = world[6], len = Math.hypot(b[0] - a[0], b[2] - a[2]);
+    const a = world[0], b = world[6], len = hypot(b[0] - a[0], b[2] - a[2]);
     const flap = capped(extrude([[0, a[1] + 0.012], [len, b[1] + 0.02], [len, b[1] - 0.005], [0, a[1] - 0.012]], 0.17, { bevel: 0.004, crease: 30 }), P.plankDark, P.plank, 0.5);
     set.add(node('flap', flap, setMat, { pos: [a[0], 0, a[2]], rot: [0, yawOf(b[0] - a[0], b[2] - a[2]), 0] }));
     for (const k of [5, pts.length - 3]) { const p = world[k]; set.add(node('prop', tint(place(cylinder(0.02, 0.02, Math.max(0.02, p[1] + 0.02), 6), p[0], 0, p[2]), P.steel), setMat)); }
@@ -749,7 +750,7 @@ export function createTableView(content, tableId, opts = {}) {
   const drums = DX.map((x, i) => ({ node: node('reel' + i, drumMesh(DR, DW, P, atlas), mechMat, { pos: [x, DY, DZ], parent: mech }), angle: 0, pop: 0, lock: 0, was: 0 }));
   const bumpers = table.bumpers.map((b) => ({ b, s: 0, v: 0, flash: 0, node: node(b.id, plainUvExcept(bumperMesh(b.r * S, P, atlas.rect('bumper')), blank), mechMat, { pos: [WX(b.pos[0]), 0, WZ(b.pos[1])], parent: mech }) }));
   const slings = table.slings.map((s) => {
-    const mx = (s.a[0] + s.b[0]) / 2, my = (s.a[1] + s.b[1]) / 2, dx = s.b[0] - s.a[0], dy = s.b[1] - s.a[1], l = Math.hypot(dx, dy) || 1;
+    const mx = (s.a[0] + s.b[0]) / 2, my = (s.a[1] + s.b[1]) / 2, dx = s.b[0] - s.a[0], dy = s.b[1] - s.a[1], l = hypot(dx, dy) || 1;
     let nx = -dy / l, ny = dx / l; if (nx * (187 - mx) + ny * -40 < 0) { nx = -nx; ny = -ny; }
     return { s, kick: 0, base: [WX(mx), WZ(my)], n: [nx, ny], mid: [mx, my], node: node(s.id, plainUv(slingMesh(l * S, P), blank), mechMat, { pos: [WX(mx), 0, WZ(my)], rot: [0, yawOf(dx, dy), 0], parent: mech }) };
   });
@@ -880,7 +881,7 @@ export function createTableView(content, tableId, opts = {}) {
     b.on = true; b.t = 0; b.dur = dur; b.col = col; b.type = type; b.id = id; b.strength = strength; b.port = toPort; b.reel = reel;
     b.a[0] = x; b.a[1] = y; b.a[2] = z; b.b[0] = tx; b.b[1] = ty; b.b[2] = tz; b.prev[0] = x; b.prev[1] = y; b.prev[2] = z;
     // the line rises off the field and leans away from the straight path, so two hits at once do not draw one line
-    const lift = 0.45 + 0.12 * Math.hypot(tx - x, tz - z), side = (x < tx ? -1 : 1) * 0.35;
+    const lift = 0.45 + 0.12 * hypot(tx - x, tz - z), side = (x < tx ? -1 : 1) * 0.35;
     b.c[0] = (x + tx) / 2 + side; b.c[1] = Math.max(y, ty) + lift; b.c[2] = (z + tz) / 2;
   }
   /** A scoring hit at table (x, y): it is listed for whoever watches, and its bolt leaves for the collector. */
@@ -960,7 +961,7 @@ export function createTableView(content, tableId, opts = {}) {
     else if (e.type === 'kickback') {
       // which outlane: the ball that was nearest one a moment ago. It is lifted over the post to the inlane beside it.
       let best = null, bd = 1e9;
-      for (const [o, inn] of [['outL', 'inL'], ['outR', 'inR']]) { const po = where.get(o); if (!po) continue; for (let i = 0; i < prevN; i++) { const d = Math.hypot(prevX[i] - po[0], prevY[i] - po[1]); if (d < bd) { bd = d; best = [po, where.get(inn) || po, o]; } } }
+      for (const [o, inn] of [['outL', 'inL'], ['outR', 'inR']]) { const po = where.get(o); if (!po) continue; for (let i = 0; i < prevN; i++) { const d = hypot(prevX[i] - po[0], prevY[i] - po[1]); if (d < bd) { bd = d; best = [po, where.get(inn) || po, o]; } } }
       if (best) {
         const [po, pi, id] = best;
         ring(po[0], po[1], 0.9, P.save); stars(po[0], po[1], 0.15, 8, P.save, 1.8);
@@ -1117,7 +1118,7 @@ export function createTableView(content, tableId, opts = {}) {
       // off the ball. The bolt still runs unseen for its timing, and its arrival flashes the collector on the reel board.
       if (SHOW_BOLTS && dt > 0) {
         // one long glow per frame laid along the step just taken (aimed on screen), so the trail is a line and not a row of dots
-        const len = Math.hypot(x - b.prev[0], y - b.prev[1], z - b.prev[2]);
+        const len = hypot(x - b.prev[0], y - b.prev[1], z - b.prev[2]);
         if (len > 1e-4) {
           projectWorld(b.prev[0], b.prev[1], b.prev[2], S2); const sx = S2[0], sy = S2[1]; projectWorld(x, y, z, S2);
           const th = 0.15 + 0.1 * b.strength;
@@ -1201,7 +1202,7 @@ export function createTableView(content, tableId, opts = {}) {
         const mc = multi && b.state !== 'plunger' ? MULTI[b.id & 3] : null;
         if (mc || (nightAmount > 0.05 && b.state === 'live')) { const g = ballGlow[nb]; g.visible = true; g.pos[0] = x; g.pos[1] = y + R * 0.5; g.pos[2] = z; g.color = mc || C.white; g.alpha = mc ? 0.7 : 0.3 * nightAmount; }
         // a short trail of shrinking dots behind a fast ball: one every nine table units, gone within sixty
-        const sp = Math.hypot(b.vel[0], b.vel[1]);
+        const sp = hypot(b.vel[0], b.vel[1]);
         if (b.state === 'live' && sp > (mc ? 120 : 240) && dt > 0) {
           trailT[nb] += sp * dt;
           let back = 0;

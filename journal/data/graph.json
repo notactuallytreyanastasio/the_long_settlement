@@ -610,6 +610,215 @@
    "prompt": "also, do an optimization pass on the nuts and bolts of this to make it render better on everything. put on your get it to the metal hat",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "9d7d3ce2-bd4e-468a-91fd-d80bb9e3389a",
+   "type": "action",
+   "status": "pending",
+   "title": "Resume workflow 9 after a reboot killed the integrator: re-run default-URL playthroughs of chapters 2-8 and both endings with all 55 sets registered",
+   "description": "Machine rebooted ~20:57Z. The integrator had registered every set in sets/index.js (mirror commit b4e4228) and had just launched the default-URL playthroughs; its scratch (/private/tmp) was wiped. Drivers (drive.mjs, lib.mjs, play.mjs) recovered from the agent transcript. Sync daemon also died with the reboot.",
+   "created": "2026-11-10T21:10:09.038660Z",
+   "updated": "2026-11-10T21:10:09.038660Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "pick up where we left off on the graphics work",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "51ff0bba-fbf5-42b8-ba60-93059e3058b5",
+   "type": "outcome",
+   "status": "completed",
+   "title": "All eight chapters and both endings play in 3D at the default URL: 0 problems, 0 frames out of GL, every line said; 301/301 tests",
+   "description": "Headless Chrome (metal), emulated iPhone 393x852 dpr 3, touch only, FAST lines, bot play. Per chapter (2-8, 8 twice for commons/mint): card, prologue, seven scenes with encounter, resolve and cutscene, epilogue, hand-over to the next chapter or the end screen. Play view at tier high: 41-74 draws, 94k-240k triangles (target 60/150k is missed in most scenes at high). JS heap 93-127 MB, GPU memory 123-144 MB of which 48 MB is the MSAA target. Looked at one play frame per chapter and both end screens: every table reads as its own place. Not checked: a real iPhone, audio by ear, motion beyond stills.",
+   "created": "2026-11-10T21:16:46.019709Z",
+   "updated": "2026-11-10T21:16:46.019709Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "e2d3d3c0-43b2-4ff2-a0ae-e0fa239521e4",
+   "type": "observation",
+   "status": "active",
+   "title": "Baseline on this Mac (Metal, 393x852 at dpr 3): play frame 2.6-2.7 ms draw+finish at high, 2.0 mid, 1.5 low; JS 0.4 ms; fill 1.6-1.8x; 707-1023 WebGL calls",
+   "description": "Fill and draw counts were already lean after workflow 9's perf engineer. Timing here resolves about 0.2 ms, so only large effects show.",
+   "created": "2026-11-10T21:45:59.123852Z",
+   "updated": "2026-11-10T21:45:59.123852Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "db25b86a-05d0-490c-b1ce-430b3ea19eec",
+   "type": "observation",
+   "status": "active",
+   "title": "A play frame allocated 121 KB; V8's Math.hypot allocates on every call and accounted for about a quarter (sphereOf 10.6 KB, hypot 9.1, batchDecals 8.2 per vertex)",
+   "description": "Sampling heap profiler over 12 s of bot play, chapter 1 scene 5. core/physics.js stepPhysics is the largest single source (39-52 KB a frame) and was left alone: it is the pure reducer.",
+   "created": "2026-11-10T21:45:59.127156Z",
+   "updated": "2026-11-10T21:45:59.127156Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "37d736c1-f0a2-4817-82cc-10480825d3d3",
+   "type": "observation",
+   "status": "active",
+   "title": "Two self-presenting render() calls a frame visit six render targets (shadow, buffer, canvas, twice) and return to the canvas half drawn",
+   "description": "On a tile-based GPU each return to a target stores and reloads it.",
+   "created": "2026-11-10T21:45:59.129350Z",
+   "updated": "2026-11-10T21:45:59.129350Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "d411f072-b23b-466e-9159-fef3dea95b53",
+   "type": "option",
+   "status": "completed",
+   "title": "Frame mode: every view's shadow map first, all views into one buffer, one present",
+   "description": null,
+   "created": "2026-11-10T21:45:59.132005Z",
+   "updated": "2026-11-10T21:45:59.132005Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "2662b2bf-d2b8-4ae3-8c58-766a67b1723b",
+   "type": "option",
+   "status": "completed",
+   "title": "Pack vertices 48 to 36 bytes: 10-bit normals, 16-bit outline width, float positions and uvs",
+   "description": null,
+   "created": "2026-11-10T21:45:59.132962Z",
+   "updated": "2026-11-10T21:45:59.132962Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "369abf2a-ee76-485b-95c9-945a0afa371d",
+   "type": "option",
+   "status": "completed",
+   "title": "Fourth app tier 'min': 'low' at 0.75 of a CSS pixel, one lamp, reached by the frame-time governor",
+   "description": null,
+   "created": "2026-11-10T21:45:59.133784Z",
+   "updated": "2026-11-10T21:45:59.133784Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "0bcb01ce-a410-4ac1-a141-e99818de2c89",
+   "type": "option",
+   "status": "completed",
+   "title": "Replace Math.hypot with a sqrt helper in per-frame modules",
+   "description": null,
+   "created": "2026-11-10T21:45:59.134735Z",
+   "updated": "2026-11-10T21:45:59.134735Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "93f743ce-57f5-4897-81e6-10381feee77a",
+   "type": "option",
+   "status": "rejected",
+   "title": "mediump fragment shaders",
+   "description": "Not done: precision faults only show on a real phone GPU, and none was available to check world positions and shadow coordinates.",
+   "created": "2026-11-10T21:45:59.136027Z",
+   "updated": "2026-11-10T21:45:59.136027Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "0f482f2d-e420-48b4-9184-39a141b1b804",
+   "type": "option",
+   "status": "rejected",
+   "title": "Uniform buffers",
+   "description": "Not done: JS is 0.4 ms of the frame; the per-program frame uniforms are about 20 calls each.",
+   "created": "2026-11-10T21:45:59.136935Z",
+   "updated": "2026-11-10T21:45:59.136935Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "type": "decision",
+   "status": "completed",
+   "title": "Cut render-target switches, vertex bytes and per-frame garbage over shader-precision and uniform-buffer changes",
+   "description": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.137817Z",
+   "updated": "2026-11-10T21:45:59.137817Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "3c833a3d-0c56-4dd2-be6e-5550e4e7d8bc",
+   "type": "action",
+   "status": "completed",
+   "title": "renderer.begin/prepare/end; 36-byte vertex layout; TIERS.min and ?q=min; hypot helper",
+   "description": null,
+   "created": "2026-11-10T21:45:59.146735Z",
+   "updated": "2026-11-10T21:45:59.146735Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/shell/gl/renderer.js",
+    "src/shell/gl/gl.js",
+    "src/shell/gl/shaders.js",
+    "src/shell/gl/app.js",
+    "src/shell/gl/math.js",
+    "src/shell/gl/stage.js",
+    "src/shell/gl/table3d.js",
+    "src/shell/gl/characters.js",
+    "src/shell/gl/rig.js",
+    "src/shell/gl/scene.js",
+    "src/shell/main.js",
+    "tools/gl-perf.html"
+   ],
+   "commit": null
+  },
+  {
+   "id": "1cfb9c57-dd8a-4dfd-bec7-2087e4c83053",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Same picture for less: frame 2.7 to 2.4-2.6 ms at high and 2.0 to 1.5-1.8 at mid on a Mac, geometry memory -22%, engine garbage a frame about halved; 301/301 tests, playthroughs clean",
+   "description": "Geometry on the GPU after chapter 8: 34.6 MB to 27.0 MB. Allocation a play frame: 121 KB to 104 KB, of which the engine's share fell from about 45 KB to about 22 KB. Tier min: 295x639 buffer, 0.31M fragments a frame against 0.55M at low, 61 MB of GPU memory against 123 MB at high; soft but readable, HUD unaffected. Before/after stills of a play frame and a cutscene look the same. Verified by default-URL playthroughs (emulated iPhone, touch) of chapters 2, 3, 5, 8 (both endings across runs) and chapter 2 pinned to min, plus chapter 1 and ?gl=0. Not measured: any real phone; the Mac's timing resolves about 0.2 ms, so the frame-mode gain is within noise at high. Not done: mediump, uniform buffers, stepPhysics allocation.",
+   "created": "2026-11-10T21:45:59.148898Z",
+   "updated": "2026-11-10T21:45:59.148898Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -899,6 +1108,104 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T19:45:36.947765Z"
+  },
+  {
+   "from": "147e8063-ac89-446d-84ce-81cb03931ed8",
+   "to": "9d7d3ce2-bd4e-468a-91fd-d80bb9e3389a",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T21:10:09.041473Z"
+  },
+  {
+   "from": "9d7d3ce2-bd4e-468a-91fd-d80bb9e3389a",
+   "to": "51ff0bba-fbf5-42b8-ba60-93059e3058b5",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T21:16:46.022317Z"
+  },
+  {
+   "from": "43d968b7-71ec-4ef1-9cf7-dc8a95fe880d",
+   "to": "e2d3d3c0-43b2-4ff2-a0ae-e0fa239521e4",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T21:45:59.126368Z"
+  },
+  {
+   "from": "43d968b7-71ec-4ef1-9cf7-dc8a95fe880d",
+   "to": "db25b86a-05d0-490c-b1ce-430b3ea19eec",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T21:45:59.128844Z"
+  },
+  {
+   "from": "43d968b7-71ec-4ef1-9cf7-dc8a95fe880d",
+   "to": "37d736c1-f0a2-4817-82cc-10480825d3d3",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T21:45:59.131374Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "d411f072-b23b-466e-9159-fef3dea95b53",
+   "type": "chosen",
+   "rationale": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.139470Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "2662b2bf-d2b8-4ae3-8c58-766a67b1723b",
+   "type": "chosen",
+   "rationale": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.140856Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "369abf2a-ee76-485b-95c9-945a0afa371d",
+   "type": "chosen",
+   "rationale": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.141973Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "0bcb01ce-a410-4ac1-a141-e99818de2c89",
+   "type": "chosen",
+   "rationale": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.143212Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "93f743ce-57f5-4897-81e6-10381feee77a",
+   "type": "rejected",
+   "rationale": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.144276Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "0f482f2d-e420-48b4-9184-39a141b1b804",
+   "type": "rejected",
+   "rationale": "The first three can be verified here by counts, memory and pictures. mediump can only be judged on a device nobody has run the game on; UBOs save calls that are not the cost.",
+   "created": "2026-11-10T21:45:59.145363Z"
+  },
+  {
+   "from": "43d968b7-71ec-4ef1-9cf7-dc8a95fe880d",
+   "to": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "type": "leads_to",
+   "rationale": "Decided",
+   "created": "2026-11-10T21:45:59.146375Z"
+  },
+  {
+   "from": "ad68f065-f185-42d4-845e-4c2cc33d38f8",
+   "to": "3c833a3d-0c56-4dd2-be6e-5550e4e7d8bc",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-10T21:45:59.148428Z"
+  },
+  {
+   "from": "3c833a3d-0c56-4dd2-be6e-5550e4e7d8bc",
+   "to": "1cfb9c57-dd8a-4dfd-bec7-2087e4c83053",
+   "type": "leads_to",
+   "rationale": "Result",
+   "created": "2026-11-10T21:45:59.151052Z"
   }
  ]
 }

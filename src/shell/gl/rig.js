@@ -7,6 +7,7 @@
 // Per frame: rig.reset(); rig.apply(poseA); rig.apply(poseB, 0.3); idle(rig, t); springs.update(dt).
 // None of that allocates after the first time a pose object is seen.
 
+import { hypot } from './math.js';
 import { v3, m4, quat, DEG } from './math.js';
 
 const qa = quat.create(), qb = quat.create(), va = v3.create(), vb = v3.create(), vc = v3.create(), vd = v3.create(), inv = m4.create();
@@ -147,7 +148,7 @@ export function squash(node, amount, base = 1) {
 export function createSpring(node, { axis = [0, -1, 0], length = 0.3, stiffness = 90, damping = 9, gravity = 0, limit = 55, wind = null } = {}) {
   if (!node.parent) throw new Error(`createSpring: node "${node.name}" has no parent yet; add it to the figure first`);
   const restRot = quat.copy(quat.create(), node.rotation);
-  const al = Math.hypot(axis[0], axis[1], axis[2]) || 1;
+  const al = hypot(axis[0], axis[1], axis[2]) || 1;
   const ax = v3.create(axis[0] / al, axis[1] / al, axis[2] / al);
   const restDir = v3.rotate(v3.create(), ax, restRot);
   const tip = v3.create(), vel = v3.create();

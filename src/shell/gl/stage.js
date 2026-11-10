@@ -23,6 +23,7 @@
 //
 // Nothing here allocates per frame or per table event: scheduled steps, cues and sparks come from fixed pools.
 
+import { hypot } from './math.js';
 import { DEG } from './math.js';
 import { Node, makeLight } from './scene.js';
 import { box, cylinder, sphere, torus, tint, place, merge } from './mesh.js';
@@ -85,9 +86,9 @@ export function createTroupe({ detail = 1, material = null, standIn = null } = {
     /** Point the character light for this camera. side: -1 light from screen left, +1 from screen right; lift: how far above. */
     aim(camera, side = -1, lift = 0.4, across = 0.45) {
       let bx = camera.position[0] - camera.target[0], bz = camera.position[2] - camera.target[2];
-      const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl;            // toward the camera, level
+      const bl = hypot(bx, bz) || 1; bx /= bl; bz /= bl;            // toward the camera, level
       const rx = bz, rz = -bx;                                           // screen right
-      const x = bx * 0.72 + rx * across * side, y = lift, z = bz * 0.72 + rz * across * side, l = Math.hypot(x, y, z);
+      const x = bx * 0.72 + rx * across * side, y = lift, z = bz * 0.72 + rz * across * side, l = hypot(x, y, z);
       keyLight[0] = x / l; keyLight[1] = y / l; keyLight[2] = z / l;
     },
     has: (id) => !!defOf(id),
@@ -140,7 +141,7 @@ export function frameHeads(camera, pts, { aspect, fov = 26, yaw = 0, pitch = 4, 
 
 /** Ink is a constant width in pixels; on a small figure that is far too heavy. Scale it by how big a head is on screen. */
 export function inkFor(camera, viewHeightPx, headRadius = 0.2) {
-  const d = Math.hypot(camera.position[0] - camera.target[0], camera.position[1] - camera.target[1], camera.position[2] - camera.target[2]);
+  const d = hypot(camera.position[0] - camera.target[0], camera.position[1] - camera.target[1], camera.position[2] - camera.target[2]);
   const headPx = headRadius * 2.2 * viewHeightPx / (2 * Math.tan(camera.fov * DEG / 2) * d);
   return clamp(headPx / 130, 0.42, 1.05);
 }
@@ -283,7 +284,7 @@ function makeStage(set, troupe) {
   S.tick = (dt, time, camera) => {
     for (let i = actors.length - 1; i >= 0; i--) {
       const a = actors[i], st = a.st, d = a.dash;
-      const dx = a.gx - a.x, dz = a.gz - a.z, dist = Math.hypot(dx, dz);
+      const dx = a.gx - a.x, dz = a.gz - a.z, dist = hypot(dx, dz);
       a.moving = dist > 0.03 && !d.on && !a.held;
       let bob = 0;
       if (a.moving) {
@@ -1036,14 +1037,14 @@ function fightOn(S, opts = {}) {
       const lead = party[0]; if (!lead) return;
       if (!clerk || S.actors.indexOf(clerk) < 0) clerk = S.enter(clerkId, 40, lod, 0, 0, 62, tab.cx - tab.half - 1.4);
       clerk.role = 'clerk'; clerk.side = 1; clerk.leaving = false; clerk.gx = lead.gx - 0.55; clerk.gz = lead.gz + 0.46; clerk.face = 62; clerk.speed = WALK * 1.25;
-      const eta = Math.hypot(clerk.gx - clerk.x, clerk.gz - clerk.z) / clerk.speed;
+      const eta = hypot(clerk.gx - clerk.x, clerk.gz - clerk.z) / clerk.speed;
       at(time + eta + 0.1, DO_GIVE, clerk, null, 0); at(time + eta + 0.9, DO_AWAY, clerk, null, 1);
       if (e.refused) for (const h of hatters) { feel(h, 'tears', 2); at(time + 1.2, DO_AWAY, h, null, 0); }
     } else if (act === 'aid') {
       if (!hatters.length) hat(time);
       const lead = party[0], h = hatters[0]; if (!h || !lead) return;
       h.gx = lead.gx - 0.6; h.gz = lead.gz + 0.46; h.speed = WALK * 1.25;
-      const eta = Math.hypot(h.gx - h.x, h.gz - h.z) / h.speed;
+      const eta = hypot(h.gx - h.x, h.gz - h.z) / h.speed;
       at(time + eta + 0.1, DO_GIVE, h, null, 1);
       for (let k = 0; k < hatters.length; k++) at(time + eta + 1.0 + k * 0.2, DO_SETTLE, hatters[k], null, 0);
     }
@@ -1433,7 +1434,7 @@ export function createDirector(troupe, { getSet, lod = 'stage', onCue = null } =
       const mode = leaving ? was : fighting ? 'fight' : st.phase === 'dialogue' ? 'lines' : 'idle';
       const wear = leaving ? null : wearNow(f.content, f.game, st);
       const grow = f.cine || 0;
-      S.blobs = f.quality === 'low' && mode === 'fight' && grow < 0.02;
+      S.blobs = (f.quality === 'low' || f.quality === 'min') && mode === 'fight' && grow < 0.02;
       if (mode === 'fight') {
         fightIn.stage = st; fightIn.content = f.content; fightIn.game = f.game; fightIn.recent = f.game ? f.game.recent : null; fightIn.voice = f.voice || null; fightIn.hit = f.hit || null; fightIn.camera = camera; fightIn.cut = cut; fightIn.wear = wear;
         if (!leaving) { if (was === 'lines') S.lines.reset(); S.fight.update(dt, time, fightIn); }
