@@ -1,0 +1,399 @@
+{
+ "generated": "2026-11-10T06:01:38.688Z",
+ "pricesAsOf": "2026-11-03",
+ "prices": {
+  "claude-fable-5-2": {
+   "input": 8,
+   "output": 40,
+   "write5m": 10,
+   "write1h": 16,
+   "read": 0.2
+  },
+  "claude-mythos-5-2": {
+   "input": 8,
+   "output": 40,
+   "write5m": 10,
+   "write1h": 16,
+   "read": 0.2
+  },
+  "claude-opus-5-5": {
+   "input": 4,
+   "output": 20,
+   "write5m": 5,
+   "write1h": 8,
+   "read": 0.2
+  },
+  "claude-sonnet-5-5": {
+   "input": 2,
+   "output": 10,
+   "write5m": 2.5,
+   "write1h": 4,
+   "read": 0.1
+  },
+  "claude-haiku-5-5": {
+   "input": 0.1,
+   "output": 0.5,
+   "write5m": 0.125,
+   "write1h": 0.2,
+   "read": 0.01,
+   "assumedRead": true
+  }
+ },
+ "note": "Built on a Claude subscription. Figures are what the same tokens would cost at Anthropic API list prices.",
+ "groups": {
+  "lead": "Game: lead agent",
+  "helpers": "Game: subagents and workflows",
+  "journal": "This journal"
+ },
+ "agents": {
+  "lead": 1,
+  "helpers": 24,
+  "journal": 1
+ },
+ "first": "2026-11-10T03:36:36.214Z",
+ "last": "2026-11-10T06:01:06.632Z",
+ "total": {
+  "responses": 812,
+  "input": 1742,
+  "write5m": 5747925,
+  "write1h": 563150,
+  "read": 139459070,
+  "output": 2049510,
+  "thinking": 779557,
+  "cost": {
+   "input": 0.0118,
+   "write5m": 57.4793,
+   "write1h": 6.1004,
+   "read": 27.8918,
+   "output": 78.8634,
+   "total": 170.3466
+  },
+  "uncachedCost": 1055.4557,
+  "unpriced": 0
+ },
+ "byGroup": {
+  "lead": {
+   "responses": 52,
+   "input": 144,
+   "write5m": 0,
+   "write1h": 181018,
+   "read": 7891477,
+   "output": 107091,
+   "thinking": 32390,
+   "cost": {
+    "input": 0.0012,
+    "write5m": 0,
+    "write1h": 2.8963,
+    "read": 1.5783,
+    "output": 4.2836,
+    "total": 8.7594
+   },
+   "uncachedCost": 68.8648,
+   "unpriced": 0
+  },
+  "helpers": {
+   "responses": 526,
+   "input": 1056,
+   "write5m": 5747925,
+   "write1h": 0,
+   "read": 84505097,
+   "output": 1786058,
+   "thinking": 716815,
+   "cost": {
+    "input": 0.0084,
+    "write5m": 57.4793,
+    "write1h": 0,
+    "read": 16.901,
+    "output": 71.4423,
+    "total": 145.831
+   },
+   "uncachedCost": 793.4749,
+   "unpriced": 0
+  },
+  "journal": {
+   "responses": 234,
+   "input": 542,
+   "write5m": 0,
+   "write1h": 382132,
+   "read": 47062496,
+   "output": 156361,
+   "thinking": 30352,
+   "cost": {
+    "input": 0.0022,
+    "write5m": 0,
+    "write1h": 3.2041,
+    "read": 9.4125,
+    "output": 3.1374,
+    "total": 15.7562
+   },
+   "uncachedCost": 193.116,
+   "unpriced": 0
+  }
+ },
+ "byModel": {
+  "claude-fable-5-2": {
+   "responses": 579,
+   "input": 1202,
+   "write5m": 5747925,
+   "write1h": 199395,
+   "read": 92427662,
+   "output": 1893659,
+   "thinking": 749311,
+   "cost": {
+    "input": 0.0096,
+    "write5m": 57.4793,
+    "write1h": 3.1903,
+    "read": 18.4855,
+    "output": 75.7464,
+    "total": 154.9111
+   },
+   "uncachedCost": 862.7558,
+   "unpriced": 0
+  },
+  "claude-opus-5-5": {
+   "responses": 233,
+   "input": 540,
+   "write5m": 0,
+   "write1h": 363755,
+   "read": 47031408,
+   "output": 155851,
+   "thinking": 30246,
+   "cost": {
+    "input": 0.0022,
+    "write5m": 0,
+    "write1h": 2.91,
+    "read": 9.4063,
+    "output": 3.117,
+    "total": 15.4355
+   },
+   "uncachedCost": 192.6998,
+   "unpriced": 0
+  }
+ },
+ "series": [
+  {
+   "at": "2026-11-10T03:40:00.000Z",
+   "lead": 0.3782,
+   "helpers": 0,
+   "journal": 0
+  },
+  {
+   "at": "2026-11-10T03:45:00.000Z",
+   "lead": 0.3782,
+   "helpers": 0,
+   "journal": 0
+  },
+  {
+   "at": "2026-11-10T03:50:00.000Z",
+   "lead": 1.7994,
+   "helpers": 0,
+   "journal": 0
+  },
+  {
+   "at": "2026-11-10T03:55:00.000Z",
+   "lead": 2.6994,
+   "helpers": 3.053,
+   "journal": 0
+  },
+  {
+   "at": "2026-11-10T04:00:00.000Z",
+   "lead": 2.6994,
+   "helpers": 20.9761,
+   "journal": 1.2652
+  },
+  {
+   "at": "2026-11-10T04:05:00.000Z",
+   "lead": 3.6651,
+   "helpers": 31.169,
+   "journal": 1.9721
+  },
+  {
+   "at": "2026-11-10T04:10:00.000Z",
+   "lead": 3.8673,
+   "helpers": 38.0511,
+   "journal": 2.681
+  },
+  {
+   "at": "2026-11-10T04:15:00.000Z",
+   "lead": 4.9371,
+   "helpers": 41.9209,
+   "journal": 3.1352
+  },
+  {
+   "at": "2026-11-10T04:20:00.000Z",
+   "lead": 4.9371,
+   "helpers": 52.8736,
+   "journal": 3.4078
+  },
+  {
+   "at": "2026-11-10T04:25:00.000Z",
+   "lead": 5.2773,
+   "helpers": 63.0784,
+   "journal": 3.581
+  },
+  {
+   "at": "2026-11-10T04:30:00.000Z",
+   "lead": 5.5445,
+   "helpers": 66.2174,
+   "journal": 4.193
+  },
+  {
+   "at": "2026-11-10T04:35:00.000Z",
+   "lead": 5.5445,
+   "helpers": 68.1969,
+   "journal": 4.6585
+  },
+  {
+   "at": "2026-11-10T04:40:00.000Z",
+   "lead": 5.5917,
+   "helpers": 69.2832,
+   "journal": 5.1773
+  },
+  {
+   "at": "2026-11-10T04:45:00.000Z",
+   "lead": 7.0468,
+   "helpers": 78.128,
+   "journal": 5.7577
+  },
+  {
+   "at": "2026-11-10T04:50:00.000Z",
+   "lead": 7.0468,
+   "helpers": 84.6316,
+   "journal": 6.3506
+  },
+  {
+   "at": "2026-11-10T04:55:00.000Z",
+   "lead": 7.0468,
+   "helpers": 91.5093,
+   "journal": 7.5226
+  },
+  {
+   "at": "2026-11-10T05:00:00.000Z",
+   "lead": 7.0468,
+   "helpers": 94.809,
+   "journal": 8.524
+  },
+  {
+   "at": "2026-11-10T05:05:00.000Z",
+   "lead": 7.3092,
+   "helpers": 98.2434,
+   "journal": 9.7818
+  },
+  {
+   "at": "2026-11-10T05:10:00.000Z",
+   "lead": 7.54,
+   "helpers": 102.3986,
+   "journal": 10.27
+  },
+  {
+   "at": "2026-11-10T05:15:00.000Z",
+   "lead": 7.54,
+   "helpers": 103.4664,
+   "journal": 11.062
+  },
+  {
+   "at": "2026-11-10T05:20:00.000Z",
+   "lead": 7.54,
+   "helpers": 103.4664,
+   "journal": 11.3439
+  },
+  {
+   "at": "2026-11-10T05:25:00.000Z",
+   "lead": 7.54,
+   "helpers": 105.9647,
+   "journal": 11.4105
+  },
+  {
+   "at": "2026-11-10T05:30:00.000Z",
+   "lead": 7.54,
+   "helpers": 106.9682,
+   "journal": 11.5581
+  },
+  {
+   "at": "2026-11-10T05:35:00.000Z",
+   "lead": 8.3647,
+   "helpers": 108.2993,
+   "journal": 11.5581
+  },
+  {
+   "at": "2026-11-10T05:40:00.000Z",
+   "lead": 8.5915,
+   "helpers": 118.4698,
+   "journal": 12.0308
+  },
+  {
+   "at": "2026-11-10T05:45:00.000Z",
+   "lead": 8.7594,
+   "helpers": 123.3149,
+   "journal": 12.9049
+  },
+  {
+   "at": "2026-11-10T05:50:00.000Z",
+   "lead": 8.7594,
+   "helpers": 126.3011,
+   "journal": 12.9937
+  },
+  {
+   "at": "2026-11-10T05:55:00.000Z",
+   "lead": 8.7594,
+   "helpers": 139.0205,
+   "journal": 13.5825
+  },
+  {
+   "at": "2026-11-10T06:00:00.000Z",
+   "lead": 8.7594,
+   "helpers": 144.971,
+   "journal": 15.0918
+  },
+  {
+   "at": "2026-11-10T06:05:00.000Z",
+   "lead": 8.7594,
+   "helpers": 145.831,
+   "journal": 15.7562
+  }
+ ],
+ "tools": {
+  "journal": {
+   "Bash": 143,
+   "ToolSearch": 6,
+   "mcp__deciduous__check_activity": 1,
+   "mcp__deciduous__list_workspaces": 1,
+   "mcp__deciduous__read_messages": 5,
+   "mcp__deciduous__capture_conversation_turn": 3,
+   "Write": 12,
+   "Edit": 14,
+   "CronCreate": 1,
+   "mcp__deciduous__post_message": 3,
+   "mcp__deciduous__add_node": 5,
+   "Monitor": 5,
+   "CronDelete": 1,
+   "ScheduleWakeup": 25,
+   "TaskStop": 1,
+   "Read": 18,
+   "PushNotification": 1,
+   "Skill": 2
+  },
+  "helpers": {
+   "Read": 286,
+   "Write": 37,
+   "Bash": 422,
+   "Edit": 14,
+   "ToolSearch": 1,
+   "mcp__deciduous__read_messages": 1,
+   "TaskStop": 1
+  },
+  "lead": {
+   "Bash": 19,
+   "ToolSearch": 1,
+   "Skill": 1,
+   "mcp__deciduous__capture_conversation_turn": 3,
+   "Write": 7,
+   "mcp__deciduous__add_node": 6,
+   "Workflow": 3,
+   "Agent": 6,
+   "Read": 2,
+   "AskUserQuestion": 1,
+   "Edit": 2
+  }
+ }
+}

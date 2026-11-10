@@ -207,10 +207,119 @@ function renderFeed(graph, snaps, entries) {
   for (const li of document.querySelectorAll('#feed li[data-key]')) if (open.has(li.dataset.key)) li.querySelector('details')?.setAttribute('open', '');
 }
 
+
+// ───────────────────────── what it cost ─────────────────────────
+const usd = (n) => n >= 100 ? `$${Math.round(n).toLocaleString()}` : `$${n.toFixed(2)}`;
+const mtok = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : String(n);
+const SERIES = [['lead', 'var(--series-1)'], ['helpers', 'var(--series-2)'], ['journal', 'var(--series-3)']];
+
+function renderCost(u, snaps, tree, entries) {
+  const sec = $('#cost');
+  if (!u || !u.total) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const t = u.total;
+  const g = u.byGroup;
+  const game = g.lead.cost.total + g.helpers.cost.total;
+  const hours = (Date.parse(u.last) - Date.parse(u.first)) / 3.6e6;
+  const last = snaps.at(-1) || {};
+  const codeLines = Object.entries(last.linesByDir || {}).filter(([d]) => /^(src|test)\b/.test(d)).reduce((a, [, n]) => a + n, 0);
+  const tests = [...snaps].reverse().find((x) => x.tests)?.tests?.total || 0;
+  const voices = tree.filter((f) => /^assets\/voice\/.+\.m4a$/.test(f.path)).length;
+  const saved = 1 - t.cost.total / t.uncachedCost;
+
+  $('#cost-note').textContent = `Counted from the Claude Code transcripts of every agent involved (${u.agents.lead + u.agents.helpers} game transcripts, 1 journal), one count per API response. `
+    + `The work ran on a Claude subscription; these are the same tokens priced at Anthropic API list rates as of ${u.pricesAsOf}. Updated ${ago(u.generated)}.`;
+
+  const kpi = (k, v, s, cls = '') => `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $('#cost-kpis').innerHTML = [
+    kpi('Total so far', usd(t.cost.total), `${hours.toFixed(1)} hours, ${nf.format(t.responses)} API responses`, 'hero'),
+    kpi('The game', usd(game), `journal ${usd(g.journal.cost.total)} on top`),
+    kpi('Without caching', usd(t.uncachedCost), `caching saved ${Math.round(saved * 100)}%`),
+    kpi('Tokens read', mtok(t.input + t.write5m + t.write1h + t.read), `${Math.round(t.read / (t.input + t.write5m + t.write1h + t.read) * 100)}% from cache`),
+    kpi('Tokens written', mtok(t.output), `${Math.round(t.thinking / t.output * 100)}% of it thinking`),
+    codeLines ? kpi('Per line of code', `${(game / codeLines * 100).toFixed(1)}¢`, `${nf.format(codeLines)} lines in src/ and test/`) : '',
+    tests ? kpi('Per test', usd(game / tests), `${tests} tests`) : '',
+    voices ? kpi('Per voiced line', `${(game / voices * 100).toFixed(1)}¢`, `${nf.format(voices)} recorded lines`) : '',
+    entries.length ? kpi('Per journal entry', usd(g.journal.cost.total / entries.length), `${entries.length} entries, plus the site`) : '',
+  ].join('');
+
+  // legend: always present for >= 2 series; lines are also direct-labelled
+  $('#cost-legend').innerHTML = SERIES.map(([k, c]) => `<span><i style="background:${c}"></i>${esc(u.groups[k])} · ${usd(g[k].cost.total)}</span>`).join('');
+  drawCostChart(u);
+
+  const kinds = [
+    ['Output', 'written by the model', t.cost.output],
+    ['Cache writes', '5 min / 1 h', t.cost.write5m + t.cost.write1h],
+    ['Cache reads', 'context re-read', t.cost.read],
+    ['Fresh input', 'uncached prompt', t.cost.input],
+  ];
+  const kmax = Math.max(...kinds.map((k) => k[2]));
+  $('#cost-kinds').innerHTML = `<div class="kinds">${kinds.map(([n, sub, v]) => `<div class="row" title="${esc(n)}: ${usd(v)}"><span class="lab">${n}<small>${sub}</small></span><span class="bar" style="width:${Math.max(0.5, v / kmax * 100)}%"></span><span class="n">${usd(v)}</span></div>`).join('')}</div>`;
+  $('#cost-kinds-note').textContent = `Agents re-read their whole context on every turn: ${mtok(t.read)} tokens came from cache for ${usd(t.cost.read)}. With no prompt caching every one of those is fresh input, and the bill would be ${usd(t.uncachedCost)} instead of ${usd(t.cost.total)}.`;
+
+  const row = (name, v) => `<tr><td>${esc(name)}</td><td>${nf.format(v.responses)}</td><td>${mtok(v.input)}</td><td>${mtok(v.write5m + v.write1h)}</td><td>${mtok(v.read)}</td><td>${mtok(v.output)}</td><td>${mtok(v.thinking)}</td><td>${usd(v.cost.total)}</td><td>${usd(v.uncachedCost)}</td></tr>`;
+  const head = '<thead><tr><th>Who</th><th>Responses</th><th>Fresh input</th><th>Cache writes</th><th>Cache reads</th><th>Output</th><th>of which thinking</th><th>Cost</th><th>Without caching</th></tr></thead>';
+  const models = Object.entries(u.byModel).map(([m, v]) => row(`model: ${m}`, v)).join('');
+  const prices = Object.entries(u.prices).filter(([m]) => u.byModel[m]).map(([m, p]) => `${m}: $${p.input} in, $${p.output} out, $${p.write5m}/$${p.write1h} cache write (5 min/1 h), $${p.read} cache read per million tokens`).join('<br>');
+  $('#cost-table').innerHTML = `<table class="cost-table">${head}<tbody>${SERIES.map(([k]) => row(u.groups[k], g[k])).join('')}${models}</tbody><tfoot>${row('Total', t).replace('<tr>', '<tr>')}</tfoot></table><p class="small" style="margin-top:8px">${prices}</p>`;
+}
+
+let lastUsage = null;
+let resizeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (lastUsage) drawCostChart(lastUsage); }, 150); });
+
+function drawCostChart(u) {
+  lastUsage = u;
+  const wrap = $('#cost-chart');
+  const pts = u.series;
+  if (pts.length < 2) { wrap.innerHTML = '<p class="small">Not enough data yet.</p>'; return; }
+  // Drawn at the container's real width so text stays at its true size on a phone.
+  const W = Math.max(300, Math.min(760, Math.round(wrap.clientWidth || 640))), H = W < 480 ? 220 : 260, L = 40, R = W < 480 ? 96 : 118, T = 10, B = 26;
+  const x0 = Date.parse(pts[0].at), x1 = Date.parse(pts.at(-1).at);
+  const ymax = Math.max(...pts.flatMap((p) => SERIES.map(([k]) => p[k]))) * 1.08 || 1;
+  const X = (t) => L + (t - x0) / (x1 - x0 || 1) * (W - L - R);
+  const Y = (v) => T + (1 - v / ymax) * (H - T - B);
+  const step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500].find((s) => ymax / s <= 5) || 1000;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative API-price cost over time, by who spent it">`;
+  for (let v = 0; v <= ymax; v += step) svg += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/><text class="axis" x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">$${v}</text>`;
+  const ticks = W < 480 ? 3 : 5;
+  for (let i = 0; i <= ticks; i++) { const t = x0 + (x1 - x0) * i / ticks; svg += `<text class="axis" x="${X(t)}" y="${H - 6}" text-anchor="middle">${fmtTime(new Date(t).toISOString())}</text>`; }
+  // end labels, nudged apart so they never collide
+  const ends = SERIES.map(([k, c]) => ({ k, c, y: Y(pts.at(-1)[k]), v: pts.at(-1)[k] })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+  for (const [k, c] of SERIES) {
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${X(Date.parse(p.at)).toFixed(1)},${Y(p[k]).toFixed(1)}`).join('');
+    svg += `<path d="${d}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  for (const e of ends) svg += `<circle cx="${X(x1)}" cy="${Y(e.v)}" r="4" fill="${e.c}" stroke="var(--paper)" stroke-width="2"/><text class="end-label" x="${X(x1) + 8}" y="${e.y + 4}">${({ lead: 'lead', helpers: 'helpers', journal: 'journal' })[e.k]} ${usd(e.v)}</text>`;
+  svg += `<line id="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
+  svg += `<rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" id="hit"/></svg><div class="tip" id="cost-tip" hidden></div>`;
+  wrap.innerHTML = svg;
+  const el = wrap.querySelector('svg'), hit = wrap.querySelector('#hit'), xh = wrap.querySelector('#xh'), tip = wrap.querySelector('#cost-tip');
+  const show = (ev) => {
+    const r = el.getBoundingClientRect();
+    const sx = (ev.clientX - r.left) / r.width * W;
+    const t = x0 + (sx - L) / (W - L - R) * (x1 - x0);
+    let i = 0, best = Infinity;
+    pts.forEach((p, j) => { const dd = Math.abs(Date.parse(p.at) - t); if (dd < best) { best = dd; i = j; } });
+    const p = pts[i], px = X(Date.parse(p.at));
+    xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.setAttribute('visibility', 'visible');
+    const sum = SERIES.reduce((a, [k]) => a + p[k], 0);
+    tip.innerHTML = `<b>${fmtTime(p.at)}</b><br>${SERIES.map(([k, c]) => `<i style="background:${c}"></i>${esc(u.groups[k])}: ${usd(p[k])}`).join('<br>')}<br>Total: ${usd(sum)}`;
+    tip.hidden = false;
+    const left = px / W * r.width;
+    tip.style.left = `${Math.min(Math.max(0, left + 12), r.width - tip.offsetWidth)}px`;
+    tip.style.top = `8px`;
+  };
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerdown', show);
+  hit.addEventListener('pointerleave', () => { tip.hidden = true; xh.setAttribute('visibility', 'hidden'); });
+}
+
 async function refresh() {
-  const [graph, snaps, entries, tree, build, syn] = await Promise.all([
+  const [graph, snaps, entries, tree, build, syn, usage] = await Promise.all([
     load('graph.json', { nodes: [], edges: [] }), load('snapshots.json', []), load('entries.json', []),
-    load('tree.json', []), load('build.json', null), load('synthesis.json', null),
+    load('tree.json', []), load('build.json', null), load('synthesis.json', null), load('usage.json', null),
   ]);
   renderSynthesis(syn, entries);
   const chip = $('#thread-chip');
@@ -218,6 +327,7 @@ async function refresh() {
   if (!chip.hidden) chip.innerHTML = `Thread: ${esc(threadNames[filter.slice(7)] || filter.slice(7))} <span aria-hidden="true">×</span>`;
   renderLive(snaps, build);
   renderStats(graph, snaps, build);
+  try { renderCost(usage, snaps, tree, entries); } catch (e) { console.error('cost section:', e); $('#cost').hidden = true; }
   renderPrompt(graph);
   renderTree(tree, snaps);
   renderFeed(graph, snaps, entries);
