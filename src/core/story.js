@@ -106,3 +106,62 @@ export function lineSeconds(line) {
   const words = trimmed === '' ? 0 : trimmed.split(/\s+/).length;
   return 0.6 + words * 0.38;
 }
+
+/**
+ * The lines under a bark key that may be spoken in scene `sceneIndex`. A line with
+ * minScene waits until game.scene >= minScene: its speaker has not been met before then.
+ * A key the chapter does not have is no lines.
+ */
+export function eligibleBarks(chapter, key, sceneIndex) {
+  const lines = chapter.barks[key];
+  if (lines === undefined) return [];
+  if (!Array.isArray(lines)) throw new Error(`story: chapter ${chapter.id} barks.${key} is not a list: ${JSON.stringify(lines)}`);
+  return lines.filter((line) => {
+    if (line.minScene === undefined) return true;
+    if (!Number.isInteger(line.minScene) || line.minScene < 0) {
+      throw new Error(`story: bark ${line.id} has minScene ${JSON.stringify(line.minScene)}, which is not a scene index`);
+    }
+    return sceneIndex >= line.minScene;
+  });
+}
+
+/**
+ * Ids of the lines likely to be spoken next, soonest first and without repeats, so the
+ * shell can have their audio ready before the core asks for them.
+ *   title, card   the opening lines of the chapter's prologue
+ *   cine          the next `ahead` lines; when a scene's cutscene is that close to its end,
+ *                 also what follows it without a pause (the next briefing, or the epilogue)
+ *   slot, play    the scene's briefing, the opening of its cutscene, every bark eligible now
+ *   end           nothing
+ */
+export function preloadIds(content, game, ahead = 3) {
+  if (!Number.isInteger(ahead) || ahead < 0) throw new Error(`story: preloadIds ahead must be an integer >= 0, got ${ahead}`);
+  const ids = (lines) => lines.map((line) => line.id);
+  let out;
+  if (game.mode === 'end') {
+    out = [];
+  } else if (game.mode === 'title' || game.mode === 'card') {
+    out = ids(currentChapter(content, game).prologue.slice(0, ahead));
+  } else if (game.mode === 'cine') {
+    const { cine } = game;
+    if (!cine) throw new Error('story: preloadIds in mode cine needs game.cine');
+    const upcoming = cine.lines.slice(cine.index + 1, cine.index + 1 + ahead);
+    out = ids(upcoming);
+    if (cine.kind === 'scene' && upcoming.length < ahead) {
+      const chapter = currentChapter(content, game);
+      const following = chapter.scenes[game.scene + 1];
+      out = out.concat(ids(following ? following.briefing : chapter.epilogue.slice(0, ahead)));
+    }
+  } else if (game.mode === 'slot' || game.mode === 'play') {
+    const chapter = currentChapter(content, game);
+    const scene = currentScene(content, game);
+    out = scene === null ? [] : [
+      ...ids(scene.briefing),
+      ...ids(scene.cutscene.slice(0, ahead)),
+      ...Object.keys(chapter.barks).flatMap((key) => ids(eligibleBarks(chapter, key, game.scene))),
+    ];
+  } else {
+    throw new Error(`story: preloadIds does not know mode ${JSON.stringify(game.mode)}`);
+  }
+  return [...new Set(out)];
+}

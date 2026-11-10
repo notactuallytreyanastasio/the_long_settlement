@@ -4,7 +4,7 @@
 // Reading the paytable (order of the reels never matters):
 //   three of a kind   the named lots below
 //   a pair            pays by the paired symbol, whatever the third reel shows
-//   no pair           one common writ, unless the Undertow is on the reels, which voids the draw
+//   no pair           one common writ, unless the Churn (a tide) is on the reels, which voids the draw
 //   tides             a pair of tides pays nothing; three is the bust
 
 import { nextInt } from './rng.js';
@@ -26,37 +26,43 @@ export const REEL_STRIPS = [
   [C, K, S, C, T, G, S, C, O, C, S, G, K, C, S, T, O, S, G, C, T, S, C, G],
 ];
 
+// Names and blurbs are in-world (story/BIBLE.md). The orb is the Lot, the drawing that
+// makes a Tribune. The coin is the mark, "payable in calm". The scale is the Benches,
+// the gavel their injunction, the crown the Mint. The tide is the Churn: two are a lane
+// closing, three are a light going out.
+// Three orbs must be named exactly 'The Lot Falls': chapter 1's rigged spin shows that name.
+
 /** @type {Record<Sym, Payout>} */
 const THREE = {
   coin: {
     writs: 3, marks: 150, boon: 'doubleMarks',
-    name: 'Three Coins: Payable in Stillness',
-    blurb: 'Every note promises calm to its bearer, and for a little while tonight the promise is kept twice over.',
+    name: 'Three Coins: Payable in Calm',
+    blurb: 'Every mark is a claim on stillsalt, and tonight the Mint honours yours at twice its face.',
   },
   scale: {
     writs: 4, marks: 30, boon: null,
     name: 'Three Scales: The Full Bench',
-    blurb: 'Three magistrates sit, poor and proud and slow, and for once every one of them finds for you.',
+    blurb: 'All three magistrates sit, poor and proud and slow, and every one of them finds for you.',
   },
   gavel: {
     writs: 3, marks: 0, boon: 'ballSave',
     name: 'Three Gavels: Injunction',
-    blurb: 'By order of the Benches nothing may be taken from you until the matter has been heard.',
+    blurb: 'By order of the Benches nothing may be taken from you until the matter is heard.',
   },
   crown: {
     writs: 3, marks: 400, boon: null,
     name: "Three Crowns: The Mint's Favour",
-    blurb: 'The Mint is generous tonight, and the Mint keeps a careful record of everyone it has been generous to.',
+    blurb: 'The Mint is open-handed tonight, and it enters in a careful hand everyone it has favoured.',
   },
   orb: {
     writs: 3, marks: 150, boon: 'multiball',
-    name: "Three Orbs: The Bearer's Lot",
-    blurb: 'The drum turns and one name comes up out of all the names there are.',
+    name: 'The Lot Falls',
+    blurb: 'Three orbs on the line, and out of every name in the drum the lot has fallen to you.',
   },
   tide: {
     writs: 0, marks: 0, boon: null,
-    name: 'Three Tides: Foreclosed',
-    blurb: 'The sea went out, and no one in the hall can now say who was standing at the reels.',
+    name: 'The Churn Thrice: A Light Goes Out',
+    blurb: 'The salt ration is stopped, the lamp gutters, and within the week no lane reaches you.',
   },
 };
 
@@ -65,32 +71,32 @@ const PAIR = {
   coin: {
     writs: 2, marks: 40, boon: null,
     name: "Two Coins: A Day's Wages",
-    blurb: 'Two writs and a little money, which is all most of Aurelle has ever asked of the reels.',
+    blurb: 'Two writs and a few marks, which is all most of Aurelle has ever asked of the Reels.',
   },
   scale: {
     writs: 3, marks: 20, boon: null,
     name: 'Two Scales: Leave to Proceed',
-    blurb: 'The Benches have read your petition, can find no lawful way to refuse it, and award you costs.',
+    blurb: 'The Benches can find no lawful way to refuse your petition, and award you costs.',
   },
   gavel: {
     writs: 2, marks: 0, boon: 'ballSave',
-    name: 'Two Gavels: Interim Order',
-    blurb: 'A clerk stamps a stay, and for a short while the law stands between you and the water.',
+    name: 'Two Gavels: A Stay',
+    blurb: 'A clerk stamps the stay, and for a little while the law stands between you and the dark.',
   },
   crown: {
     writs: 2, marks: 100, boon: null,
     name: "Two Crowns: The Chancellor's Advance",
-    blurb: 'The Mint presses marks into your hand and does not mention, tonight, what it will want for them.',
+    blurb: 'The Chancellor is pleased to advance you marks, and too courteous to say against what.',
   },
   orb: {
     writs: 3, marks: 0, boon: null,
-    name: "Two Orbs: Pilgrim's Passage",
-    blurb: 'Whoever walks beside a Bearer is licensed to carry steel, by a law older than the Mint.',
+    name: 'Two Orbs: One Stop Short',
+    blurb: 'The Reels come within one stop of your name, and the hall allots three writs to steady you.',
   },
   tide: {
     writs: 0, marks: 0, boon: null,
-    name: 'Two Tides: In Arrears',
-    blurb: 'The water stands a little lower on the harbour wall than it did this morning.',
+    name: 'The Churn Twice: A Lane Closes',
+    blurb: 'Two lights no longer overlap, and nothing crosses the water between them, not post and not you.',
   },
 };
 
@@ -98,14 +104,14 @@ const PAIR = {
 const MIXED = {
   writs: 1, marks: 0, boon: null,
   name: 'Mixed Lot: A Common Writ',
-  blurb: 'The reels agree on nothing, and by ancient law that is still enough to license one act.',
+  blurb: 'The Reels agree on nothing, and under the Settlement that is still enough to license one act.',
 };
 
 /** @type {Payout} */
 const VOID = {
   writs: 0, marks: 0, boon: null,
-  name: 'Tide on the Reels: Void Draw',
-  blurb: 'The Undertow shows its face among the lots, and the clerk tears up the slip without a word.',
+  name: 'The Churn on the Reels: Void Draw',
+  blurb: 'Weather has got in among the lots, and the clerk tears up your slip without a word.',
 };
 
 /** Every payout the machine can make, for the renderer's paytable card. */

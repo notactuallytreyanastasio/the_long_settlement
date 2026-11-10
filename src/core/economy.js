@@ -1,4 +1,5 @@
-// The player's books: score, marks, writs, debt to the Mint, trust with the town.
+// The player's books: score, marks, writs, debt to the Mint, trust with the town,
+// and the two lifetime totals the ending is read from.
 // Pure: every function returns a new Econ.
 //
 // Tuning (asserted in test/economy.test.js over 200k seeded spins per skill level):
@@ -21,7 +22,22 @@ export const LOAN = Object.freeze({ marks: 250, owed: 300, garnish: 0.3 });
 /** Trust needed per mutual-aid ball, per chapter. */
 export const TRUST_PER_AID = 25;
 
-const FIELDS = ['score', 'marks', 'writs', 'debt', 'trust', 'aidUsed', 'spins'];
+/**
+ * How much lifetime trust one loan from the Mint outweighs. The ledger leans to the
+ * commons while trustEarned >= loansTaken * TRUST_PER_LOAN.
+ *
+ * Set from the trust the five chapters actually pay for their commons scenes:
+ * 50, 85, 65, 120 and 50, which is 370 in all and 74 a chapter. At 25 a player who
+ * does those scenes and borrows twice a chapter leans commons at the end of every
+ * chapter (50/50, 135/100, 200/150, 320/200, 370/250); one who borrows four times a
+ * chapter leans mint at the end of every chapter (50/100 ... 370/500). The whole game
+ * turns between the fourteenth loan and the fifteenth. It is also the price of one
+ * mutual-aid ball (TRUST_PER_AID): a loan weighs what a gift is worth.
+ * test/economy.test.js asserts all of this against the chapters themselves.
+ */
+export const TRUST_PER_LOAN = 25;
+
+const FIELDS = ['score', 'marks', 'writs', 'debt', 'trust', 'aidUsed', 'spins', 'trustEarned', 'loansTaken'];
 
 function check(econ, fn) {
   if (!econ || typeof econ !== 'object') {
@@ -49,7 +65,10 @@ function earn(econ, marks) {
 
 /** @returns {Econ} able to afford three spins, owning nothing else */
 export function initEcon() {
-  return { score: 0, marks: SPIN_COST * 3, writs: 0, debt: 0, trust: 0, aidUsed: 0, spins: 0 };
+  return {
+    score: 0, marks: SPIN_COST * 3, writs: 0, debt: 0, trust: 0, aidUsed: 0, spins: 0,
+    trustEarned: 0, loansTaken: 0,
+  };
 }
 
 /**
@@ -98,10 +117,13 @@ export function needsLoan(econ) {
   return econ.writs <= 0 && econ.marks < SPIN_COST;
 }
 
-/** The Mint lends to anyone, at any time, and loans stack. The advance itself is not garnished. */
+/**
+ * The Mint lends to anyone, at any time, and loans stack. The advance itself is not garnished.
+ * Every loan is counted in loansTaken for good: repaying the debt does not take it back.
+ */
 export function takeLoan(econ) {
   check(econ, 'takeLoan');
-  return { ...econ, marks: econ.marks + LOAN.marks, debt: econ.debt + LOAN.owed };
+  return { ...econ, marks: econ.marks + LOAN.marks, debt: econ.debt + LOAN.owed, loansTaken: econ.loansTaken + 1 };
 }
 
 /** @param {Econ} econ */
@@ -113,13 +135,32 @@ export function spendWrit(econ) {
   return { ...econ, writs: econ.writs - 1 };
 }
 
-/** @param {Econ} econ @param {number} n may be negative; result is clamped to 0..100 */
+/**
+ * @param {Econ} econ @param {number} n may be negative; trust is clamped to 0..100.
+ * A positive n is also added, whole, to the lifetime trustEarned. The whole of it and not
+ * the clamped part: the meter is how much aid one town can give, the total is what was
+ * done for people, and chapter 4 pays 120 against a meter that stops at 100.
+ */
 export function addTrust(econ, n) {
   check(econ, 'addTrust');
   if (typeof n !== 'number' || !Number.isFinite(n)) {
     throw new Error(`economy.addTrust: n must be a finite number, got ${String(n)}`);
   }
-  return { ...econ, trust: Math.min(100, Math.max(0, econ.trust + n)) };
+  return {
+    ...econ,
+    trust: Math.min(100, Math.max(0, econ.trust + n)),
+    trustEarned: econ.trustEarned + Math.max(0, n),
+  };
+}
+
+/**
+ * Which ending the ledger currently describes. A book with nothing in it leans commons:
+ * nobody has been borrowed from yet.
+ * @param {Econ} econ @returns {'commons'|'mint'}
+ */
+export function leaning(econ) {
+  check(econ, 'leaning');
+  return econ.trustEarned >= econ.loansTaken * TRUST_PER_LOAN ? 'commons' : 'mint';
 }
 
 /** One aid ball per 25 trust, per chapter (game.js zeroes aidUsed when a chapter begins). */

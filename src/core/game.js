@@ -17,7 +17,7 @@ import {
 } from './economy.js';
 import { seed, next, pick } from './rng.js';
 import {
-  currentChapter, currentScene, objectiveProgress, registerHit, resolveStage, lineSeconds,
+  currentChapter, currentScene, objectiveProgress, registerHit, resolveStage, lineSeconds, eligibleBarks,
 } from './story.js';
 
 // ───────────────────────── tuning ─────────────────────────
@@ -132,7 +132,11 @@ function load(content, save) {
   if (!chapter.scenes[save.scene]) {
     throw new Error(`game: save names scene index ${save.scene}, which chapter ${chapter.id} does not have`);
   }
-  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ: { ...save.econ } };
+  if (!save.econ || typeof save.econ !== 'object') throw new Error(`game: save has no econ: ${JSON.stringify(save.econ)}`);
+  // A save from before the lifetime totals existed has neither: it starts both at zero.
+  // (A total that is present but not a number is not excused; economy.js throws on it.)
+  const econ = { trustEarned: 0, loansTaken: 0, ...save.econ };
+  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ };
   const game = {
     ...base,
     mode: 'slot',
@@ -145,18 +149,25 @@ function load(content, save) {
 
 // ───────────────────────── barks ─────────────────────────
 
-/** One short line over live play, chosen by rng, at most one per BARK_COOLDOWN unless forced. */
+/**
+ * One short line over live play, chosen by rng, at most one per BARK_COOLDOWN unless forced.
+ * Lines whose speaker has not been met yet (minScene) are not in the draw; if that leaves
+ * none, nothing is said and neither the rng nor the cooldown is touched.
+ */
 function bark(content, game, key, force = false) {
   if (!force && game.barkCool > 0) return ok(game);
-  const lines = currentChapter(content, game).barks[key];
-  if (!lines || lines.length === 0) return ok(game);
+  const lines = eligibleBarks(currentChapter(content, game), key, game.scene);
+  if (lines.length === 0) return ok(game);
   const [line, rng] = pick(game.rng, lines);
   return ok({ ...game, rng, barkCool: BARK_COOLDOWN }, sayEffects(line, false));
 }
 
 // ───────────────────────── chapters ─────────────────────────
 
-/** Chapter card: fresh table, trust and aid reset, nothing spun yet. */
+/**
+ * Chapter card: fresh table, trust and aid reset, nothing spun yet. Trust is standing with
+ * one town and stays there; econ.trustEarned and econ.loansTaken are carried on untouched.
+ */
 function startChapter(content, game, index) {
   const at = { ...game, chapter: index, scene: 0 };
   const next_ = {

@@ -1021,5 +1021,77 @@
    "d3c388f1-9143-4948-8b7e-92c31ef1fbeb"
   ],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T04:45:51.197Z",
+  "files": 584,
+  "lines": 17997,
+  "bytes": 15141663,
+  "linesByDir": {
+   ".": 100,
+   "assets/voice": 2735,
+   "src/content": 3862,
+   "src/core": 1805,
+   "src/shell": 6446,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 140,
+   "test/economy.test.js": 198,
+   "test/game.test.js": 650,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 199,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 144,
+   "test/story.test.js": 96,
+   "test/tables.test.js": 196,
+   "tools/render-voices.mjs": 266,
+   "tools/serve.mjs": 76
+  },
+  "changed": [
+   "M src/content/cast.js",
+   "M src/core/economy.js",
+   "M src/core/game.js",
+   "M src/core/slot.js",
+   "M src/core/story.js"
+  ],
+  "tests": {
+   "total": 106,
+   "pass": 88,
+   "fail": 18,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 5104,
+   "failures": [
+    "every line is spoken by a cast member, says something, and uses only contract fields",
+    "every backdrop a line names is one cinema.js can paint",
+    "every music mood and sound effect a line or chapter names is one audio.js can play",
+    "every cinematic opens on a backdrop, and Thorne is only ever heard over the Line",
+    "chapters name a real table and every objective id is an element of it",
+    "initEcon affords exactly three spins and nothing else",
+    "seed 1: the bot plays from the title to the end of chapter two",
+    "seed 2: the bot plays from the title to the end of chapter two",
+    "seed 3: the bot plays from the title to the end of chapter two",
+    "seed 4: the bot plays from the title to the end of chapter two",
+    "seed 5: the bot plays from the title to the end of chapter two",
+    "seed 6: the bot plays from the title to the end of chapter two"
+   ]
+  },
+  "nodes": {
+   "goal": 2,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 2,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [
+   "a375cbec-0217-4105-ae56-aec9a0427afd",
+   "df96aef8-db02-49d3-8531-4af6ef81abc3",
+   "013ac325-472c-4976-900b-6a230b6c3ceb",
+   "710a43b5-f65c-4588-8b5e-c8782295e849"
+  ],
+  "skippedLarge": []
  }
 ]

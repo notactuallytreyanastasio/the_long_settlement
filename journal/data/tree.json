@@ -2756,8 +2756,8 @@
  },
  {
   "path": "src/content/cast.js",
-  "bytes": 6504,
-  "lines": 184
+  "bytes": 8157,
+  "lines": 223
  },
  {
   "path": "src/content/chapter1.js",
@@ -2796,13 +2796,13 @@
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 5406,
-  "lines": 141
+  "bytes": 7157,
+  "lines": 182
  },
  {
   "path": "src/core/game.js",
-  "bytes": 22411,
-  "lines": 541
+  "bytes": 23073,
+  "lines": 552
  },
  {
   "path": "src/core/physics.js",
@@ -2816,13 +2816,13 @@
  },
  {
   "path": "src/core/slot.js",
-  "bytes": 5525,
-  "lines": 150
+  "bytes": 5904,
+  "lines": 156
  },
  {
   "path": "src/core/story.js",
-  "bytes": 4194,
-  "lines": 109
+  "bytes": 7004,
+  "lines": 168
  },
  {
   "path": "src/core/types.js",

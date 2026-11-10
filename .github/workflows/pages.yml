@@ -28,7 +28,9 @@ jobs:
       - name: Test the game core
         id: tests
         continue-on-error: true
+        # pipefail: without it the step's status is tee's, and every run reads as passing.
         run: |
+          set -o pipefail
           if [ -d test ]; then node --test test/ 2>&1 | tee test-output.txt; fi
 
       - name: Build the game (if it has a build step)
