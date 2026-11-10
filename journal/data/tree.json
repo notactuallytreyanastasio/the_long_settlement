@@ -81,8 +81,8 @@
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 48763,
-  "lines": 1034
+  "bytes": 146003,
+  "lines": 2635
  },
  {
   "path": "src/shell/render.js",

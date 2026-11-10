@@ -131,6 +131,20 @@
    "prompt": "the story is too close to FFX",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "09d2d22e-3786-43fc-bea4-0f140fa432c4",
+   "type": "observation",
+   "status": "pending",
+   "title": "Direction: extend to chapters 3-5; ending turns on one powerful man's single delusion and can go either way",
+   "description": "Corvane's delusion: people cannot be trusted with the truth. Two endings (The Lane Held / The Sum) decided by cumulative trust earned versus loans taken across all chapters. Chapters 3-5 outlined (Halcyon Reach, Little Brand, Tallis) and seeded toward it; 6-8 not yet written.",
+   "created": "2026-11-10T04:13:45.825425Z",
+   "updated": "2026-11-10T04:13:45.825425Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "keep it going from here then build more chapters\n\nmake there be an unwinding of the incentives and what matters at the end being due to someone with power having one cursed delusion that undoes them\n\nbut maybe make it so it can end either way",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -189,6 +203,13 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T04:01:36.464692Z"
+  },
+  {
+   "from": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "to": "09d2d22e-3786-43fc-bea4-0f140fa432c4",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T04:13:45.827979Z"
   }
  ]
 }
