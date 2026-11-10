@@ -147,6 +147,16 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   app.stats.lowSets = lowSets;
   let disposed = false;
   renderer.ctx.onLost = () => { if (!disposed) console.warn('gl/app: the WebGL context was lost; the 2D renderer takes over'); app.ok = false; app.reason = 'context lost'; };
+  // ...and gives the picture back when the browser restores the context (a phone takes it away from a tab in the
+  // background and returns it). Without this the rest of the session was the 2D game. Nothing here needs rebuilding by
+  // hand: every GPU object is keyed by the context's generation and is made again on first use (gl.js).
+  const rebuild = renderer.ctx.onRestored;
+  renderer.ctx.onRestored = () => {
+    if (rebuild) rebuild();
+    if (disposed || app.reason !== 'context lost') return;
+    console.warn('gl/app: the WebGL context is back; drawing in 3D again');
+    app.ok = true; app.reason = ''; settle = SETTLE * 2;
+  };
 
   function applyTier() {
     app.stats.tier = tierName;
