@@ -885,8 +885,10 @@ function drawFigure(ctx, member, o) {
       ctx.save();
       ctx.clip();
       if (E.teeth || openA > 0.22) rect(ctx, mx - w, Math.min(cornerY, midY) - 6, w * 2, 6.5 + openA * 6 + Math.abs(E.curve) * 3, tone('#efe8dc'));
-      ctx.fillStyle = tone('#a23a44');
-      ctx.beginPath(); ctx.ellipse(mx, midY + openA * 22 + 6, w * 0.62, 7, 0, 0, TAU); ctx.fill();
+      if (openA > 0.28) {
+        ctx.fillStyle = tone('#a23a44');
+        ctx.beginPath(); ctx.ellipse(mx, midY + openA * 30 + 4, w * 0.62, 7, 0, 0, TAU); ctx.fill();
+      }
       ctx.restore();
       ctx.strokeStyle = lip; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(mx - w, cornerY); ctx.quadraticCurveTo(mx, midY - openA * 6, mx + w, cornerY); ctx.stroke();
@@ -954,10 +956,11 @@ function drawFigure(ctx, member, o) {
 
   // rim light on the lit cheek and jaw
   ctx.save();
+  ctx.beginPath(); ctx.rect(-hw - 4, cy - 24, hw * 2 + 8, 110); ctx.clip();
   headPath(ctx, k, cy);
   ctx.clip();
-  ctx.strokeStyle = hgrad(ctx, key * hw, key * hw * 0.25, [[0, rgba(o.light.rim, rimA * 0.8)], [1, rgba(o.light.rim, 0)]]);
-  ctx.lineWidth = 9;
+  ctx.strokeStyle = hgrad(ctx, key * hw, key * hw * 0.3, [[0, rgba(o.light.rim, rimA * 0.6)], [1, rgba(o.light.rim, 0)]]);
+  ctx.lineWidth = 7;
   ctx.stroke();
   ctx.restore();
   if (k.style === 'bald' || k.style === 'receding') glow(ctx, key * 16, cy - 48, 26, '#ffffff', 0.12 + 0.1 * o.focus);
@@ -970,10 +973,10 @@ function drawFigure(ctx, member, o) {
 function drawCrowdFigures(ctx, light, t, speaking, level) {
   const col = css(mix(light.amb, '#000', 0.45));
   const rim = rgba(light.rim, speaking ? 0.42 : 0.2);
-  for (let i = 0; i < 5; i++) {
-    const x = 120 + i * 262 + rnd(i * 3.3) * 40;
-    const y = 420 + rnd(i * 5.1) * 30 + Math.sin(t * 1.1 + i * 2) * 2 - (speaking && i === 2 ? level * 5 : 0);
-    const s = 0.92 + rnd(i * 7) * 0.2;
+  for (let i = 0; i < 8; i++) {
+    const x = 40 + i * 172 + rnd(i * 3.3) * 50;
+    const y = 400 + rnd(i * 5.1) * 26 + Math.sin(t * 1.1 + i * 2) * 2 - (speaking && i === 3 ? level * 5 : 0);
+    const s = 0.6 + rnd(i * 7) * 0.14;
     ctx.fillStyle = col;
     ctx.beginPath(); ctx.ellipse(x, y - 78 * s, 44 * s, 56 * s, 0, 0, TAU); ctx.fill();
     ctx.beginPath();
@@ -1339,7 +1342,7 @@ def('lantern-stalls', { amb: '#2a1408', rim: '#ffc46b', key: -1 }, (ctx, t, px) 
   }
   for (let i = 0; i < 5; i++) glow(ctx, -60 + i * 350 + px * 0.55, 560, 230, '#ffb85c', 0.16);
   // people passing, far
-  crowdRow(ctx, 17, X0 + px * 0.45, 1540, 470, 22, 15, 'rgba(14,7,8,.9)', t, { hat: 0.4 });
+  crowdRow(ctx, 17, X0 + px * 0.45, 1540, 462, 11, 19, 'rgba(14,7,8,.9)', t, { hat: 0.4 });
 }, (ctx, t, px) => {
   // out-of-focus lanterns hung close to the lens
   lanternString(ctx, -260 + px * 1.6, -70, 520 + px * 1.6, -40, 60, 3, 34, LANTERN_COLS, t, 71);
@@ -1686,7 +1689,7 @@ def('ferry-dawn', { amb: '#4a3550', rim: '#ffd0a0', key: 1 }, (ctx, t, px) => {
   ctx.translate(640, 440); ctx.rotate(rock); ctx.translate(-640, -440);
   fillAll(ctx, vgrad(ctx, -180, 440, [[0, '#232c54'], [0.45, '#7a557c'], [0.8, '#ee9c72'], [1, '#ffdca6']]));
   stars(ctx, 6, 30, 120, t);
-  const sx = 880 + px * 0.05;
+  const sx = 640 + px * 0.05;
   glow(ctx, sx, 436, 520, '#fff0c0', 0.5);
   circ(ctx, sx, 436, 44, '#fff6dc');
   for (let i = 0; i < 9; i++) {
@@ -1788,7 +1791,7 @@ def('causeway', { amb: '#6e7884', rim: '#ffffff', key: 1 }, (ctx, t, px) => {
   }
 }, (ctx, t, px) => {
   // salt on the wind
-  motes(ctx, 5, 150, '#ffffff', t, { x0: -200 + px, x1: 1500 + px, y0: 250, y1: 800, vx: 260, vy: 14, r: 2.2, a: 0.75, streak: 7, wob: 6 });
+  motes(ctx, 5, 70, '#ffffff', t, { x0: -200 + px, x1: 1500 + px, y0: 300, y1: 800, vx: 260, vy: 14, r: 2, a: 0.5, streak: 7, wob: 6 });
   for (let i = 0; i < 4; i++) {
     const x = mod(rnd(i * 3) * 2200 + t * 120, 2200) - 500;
     ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.beginPath(); ctx.ellipse(x, 560 + i * 60, 380, 26, 0, 0, TAU); ctx.fill();
@@ -1851,12 +1854,12 @@ def('picket', { amb: '#141a2a', rim: '#ff9a48', key: 1 }, (ctx, t, px) => {
   // the picket
   crowdRow(ctx, 91, -220 + px * 0.6, gx - 280, 530, 8, 24, '#090a10', t, { signs: 0.3, signCol: '#b8b09a', signInk: '#2a1410', hat: 0.6, bob: 0.4 });
   crowdRow(ctx, 93, gx + 280, 1500 + px * 0.6, 530, 8, 24, '#090a10', t, { signs: 0.3, signCol: '#b8b09a', signInk: '#2a1410', hat: 0.6, bob: 0.4 });
-  brazier(ctx, 170 + px * 0.8, 640, 44, t, 1);
-  brazier(ctx, 1110 + px * 0.8, 650, 48, t, 2);
+  brazier(ctx, 446 + px * 0.8, 600, 34, t, 1);
+  brazier(ctx, 838 + px * 0.8, 606, 36, t, 2);
 }, (ctx, t, px) => {
   motes(ctx, 9, 130, '#e8eef8', t, { x0: -100 + px, x1: 1400 + px, y0: -20, y1: 800, vx: 16, vy: 38, r: 1.8, a: 0.6, wob: 14 });
-  motes(ctx, 11, 26, '#ffb060', t, { x0: 60 + px, x1: 300 + px, y0: 300, y1: 640, vx: 6, vy: -70, r: 1.7, a: 0.9, tw: 1 });
-  motes(ctx, 13, 26, '#ffb060', t, { x0: 1000 + px, x1: 1240 + px, y0: 300, y1: 650, vx: -6, vy: -70, r: 1.7, a: 0.9, tw: 1 });
+  motes(ctx, 11, 26, '#ffb060', t, { x0: 380 + px, x1: 520 + px, y0: 260, y1: 580, vx: 6, vy: -70, r: 1.7, a: 0.9, tw: 1 });
+  motes(ctx, 13, 26, '#ffb060', t, { x0: 770 + px, x1: 910 + px, y0: 260, y1: 580, vx: -6, vy: -70, r: 1.7, a: 0.9, tw: 1 });
 });
 
 // ── mine-deep: a blue-lit stillsalt gallery ──
@@ -1909,8 +1912,8 @@ def('mine-deep', { amb: '#061430', rim: '#6fd8ff', key: 1 }, (ctx, t, px) => {
     seg(ctx, x - w * 0.86, vy - h * 0.6, x + w * 0.86, vy - h * 0.6, css(mix('#6a4a2e', '#0c0e14', u * 0.8)), tw * 1.1);
     seg(ctx, x - w * 0.86, vy - h * 0.6 + tw * 0.5, x + w * 0.86, vy - h * 0.6 + tw * 0.5, 'rgba(0,0,0,.4)', Math.max(1, tw * 0.2));
     // what is left of the stillsalt
-    crystal(ctx, x - w * 1.0, vy + h * (0.5 - rnd(i) * 0.5), 34 * s + 9, 1.25, t, i * 3 + 1);
-    crystal(ctx, x + w * 1.0, vy + h * (0.55 - rnd(i * 3) * 0.6), 30 * s + 9, -1.25, t, i * 3 + 2);
+    crystal(ctx, x - w * 1.0, vy + h * (0.5 - rnd(i) * 0.5), 46 * s + 11, 1.25, t, i * 3 + 1);
+    crystal(ctx, x + w * 1.0, vy + h * (0.55 - rnd(i * 3) * 0.6), 42 * s + 11, -1.25, t, i * 3 + 2);
     if (i % 2 === 0) crystal(ctx, x + w * (rnd(i * 7) - 0.5) * 0.9, vy - h * 0.96, 22 * s + 7, Math.PI, t, i * 3 + 3);
     crystal(ctx, x - w * 0.97, vy + h * 0.72, 20 * s + 6, 0.5, t, i * 5 + 4);
   }
@@ -1920,6 +1923,10 @@ def('mine-deep', { amb: '#061430', rim: '#6fd8ff', key: 1 }, (ctx, t, px) => {
   for (const s of [-1, 1]) {
     ctx.strokeStyle = '#5a7a9a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(vx + s * 16, vy + 66); ctx.lineTo(vx + s * 330 + px, 880); ctx.stroke();
   }
+  // the last good clusters, close to the lens
+  crystal(ctx, 60 + px * 1.1, 640, 120, 0.5, t, 41);
+  crystal(ctx, 1230 + px * 1.1, 620, 105, -0.6, t, 43);
+  crystal(ctx, 1150 + px * 0.9, 96, 60, 2.6, t, 47);
   // lamp on its hook
   const sw = Math.sin(t * 1.1) * 0.12, lx = vx + 200 + px * 0.6;
   ctx.save(); ctx.translate(lx, -40); ctx.rotate(sw);
@@ -2033,7 +2040,7 @@ def('ledger-room', { amb: '#0c1220', rim: '#9fc0ff', key: 1 }, (ctx, t, px) => {
   const wa = Math.sin(t * 0.2) * 0.3;
   for (let i = 0; i < 5; i++) { const a = wa + i * (TAU / 5); seg(ctx, vx, vy, vx + Math.cos(a) * 80, vy + Math.sin(a) * 80, '#8a96a8', 7); circ(ctx, vx + Math.cos(a) * 80, vy + Math.sin(a) * 80, 9, '#aab4c4'); }
   circ(ctx, vx, vy, 20, '#aab4c4');
-  rect(ctx, vx + 190, 110, 5, 470, rgba('#ffd9a0', 0.5 + 0.2 * Math.sin(t * 0.9)));
+  rect(ctx, vx + 191, 110, 2.5, 470, rgba('#ffd9a0', 0.32 + 0.12 * Math.sin(t * 0.9)));
   glow(ctx, vx + 194, 340, 150, '#ffd9a0', 0.14);
   // the stacks
   ledgerShelf(ctx, -230 + px * 0.5, 30, 560, 7, 82, 3, 0.35);
@@ -2225,6 +2232,7 @@ def('commons-hall', { amb: '#2c1c10', rim: '#ffcf90', key: 1 }, (ctx, t, px) => 
 
 // ── shore-dusk ──
 def('shore-dusk', { amb: '#2a1c3a', rim: '#ff9d5c', key: 1 }, (ctx, t, px) => {
+  ctx.translate(0, -52);
   fillAll(ctx, vgrad(ctx, -180, 436, [[0, '#0c1028'], [0.45, '#3a2a5e'], [0.8, '#b3506a'], [1, '#f39c5a']]));
   stars(ctx, 12, 90, 240, t);
   glow(ctx, 420 + px * 0.05, 440, 520, '#ffb060', 0.5);
@@ -2271,6 +2279,7 @@ def('shore-dusk', { amb: '#2a1c3a', rim: '#ff9d5c', key: 1 }, (ctx, t, px) => {
     ctx.beginPath(); ctx.moveTo(x, 810); ctx.quadraticCurveTo(x + sw * 0.3, 810 - h * 0.6, x + sw, 810 - h); ctx.stroke();
   }
 }, (ctx, t, px) => {
+  ctx.translate(0, -52);
   motes(ctx, 23, 30, '#ffb060', t, { x0: 540 + px * 0.9, x1: 750 + px * 0.9, y0: 300, y1: 660, vx: 10, vy: -80, r: 1.8, a: 0.9, tw: 1, wob: 20 });
 });
 
@@ -2353,8 +2362,8 @@ function lastEmote(lines, index, id) {
 }
 
 function drawSubtitle(ctx, who, line, lineT) {
-  ctx.fillStyle = vgrad(ctx, 530, H, [[0, 'rgba(0,0,0,0)'], [0.42, 'rgba(0,0,0,.74)'], [1, 'rgba(0,0,0,.94)']]);
-  ctx.fillRect(0, 530, W, H - 530);
+  ctx.fillStyle = vgrad(ctx, 548, H, [[0, 'rgba(0,0,0,0)'], [0.45, 'rgba(0,0,0,.66)'], [1, 'rgba(0,0,0,.93)']]);
+  ctx.fillRect(0, 548, W, H - 548);
   const narr = line.who === 'narrator';
   let size = 30, lh = 39;
   const maxW = narr ? 900 : 950;
