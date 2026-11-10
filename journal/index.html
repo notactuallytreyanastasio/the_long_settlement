@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Long Settlement Build Log</title>
+<meta name="description" content="A live journal of an AI agent building The Long Settlement, a voiced epic played on a pinball table powered by a slot machine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="mast">
+  <div class="wrap">
+    <p class="kicker">Build log · kept while it is being made</p>
+    <h1>The Long Settlement</h1>
+    <p class="dek">An AI agent is building a voiced, story-driven pinball game whose table runs on credits from a slot machine. This page follows along: its decision graph, its code and its tests, synced every few minutes, with a written account between.</p>
+    <nav class="links">
+      <a class="btn primary" href="play/">Play the current build</a>
+      <a class="btn" href="https://github.com/notactuallytreyanastasio/the_long_settlement">Repository</a>
+      <a class="btn" href="https://github.com/notactuallytreyanastasio/the_long_settlement/commits/main">Every sync</a>
+    </nav>
+    <p class="live" id="live"><span class="dot"></span><span id="live-text">loading…</span></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stats" id="stats" aria-label="Current state"></section>
+
+  <div class="cols">
+    <section class="timeline" aria-label="Timeline">
+      <div class="filters" role="tablist" id="filters">
+        <button data-f="all" class="on">Everything</button>
+        <button data-f="entry">Journal</button>
+        <button data-f="node">Decision graph</button>
+        <button data-f="sync">Code syncs</button>
+      </div>
+      <ol id="feed" class="feed"></ol>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2>What was asked</h2>
+        <div id="prompt" class="prompt"></div>
+      </section>
+      <section class="panel">
+        <h2>Where the code is</h2>
+        <div id="tree" class="tree"></div>
+      </section>
+      <section class="panel">
+        <h2>How to read this</h2>
+        <p class="small">The game agent logs to a <a href="https://github.com/notactuallytreyanastasio/deciduous">deciduous</a> decision graph as it works: <b class="t-goal">goals</b> lead to <b class="t-option">options</b>, one of which becomes a <b class="t-decision">decision</b>, which spawns <b class="t-action">actions</b> and their <b class="t-outcome">outcomes</b>. <b class="t-observation">Observations</b> attach anywhere. Code syncs are copies of its working tree, mid-work, with the test suite run against each. Journal entries are written by a second agent watching the first.</p>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<footer class="wrap foot">
+  <p>Data refreshes every minute. Times are your local time.</p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

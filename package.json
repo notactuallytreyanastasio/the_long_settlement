@@ -1,0 +1,12 @@
+{
+  "name": "the-long-settlement",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A voiced epic told through a pinball table that runs on a slot machine.",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "test": "node --test test/",
+    "voices": "node tools/render-voices.mjs"
+  }
+}

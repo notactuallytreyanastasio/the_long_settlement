@@ -1,0 +1,117 @@
+[
+ {
+  "path": ".gitignore",
+  "bytes": 49,
+  "lines": null
+ },
+ {
+  "path": "package.json",
+  "bytes": 324,
+  "lines": 13
+ },
+ {
+  "path": "README.md",
+  "bytes": 539,
+  "lines": 12
+ },
+ {
+  "path": "src/content/cast.js",
+  "bytes": 6504,
+  "lines": 184
+ },
+ {
+  "path": "src/content/chapter1.js",
+  "bytes": 39584,
+  "lines": 622
+ },
+ {
+  "path": "src/content/chapter2.js",
+  "bytes": 46396,
+  "lines": 652
+ },
+ {
+  "path": "src/content/index.js",
+  "bytes": 349,
+  "lines": 13
+ },
+ {
+  "path": "src/content/tables.js",
+  "bytes": 12415,
+  "lines": 298
+ },
+ {
+  "path": "src/core/economy.js",
+  "bytes": 5406,
+  "lines": 141
+ },
+ {
+  "path": "src/core/game.js",
+  "bytes": 22411,
+  "lines": 541
+ },
+ {
+  "path": "src/core/physics.js",
+  "bytes": 16955,
+  "lines": 410
+ },
+ {
+  "path": "src/core/rng.js",
+  "bytes": 1538,
+  "lines": 44
+ },
+ {
+  "path": "src/core/slot.js",
+  "bytes": 5525,
+  "lines": 150
+ },
+ {
+  "path": "src/core/story.js",
+  "bytes": 4194,
+  "lines": 109
+ },
+ {
+  "path": "src/core/types.js",
+  "bytes": 16448,
+  "lines": 285
+ },
+ {
+  "path": "src/shell/audio.js",
+  "bytes": 36758,
+  "lines": 829
+ },
+ {
+  "path": "src/shell/voice.js",
+  "bytes": 11777,
+  "lines": 312
+ },
+ {
+  "path": "story/BIBLE.md",
+  "bytes": 15550,
+  "lines": 241
+ },
+ {
+  "path": "test/economy.test.js",
+  "bytes": 8617,
+  "lines": 198
+ },
+ {
+  "path": "test/game.test.js",
+  "bytes": 31213,
+  "lines": 651
+ },
+ {
+  "path": "test/rng.test.js",
+  "bytes": 3138,
+  "lines": 102
+ },
+ {
+  "path": "test/slot.test.js",
+  "bytes": 6682,
+  "lines": 144
+ },
+ {
+  "path": "test/story.test.js",
+  "bytes": 4899,
+  "lines": 96
+ }
+]

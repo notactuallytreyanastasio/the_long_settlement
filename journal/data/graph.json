@@ -1,0 +1,173 @@
+{
+ "workspace": "fable_5_2",
+ "nodes": [
+  {
+   "id": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "type": "goal",
+   "status": "active",
+   "title": "Build a voiced, story-driven pinball game powered by a slot machine (chapters 1-2)",
+   "description": null,
+   "created": "2026-11-10T03:48:35.911808Z",
+   "updated": "2026-11-10T03:48:35.911808Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "Lets make a game.\n\nI want to have something kind of interesting.\n\nIt should tell an epic, longform, final-fantasty style tale.\n\nBut it should have the game be \"played\" by a pinball machine that is powered by a slot machine giving credits to play the game.\n\nMake it emotionally captivating, have complex adult concepts such as economics and balances of power and law, and tie that all into the story.\n\nmake this play out as the user plays pinball with voice and all\n\nstart by making the first two chapters.\n\nFor a story think a combination of FFVIII and FFX with a hint of metal gear solid political hijinks\n\n[follow-up] make it with a functional core and an imperative shell. Use whatever tools allow you to work fastest on the best game\nuse a workflow to parallelize what you can",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "7dc3c28c-27c7-4580-a14e-e04722b0db3c",
+   "type": "option",
+   "status": "completed",
+   "title": "Zero-build vanilla ES modules + Canvas 2D + WebAudio, node --test for the core",
+   "description": "No dependencies; core is plain pure functions testable headless in node; shell is the only code touching DOM/audio/time.",
+   "created": "2026-11-10T03:48:35.914620Z",
+   "updated": "2026-11-10T03:48:35.914620Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "4399c9b0-1ba8-4bcf-a2e0-85514b44c614",
+   "type": "option",
+   "status": "rejected",
+   "title": "Game framework (Phaser/Matter.js) with bundler",
+   "description": "Ready-made physics and rendering, but physics would live inside an imperative engine, defeating the functional core.",
+   "created": "2026-11-10T03:48:35.915502Z",
+   "updated": "2026-11-10T03:48:35.915502Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "f3b9033c-1238-438d-a548-327cec2fdaad",
+   "type": "option",
+   "status": "rejected",
+   "title": "Voice via browser speechSynthesis only",
+   "description": "No assets, but unreliable timing and no audio effects.",
+   "created": "2026-11-10T03:48:35.916251Z",
+   "updated": "2026-11-10T03:48:35.916251Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "4da90e65-840b-49b7-9491-f4dabf555130",
+   "type": "option",
+   "status": "completed",
+   "title": "Voice pre-rendered with macOS say into audio files, speechSynthesis as fallback",
+   "description": "Deterministic, distinct voices per character, can be routed through WebAudio for radio-filter codec calls.",
+   "created": "2026-11-10T03:48:35.916988Z",
+   "updated": "2026-11-10T03:48:35.916988Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "type": "decision",
+   "status": "completed",
+   "title": "Vanilla ES modules with a pure update(content, game, msg) core over a framework; pre-rendered say voices over live speechSynthesis",
+   "description": "User asked for functional core / imperative shell. An Elm-style reducer returning effects-as-data keeps physics, slot, economy and story testable in node with no browser; a framework's physics engine would own mutable state. Pre-rendered voice files give reliable timing and allow a radio filter for codec-style calls.",
+   "created": "2026-11-10T03:48:35.917781Z",
+   "updated": "2026-11-10T03:48:35.917781Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "5a98ebc0-a1d1-42c8-9048-704eac2b12d9",
+   "type": "observation",
+   "status": "pending",
+   "title": "Direction: full cinematic cutscenes; corporate and government espionage intertwined with community-trust missions",
+   "description": "Folded into the design as: a full-screen cinema mode separate from the cabinet view; every scene tagged duty/covert/commons; a Trust stat earned by commons missions that funds mutual-aid balls (the Commons gives, the Mint lends at interest).",
+   "created": "2026-11-10T03:51:19.560917Z",
+   "updated": "2026-11-10T03:51:19.560917Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "it should shift into showing full cutscenes and stuff too, get people emotionally invested, and have it be centered around espionage at a corporate and government level intertwining with missions to build community and trust",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "fed83bec-b76d-443d-a2f1-5e79e6fa8ae9",
+   "type": "action",
+   "status": "pending",
+   "title": "Write the shared contract (src/core/types.js), story bible and content index, then fan out the build to parallel agents",
+   "description": null,
+   "created": "2026-11-10T03:51:21.658090Z",
+   "updated": "2026-11-10T03:51:21.658090Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/core/types.js",
+    "story/BIBLE.md",
+    "src/content/index.js",
+    "package.json"
+   ],
+   "commit": null
+  }
+ ],
+ "edges": [
+  {
+   "from": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "to": "7dc3c28c-27c7-4580-a14e-e04722b0db3c",
+   "type": "chosen",
+   "rationale": "User asked for functional core / imperative shell. An Elm-style reducer returning effects-as-data keeps physics, slot, economy and story testable in node with no browser; a framework's physics engine would own mutable state. Pre-rendered voice files give reliable timing and allow a radio filter for codec-style calls.",
+   "created": "2026-11-10T03:48:35.919464Z"
+  },
+  {
+   "from": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "to": "4399c9b0-1ba8-4bcf-a2e0-85514b44c614",
+   "type": "rejected",
+   "rationale": "User asked for functional core / imperative shell. An Elm-style reducer returning effects-as-data keeps physics, slot, economy and story testable in node with no browser; a framework's physics engine would own mutable state. Pre-rendered voice files give reliable timing and allow a radio filter for codec-style calls.",
+   "created": "2026-11-10T03:48:35.921165Z"
+  },
+  {
+   "from": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "to": "f3b9033c-1238-438d-a548-327cec2fdaad",
+   "type": "rejected",
+   "rationale": "User asked for functional core / imperative shell. An Elm-style reducer returning effects-as-data keeps physics, slot, economy and story testable in node with no browser; a framework's physics engine would own mutable state. Pre-rendered voice files give reliable timing and allow a radio filter for codec-style calls.",
+   "created": "2026-11-10T03:48:35.922438Z"
+  },
+  {
+   "from": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "to": "4da90e65-840b-49b7-9491-f4dabf555130",
+   "type": "chosen",
+   "rationale": "User asked for functional core / imperative shell. An Elm-style reducer returning effects-as-data keeps physics, slot, economy and story testable in node with no browser; a framework's physics engine would own mutable state. Pre-rendered voice files give reliable timing and allow a radio filter for codec-style calls.",
+   "created": "2026-11-10T03:48:35.923786Z"
+  },
+  {
+   "from": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "to": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "type": "leads_to",
+   "rationale": "Decided",
+   "created": "2026-11-10T03:48:35.925091Z"
+  },
+  {
+   "from": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "to": "5a98ebc0-a1d1-42c8-9048-704eac2b12d9",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T03:51:19.563411Z"
+  },
+  {
+   "from": "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "to": "fed83bec-b76d-443d-a2f1-5e79e6fa8ae9",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T03:51:21.660537Z"
+  }
+ ]
+}

@@ -1,0 +1,88 @@
+name: Build and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# The sync daemon pushes every few minutes; only the newest push matters.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test the game core
+        id: tests
+        continue-on-error: true
+        run: |
+          if [ -d test ]; then node --test test/ 2>&1 | tee test-output.txt; fi
+
+      - name: Build the game (if it has a build step)
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)" 2>/dev/null; then
+            npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
+            npm run build
+          else
+            echo "No build script: the game is zero-build ES modules, served as-is."
+          fi
+
+      - name: Assemble site
+        run: |
+          set -euo pipefail
+          mkdir -p _site/play
+          cp -R journal/. _site/
+          rm -f _site/sync.mjs
+
+          # Pick the game's entry point. Order: a build output, a root index.html,
+          # then any index.html the game ships elsewhere.
+          if [ -f dist/index.html ]; then
+            cp -R dist/. _site/play/
+            echo "game entry: dist/index.html"
+          elif [ -f index.html ]; then
+            rsync -a --exclude journal --exclude .github --exclude .git --exclude _site --exclude node_modules ./ _site/play/
+            echo "game entry: index.html"
+          else
+            entry=$(find . -name index.html -not -path './journal/*' -not -path './_site/*' -not -path './node_modules/*' -not -path './.git/*' | sort | head -1)
+            if [ -n "$entry" ]; then
+              rsync -a --exclude journal --exclude .github --exclude .git --exclude _site --exclude node_modules ./ _site/play/
+              target="${entry#./}"
+              printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=%s"><a href="%s">%s</a>\n' "$target" "$target" "$target" > _site/play/index.html
+              echo "game entry: $target"
+            else
+              cp journal/not-yet.html _site/play/index.html
+              echo "game entry: none yet (placeholder)"
+            fi
+          fi
+
+          # Build stamp the journal reads to show what Pages is serving.
+          tests_ok=${{ steps.tests.outcome == 'success' }}
+          printf '{"sha":"%s","built":"%s","testsPassed":%s}\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" "$tests_ok" > _site/data/build.json
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

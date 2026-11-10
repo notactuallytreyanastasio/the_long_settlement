@@ -1,0 +1,78 @@
+[
+ {
+  "at": "2026-11-10T04:01:11.684Z",
+  "files": 23,
+  "lines": 6047,
+  "bytes": 297271,
+  "linesByDir": {
+   ".": 25,
+   "src/content": 1769,
+   "src/core": 1680,
+   "src/shell": 1141,
+   "story/BIBLE.md": 241,
+   "test/economy.test.js": 198,
+   "test/game.test.js": 651,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 144,
+   "test/story.test.js": 96
+  },
+  "changed": [
+   "?? .github/workflows/pages.yml",
+   "?? .gitignore",
+   "?? package.json",
+   "?? src/content/cast.js",
+   "?? src/content/chapter1.js",
+   "?? src/content/chapter2.js",
+   "?? src/content/index.js",
+   "?? src/content/tables.js",
+   "?? src/core/economy.js",
+   "?? src/core/game.js",
+   "?? src/core/physics.js",
+   "?? src/core/rng.js",
+   "?? src/core/slot.js",
+   "?? src/core/story.js",
+   "?? src/core/types.js",
+   "?? src/shell/audio.js",
+   "?? src/shell/voice.js",
+   "?? story/BIBLE.md",
+   "?? test/economy.test.js",
+   "?? test/game.test.js",
+   "?? test/rng.test.js",
+   "?? test/slot.test.js",
+   "?? test/story.test.js"
+  ],
+  "tests": {
+   "total": 57,
+   "pass": 54,
+   "fail": 3,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 589,
+   "failures": [
+    "aid: out of balls and writs, a trusting town covers one; without trust it is the reels",
+    "ball save: a drained ball comes back free; without it the next ball costs a writ",
+    "multiball: two extra live balls join after the launch, for one writ"
+   ]
+  },
+  "nodes": {
+   "goal": 1,
+   "option": 4,
+   "decision": 1,
+   "observation": 1,
+   "action": 1
+  },
+  "newNodes": [
+   "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "7dc3c28c-27c7-4580-a14e-e04722b0db3c",
+   "4399c9b0-1ba8-4bcf-a2e0-85514b44c614",
+   "f3b9033c-1238-438d-a548-327cec2fdaad",
+   "4da90e65-840b-49b7-9491-f4dabf555130",
+   "55ef72c0-2732-485f-98b7-fa235f35308f",
+   "5a98ebc0-a1d1-42c8-9048-704eac2b12d9",
+   "fed83bec-b76d-443d-a2f1-5e79e6fa8ae9"
+  ],
+  "skippedLarge": []
+ }
+]
