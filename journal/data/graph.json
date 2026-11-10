@@ -819,6 +819,64 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "0c3d3bb3-982e-40da-aaf3-696285edda25",
+   "type": "goal",
+   "status": "active",
+   "title": "Make sure the game is 3D everywhere",
+   "description": null,
+   "created": "2026-11-10T22:25:00.100521Z",
+   "updated": "2026-11-10T22:25:00.100521Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "Ok get 3d all over for sure then we will keep going",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "110337b3-9c55-4d28-b193-a8071a511ebc",
+   "type": "observation",
+   "status": "active",
+   "title": "A lost WebGL context retired 3D for the rest of the session: app.ok went false on webglcontextlost and nothing set it back on restore",
+   "description": "A phone takes the context from a backgrounded tab. The renderer already rebuilt itself on restore; only the app's flag stayed down.",
+   "created": "2026-11-10T22:25:00.103401Z",
+   "updated": "2026-11-10T22:25:00.103401Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "605ba14d-f59a-4fd5-8a3a-746a9d082488",
+   "type": "action",
+   "status": "completed",
+   "title": "gl/app.js: on webglcontextrestored the app is ok again and 3D resumes",
+   "description": null,
+   "created": "2026-11-10T22:25:00.106274Z",
+   "updated": "2026-11-10T22:25:00.106274Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/shell/gl/app.js"
+   ],
+   "commit": null
+  },
+  {
+   "id": "2ea565fc-13b2-4d09-9963-317f073f76ab",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Public /play/ is 3D in all eight chapters and both endings: 0 of ~198k frames drawn in 2D; context loss now returns to 3D",
+   "description": "Nine playthroughs against the deployed site (emulated iPhone, touch, chapter 1 from its own card through chapter 8 both endings): every mode 3D, every line said, no tier step-downs. One transient HTTP 503 from Pages on one voice file (200 on retry). Lose/restore test in play (WEBGL_lose_context): 3D, 2D while lost, 3D again with the same draw counts. A 1280x800 window is 3D too. Fix deployed as mirror commit 29a1df9. Still 2D by design: ?gl=0, no WebGL2, and a 3D renderer that throws (retired for the session, logged). Seen and not fixed: in the wide layout a white light burst covers the top of the cutter-deck stage.",
+   "created": "2026-11-10T22:25:00.108558Z",
+   "updated": "2026-11-10T22:25:00.108558Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1206,6 +1264,34 @@
    "type": "leads_to",
    "rationale": "Result",
    "created": "2026-11-10T21:45:59.151052Z"
+  },
+  {
+   "from": "147e8063-ac89-446d-84ce-81cb03931ed8",
+   "to": "0c3d3bb3-982e-40da-aaf3-696285edda25",
+   "type": "leads_to",
+   "rationale": "Continuation from previous context",
+   "created": "2026-11-10T22:25:00.102744Z"
+  },
+  {
+   "from": "0c3d3bb3-982e-40da-aaf3-696285edda25",
+   "to": "110337b3-9c55-4d28-b193-a8071a511ebc",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-10T22:25:00.105096Z"
+  },
+  {
+   "from": "0c3d3bb3-982e-40da-aaf3-696285edda25",
+   "to": "605ba14d-f59a-4fd5-8a3a-746a9d082488",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-10T22:25:00.108050Z"
+  },
+  {
+   "from": "605ba14d-f59a-4fd5-8a3a-746a9d082488",
+   "to": "2ea565fc-13b2-4d09-9963-317f073f76ab",
+   "type": "leads_to",
+   "rationale": "Result",
+   "created": "2026-11-10T22:25:00.110221Z"
   }
  ]
 }
