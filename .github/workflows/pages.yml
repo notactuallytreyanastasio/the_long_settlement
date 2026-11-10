@@ -165,3 +165,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        # The site carries ~78 MB of voice audio, and Pages has spent more than the default
+        # 10 minutes in syncing_files on it (run 42801318570 timed out there). A timed-out
+        # deploy is cancelled and the previous one stays live, so a longer wait costs nothing.
+        with:
+          timeout: 1200000

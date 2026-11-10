@@ -173,11 +173,11 @@ async function tick() {
     writeJSON(join(DATA, 'tree.json'), files);
   }
 
-  // Token usage: refreshed with any other change, or every 10 minutes on its own, so the
+  // Token usage: refreshed with any other change, or every 30 minutes on its own, so the
   // journal's own spending doesn't force a commit on every tick.
   const usagePath = join(DATA, 'usage.json');
   const prevUsage = readJSON(usagePath, null);
-  const usageStale = !prevUsage || Date.now() - Date.parse(prevUsage.generated) > 10 * 60 * 1000;
+  const usageStale = !prevUsage || Date.now() - Date.parse(prevUsage.generated) > 30 * 60 * 1000; // each push redeploys ~120 MB
   if (gameChanges.length || graphChanged || usageStale) {
     try { writeJSON(usagePath, computeUsage()); } catch (e) { log('usage failed:', e.message); }
   }
