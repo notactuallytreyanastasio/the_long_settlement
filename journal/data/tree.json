@@ -12525,6 +12525,11 @@
   "lines": 439
  },
  {
+  "path": "src/shell/gl/sets/kit.js",
+  "bytes": 41238,
+  "lines": 587
+ },
+ {
   "path": "src/shell/gl/shaders.js",
   "bytes": 21087,
   "lines": 419
