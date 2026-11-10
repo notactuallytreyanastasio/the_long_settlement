@@ -223,7 +223,7 @@ function build(engine = null, { light, low = false } = {}) {
   return shell7({
     id: 'hall-steps', light, low, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, sun: L.sun, tick,
     marks: {
-      ...STD_MARKS(), focus: SEAL,
+      ...STD_MARKS(), focus: SEAL, extras: [{ pos: [1.95, 0, 0.42], face: -52 }],      // where the Tribune waits on the fourth step (ch7.s3), and watches from (ch7.s7)
       below: { pos: [0.5, -RISE, Z_DN + RUN * 0.5], face: 180 }, doors: { pos: [HX, FLOOR, PORT_Z - 2.3], face: 0 }, board: { pos: [BOARD[0] + 0.4, FLOOR, BOARD[2] + 0.9], face: -150 },
       back: [[1.3, 0.1], [2.1, -0.05], [2.9, 0.15], [-1.3, 0.1], [-2.1, -0.05], [-2.9, 0.15]],
     },

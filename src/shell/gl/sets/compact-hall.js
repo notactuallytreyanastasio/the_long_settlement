@@ -18,6 +18,7 @@
 //   task('tally-column', i)  ch6.s2, three units: Tobb's hopper table on an easel right of the tally table, a chalk bar a
 //                   unit (the capital's forty days, the rich ports' thirty, the small lights' nine, in coral)
 //   task('hatch', i)         ch6.s5, three units: the head-house's roof hatches thrown off one at a time, the moon coming down
+//   marks.extras[0] the edge of the meeting, stage left: where somebody who may sit and hear but not speak stands (ch6.s2: the Tribune)
 //   setback()       the hall shouts: every lantern is shaken up at the table for a second and a half (also as passLamp)
 //   The core's 'interior' builds 'night'.
 //   marks.coil      the coil of rope the Tribune is given to sit on { pos, face }; marks.table, marks.focus (the lamp)
@@ -190,7 +191,7 @@ function build(engine = null, { light, low = false } = {}) {
   const lampStar = sprites.add({ kind: 'sparkle', pos: LAMP, size: 1.5, color: '#fff6d0', alpha: 0.7 });
 
   // ---- the live stage's two tasks (see the header): Tobb's hopper table on an easel, and the three roof hatches
-  const EASEL = [1.2, 0, -0.95];      // low and near the middle: the band's HUD plates cover the top corners of the frame
+  const EASEL = [1.55, 0, -0.4];      // low and near the middle: the band's HUD plates cover the top corners of the frame
   const BAR_X = [-0.42, 0, 0.42], BAR_H = [0.86, 0.66, 0.2], BAR_COL = [K6.cream, K6.yellow, K6.coral];
   const easel = group('easel');
   easel.add(node('easel-frame', merge(
@@ -202,7 +203,7 @@ function build(engine = null, { light, low = false } = {}) {
   scene.root.add(easel);
   const barV = [0, 0, 0];
   const setBar = (i, v) => { barV[i] = v; bars[i].visible = v > 0.01; bars[i].setScale(1, Math.max(0.001, BAR_H[i] * v), 1); };
-  const HATCH_X = [-2.3, 0.1, 2.4], hatches = HATCH_X.map((hx, i) => {
+  const HATCH_X = [0.5, 1.45, 2.4], hatches = HATCH_X.map((hx, i) => {
     const g = group('hatch' + i);
     g.add(node('hatch-shaft', place(shaft({ w: 1.5, h: 1.0, dir: [0.16 - 0.1 * i, 0.2, 1], len: 5.7, cards: 3, color: '#eef3ff', spread: 0.25 }), hx, 5.5, -0.5, 90, 0, 0), M.shaft));
     g.add(node('hatch-patch', patch({ w: 1.7, d: 1.7, panes: 2, shear: 0, color: '#e4ecff', glow: 0.85 }), M.flat, { pos: [hx + 0.5 - 0.3 * i, 0.014, 0.55] }));
@@ -211,11 +212,11 @@ function build(engine = null, { light, low = false } = {}) {
   });
   const surge = pulse(1.7);
   const tallyUnits = BAR_X.map((bx, i) => taskUnit({
-    pos: [EASEL[0] + bx, 1.2, EASEL[2] + 0.1], stand: [EASEL[0] - 1.0 + bx * 0.5, 0.2],
+    pos: [EASEL[0] + bx, 1.1, EASEL[2] + 0.1], stand: [EASEL[0] - 0.85 + bx * 0.5, 0.3],
     apply(v, fresh) { if (fresh) { easel.visible = true; for (const h of hatches) h.v = 0; setKey(false); setVote(0); } setBar(i, v); },
   }));
   const hatchUnits = HATCH_X.map((hx, i) => taskUnit({
-    pos: [hx, 2.3, 0.3], stand: null,
+    pos: [hx + 0.2, 1.0, 0.3], stand: null,
     apply(v, fresh) { if (fresh) { easel.visible = true; for (let k = 0; k < 3; k++) setBar(k, 1); setKey(false); setVote(0); } hatches[i].v = v; },
   }));
   /** 'tally-column' x3 (ch6.s2: forty days, thirty, nine) and 'hatch' x3 (ch6.s5: the hearing opened). */
@@ -273,7 +274,7 @@ function build(engine = null, { light, low = false } = {}) {
   return shell({
     id: 'compact-hall', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue, house: 0.55,
     motes: low ? null : { box: [-4, 4, 0.6, 4.2, -4, 1.5], every: 0.3, color: '#ffd890', size: 0.07, vel: [0.04, 0.05, 0.02], life: 5, alpha: 0.75 },
-    marks: { ...STD_MARKS(), coil: { pos: [COIL[0], 0.42, COIL[2]], face: 20 }, table: [TABLE[0], 0.82, TABLE[2]], focus: LAMP },
+    marks: { ...STD_MARKS(), extras: [{ pos: [-2.55, 0, 0.12], face: 52 }], coil: { pos: [COIL[0], 0.42, COIL[2]], face: 20 }, table: [TABLE[0], 0.82, TABLE[2]], focus: LAMP },
     extra: { setVote, setKey, voteLevel: () => voteNow, task, setback, passLamp: setback },
   });
 }

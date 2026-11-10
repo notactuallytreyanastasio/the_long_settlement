@@ -297,7 +297,7 @@ function build(engine = null, { light, low = false } = {}) {
   return shell7({
     id: 'fish-dock', light, low, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, sun: L.sun, tick,
     marks: {
-      ...STD_MARKS(), focus: FINIAL,
+      ...STD_MARKS(), focus: FINIAL, extras: [{ pos: [2.05, 0, 0.4], face: -50 }],      // by the hearing's trestle: who waits there for a walk to arrive (ch7.s6: the Tribune)
       table: { pos: [TABLE[0], 0, TABLE[2] + 0.75], face: 0 }, slate: { pos: [SLATE[0] - 0.75, 0, SLATE[2] + 0.55], face: 30 }, box: { pos: [BOX[0], 0, BOX[2]], face: 20 },
       dockEnd: { pos: [-5.0, 0, QUAY_Z + 1.3], face: 180 }, back: [[1.3, 0.1], [2.1, -0.05], [2.9, 0.15], [-1.3, 0.1], [-2.1, -0.05], [-2.9, 0.15]],
     },

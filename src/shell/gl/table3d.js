@@ -43,6 +43,7 @@ import { ART } from './table-art.js';
 const S = 0.01;
 const WX = (x) => (x - 200) * S, WZ = (y) => (y - 400) * S;
 const BALLS = 8, LAMPS = 96, POINTS = 8, BOLTS = 12, RAIL_LAMPS = 9;
+const SHOW_BOLTS = false;   // lead, from the user's play test: "I lose track of the ball"
 const SYM_FACES = ['coin', 'scale', 'gavel', 'crown', null, 'tide', 'orb', null]; // the eight faces of a reel drum
 const TAU = Math.PI * 2;
 // How finely round things are cut: set while a view is being built (createTableView's opts.detail).
@@ -1112,7 +1113,9 @@ export function createTableView(content, tableId, opts = {}) {
       b.t += dt / b.dur;
       const u = Math.min(1, b.t), e = u * u * (3 - 2 * u), q = 1 - e;
       const x = q * q * b.a[0] + 2 * q * e * b.c[0] + e * e * b.b[0], y = q * q * b.a[1] + 2 * q * e * b.c[1] + e * e * b.b[1], z = q * q * b.a[2] + 2 * q * e * b.c[2] + e * e * b.b[2];
-      if (dt > 0) {
+      // The travelling trail and head are not drawn: they crossed the playfield as bright streaks and pulled the eye
+      // off the ball. The bolt still runs unseen for its timing, and its arrival flashes the collector on the reel board.
+      if (SHOW_BOLTS && dt > 0) {
         // one long glow per frame laid along the step just taken (aimed on screen), so the trail is a line and not a row of dots
         const len = Math.hypot(x - b.prev[0], y - b.prev[1], z - b.prev[2]);
         if (len > 1e-4) {
@@ -1123,7 +1126,7 @@ export function createTableView(content, tableId, opts = {}) {
         }
       }
       b.prev[0] = x; b.prev[1] = y; b.prev[2] = z;
-      b.head.visible = true; b.head.pos[0] = x; b.head.pos[1] = y; b.head.pos[2] = z; b.head.color = C.hot; b.head.alpha = 0.95; b.head.size[0] = b.head.size[1] = 0.34 + 0.3 * b.strength;
+      b.head.visible = SHOW_BOLTS; b.head.pos[0] = x; b.head.pos[1] = y; b.head.pos[2] = z; b.head.color = C.hot; b.head.alpha = 0.95; b.head.size[0] = b.head.size[1] = 0.34 + 0.3 * b.strength;
       if (b.t >= 1) {
         b.on = false; b.head.visible = false;
         if (b.reel >= 0) { drums[b.reel].pop = Math.max(drums[b.reel].pop, 0.6); }

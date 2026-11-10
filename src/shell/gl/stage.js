@@ -655,7 +655,7 @@ function fightOn(S, opts = {}) {
   const party = [], opp = [], extras = [], folk = [], hatters = [];
   const sched = []; for (let i = 0; i < 28; i++) sched.push({ on: false, t: 0, code: 0, a: null, b: null, n: 0 });
   const cues = [], cuePool = []; for (let i = 0; i < 12; i++) cuePool.push({ type: '', level: 0, name: '', team: false, big: false, x: NaN, y: NaN, who: null });
-  const sparks = [], sparkPool = []; for (let i = 0; i < 14; i++) sparkPool.push({ x0: 0, y0: 0, x1: 0, y1: 0, t: 0, dur: 0.3, big: false, gold: false, who: null, pt: [0, 0, 0], live: false });
+  const sparks = [], sparkPool = []; for (let i = 0; i < 14; i++) sparkPool.push({ x0: 0, y0: 0, x1: 0, y1: 0, t: 0, dur: 0.3, big: false, gold: false, who: null, pt: [0, 0, 0], live: false, placed: false });
   const focus = { t: 9, dur: 0, x: 0, x2: 0, zoom: 1 };
   const tab = { cx: 0, half: HALF_W };
   const route = { x0: -2.2, x1: 2.0, z: 0.8 };
@@ -712,7 +712,7 @@ function fightOn(S, opts = {}) {
     cue('energy').who = a ? a.ch : null;
     let s = null; for (let i = 0; i < sparkPool.length; i++) if (!sparkPool[i].live) { s = sparkPool[i]; break; }
     if (!s) return;
-    s.live = true; s.t = 0; s.big = !!big; s.gold = !!gold; s.who = t === undefined ? a : null; s.x0 = NaN; s.dur = dur || 0.3;
+    s.live = true; s.t = 0; s.big = !!big; s.gold = !!gold; s.who = t === undefined ? a : null; s.x0 = NaN; s.dur = dur || 0.3; s.placed = false;
     if (t !== undefined) aimOf(t, s.pt);
     if (hitFn && ev && hitFn(ev, HIT)) { s.x0 = HIT[0]; s.y0 = HIT[1]; }
     sparks.push(s);
@@ -865,7 +865,7 @@ function fightOn(S, opts = {}) {
   function partySlot(i, out) {
     const p = frac(), s = PARTY_SLOT[i];
     let x = s[0], z = s[1];
-    if (mode.route) { x = lerp(route.x0, route.x1, p) - i * 0.72; z = i === 1 ? route.z - 0.42 : i === 2 ? route.z + 0.42 : route.z; }
+    if (mode.route) { x = lerp(Math.max(route.x0, -HALF_W + 0.55 + 0.72 * (party.length - 1)), route.x1, p) - i * 0.72; z = i === 1 ? route.z - 0.42 : i === 2 ? route.z + 0.42 : route.z; }
     else if (mode === MODES.work) {
       const t = target(false);
       if (isUnit(t)) {
@@ -926,6 +926,7 @@ function fightOn(S, opts = {}) {
     for (let i = hatters.length - 1; i >= 0; i--) if (S.actors.indexOf(hatters[i]) < 0 || hatters[i].leaving) hatters.splice(i, 1);
     for (let i = folk.length - 1; i >= 0; i--) if (S.actors.indexOf(folk[i]) < 0 || folk[i].leaving) folk.splice(i, 1);
     if (clerk && (S.actors.indexOf(clerk) < 0 || clerk.leaving)) clerk = null;
+    if (set.setLean) set.setLean(game ? game.ending ?? null : null);     // the last chapter's house is not the same house in both endings
     if (set.encounter) set.encounter(st);
     // mark everyone, then claim who stays
     for (const a of S.actors) if (a.role !== 'folk' && a.role !== 'hat' && a !== clerk) a.role = 'old';
@@ -1116,7 +1117,10 @@ function fightOn(S, opts = {}) {
       if (a.role === 'gone' || a.role === 'old') { a.talk = -1; continue; }
       if (a.busyT <= 0 || a.talk !== -2) a.talk = a.id === vw ? (vl == null ? -2 : Math.max(vl, 0.03)) : -1;
       const st2 = a.st;
-      if (a.side > 0 && a.role !== 'clerk') st2.look = look;
+      if (a.side > 0 && a.role !== 'clerk') {
+        // toward the thing, but never over the shoulder: a thing up-stage is looked at across, so the face stays to the house
+        if (look && look[2] < a.z - 0.15) { const LA = a.lookAt; LA[0] = look[0]; LA[1] = look[1]; LA[2] = a.z - 0.15; st2.look = LA; } else st2.look = look;
+      }
       else if (a.side < 0) st2.look = mode === MODES.walk && lens ? null : t0 ? t0.hp : null;
       else st2.look = t0 ? t0.hp : null;
       if (won && lens && a.role === 'party') st2.look = 'camera';
@@ -1128,6 +1132,7 @@ function fightOn(S, opts = {}) {
       u.shown = v; u.v = u.v < 0 ? v : u.v + (v - u.v) * Math.min(1, dt * 6);
       u.set(u.v, time, dt);
     }
+    if (set.progress) set.progress(frac(), won, time, dt);      // a set may follow the objective itself (an opposition of people has no unit to do it through)
     // the table powers their world: lamps follow it, an empty table dims the stage, a hit kicks it
     const want = won ? 1 : st.power != null ? st.power : 0.6;
     power += (want - power) * Math.min(1, dt * (want > power ? 6 : 1.4));
@@ -1185,7 +1190,9 @@ function fightOn(S, opts = {}) {
         const s = sparks[i], a = s.who;
         if (a) S.toWorld(a.x + a.ox + a.kx, chestY(a), a.z + a.oz, P3); else { P3[0] = s.pt[0]; P3[1] = s.pt[1]; P3[2] = s.pt[2]; }
         if (projectTo(camera, P3, rect, HIT)) { s.x1 = HIT[0]; s.y1 = HIT[1]; }
-        if (s.x0 !== s.x0) { s.x0 = rect.x + rect.w * (0.3 + 0.4 * ((i * 0.37) % 1)); s.y0 = rect.y + rect.h + 60; }   // the shell gave no table point: rise from under the seam
+        // The bolt rises from the power line at the foot of the band (the table's edge), under the column the ball struck in,
+        // and never crosses the playfield: nothing drawn over the table may compete with the ball (play-test, board 1120).
+        if (!s.placed) { s.placed = true; s.x0 = s.x0 !== s.x0 ? rect.x + rect.w * (0.3 + 0.4 * ((i * 0.37) % 1)) : clamp(rect.x + (s.x0 - rect.x) * 0.8 + rect.w * 0.1, rect.x + 16, rect.x + rect.w - 16); s.y0 = rect.y + rect.h - foot + 2; }
         s.t += dtLast / s.dur;
         if (s.t > 1.25) { s.live = false; sparks.splice(i, 1); }
       }
@@ -1437,7 +1444,7 @@ export function createDirector(troupe, { getSet, lod = 'stage', onCue = null } =
       } else if (mode === 'lines') {
         lineIn.line = st.line || null; lineIn.on = st.party || NONE; lineIn.cam = st.cam || ''; lineIn.voice = f.voice || null; lineIn.camera = camera; lineIn.cut = cut; lineIn.radio = !!st.radio; lineIn.wear = wear;
         // what the encounter made stays made: said to the set once, and from then on the set's own cues own it
-        if (was !== 'lines' && !leaving) for (const u of S.units) { u.v = 1; u.set(1, time, dt); }
+        if (was !== 'lines' && !leaving) { for (const u of S.units) { u.v = 1; u.set(1, time, dt); } if (cur.setLean) cur.setLean(f.game ? f.game.ending ?? null : null); }
         if (!leaving) S.lines.update(dt, time, lineIn);
         S.tick(dt, time, camera);
         S.lines.frame(camera, aspect, rect.h, time, cut, false);

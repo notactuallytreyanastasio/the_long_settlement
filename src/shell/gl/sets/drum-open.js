@@ -198,7 +198,7 @@ function build(engine = null, { light, low = false } = {}) {
   // the live stage's two tasks
   const press = pulse(1.8);
   const drumUnit = taskUnit({
-    pos: [DRUM[0], 1.2, DRUM[2] + 0.3], stand: [DRUM[0] - 1.15, 0.3],
+    pos: [DRUM[0], 1.2, DRUM[2] + 0.3], stand: [DRUM[0] - 0.8, 0.35],
     apply(v, fresh) { if (fresh) { setPlate(true); working = false; found = true; opened = true; } setDrum(v >= 0.999 ? 'open' : 'sealed'); setCrowd(0.25 + 0.75 * v); },
   });
   const worksUnit = taskUnit({

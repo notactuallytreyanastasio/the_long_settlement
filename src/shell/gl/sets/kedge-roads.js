@@ -20,6 +20,7 @@
 //                   modelled flame stays the white one under its halo: it is baked into the far mesh.
 //   task('gangway-walk')  ch6.s1: the quay crane lowers its slung cask to the stones as the objective goes
 //   setback()       the slung cask swings wide (also passLamp)
+//   marks.extras[0] where whoever is waiting on the quay stands at ease (ch6.s1: Foss), at the far end of the walk
 //   cue also: ch6.pro.* and ch6.s1.* are dawn; ch6.s7.c16 on and ch6.epi.* are grey
 //   cue(lineId)     ch6.s7.c16 puts the boat out (it eases to the cutter over about a minute); ch6.s7.c26 sends it through
 //   marks.gangway, marks.focus (the lamp-house flame), marks.mouth (where the cutter lies)
@@ -347,7 +348,7 @@ function build(engine = null, { light, low = false } = {}) {
 
   return shell({
     id: 'kedge-roads', light, L, low, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, cue,
-    marks: { ...STD_MARKS(), gangway: { pos: [GANG[0] + 0.5, 0, GANG[2] + 0.9], face: 30 }, focus: LAMP, mouth: MOUTH_POS },
+    marks: { ...STD_MARKS(), extras: [{ pos: [2.35, 0, 0.32], face: -62 }], gangway: { pos: [GANG[0] + 0.5, 0, GANG[2] + 0.9], face: 30 }, focus: LAMP, mouth: MOUTH_POS },
     extra: { setBoat, setGrey, task, setback, passLamp: setback },
   });
 }

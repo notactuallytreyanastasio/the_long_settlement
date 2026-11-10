@@ -63,7 +63,7 @@ export const TIERS = Object.freeze({
 const TIER_ORDER = ['high', 'mid', 'low'];
 
 /** The table's three looks (table3d setLight), by the core's light names for an encounter (core/stage.js LIGHTS). */
-const TABLE_LIGHT = Object.freeze({ dusk: 'dusk', night: 'night', predawn: 'night', dawn: 'dusk', day: 'day', interior: 'night' });
+const TABLE_LIGHT = Object.freeze({ dusk: 'dusk', night: 'night', predawn: 'night', dawn: 'dawn', day: 'day', interior: 'night' });
 
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const smooth = (t) => t * t * (3 - 2 * t);

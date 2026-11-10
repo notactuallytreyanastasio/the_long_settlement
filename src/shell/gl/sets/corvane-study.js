@@ -205,7 +205,7 @@ function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
   //   'brass-aurelle'   ch5.s2: the model as she comes into the room: every small lamp out at 0, and they come up island by
   //                     island until twenty-nine burn at 1 (the eleven that stay dark are the room's default, as ch5.s2.c01 has it)
   // setback(): a handful of the lamps gutter out and have to come back
-  // marks.seat: where the director stands Corvane while an encounter is played here (at his window, back to the room)
+  // marks.seat: where the director stands Corvane while an encounter is played here (beyond the model, his back to the door)
   let modelUnit = null, gutter = 0;
   function task(type) {
     if (type !== 'brass-aurelle') return null;
@@ -218,7 +218,7 @@ function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
     motes: low ? null : { box: [WIN.x - 0.6, WIN.x + 2.6, 0.5, 3.6, BACK + 0.4, -0.4], every: 0.5, color: '#dfe8ff', size: 0.05, vel: [0.03, -0.02, 0.04], life: 6, alpha: 0.6 },
     marks: {
       ...MARKS, model: MODEL, focus: MODEL, lamps40: spots,
-      window: { pos: [WIN.x + 0.1, 0, BACK + 1.0], face: 180 }, guest: { pos: GUEST, face: 62 }, seat: { pos: [WIN.x - 0.55, 0, BACK + 1.25], face: 150 },
+      window: { pos: [WIN.x + 0.1, 0, BACK + 1.0], face: 180 }, guest: { pos: GUEST, face: 62 }, seat: { pos: [MODEL[0] + 1.5, 0, -1.0], face: 208 },
     },
     extra: { setDark, snuff, cue, encounter, task, setback, passLamp: setback, litCount: () => 40 - dark },
   });

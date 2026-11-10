@@ -281,12 +281,26 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
       surge = Math.max(0, surge - (dt || 0) / 2.2); setCrowd(1); setMood(Math.min(1, 1 - 0.5 * v + 0.45 * surge));
       const step = Math.floor(v * 3 + 0.04); if (step > rung) { if (rung >= 0) ring(); rung = step; } else if (step < rung) rung = step;
     }));
-    if (type === 'record-lamps') return lampUnit || (lampUnit = taskUnit([lanPos[1][0], lanPos[1][1], lanPos[1][2]], null, (v, time, dt) => {
-      surge = Math.max(0, surge - (dt || 0) / 1.6); setCrowd(0.18); setMood(0.15);
-      for (let i = 0; i < 4; i++) { const k = Math.max(0.04, Math.min(1, v * 4 - [1, 0, 2, 3].indexOf(i))) * (1 - 0.7 * surge * Math.abs(Math.sin(time * 23 + i))); lamps[i].gain = k; glows[i].gain = k; }
-      if (cones) cones.visible = v > 0.3;
-      const at = lanPos[[1, 0, 2, 3][Math.min(3, Math.floor(v * 4))]]; lampUnit.pos[0] = at[0]; lampUnit.pos[1] = at[1]; lampUnit.pos[2] = at[2];
-    }));
+    if (type === 'record-lamps') {
+      if (lampUnit) return lampUnit;
+      // the hearing's record on a reading stand: four entries are written on the open page, one to a lantern
+      const RX = 1.15, RZ = 0.28, RH = 0.92, book = ledgerBook({ w: 0.62, d: 0.44 });
+      const stand = node('record-stand', merge(tint(place(cylinder(0.05, 0.07, RH, 8), 0, RH / 2, 0), TL.wood), tint(place(box(0.5, 0.05, 0.4), 0, 0.03, 0), TL.wood), tint(place(box(0.78, 0.05, 0.56), 0, RH + 0.02, 0.02, 28, 0, 0), TL.wood), place(book, 0, RH + 0.07, 0.03, 28, 0, 0)), M.prop, { pos: [RX, 0, RZ] }); stand.castShadow = false;
+      const marks = node('record-entries', setGlow(tint(box(1, 1, 1), '#ffc24a'), 0.9), M.paper); marks.castShadow = false; marks.instances = makeInstances(4);
+      const q = quat.fromEuler(quat.create(), 28 * DEG, 0, 0);
+      for (let k = 0; k < 4; k++) m4.fromTRS(marks.instances.data.subarray(k * 20, k * 20 + 16), [RX + (k < 2 ? -0.15 : 0.15), RH + 0.14 + (k % 2 ? -0.05 : 0.05) * Math.cos(28 * DEG) + 0.0, RZ + 0.05 + (k % 2 ? 0.045 : -0.045)], q, [0.2, 0.012, 0.05]);
+      const candle = sprites.add({ kind: 'glow', pos: [RX, RH + 0.3, RZ + 0.1], size: 0.9, color: '#ffc060', alpha: 0 });
+      scene.root.add(stand, marks);
+      lampUnit = taskUnit([RX, RH + 0.12, RZ + 0.1], [RX - 0.75, 0.7], (v, time, dt) => {
+        surge = Math.max(0, surge - (dt || 0) / 1.6); setCrowd(0.18); setMood(0.15);
+        for (let i = 0; i < 4; i++) { const k = Math.max(0.04, Math.min(1, v * 4 - [1, 0, 2, 3].indexOf(i))) * (1 - 0.7 * surge * Math.abs(Math.sin(time * 23 + i))); lamps[i].gain = k; glows[i].gain = k; }
+        if (cones) cones.visible = v > 0.3;
+        const n = Math.min(4, Math.floor(v * 4 + 0.02)); marks.instances.count = n; marks.visible = n > 0; marks.instances.dirty = true;
+        candle.alpha = 0.25 + 0.4 * v;
+      });
+      lampUnit.size = 0.4;
+      return lampUnit;
+    }
     return null;
   }
   const setback = () => { surge = 1; };

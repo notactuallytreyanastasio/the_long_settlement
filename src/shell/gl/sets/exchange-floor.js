@@ -202,18 +202,19 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     if (type === 'price-board') return boardUnit || (boardUnit = taskUnit([PITS[1].x - 1.55, 1.0, PITS[1].z + 1.75], null, (v, time, dt) => { surge = Math.max(0, surge - (dt || 0) / 2.2); setCrowd(1); setMood(Math.min(1, 1 - 0.3 * v + 0.4 * surge)); setLapse(0.19 + 0.12 * v + 0.14 * surge); }));
     if (type === 'sell-slips') {
       if (slipUnit) return slipUnit;
-      const N = 9, X0 = 0.72, DX = 0.235, Y = 1.3, Z = 0.12, xr = X0 + (N - 1) * DX;
-      const line = node('slip-line', merge(tint(place(cylinder(0.035, 0.045, Y + 0.08, 6), X0 - 0.2, (Y + 0.08) / 2, Z), TL.wood), tint(place(cylinder(0.035, 0.045, Y + 0.08, 6), xr + 0.2, (Y + 0.08) / 2, Z), TL.wood), tint(place(box(xr - X0 + 0.4, 0.02, 0.02), (X0 + xr) / 2, Y, Z), TL.iron)), M.prop); line.castShadow = false;
+      const N = 9, X0 = 1.0, DX = 0.17, Y = 1.34, Z = 0.12, xr = X0 + (N - 1) * DX;
+      const line = node('slip-line', merge(tint(place(cylinder(0.035, 0.045, Y + 0.08, 6), X0 - 0.18, (Y + 0.08) / 2, Z), TL.wood), tint(place(cylinder(0.035, 0.045, Y + 0.08, 6), xr + 0.18, (Y + 0.08) / 2, Z), TL.wood), tint(place(box(xr - X0 + 0.36, 0.02, 0.02), (X0 + xr) / 2, Y, Z), TL.iron)), M.prop); line.castShadow = false;
       const slips = node('sell-slips', setGlow(tint(box(1, 1, 1), TL.paper), 0.45), M.paper); slips.castShadow = false; slips.instances = makeInstances(N);
       const q = quat.create(), rr = rng(19);
-      for (let k = 0; k < N; k++) { const o = k * 20; m4.fromTRS(slips.instances.data.subarray(o, o + 16), [X0 + k * DX, Y - 0.17 - rr() * 0.02, Z + 0.02], quat.fromEuler(q, 0, 0, (rr() - 0.5) * 0.24), [0.17, 0.27, 0.012]); const c = k % 3 === 1 ? [1, 0.82, 0.8] : k % 3 === 2 ? [0.82, 0.96, 1] : [1, 0.98, 0.9]; slips.instances.data.set([c[0], c[1], c[2], 1], o + 16); }
+      for (let k = 0; k < N; k++) { const o = k * 20; m4.fromTRS(slips.instances.data.subarray(o, o + 16), [X0 + k * DX, Y - 0.16 - rr() * 0.02, Z + 0.02], quat.fromEuler(q, 0, 0, (rr() - 0.5) * 0.24), [0.13, 0.25, 0.012]); const c = k % 3 === 1 ? [1, 0.8, 0.78] : k % 3 === 2 ? [0.8, 0.95, 1] : [1, 0.98, 0.9]; slips.instances.data.set([c[0], c[1], c[2], 1], o + 16); }
       scene.root.add(line, slips);
-      const u = taskUnit([X0, Y - 0.15, Z + 0.1], [X0 - 0.45, 0.62], (v, time, dt) => {
+      // the ring the director draws sits under the cord, so the slips stay readable above it
+      const u = taskUnit([(X0 + xr) / 2, 0.72, Z + 0.1], [X0 - 0.42, 0.62], (v, time, dt) => {
         surge = Math.max(0, surge - (dt || 0) / 2.2);
         const n = Math.max(0, Math.round(N * v) - (surge > 0.05 ? 2 : 0)); slips.instances.count = n; slips.visible = n > 0; slips.instances.dirty = true;
-        const next = Math.min(N - 1, n); u.pos[0] = X0 + next * DX; u.stand[0] = Math.min(1.9, u.pos[0] - 0.45);
         setCrowd(0); setMood(0);
       });
+      u.size = 0.36;
       return (slipUnit = u);
     }
     return null;
@@ -224,7 +225,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     id: 'exchange-floor', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.45,
     motes: low ? null : { box: [-2.6, 2.8, 0.6, 5.4, -5.6, -0.6], every: 0.3, color: L.mote, size: 0.07, vel: [0.03, -0.03, 0.05], life: 6, alpha: 0.75 },
     marks: {
-      ...MARKS, extras: light === 'evening' ? [{ pos: [-0.75, 0, 0.2], face: 62 }] : null,     // evening (ch5.s3): Sable, a few paces behind Ren
+      ...MARKS, extras: light === 'evening' ? [{ pos: [-0.5, 0, 0.3], face: 62 }] : null,     // evening (ch5.s3): Sable, a few paces behind Ren
       board: [BOARD[0], BOARD[1] + 1.2, BOARD[2]], lapse: LAPSE, focus: [0, FAN.sill + 1.0, BACK],
       salt: { pos: [PITS[0].x + 1.5, 0, PITS[0].z + 1.5], face: -140 }, bond: { pos: [PITS[1].x - 1.5, 0, PITS[1].z + 1.5], face: 140 },
     },

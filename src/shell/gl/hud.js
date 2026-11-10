@@ -988,6 +988,10 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
     hl.forEach((l, i) => g.fillText(l, cx, hy + 19 + i * 16));
     g.textAlign = 'left';
   }
+  // a ball waiting on the plunger is under this button (the tests pin the disc clear of the home bar and of every table's
+  // right flipper, and that is where the plunger is): the button goes half clear so the ball is seen through it
+  const waiting = Boolean(game.phys && game.phys.balls.some((b) => b.state === 'plunger'));
+  if (waiting) g.globalAlpha = (1 - out) * 0.5;
   drawLaunch(g, rects.launch, state, now);
   g.restore();
 
@@ -1025,7 +1029,7 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   }
   const opp = drawOpposition(g, oppRight, top, stage, now, oppW);
   drawBoons(g, oppRight, opp.bottom + 5, boonsOf(game, stage));
-  if (sideSeen.left) drawCombo(g, B.x + B.w - 70, top - 4, stage.combo, now, 130);
+  if (sideSeen.left) drawCombo(g, clamp(oppRight + 78, B.x + 150, B.x + B.w - 70), top - 4, stage.combo, now, 130);
   else drawCombo(g, clamp(B.x + 70, B.x + 62, Math.max(B.x + 62, opp.left - 68)), top - 4, stage.combo, now, Math.max(96, Math.min(150, opp.left - 14 - B.x)));
   g.restore();
 
@@ -1050,7 +1054,8 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   // whoever is speaking, if they are on the stage: the small bubble over their head (kept under the head row)
   const sp = fx.speaking;
   const at = sp && sp.fx !== 'radio' && fx.anchors ? fx.anchors[sp.who] : null;
-  if (at && out < 0.5) { g.save(); g.globalAlpha = 1 - out * 2; drawSpeaking(g, clamp(at.x, B.x + 24, B.x + B.w - 24), Math.max(at.y, top + 52), fx); g.restore(); }
+  // only where it fits under the head row: over a tall figure it would lie on the chain or the opposition's bar, and the strip already names them
+  if (at && out < 0.5 && at.y - 34 > top + 44) { g.save(); g.globalAlpha = 1 - out * 2; drawSpeaking(g, clamp(at.x, B.x + 24, B.x + B.w - 24), at.y, fx); g.restore(); }
 }
 
 // Which side the opposition's pill has taken this scene (see drawPlay). A cache of the view, not of the game.

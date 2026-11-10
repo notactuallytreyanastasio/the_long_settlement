@@ -165,7 +165,7 @@ function build(engine = null, { light, low = false } = {}) {
   const moths = low ? [] : [0, 1].map((i) => ({ s: sprites.add({ kind: 'glow', pos: [LAMP[0], LAMP[1], LAMP[2]], size: 0.07, color: '#fff6e0', alpha: 0.9 }), ph: i * 2.4, sp: 2.6 + i * 0.9 }));
 
   // ---- the live stage's task: the working of the sum, on a slate stood against the shelves right of the desk
-  const SLATE = [0.95, 0, -1.25];      // low and near the middle: the band's HUD plates cover the top corners of the frame
+  const SLATE = [1.35, 0, -0.45];      // low and near the middle: the band's HUD plates cover the top corners of the frame
   const ROW_W = [0.9, 0.7, 0.98, 0.56], ROW_COL = [K6.chalk, K6.chalk, K6.chalk, K6.yellow];
   const slate = group('slate');
   slate.add(node('slate-board', merge(tint(place(box(1.3, 1.36, 0.05), 0, 1.05, 0), '#2c4a66'), tint(place(box(1.42, 0.08, 0.08), 0, 1.76, 0), K6.timberRed), tint(place(box(1.42, 0.08, 0.1), 0, 0.34, 0.01), K6.timberRed), tint(place(box(0.08, 1.5, 0.08), -0.69, 1.05, 0), K6.timberRed), tint(place(box(0.08, 1.5, 0.08), 0.69, 1.05, 0), K6.timberRed), tint(place(box(0.07, 1.8, 0.07), 0, 0.9, -0.4, 16, 0, 0), K6.timberRed), tint(place(box(1.3, 0.3, 0.07), 0, 0.15, 0), K6.timberRed)), M.prop));
@@ -176,7 +176,7 @@ function build(engine = null, { light, low = false } = {}) {
   const slateGlow = sprites.add({ kind: 'glow', pos: [SLATE[0], 0.7, SLATE[2] + 0.3], size: 1.2, color: '#ffe27a', alpha: 0 });
   let work = 0;
   const ledgerUnit = taskUnit({
-    pos: [SLATE[0], 1.1, SLATE[2] + 0.2], stand: [0.0, -0.2],
+    pos: [SLATE[0], 1.05, SLATE[2] + 0.2], stand: [SLATE[0] - 0.8, 0.3],
     apply(v, fresh) {
       if (fresh) { slate.visible = true; setKey(true); }
       work = v;

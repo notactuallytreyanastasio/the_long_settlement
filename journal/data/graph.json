@@ -580,6 +580,36 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "cdf4e8cf-8a1c-4440-b014-8084a155388e",
+   "type": "action",
+   "status": "pending",
+   "title": "Turned off the travelling energy streaks on the 3D table (user lost track of the ball)",
+   "description": null,
+   "created": "2026-11-10T19:45:18.785409Z",
+   "updated": "2026-11-10T19:45:18.785409Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "the flickers of light that travel ujp to the slot are distracting me from the ball, I lose track of the ball",
+   "files": [
+    "src/shell/gl/table3d.js"
+   ],
+   "commit": null
+  },
+  {
+   "id": "43d968b7-71ec-4ef1-9cf7-dc8a95fe880d",
+   "type": "goal",
+   "status": "pending",
+   "title": "Low-level optimisation pass so the 3D game renders well on every device",
+   "description": null,
+   "created": "2026-11-10T19:45:36.945084Z",
+   "updated": "2026-11-10T19:45:36.945084Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "also, do an optimization pass on the nuts and bolts of this to make it render better on everything. put on your get it to the metal hat",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -855,6 +885,20 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T19:13:36.474672Z"
+  },
+  {
+   "from": "147e8063-ac89-446d-84ce-81cb03931ed8",
+   "to": "cdf4e8cf-8a1c-4440-b014-8084a155388e",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T19:45:18.788257Z"
+  },
+  {
+   "from": "3f252c16-c69b-43d9-9700-c56e56b0b1e2",
+   "to": "43d968b7-71ec-4ef1-9cf7-dc8a95fe880d",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T19:45:36.947765Z"
   }
  ]
 }

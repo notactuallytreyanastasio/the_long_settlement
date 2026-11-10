@@ -174,7 +174,7 @@ export const chapter5 = {
         extras: ['corvane'],
         setback: { cue: 'lamps-gutter', show: 'A handful of the small lamps on the model gutter out together; Ilse stops where she is until they come back.' },
         beats: [
-          { at: 0, cue: 'alone-he-asks', name: 'Alone, he asks', show: 'The Chancellor\'s room in the rain. He stands at the window with his back to the door. On the table the brass model of Aurelle is unlit. Ilse has just come in, stage left, alone.' },
+          { at: 0, cue: 'alone-he-asks', name: 'Alone, he asks', show: 'The Chancellor\'s room in the rain. He stands beyond the table with his back to the door. On the table the brass model of Aurelle is unlit. Ilse has just come in, stage left, alone.' },
           { at: 1, cue: 'count-the-doors', name: 'One window, one table', show: 'She has crossed half the room. The lamps on the model are coming up island by island: about fifteen burn.' },
           { at: 2, cue: 'twenty-nine', name: 'Twenty-nine lit', show: 'She stands at the table. Twenty-nine small lamps burn on the model and eleven do not; the room is lit by it.' },
         ],
@@ -588,11 +588,11 @@ export const chapter5 = {
         opposition: { kind: 'force', who: ['record-lamps'], name: 'SCHEDULE ONE' },
         setback: { cue: 'lamps-gutter', show: 'The porch lanterns gutter together and Ren and Ilse are put back a step.' },
         beats: [
-          { at: 0, cue: 'line-opens', name: 'The Line opens', show: 'The same porch at dusk, the square nearly empty, the porch lanterns unlit. Ren stands forward, listening, with Ilse a pace behind him.' },
-          { at: 1, cue: 'lamp-m', name: 'M', show: 'The first porch lantern comes on, over the middle bay.' },
-          { at: 2, cue: 'lamp-a', name: 'A', show: 'The second, across the bay from it.' },
-          { at: 3, cue: 'lamp-r', name: 'R', show: 'A third, at the left end of the porch.' },
-          { at: 4, cue: 'lamp-k', name: 'K. On the record', show: 'All four lanterns burn and the porch is warm against the dusk.' },
+          { at: 0, cue: 'line-opens', name: 'The Line opens', show: 'The same porch at dusk, the square nearly empty, the porch lanterns unlit. The hearing\'s record lies open on a reading stand. Ren stands at it, listening, with Ilse a pace behind him.' },
+          { at: 1, cue: 'lamp-m', name: 'M', show: 'One entry is written on the open page; the first porch lantern comes on, over the middle bay.' },
+          { at: 2, cue: 'lamp-a', name: 'A', show: 'A second entry; the lantern across the bay comes on.' },
+          { at: 3, cue: 'lamp-r', name: 'R', show: 'A third entry, and a third lantern at the left end of the porch.' },
+          { at: 4, cue: 'lamp-k', name: 'K. On the record', show: 'Four entries on the page. All four lanterns burn and the porch is warm against the dusk.' },
         ],
       },
       briefing: [

@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T19:45:16.701Z",
+ "generated": "2026-11-10T19:48:48.495Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -51,63 +51,63 @@
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T19:45:08.907Z",
+ "last": "2026-11-10T19:48:29.602Z",
  "total": {
-  "responses": 4072,
-  "input": 8472,
-  "write5m": 28090506,
-  "write1h": 1595284,
-  "read": 962287151,
-  "output": 8823999,
-  "thinking": 3238328,
+  "responses": 4103,
+  "input": 8556,
+  "write5m": 28198214,
+  "write1h": 1600405,
+  "read": 974186802,
+  "output": 8862665,
+  "thinking": 3251794,
   "cost": {
-   "input": 0.0627,
-   "write5m": 280.9051,
-   "write1h": 19.4086,
-   "read": 192.4574,
-   "output": 346.7348,
-   "total": 839.5686
+   "input": 0.0634,
+   "write5m": 281.9821,
+   "write1h": 19.4906,
+   "read": 194.8374,
+   "output": 348.2814,
+   "total": 844.6549
   },
-  "uncachedCost": 7608.4396,
+  "uncachedCost": 7706.0868,
   "unpriced": 0
  },
  "byGroup": {
   "lead": {
-   "responses": 102,
-   "input": 272,
+   "responses": 108,
+   "input": 288,
    "write5m": 0,
-   "write1h": 812419,
-   "read": 15322678,
-   "output": 180984,
-   "thinking": 43152,
+   "write1h": 817540,
+   "read": 16791090,
+   "output": 184275,
+   "thinking": 43335,
    "cost": {
-    "input": 0.0022,
+    "input": 0.0023,
     "write5m": 0,
-    "write1h": 12.9987,
-    "read": 3.0645,
-    "output": 7.2394,
-    "total": 23.3048
+    "write1h": 13.0806,
+    "read": 3.3582,
+    "output": 7.371,
+    "total": 23.8122
    },
-   "uncachedCost": 136.3223,
+   "uncachedCost": 148.2423,
    "unpriced": 0
   },
   "helpers": {
-   "responses": 3435,
-   "input": 6930,
-   "write5m": 28090506,
+   "responses": 3460,
+   "input": 6998,
+   "write5m": 28198214,
    "write1h": 0,
-   "read": 779162531,
-   "output": 8331246,
-   "thinking": 3140353,
+   "read": 789593770,
+   "output": 8366621,
+   "thinking": 3153636,
    "cost": {
-    "input": 0.0554,
-    "write5m": 280.9051,
+    "input": 0.056,
+    "write5m": 281.9821,
     "write1h": 0,
-    "read": 155.8325,
-    "output": 333.2498,
-    "total": 770.0428
+    "read": 157.9188,
+    "output": 334.6648,
+    "total": 774.6217
    },
-   "uncachedCost": 6791.3296,
+   "uncachedCost": 6877.0567,
    "unpriced": 0
   },
   "journal": {
@@ -132,22 +132,22 @@
  },
  "byModel": {
   "claude-fable-5-2": {
-   "responses": 3538,
-   "input": 7204,
-   "write5m": 28090506,
-   "write1h": 830796,
-   "read": 794516297,
-   "output": 8512740,
-   "thinking": 3183611,
+   "responses": 3569,
+   "input": 7288,
+   "write5m": 28198214,
+   "write1h": 835917,
+   "read": 806415948,
+   "output": 8551406,
+   "thinking": 3197077,
    "cost": {
-    "input": 0.0576,
-    "write5m": 280.9051,
-    "write1h": 13.2927,
-    "read": 158.9033,
-    "output": 340.5096,
-    "total": 793.6683
+    "input": 0.0583,
+    "write5m": 281.9821,
+    "write1h": 13.3747,
+    "read": 161.2832,
+    "output": 342.0562,
+    "total": 798.7545
    },
-   "uncachedCost": 6928.068,
+   "uncachedCost": 7025.7152,
    "unpriced": 0
   },
   "claude-opus-5-5": {
@@ -1337,8 +1337,8 @@
   },
   {
    "at": "2026-11-10T19:50:00.000Z",
-   "lead": 23.3048,
-   "helpers": 770.0428,
+   "lead": 23.8122,
+   "helpers": 774.6217,
    "journal": 46.221
   }
  ],
@@ -1364,30 +1364,30 @@
    "Skill": 2
   },
   "helpers": {
-   "Read": 1759,
+   "Read": 1774,
    "Write": 138,
-   "Bash": 2620,
+   "Bash": 2637,
    "Edit": 24,
    "ToolSearch": 60,
    "mcp__deciduous__read_messages": 136,
    "TaskStop": 3,
-   "mcp__deciduous__post_message": 79,
+   "mcp__deciduous__post_message": 80,
    "mcp__deciduous__query_nodes": 6
   },
   "lead": {
-   "Bash": 35,
+   "Bash": 36,
    "ToolSearch": 4,
    "Skill": 1,
    "mcp__deciduous__capture_conversation_turn": 6,
    "Write": 8,
-   "mcp__deciduous__add_node": 18,
+   "mcp__deciduous__add_node": 20,
    "Workflow": 11,
    "Agent": 6,
    "Read": 14,
    "AskUserQuestion": 1,
    "Edit": 3,
    "mcp__deciduous__query_nodes": 1,
-   "mcp__deciduous__post_message": 2
+   "mcp__deciduous__post_message": 4
   }
  }
 }

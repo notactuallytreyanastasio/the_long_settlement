@@ -31,6 +31,11 @@ export const chapter4 = {
     },
     clerk: 'clerk',
     townsfolk: 'islander',
+    // oilskins on the ferry's deck, from the first line there until the three are in the water
+    wearAt: {
+      'ch4.pro.02': { ren: 'ren-storm', ilse: 'ilse-storm', tobb: 'tobb-storm' },
+      'ch4.pro.18': { ren: null, ilse: null, tobb: null },
+    },
   },
 
   // ───────────────────────── prologue ─────────────────────────
@@ -585,7 +590,7 @@ export const chapter4 = {
         opposition: { kind: 'force', who: ['hidden-wick'], name: 'THE HIDDEN LAMP' },
         setback: { cue: 'spray-comes-in', show: 'A sea breaks at the cave mouth; spray comes in and the flame ducks almost out. Wyn and Ren are put back from the ledge.' },
         beats: [
-          { at: 0, cue: 'flame-gutters', name: 'The flame gutters', show: 'The sea-cave. On its ledge the hidden lamp burns low behind a nearly shut copper shutter. The keeper stands toward it with Ren behind her. Black water in the cave mouth, nothing showing on it.' },
+          { at: 0, cue: 'flame-gutters', name: 'The flame gutters', show: 'The sea-cave. On its ledge the hidden lamp burns low behind a nearly shut copper shutter. The keeper stands below it with Ren beside her. Black water in the cave mouth, nothing showing on it.' },
           { at: 1, cue: 'wick-trimmed', name: 'Wick', show: 'The flame stands a little higher and bluer.' },
           { at: 2, cue: 'scrapings-fed', name: 'Scrapings', show: 'Brighter again; the shutter is a hand open and one far island is answering.' },
           { at: 3, cue: 'copper-wiped', name: 'Copper', show: 'The cave walls take the blue. The shutter is nearly a third open.' },

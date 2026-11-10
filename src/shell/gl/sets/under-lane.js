@@ -117,7 +117,9 @@ function build(engine = GL0, { light, low = false } = {}) {
   const sprites = scene.sprites = createSprites(384);
   // ---- rowers on the thwarts, their sweeps out over the far side
   const seats = hull.anchors.seats, locks = hull.anchors.locks;
-  const folk = crowd({ spots: seats.map((s, i) => ({ pos: [B[0] + s[0], 0.02, B[2] + s[2] - 0.05], face: -84, s: 0.82 })), material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 9, amount: 1 });
+  const folk = crowd({ spots: seats.map((s, i) => ({ pos: [B[0] + s[0], 0.02, B[2] + s[2] - 0.05], face: -84, s: 0.82 })), material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 9, amount: 1,
+    // at night they are shapes against the water: the kit's pale coats read as unpainted dolls this close to the lens
+    ...(night ? { colors: ['#4a58b8', '#3d4aa6', '#5a56b4', '#44609e'] } : {}) });
   raft.add(folk.node);
   const oars = node('oars', oar({ len: 2.7 }), M.prop); oars.castShadow = false; oars.instances = makeInstances(locks.length + 1); oars.instances.count = locks.length + 1; raft.add(oars);
   // the lantern: it swings on its hook

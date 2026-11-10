@@ -184,7 +184,7 @@ function build(engine = null, { light, low = false } = {}) {
   // (0.58) and no further: "It's dropping. Yellow. Grey. There." is Tobb's line (c04), and the cue finishes it.
   let cut = false, shovels = 0;
   const lampUnit = taskUnit({
-    pos: FIRE, stand: [-0.7, -0.35],
+    pos: [0.55, 0.95, -1.15], stand: [-0.15, -0.3], size: 0.7,     // the near lip of the dais, in the band's frame: the fire itself is far above it
     apply(v, fresh) {
       if (fresh) { setFlame(1, true); cut = true; shovels = 0; }
       const n = Math.floor(v * 2 + 0.001);
