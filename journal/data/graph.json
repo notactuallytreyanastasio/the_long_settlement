@@ -340,6 +340,34 @@
     "src/shell/cinema.js"
    ],
    "commit": null
+  },
+  {
+   "id": "4d863662-fbef-4ea8-bac1-91fb0a83b75e",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Cel-shaded hard-lit restyle and polish landed: 168/168 tests, one style across tables, cast and 34 backdrops",
+   "description": "style.js toolkit; cinema.js split into 5 files with zero pixel diff; reels saved; cutscene mute; rotate card. Emulated phone at 4x throttle: play 1 ms script median, cinematics under 2 ms. Open: 101-126 ms frame on first play-to-cutscene cut; portrait staging hides most of each painting; a mediocre bot leans mint on every seed; chapters 6-8 and endings designed in the bible (Part Two) but need a leaning branch in the content shape. Not run on a real iPhone.",
+   "created": "2026-11-10T08:49:51.084138Z",
+   "updated": "2026-11-10T08:49:51.084138Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "cc7ff593-cc0f-4853-9098-618c6d79ea09",
+   "type": "action",
+   "status": "pending",
+   "title": "Workflow 5: script and build chapters 6-8 and both endings (leaning branch, 3 tables, new backdrops, 2 new cast, voices)",
+   "description": null,
+   "created": "2026-11-10T08:49:53.366440Z",
+   "updated": "2026-11-10T08:49:53.366440Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -496,6 +524,20 @@
    "type": "leads_to",
    "rationale": "Implementation",
    "created": "2026-11-10T07:11:39.343136Z"
+  },
+  {
+   "from": "c767cb98-dea2-488e-bef7-41e1e47d1d0a",
+   "to": "4d863662-fbef-4ea8-bac1-91fb0a83b75e",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T08:49:51.086592Z"
+  },
+  {
+   "from": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "to": "cc7ff593-cc0f-4853-9098-618c6d79ea09",
+   "type": "leads_to",
+   "rationale": "User: \"keep it going\"; bible Part Two has the outlines",
+   "created": "2026-11-10T08:49:53.368914Z"
   }
  ]
 }
