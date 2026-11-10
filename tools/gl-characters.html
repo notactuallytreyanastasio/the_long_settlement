@@ -100,7 +100,7 @@ try {
     if (view === 'row') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'group', yaw: camYaw - 8, pitch: 7, margin: 1.12, state: {} });
     else if (view === 'emotes') emoteGrid(0, 0, W, H, who, 2);
     else if (view === 'turn') { turn(0, 0, W, H / 2, who, [0, 35]); turn(0, H / 2, W, H / 2, who, [90, 150]); }
-    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'bust', of: who, yaw: camYaw + (who === 'ren' ? -26 : 24), pitch: 4, margin: 1.0, state: { ren: { look: cast.ilse.headPos, face: cast.ilse.root.position }, ilse: { look: who === 'ilse' ? 'camera' : cast.ren.headPos, face: [-0.3, 0, 2] }, nan: { look: cast.ilse.headPos } } });
+    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'bust', of: who, yaw: camYaw + (who === 'ren' ? -12 : 14), pitch: 4, margin: 1.0, state: { ren: { look: who === 'ren' ? 'camera' : cast.ilse.headPos, face: 24 }, ilse: { look: who === 'ilse' ? 'camera' : cast.ren.headPos, face: -18 }, nan: { look: who === 'nan' ? 'camera' : cast.ilse.headPos, face: -30 } } });
     else if (view === 'icon') {
       ids.forEach((id, i) => { cells.push({ x: 20 + i * 62, y: 24, w: 46, h: 46, show: [id], shot: 'head', of: id, yaw: 22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera' } } }); tag(20 + i * 62, 74, id + ' 46'); });
       ids.forEach((id, i) => { cells.push({ x: 20 + i * 92, y: 110, w: 80, h: 80, show: [id], shot: 'head', of: id, yaw: -22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera', emote: 'smile' } } }); });
@@ -108,7 +108,7 @@ try {
       cells.push({ x: 0, y: 210, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: -14, pitch: 8, state: { bailiff: { emote: 'grim' }, ren: { emote: 'grim' }, ilse: { emote: 'smile' } } });
       emoteGrid(0, 230 + Math.round(W * 220 / 430), W, H - 240 - Math.round(W * 220 / 430), who, 4);
     } else if (view === 'stage') cells.push({ x: 0, y: 0, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: -14, pitch: 8, state: {} });
-    else if (view === 'act') cells.push({ x: 0, y: 0, w: W, h: H, show: [who], shot: 'body', of: who, yaw: camYaw + 55, pitch: 6, margin: 1.9, state: { [who]: { face: 0 } } });
+    else if (view === 'act') cells.push({ x: 0, y: 0, w: W, h: H, show: actName === 'team' ? ['ren', 'ilse', 'bailiff'] : [who], shot: q.get('shot') || 'body', of: who, yaw: camYaw + (q.has('shot') ? 0 : 55), pitch: Number(q.get('pitch') || 6), margin: Number(q.get('margin') || 1.9), state: { [who]: { face: 0 } } });
     else { // the contact sheet
       const rowH = Math.round(H * 0.25);
       cells.push({ x: 0, y: 0, w: W, h: rowH, show: ['ren', 'ilse', 'nan'], shot: 'group', yaw: -8, pitch: 7, margin: 1.1, state: {} });

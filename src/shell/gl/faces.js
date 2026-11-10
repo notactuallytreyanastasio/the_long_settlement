@@ -133,9 +133,10 @@ function drawLid(set, L, shut, shutStyle) {
     g.strokeStyle = INK; g.lineWidth = w * (old ? 0.07 : lash ? 0.095 : 0.088); topLid(g, w, h, L); g.stroke();
     const ox = cx + a, oy = cy - L.tilt * h;
     if (lash) { // two flicks at the outer corner
-      g.lineWidth = w * 0.055;
-      g.beginPath(); g.moveTo(ox - w * 0.02, oy - h * 0.02); g.lineTo(ox + w * 0.1, oy - h * 0.075); g.stroke();
-      g.beginPath(); g.moveTo(ox - w * 0.09, oy - h * 0.085 * L.c2 - h * 0.03); g.lineTo(ox + w * 0.01, oy - h * 0.16 * Math.max(0.5, L.c2) - h * 0.03); g.stroke();
+      g.lineWidth = w * 0.05;
+      g.beginPath(); g.moveTo(ox - w * 0.02, oy - h * 0.01); g.lineTo(ox + w * 0.1, oy - h * 0.06); g.stroke();
+      g.lineWidth = w * 0.042;
+      g.beginPath(); g.moveTo(ox - w * 0.08, oy - h * 0.075 * L.c2 - h * 0.025); g.lineTo(ox + w * 0.02, oy - h * 0.14 * Math.max(0.5, L.c2) - h * 0.03); g.stroke();
     } else { // a short tail so the corner is not a blunt end
       g.lineWidth = w * 0.06; g.beginPath(); g.moveTo(ox - w * 0.01, oy); g.lineTo(ox + w * 0.045, oy + h * 0.035); g.stroke();
     }
@@ -321,8 +322,10 @@ export function createFaces({ size = 2048, figure = null } = {}) {
   // the face is shaded exactly like the skin under it, or the lid mask shows as a rectangle
   const mat = material({ name: 'face', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: figure ? figure.rim : 1, bands: figure ? figure.bands : 2, bandEdge: figure ? figure.bandEdge : 0, bandSoft: figure ? figure.bandSoft : 0.006 });
   const emoteOf = (e) => { const E = EMOTE[e]; if (!E) throw new Error(`faces: unknown emote "${e}" (have ${EMOTES.join(', ')})`); return E; };
+  // the eyeballs keep some of their own colour in shadow, or the iris goes dead when the face turns from the light
+  const eyeMat = material({ name: 'eyes', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.4 });
   return {
-    atlas, material: mat,
+    atlas, material: mat, eyeMaterial: eyeMat,
     lid(set, emote, shut) {
       if (set !== 'round' && set !== 'lash' && set !== 'old') throw new Error(`faces: unknown lid set "${set}" (have round, lash, old)`);
       const E = emoteOf(emote);

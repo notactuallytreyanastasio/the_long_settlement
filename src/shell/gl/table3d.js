@@ -20,8 +20,8 @@
 
 import {
   m4, rgb, rng, DEG,
-  sphere, ellipsoid, cylinder, cone, lathe, torus, box, roundedBox, extrude, tube, curve, fromArrays, blob,
-  merge, tint, paint, place, setGlow, setOutline, clone, scale as scaleMesh,
+  sphere, ellipsoid, cylinder, lathe, torus, box, roundedBox, extrude, tube, fromArrays,
+  merge, tint, paint, place, setGlow, setOutline, scale as scaleMesh,
   Node, node, group, material, texture, makeEnv, createScene, createCamera, mergeStatic, batchFigure, makeInstances,
   createSprites, rayMesh, rayMaterial, createAtlas,
 } from './index.js';

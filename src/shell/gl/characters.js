@@ -87,18 +87,28 @@ function makeHead(R) {
  * ahead, at the ears and at the nape; grow is the shell's size over the skull, shift moves it.
  */
 function hairCap(hd, { front = 0.42, side = -0.05, back = -0.7, sideAt = 0.34, backAt = 0.72, zig = 0, zigN = 3, grow = [1.07, 1.09, 1.08], shift = [0, 0.01, -0.012], seg = 28, rings = 18 } = {}) {
-  const m = sphere(1, seg, rings), P = m.positions, p = [0, 0, 0];
-  for (let i = 0; i < P.length; i += 3) {
-    p[0] = P[i]; p[1] = P[i + 1]; p[2] = P[i + 2];
-    const ang = Math.atan2(p[0], p[2]), a = Math.abs(ang) / Math.PI;
+  // a grid from the crown (row 0) down each meridian to the hairline, then two rows folded back
+  // under the edge to give it thickness. The edge is the hairline itself, so it is as smooth as the function.
+  const pos = [], idx = [], rows = Math.max(6, Math.round(rings * 0.62)), p = [0, 0, 0];
+  const lineAt = (ang) => {
+    const a = Math.abs(ang) / Math.PI;
     let line = a < sideAt ? front + (side - front) * smooth((a - 0.1) / (sideAt - 0.1)) : side + (back - side) * smooth((a - sideAt) / (backAt - sideAt));
     if (zig) line += zig * Math.abs((((ang * zigN + 0.4) % 1) + 1) % 1 - 0.5) * 2 * (1 - smooth((a - 0.2) / 0.3));
-    let tuck = 1;
-    if (p[1] < line) { p[1] = line + (p[1] - line) * 0.04; tuck = 0.76; }
-    hd.shape(p);
-    P[i] = p[0] * grow[0] * tuck + shift[0]; P[i + 1] = p[1] * grow[1] + shift[1]; P[i + 2] = p[2] * grow[2] * tuck + shift[2];
+    return line;
+  };
+  const put = (ang, y, k) => { const r = Math.sqrt(Math.max(0, 1 - y * y)); p[0] = Math.sin(ang) * r; p[1] = y; p[2] = Math.cos(ang) * r; hd.shape(p); pos.push(p[0] * grow[0] * k + shift[0], p[1] * grow[1] * (0.5 + 0.5 * k) + shift[1], p[2] * grow[2] * k + shift[2]); };
+  for (let i = 0; i < seg; i++) {
+    const ang = (i / seg) * Math.PI * 2 - Math.PI, line = lineAt(ang);
+    for (let j = 1; j <= rows; j++) { const v = j / rows, e = Math.sin(v * Math.PI / 2); put(ang, 1 - e * (1 - line) * 1.0 + (1 - e) * 0, 1); }
+    put(ang, line + 0.012, 0.955); put(ang, line + 0.06, 0.9);
   }
-  return fromArrays(m.positions, m.indices, null, 180);
+  const R = rows + 2, top = pos.length / 3; p[0] = 0; p[1] = 1; p[2] = 0; hd.shape(p); pos.push(p[0] * grow[0] + shift[0], p[1] * grow[1] + shift[1], p[2] * grow[2] + shift[2]);
+  for (let i = 0; i < seg; i++) {
+    const a = i * R, b = ((i + 1) % seg) * R;
+    idx.push(top, a, b);
+    for (let j = 0; j < R - 1; j++) idx.push(a + j, a + j + 1, b + j, b + j, a + j + 1, b + j + 1);
+  }
+  return fromArrays(pos, idx, null, 180);
 }
 
 /** A lock lying on the head through [yaw, pitch, radiusFactor] points. */
@@ -198,7 +208,8 @@ export const HAIR = {
       tint(place(cylinder(r, r, L * 0.09, 6), 0, L * 0.43, 0), '#ff8fa0'),
       tint(place(cone(r, L * 0.12, 6), 0, -L * 0.36, 0, 180, 0, 0), '#f2d9b0'),
       tint(place(cone(r * 0.45, L * 0.05, 6), 0, -L * 0.435, 0, 180, 0, 0), '#3a3040'));
-    return { fixed: [xform(m, c, quat.fromTo(quat.create(), [0, 1, 0], norm(s.dir || [0.5, 0.8, -0.3])))] };
+    const d = norm(s.dir || [0.5, 0.8, -0.3]), up = (s.out ?? 0.2) * L;
+    return { fixed: [xform(m, [c[0] + d[0] * up, c[1] + d[1] * up, c[2] + d[2] * up], quat.fromTo(quat.create(), [0, 1, 0], d))] };
   },
 
   /** A peaked cap: { color, band, peak }. Sits on top of whatever hair there is. */
@@ -253,8 +264,7 @@ export const EXTRAS = {
     const n = b.S(11);
     for (let i = 0; i < n; i++) { const a = (i + 0.5) / n * Math.PI * 2; b.parts.chest.push(tint(place(sphere(0.02, 7, 5), Math.sin(a) * w * 1.52, sh - len - 0.012, Math.cos(a) * w * 1.52 * 0.88), c3)); }
     // the knot and its two tails at the throat
-    b.parts.chest.push(tint(place(blob({ rx: 0.034, ry: 0.03, rz: 0.026, seg: 10, rings: 7 }), 0, sh + 0.012, w * 1.1 * 0.88 + 0.012), c2));
-    for (const sx of [-1, 1]) b.parts.chest.push(tint(strand(curve([[sx * 0.008, sh + 0.008, w * 0.98 + 0.012], [sx * 0.03, sh - 0.04, w * 1.2], [sx * 0.045, sh - 0.09, w * 1.28]], 6), (t) => 0.02 - 0.004 * t, () => 0.009, 6, [0, 0, 1]), c1));
+    b.parts.chest.push(tint(place(cylinder(0.03, 0.03, 0.016, b.S(12), { crease: 40 }), 0, sh - len * 0.36, w * 1.44 * 0.88 - 0.004, 78, 0, 0), s.toggle || '#ffd24a'));
     b.sleeve = { color: c1, color2: c2, drape: true };
   },
   /** An apron over the skirt front. */
@@ -305,7 +315,7 @@ export const PROPS = {
     const r = s.size || 0.078, paper = s.color || '#ffd070', rib = s.rib || '#f08a2a', wood = s.wood || '#7a4a2a';
     const prof = []; for (let i = 0; i <= 8; i++) { const a = (i / 8 - 0.5) * Math.PI * 0.9; prof.push([Math.cos(a) * r, Math.sin(a) * r * 1.1]); }
     const body = setGlow(tint(lathe(prof, S(14), { crease: 180 }), paper), 1);
-    const ribs = [-0.5, 0, 0.5].map((k) => { const a = k * Math.PI * 0.45; return setGlow(tint(place(torus(Math.cos(a) * r * 1.01, 0.006, S(14), 5), 0, Math.sin(a) * r * 1.1, 0), rib), 0.75); });
+    const ribs = [-0.5, 0, 0.5].map((k) => { const a = k * Math.PI * 0.45; return setOutline(setGlow(tint(place(torus(Math.cos(a) * r * 1.0, 0.0035, S(14), 5), 0, Math.sin(a) * r * 1.1, 0), rib), 0.9), 0); });
     const capT = tint(place(cylinder(r * 0.62, r * 0.5, 0.022, S(12), { crease: 40 }), 0, r * 1.04, 0), wood), capB = tint(place(cylinder(r * 0.5, r * 0.62, 0.02, S(12), { crease: 40 }), 0, -r * 1.07 - 0.02, 0), wood);
     const tassel = tint(place(cone(0.016, 0.05, 6), 0, -r * 1.07 - 0.02, 0, 180, 0, 0), '#f4573f');
     const handle = tint(strand(curve([[-r * 0.45, r * 1.06, 0], [-r * 0.3, r * 1.5, 0], [0, r * 1.68, 0], [r * 0.3, r * 1.5, 0], [r * 0.45, r * 1.06, 0]], 10), () => 0.006, () => 0.006, 5), wood);
@@ -508,12 +518,12 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   // ---- torso
   parts.chest.push(tint(place(blob({ rx: dim.rx, ry: TRY, rz: dim.rz, pear: PEAR, seg: S(16), rings: S(11) }), 0, TY, 0), top.color));
   if (C.belt) {
-    const y = dim.waistY - dim.chestY + 0.012;
-    parts.chest.push(tint(scaleMesh(place(cylinder(waistR * 1.04, waistR * 1.0, 0.03, S(18), { caps: false, crease: 180 }), 0, y - 0.015, 0), 1, 1, dim.zr), C.belt.color));
-    if (C.belt.buckle) parts.chest.push(tint(place(roundedBox(0.044, 0.04, 0.014, 0.008, 2), 0, y, waistR * 1.04 * dim.zr + 0.004), C.belt.buckle));
+    const y = dim.waistY + 0.022, rb = skirtR(y) * 1.035;
+    parts.hips.push(tint(scaleMesh(place(lathe([[rb * 0.96, y - 0.02], [rb, y - 0.016], [rb, y + 0.016], [rb * 0.9, y + 0.02]], S(18), { crease: 50 }), 0, 0, 0), 1, 1, dim.zr), C.belt.color));
+    if (C.belt.buckle) parts.hips.push(tint(place(roundedBox(0.05, 0.044, 0.016, 0.008, 2), 0, y, rb * dim.zr + 0.003), C.belt.buckle));
   }
   if (C.buttons) {
-    const n = C.buttons.count || 3, rowsN = C.buttons.rows || 1, y0 = dim.shoulderY - 0.035, y1 = (C.belt ? dim.waistY - dim.chestY + 0.045 : 0.0);
+    const n = C.buttons.count || 3, rowsN = C.buttons.rows || 1, y0 = dim.shoulderY - 0.035, y1 = (C.belt ? dim.waistY - dim.chestY + 0.075 : 0.0);
     for (let i = 0; i < n; i++) for (let r = 0; r < rowsN; r++) {
       const y = y0 + (y1 - y0) * (i / Math.max(1, n - 1)), x = rowsN === 1 ? 0 : (r ? 1 : -1) * 0.036 * w;
       parts.chest.push(setOutline(tint(place(sphere(C.buttons.size || 0.016, 7, 5), x, y, torsoZ(x, y) + 0.004), C.buttons.color), 0.6));
@@ -521,7 +531,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   }
   if (top.placket) { // the line the coat closes on
     const pts = []; for (let i = 0; i <= 6; i++) { const y = dim.shoulderY - 0.01 - (dim.shoulderY + 0.02) * (i / 6); pts.push([top.placketX || 0, y, torsoZ(top.placketX || 0, y) + 0.003]); }
-    parts.chest.push(tint(strand(pts, () => 0.008, () => 0.005, 5, [0, 0, 1]), top.placket));
+    parts.chest.push(setOutline(tint(strand(pts, () => 0.006, () => 0.003, 5, [0, 0, 1]), top.placket), 0));
   }
   // ---- collar
   if (C.collar) {
@@ -540,7 +550,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     for (let i = 0; i < P.length; i += 3) { p[0] = P[i]; p[1] = P[i + 1]; p[2] = P[i + 2]; hd.shape(p); P[i] = p[0]; P[i + 1] = p[1]; P[i + 2] = p[2]; }
     const head = [tint(fromArrays(skull.positions, skull.indices, null, 180), skin)];
     for (const sx of [-1, 1]) head.push(tint(place(ellipsoid(0.03, 0.05, 0.04, 8, 6), sx * HR[0] * 1.03, -HR[1] * 0.16, -0.008, 0, sx * 18, 0), skin));
-    if (def.face?.nose !== 0) { const np = hd.at(0, -19.5, 0.992); head.push(setOutline(tint(place(ellipsoid(0.018, 0.014, 0.02, 8, 6), np[0], np[1], np[2]), mixc(skin, '#ff7a5a', 0.1)), 0)); }
+    if (def.face?.nose !== 0) { const np = hd.at(0, -19.5, 0.985); head.push(setOutline(tint(place(ellipsoid(0.017, 0.011, 0.014, 8, 6), np[0], np[1], np[2]), skin), 0)); }
     const hairCol = def.hair?.color || '#b8542a', ctx = { color: hairCol, dark: mixc(hairCol, '#1a1040', 0.35), S };
     for (const piece of def.hair?.pieces || []) {
       const f = HAIR[piece.kind]; if (!f) throw new Error(`createCharacter(${def.id}): unknown hair piece "${piece.kind}" (have ${Object.keys(HAIR).join(', ')})`);
@@ -566,7 +576,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const hand = merge(tint(place(blob({ rx: dim.hand, ry: dim.hand * 1.12, rz: dim.hand * 0.9, seg: S(10), rings: S(8) }), 0, -dim.hand * 0.75, 0), skin), tint(place(sphere(dim.hand * 0.42, 7, 5), dim.hand * 0.1, -dim.hand * 0.55, dim.hand * 0.82), skin));
     parts.handL.push(hand);
     parts.armR.push(mirrorX(merge(parts.armL))); parts.foreR.push(mirrorX(merge(parts.foreL))); parts.handR.push(mirrorX(merge(parts.handL)));
-    if (sleeves.ink) parts['fore' + sleeves.ink].push(tint(place(blob({ rx: r2 * 0.7, ry: 0.02, rz: r2 * 0.5, seg: 8, rings: 6 }), 0, -dim.fore, r2 * 0.9), '#2a2f7a'));
+    if (sleeves.ink) parts['fore' + sleeves.ink].push(setOutline(tint(place(blob({ rx: r2 * 0.42, ry: 0.024, rz: r2 * 0.3, seg: 8, rings: 6 }), r2 * 0.3, -dim.fore - 0.012, r2 * 0.95), '#2a2f7a'), 0));
   }
 
   // ---- the node tree
@@ -619,11 +629,11 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   // face decals (the order they are added is the order they are drawn)
   let face = null;
   if (faces) {
-    const F = { set: 'round', iris: '#5a3a2a', eyeScale: 1, eyeYaw: FACE.eyeYaw, eyePitch: FACE.eyePitch, mouthScale: 1, mouthPitch: FACE.mouth.pitch, ...(def.face || {}) };
+    const F = { set: 'round', iris: '#5a3a2a', eyeScale: 1, eyeYaw: FACE.eyeYaw, eyePitch: FACE.eyePitch, mouthScale: 1.2, mouthPitch: FACE.mouth.pitch, ...(def.face || {}) };
     const fm = faces.material, cy = dim.headC, k = F.eyeScale;
     const pivot = group('face', { pos: [0, cy, 0], parent: head });
     const two = (wd, ht, flip) => merge(hd.patch(F.eyeYaw, F.eyePitch, wd * k, ht * k, 0.012, 6, false), hd.patch(-F.eyeYaw, F.eyePitch, wd * k, ht * k, 0.012, 6, flip));
-    const eyes = node('eyes', two(FACE.ball.w, FACE.ball.h, false), fm, { parent: pivot });
+    const eyes = node('eyes', two(FACE.ball.w, FACE.ball.h, false), faces.eyeMaterial, { parent: pivot });
     const lids = node('lids', two(FACE.lid.w, FACE.lid.h, true), fm, { parent: pivot, tint: skin });
     const wide = hd.patch(0, FACE.wide.pitch, FACE.wide.w, FACE.wide.h, 0.013, 10);
     const marks = node('marks', wide, fm, { parent: pivot });
@@ -880,17 +890,17 @@ export const CAST = {
     costume: {
       top: { color: '#2f5fb8', hem: -0.035, flare: 1.22, trim: '#b9c6da', placket: '#24478f' },
       sleeves: { cuff: '#b9c6da', flare: 1.12 },
-      legs: { color: '#27305a' }, shoes: { color: '#2a2440', sole: '#b9c6da', tall: true },
-      collar: { kind: 'stand', color: '#c3cfe0' }, belt: { color: '#27305a', buckle: '#ffd24a' },
+      legs: { color: '#44539c' }, shoes: { color: '#2c2b52', sole: '#b9c6da', cuff: '#c3cfe0', tall: true },
+      collar: { kind: 'stand', color: '#c3cfe0' }, belt: { color: '#2c2b52', buckle: '#ffd24a' },
       buttons: { color: '#ffd24a', rows: 2, count: 3 },
       extras: [{ kind: 'epaulettes', color: '#c3cfe0' }, { kind: 'earring', side: 'L', color: '#ffd24a' }, { kind: 'earpiece', side: 'R' }],
     },
     poses: {
       // parade rest gone slightly wrong: straight back, chin down, one hand a fist, weight all on one leg
       stand: {
-        hips: { r: [0, -12, 2], p: [0.01, 0, 0] }, chest: [-3, 8, -3], head: [5, 12, 3],
-        legL: [0, 6, 3], legR: [-3, -12, -7], shinR: [6, 0, 0],
-        armL: [8, 0, 9], foreL: [-12, 0, 0], armR: [10, 0, -12], foreR: [-30, 0, 0],
+        hips: { r: [0, -16, 4], p: [0.016, 0, 0] }, chest: [-3, 10, -6], head: [7, 14, 6],
+        legL: [0, 14, 13], shinL: [3, 0, 0], legR: [0, -6, -2],
+        armL: [8, 0, 10], foreL: [-10, 0, 0], armR: [8, 0, -22], foreR: [-56, 0, 64], handR: [0, 0, 10],
       },
       // listening to the Line: two fingers to the earpiece, eyes away
       signature: { chest: [2, -10, 5], head: [8, -14, -10], armR: [-20, 0, -78], foreR: [-20, 0, -118], handR: [0, 0, -30], armL: [10, 0, 6] },
@@ -913,9 +923,14 @@ export const CAST = {
           { pts: [[-50, 40, 1.04], [-62, 22, 1.08], [-66, 2, 1.08], [-62, -20, 1.07], [-58, -32, 1.05]], w: 0.06 },
           { pts: [[64, 30, 1.04], [72, 10, 1.07], [72, -14, 1.07], [66, -30, 1.05]], w: 0.05 },
           { pts: [[4, 70, 1.0], [10, 86, 1.14], [26, 80, 1.2]], w: 0.03, thick: 0.9 },
+          // the back, combed down and across to the knot the braid starts from
+          { pts: [[176, 72, 1.03], [178, 34, 1.1], [-168, -6, 1.1], [-140, -30, 1.04]], w: 0.09 },
+          { pts: [[-118, 66, 1.03], [-124, 32, 1.1], [-126, 2, 1.1], [-122, -26, 1.04]], w: 0.08 },
+          { pts: [[118, 66, 1.03], [136, 30, 1.1], [162, -6, 1.1], [-166, -32, 1.05]], w: 0.085 },
+          { pts: [[84, 48, 1.03], [104, 18, 1.09], [134, -12, 1.09], [164, -34, 1.05]], w: 0.07 },
         ] },
         { kind: 'braid', at: [-118, -30], dir: [-0.16, -1, 0.42], length: 0.36, width: 0.05, links: 3, tie: '#ffd24a' },
-        { kind: 'pencil', at: [-128, 6], dir: [0.42, 0.86, -0.3], length: 0.3, r: 1.1 },
+        { kind: 'pencil', at: [-100, 24], dir: [-0.66, 0.7, -0.26], length: 0.27, r: 1.08, out: 0.12 },
       ],
     },
     face: { set: 'lash', iris: '#3fae6a', eyeScale: 1.04, brow: { w: 0.015, len: 22 }, marks: { blush: 0.55, freckles: true } },
@@ -968,7 +983,7 @@ export const CAST = {
       stand: {
         hips: { r: [8, 8, 0], p: [0, -0.006, -0.01] }, chest: [14, -4, 3], head: [-14, -8, 6],
         legL: [-6, 8, 4], legR: [-6, -8, -4],
-        armL: [26, 0, 10], foreL: [-30, 0, -70], armR: [-34, 0, -20], foreR: [-62, 10, 0],
+        armL: [-22, 0, 8], foreL: [-74, 0, -44], armR: [-34, 0, -20], foreR: [-62, 10, 0],
       },
       // holding the lantern up to see who it is
       signature: { chest: [4, 8, 0], head: [-18, -4, 8], armR: [-78, 0, -22], foreR: [-66, 0, 0], hips: { r: [3, 8, 0] } },

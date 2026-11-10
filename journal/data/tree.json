@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 71491,
-  "lines": 1005
+  "bytes": 72854,
+  "lines": 1020
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/faces.js",
-  "bytes": 23835,
-  "lines": 340
+  "bytes": 24212,
+  "lines": 343
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -12556,7 +12556,7 @@
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 77288,
+  "bytes": 77262,
   "lines": 1108
  },
  {
@@ -12651,7 +12651,7 @@
  },
  {
   "path": "tools/gl-characters.html",
-  "bytes": 18834,
+  "bytes": 19011,
   "lines": 217
  },
  {
