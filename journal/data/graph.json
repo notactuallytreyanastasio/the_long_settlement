@@ -238,6 +238,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "e0adb529-d1ef-422c-b1f8-ca87a32680d6",
+   "type": "action",
+   "status": "pending",
+   "title": "Rebuild core, cabinet, cinema and shell: reels on the playfield (lane-fill, armed spin shots, plunger as lever) and a portrait-first touch layout",
+   "description": "Preceded by outcome: five-chapter build live on GitHub Pages at 140/140 tests, 1435 voice lines, old slot-screen landscape shape.",
+   "created": "2026-11-10T05:35:00.486488Z",
+   "updated": "2026-11-10T05:35:00.486488Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -345,6 +359,13 @@
    "type": "leads_to",
    "rationale": "Decided",
    "created": "2026-11-10T04:43:42.062813Z"
+  },
+  {
+   "from": "710a43b5-f65c-4588-8b5e-c8782295e849",
+   "to": "e0adb529-d1ef-422c-b1f8-ca87a32680d6",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T05:35:00.488660Z"
   }
  ]
 }
