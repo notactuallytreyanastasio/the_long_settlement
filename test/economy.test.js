@@ -4,8 +4,13 @@ import { seed, next } from '../src/core/rng.js';
 import { spin, payoutFor } from '../src/core/slot.js';
 import {
   SPIN_COST, LOAN, MARKS_PER_POINT, initEcon, awardPoints, canSpin, paySpin, applyPayout,
-  needsLoan, takeLoan, spendWrit, addTrust, aidAvailable, takeAid,
+  needsLoan, takeLoan, spendWrit, addTrust, aidAvailable, takeAid, TRUST_PER_LOAN, leaning,
 } from '../src/core/economy.js';
+import { chapter1 } from '../src/content/chapter1.js';
+import { chapter2 } from '../src/content/chapter2.js';
+import { chapter3 } from '../src/content/chapter3.js';
+import { chapter4 } from '../src/content/chapter4.js';
+import { chapter5 } from '../src/content/chapter5.js';
 
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, msg ?? `${a} !== ${b}`);
 
@@ -19,7 +24,10 @@ test('constants are sane', () => {
 
 test('initEcon affords exactly three spins and nothing else', () => {
   let e = initEcon();
-  assert.deepEqual(e, { score: 0, marks: SPIN_COST * 3, writs: 0, debt: 0, trust: 0, aidUsed: 0, spins: 0 });
+  assert.deepEqual(e, {
+    score: 0, marks: SPIN_COST * 3, writs: 0, debt: 0, trust: 0, aidUsed: 0, spins: 0,
+    trustEarned: 0, loansTaken: 0,
+  });
   for (let i = 0; i < 3; i++) { assert.ok(canSpin(e)); e = paySpin(e); }
   assert.equal(canSpin(e), false);
   assert.equal(e.spins, 3);
@@ -76,6 +84,77 @@ test('a loan advances LOAN.marks, books LOAN.owed, and garnishes every mark unti
 
   // loans stack
   assert.equal(takeLoan(takeLoan(broke)).debt, LOAN.owed * 2);
+});
+
+test('loansTaken counts every loan and repayment does not take one back', () => {
+  const broke = Object.freeze({ ...initEcon(), marks: 0 });
+  let e = takeLoan(takeLoan(broke));
+  assert.equal(e.loansTaken, 2);
+  assert.equal(broke.loansTaken, 0, 'argument not mutated');
+  e = awardPoints(e, 3000000); // 3000 marks earned: 900 garnished against 600 owed
+  assert.equal(e.debt, 0);
+  assert.equal(e.loansTaken, 2, 'the book remembers a loan that has been repaid');
+  assert.equal(takeLoan(e).loansTaken, 3);
+});
+
+test('trustEarned takes every positive gain whole, past the clamp, and never goes down', () => {
+  let e = addTrust(Object.freeze(initEcon()), 30);
+  assert.deepEqual([e.trust, e.trustEarned], [30, 30]);
+  e = addTrust(e, 80);
+  assert.deepEqual([e.trust, e.trustEarned], [100, 110], 'the meter stops at 100, the total does not');
+  e = addTrust(e, -40);
+  assert.deepEqual([e.trust, e.trustEarned], [60, 110], 'losing standing does not unearn it');
+  e = addTrust(e, 0);
+  assert.deepEqual([e.trust, e.trustEarned], [60, 110]);
+  assert.equal(takeAid(e).trustEarned, 110, 'drawing aid spends nothing from the total');
+});
+
+test('leaning: commons while trustEarned >= loansTaken * TRUST_PER_LOAN, mint past it', () => {
+  const book = (trustEarned, loansTaken) => leaning({ ...initEcon(), trustEarned, loansTaken });
+  assert.equal(leaning(initEcon()), 'commons', 'an empty book owes nobody');
+  assert.equal(book(0, 1), 'mint');
+  assert.equal(book(TRUST_PER_LOAN, 1), 'commons', 'level is commons');
+  assert.equal(book(TRUST_PER_LOAN - 1, 1), 'mint');
+  assert.equal(book(TRUST_PER_LOAN * 3 + 1, 3), 'commons');
+  assert.equal(leaning(takeLoan(addTrust(initEcon(), TRUST_PER_LOAN))), 'commons');
+  assert.equal(leaning(takeLoan(takeLoan(addTrust(initEcon(), TRUST_PER_LOAN)))), 'mint');
+  assert.throws(() => leaning({ ...initEcon(), loansTaken: undefined }), /econ\.loansTaken/);
+  assert.throws(() => leaning({ ...initEcon(), trustEarned: 'much' }), /econ\.trustEarned must be a finite number, got much/);
+});
+
+test('TRUST_PER_LOAN against the five chapters: two loans a chapter leans commons, four leans mint', () => {
+  const chapters = [chapter1, chapter2, chapter3, chapter4, chapter5];
+  const perChapter = chapters.map((ch) => ch.scenes.reduce((n, s) => n + (s.reward.trust || 0), 0));
+  const total = perChapter.reduce((a, b) => a + b, 0);
+  console.log(`trust on offer per chapter ${perChapter.join(', ')}; total ${total}; TRUST_PER_LOAN ${TRUST_PER_LOAN}`);
+  assert.ok(perChapter.every((n) => n > 0), 'every chapter pays some trust');
+
+  // Play every scene through the real reducers, borrowing `loans` times in each chapter
+  // (before its scenes, the worst case for the commons), and read the book after each chapter.
+  const run = (loans) => {
+    let e = initEcon();
+    return chapters.map((ch) => {
+      e = { ...e, trust: 0, aidUsed: 0 }; // what game.js does at a chapter card
+      for (let i = 0; i < loans; i++) e = takeLoan(e);
+      for (const s of ch.scenes) e = addTrust(e, s.reward.trust || 0);
+      return { lean: leaning(e), trustEarned: e.trustEarned, loansTaken: e.loansTaken };
+    });
+  };
+  const leans = (rows) => rows.map((r) => r.lean);
+  const all = (lean) => Array(chapters.length).fill(lean);
+  assert.equal(run(0).at(-1).trustEarned, total, 'nothing is lost to the 0..100 clamp');
+  assert.deepEqual(leans(run(0)), all('commons'));
+  assert.deepEqual(leans(run(1)), all('commons'));
+  assert.deepEqual(leans(run(2)), all('commons'), 'a couple of loans a chapter');
+  assert.deepEqual(leans(run(4)), all('mint'), 'borrowing freely');
+  assert.deepEqual(leans(run(6)), all('mint'));
+  assert.equal(run(3).at(-1).lean, 'mint', 'three a chapter ends just on the far side');
+
+  // the whole game turns on one loan
+  const turn = Math.floor(total / TRUST_PER_LOAN);
+  assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn }), 'commons');
+  assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn + 1 }), 'mint');
+  console.log(`with every commons scene done the book turns between loan ${turn} and loan ${turn + 1}`);
 });
 
 test('applyPayout grants writs and marks and rejects malformed payouts', () => {

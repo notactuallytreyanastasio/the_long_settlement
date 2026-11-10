@@ -53,7 +53,7 @@ const barks = (ch) => ({
 
 const RIGGED = {
   reels: ['orb', 'orb', 'orb'],
-  payout: { writs: 3, marks: 0, boon: null, name: "Three Orbs: The Bearer's Lot", blurb: 'One name comes up.' },
+  payout: { writs: 3, marks: 0, boon: null, name: 'The Lot Falls', blurb: 'One name comes up.' },
 };
 
 const content = {
@@ -107,7 +107,7 @@ const content = {
           id: 'ch2.s1', title: 'The Toll', thread: 'duty', hint: 'Four hits on the low lanes',
           objective: { kind: 'count', ids: ['r1', 'r2'], n: 4 },
           briefing: [L('ch2.s1.b1', 'hesper', 'Gate stays shut.')],
-          cutscene: [L('ch2.s1.c01', 'hesper', 'Every pilgrim leaves us poorer.', { bg: 'picket' })],
+          cutscene: [L('ch2.s1.c01', 'hesper', 'Every Tribune eats our bread.', { bg: 'picket' })],
           reward: { points: 500, trust: 10 },
         },
       ],
@@ -358,6 +358,8 @@ test('playthrough: title to end across two chapters', () => {
   assert.equal(r.game.mode, 'card');
   assert.deepEqual([r.game.chapter, r.game.scene], [1, 0]);
   assert.deepEqual(r.game.econ, { ...purse, trust: 0, aidUsed: 0 });
+  assert.equal(purse.trust, 30);
+  assert.equal(r.game.econ.trustEarned, 30, 'the lifetime total survives the chapter card');
   assert.deepEqual(r.game.phys.balls, []);
   assert.equal(r.game.spunThisChapter, false);
   assert.ok(sfxNames(r.effects).includes('card'));
@@ -386,6 +388,7 @@ test('playthrough: title to end across two chapters', () => {
   r = playUntil(r.game, (x) => x.mode === 'cine');
   assert.equal(count(r.effects, 'objective'), 4);
   assert.equal(r.game.econ.trust, 10);
+  assert.equal(r.game.econ.trustEarned, 40, '30 in chapter one and 10 here');
   assert.equal(r.game.cine.kind, 'scene');
 
   // last cutscene of the last chapter -> epilogue -> end
@@ -408,6 +411,7 @@ test('debt: broke at the reels, confirm takes a loan, and earnings are garnished
   assert.equal(r.game.slot.phase, 'idle', 'the loan is not itself a spin');
   assert.deepEqual(r.game.econ, takeLoan(broke.econ));
   assert.equal(r.game.econ.debt, LOAN.owed);
+  assert.equal(r.game.econ.loansTaken, 1);
   assert.deepEqual(sfxNames(r.effects), ['loan']);
   assert.deepEqual(says(r.effects), ['ch1.bark.loan.1']);
   assert.deepEqual(toastKinds(r.game), ['loan']);
@@ -469,7 +473,10 @@ test('aid: out of balls and writs, a trusting town covers one; without trust it 
 // ───────────────────────── load ─────────────────────────
 
 test('load: restores the start of the saved scene, in the slot, from any mode', () => {
-  const econ = { ...initEcon(), score: 4321, marks: 77.5, writs: 2, debt: 120, trust: 55, aidUsed: 1, spins: 9 };
+  const econ = {
+    ...initEcon(), score: 4321, marks: 77.5, writs: 2, debt: 120, trust: 55, aidUsed: 1, spins: 9,
+    trustEarned: 140, loansTaken: 3,
+  };
   const save = { v: 1, chapter: 0, scene: 1, econ, seed: 99 };
   const midCine = sendAll(init(1), [CONFIRM, CONFIRM]).game;
   assert.equal(midCine.mode, 'cine');
@@ -501,6 +508,44 @@ test('load: a save written by the game round-trips', () => {
   const r = send(init(123), { type: 'load', save: JSON.parse(JSON.stringify(save)) });
   assert.deepEqual(toSave(r.game), save);
   assert.equal(r.game.mode, 'slot');
+});
+
+test('load: a save from before the lifetime totals starts them at zero', () => {
+  const old = { v: 1, chapter: 0, scene: 1, seed: 4, econ: { score: 900, marks: 12, writs: 0, debt: 300, trust: 25, aidUsed: 0, spins: 4 } };
+  let r = send(init(1), { type: 'load', save: deepFreeze(JSON.parse(JSON.stringify(old))) });
+  assert.deepEqual(r.game.econ, { ...old.econ, trustEarned: 0, loansTaken: 0 });
+  assert.deepEqual(toSave(r.game).econ, { ...old.econ, trustEarned: 0, loansTaken: 0 }, 'and saves them from then on');
+  // the loaded book works: this player is broke, borrows, and the loan is counted
+  r = send(r.game, CONFIRM);
+  assert.equal(r.game.econ.loansTaken, 1);
+  assert.equal(r.game.econ.debt, 300 + LOAN.owed);
+
+  // a total that is there but is not a number is a broken save, not an old one
+  const bad = { ...old, econ: { ...old.econ, marks: 0, trustEarned: 'lots', loansTaken: 0 } };
+  const loaded = update(content, init(1), { type: 'load', save: bad }).game;
+  assert.throws(() => update(content, loaded, CONFIRM), /econ\.trustEarned must be a finite number, got lots/);
+  assert.throws(() => update(content, init(1), { type: 'load', save: { ...old, econ: null } }), /save has no econ: null/);
+});
+
+test('totals: trust and aid reset with the chapter, trustEarned and loansTaken never do', () => {
+  // end of chapter one's last cutscene, with a book that has history in it
+  const econ = { trust: 80, aidUsed: 2, trustEarned: 80, loansTaken: 3, debt: 900, writs: 1 };
+  let r = playUntil(playAt(0, 1, econ), (x) => x.mode === 'cine');
+  r = sendAll(r.game, [SKIP, SKIP]);                     // cutscene, epilogue
+  assert.equal(r.game.mode, 'card');
+  assert.equal(r.game.chapter, 1);
+  assert.deepEqual(
+    [r.game.econ.trust, r.game.econ.aidUsed, r.game.econ.trustEarned, r.game.econ.loansTaken],
+    [0, 0, 80, 3],
+  );
+  // and the save written at the next chapter's reels carries them
+  r = send(r.game, CONFIRM);
+  const [save] = saves(r.effects);
+  assert.deepEqual([save.chapter, save.econ.trustEarned, save.econ.loansTaken], [1, 80, 3]);
+  // chapter two's scene pays 10 trust: the meter restarts, the total goes on
+  r = send({ ...r.game, econ: { ...r.game.econ, writs: 1 } }, { type: 'toTable' });
+  r = playUntil(r.game, (x) => x.mode === 'cine');
+  assert.deepEqual([r.game.econ.trust, r.game.econ.trustEarned, r.game.econ.loansTaken], [10, 90, 3]);
 });
 
 test('load: refuses a save it cannot honour', () => {
@@ -636,6 +681,52 @@ test('barks are rate limited', () => {
   const again = playUntil({ ...r.game, boons: { ballSave: 600, mult: 1, multT: 0 }, barkCool: 600 },
     (x, fx) => count(fx, 'launch') >= 1 || x.mode !== 'play');
   assert.deepEqual(says(again.effects).filter((s) => s.includes('launch') || s.includes('drain')), []);
+});
+
+test('barks with minScene wait until that scene: the speaker has not been met', () => {
+  const late = L('ch1.bark.launch.late', 'ilse', 'Launched. Let it be entered.', { minScene: 1 });
+  const withBarks = (launch) => deepFreeze({
+    ...content,
+    chapters: [{ ...content.chapters[0], barks: { ...content.chapters[0].barks, launch } }, content.chapters[1]],
+  });
+  const launchFrom = (c, scene, seedN) => {
+    const g = { ...playAt(0, scene, { writs: 1 }, c), barkCool: 0, briefed: true, rng: seed(seedN) };
+    return playUntil(g, (x, fx) => count(fx, 'launch') >= 1, c);
+  };
+
+  // the only launch line is not yet eligible: silence, and neither rng nor cooldown is spent
+  const only = withBarks([late]);
+  let r = launchFrom(only, 0, 11);
+  assert.deepEqual(says(r.effects), []);
+  assert.deepEqual(r.game.rng, seed(11));
+  assert.equal(r.game.barkCool, 0);
+  // one scene on, the same line is spoken
+  r = launchFrom(only, 1, 11);
+  assert.deepEqual(says(r.effects), ['ch1.bark.launch.late']);
+  assert.ok(r.game.barkCool > 7);
+
+  // among others it is never drawn early, and is drawn sometimes once its scene arrives
+  const mixed = withBarks([content.chapters[0].barks.launch[0], late]);
+  const heard = (scene) => {
+    const tally = {};
+    for (let s = 1; s <= 40; s++) for (const id of says(launchFrom(mixed, scene, s).effects)) tally[id] = (tally[id] || 0) + 1;
+    return tally;
+  };
+  const early = heard(0);
+  assert.deepEqual(early, { 'ch1.bark.launch.1': 40 });
+  const after = heard(1);
+  assert.equal(after['ch1.bark.launch.1'] + after['ch1.bark.launch.late'], 40);
+  assert.ok(after['ch1.bark.launch.late'] >= 10 && after['ch1.bark.launch.1'] >= 10, JSON.stringify(after));
+  console.log(`minScene bark over 40 seeds: scene 0 ${JSON.stringify(early)}, scene 1 ${JSON.stringify(after)}`);
+
+  // a forced bark (aid) obeys it too
+  const aidLate = deepFreeze({
+    ...grind,
+    chapters: [{ ...grind.chapters[0], barks: { ...grind.chapters[0].barks, aid: [L('ch1.bark.aid.late', 'ansel', 'It is yours, sir.', { minScene: 2 })] } }],
+  });
+  r = send(playAt(0, 0, { trust: 30 }, aidLate), tickMsg(), aidLate);
+  assert.equal(r.game.econ.aidUsed, 1, 'the aid is still given');
+  assert.deepEqual(says(r.effects), []);
 });
 
 test('update throws on what it does not know, naming it', () => {

@@ -2,7 +2,14 @@
 // a line has no file, falls back to the browser's speechSynthesis, and when
 // there is none of that either, to silence of the right length.
 //
-//   createVoice(audio, cast, manifest) -> { say(line, {blocking, onDone}), hush(), level(), speaking() }
+//   createVoice(audio, cast, manifest) -> { say(line, {blocking, onDone}), hush(), level(), speaking(),
+//                                           preload(ids), cached(id) }
+//
+// preload(ids) fetches and decodes those lines ahead of time and resolves when
+// they are all settled; say() starts a decoded line in the same task, with no
+// fetch and no promise in between. say() also warms the lines that follow the
+// one it was given (see ahead()), so a cutscene only ever waits for its first
+// line even if nobody calls preload at all.
 //
 // manifest maps line id -> url. The file tools/render-voices.mjs writes,
 // { lines: { id: { url, seconds, hash } } }, is accepted as it is.
@@ -16,6 +23,8 @@
 //     dispatches from onDone is never re-entered from inside say() or hush().
 
 const WPM_BASE = 175;          // the rate at which speechSynthesis rate === 1
+const CACHE_SECONDS = 240;     // decoded speech kept: about 46 MB at 48 kHz mono
+const AHEAD = 3;               // lines warmed after the one being spoken
 
 export function estimateSeconds(line, member) {
   const words = line.text.trim().split(/\s+/).filter(Boolean).length;
@@ -149,20 +158,89 @@ export function createVoice(audio, cast, manifest) {
   }
 
   // ───────────── files ─────────────
-  const buffers = new Map();    // url -> Promise<AudioBuffer>
+  // Decoded audio is big: a 22 kHz file comes out of decodeAudioData at the
+  // context's rate in float32, about 190 kB a second at 48 kHz, so the whole
+  // script decoded would be gigabytes. The cache keeps the most recently used
+  // CACHE_SECONDS of speech and lets the rest go; a line that was evicted is
+  // fetched again from the browser's HTTP cache.
+  const decoded = new Map();    // url -> AudioBuffer, oldest use first
+  const loading = new Map();    // url -> Promise<AudioBuffer>, in flight only
+  let held = 0;                 // seconds of audio in `decoded`
+
+  function touch(url) {
+    const buf = decoded.get(url);
+    if (buf) { decoded.delete(url); decoded.set(url, buf); }
+    return buf || null;
+  }
+
+  function keep(url, buf) {
+    if (decoded.has(url)) return;
+    decoded.set(url, buf);
+    held += buf.duration;
+    for (const [old, b] of decoded) {
+      if (held <= CACHE_SECONDS || old === url) break;
+      decoded.delete(old);
+      held -= b.duration;
+    }
+  }
+
   function load(url) {
-    let p = buffers.get(url);
+    const have = touch(url);
+    if (have) return Promise.resolve(have);
+    let p = loading.get(url);
     if (!p) {
       p = fetch(url)
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
           return r.arrayBuffer();
         })
-        .then((bytes) => ctx.decodeAudioData(bytes));
-      buffers.set(url, p);
-      p.catch(() => buffers.delete(url));
+        .then((bytes) => ctx.decodeAudioData(bytes))
+        .then((buf) => { keep(url, buf); return buf; })
+        .finally(() => loading.delete(url));
+      loading.set(url, p);
     }
     return p;
+  }
+
+  // Resolves to { loaded, missing, failed }: ids decoded and in the cache, ids
+  // with no file in the manifest (they will use speech synthesis), and ids
+  // whose file could not be fetched or decoded. It does not reject for a bad
+  // file: say() already falls back for that line, and warns when it does.
+  function preload(ids) {
+    if (!Array.isArray(ids)) throw new Error(`voice.preload: expected an array of line ids, got ${JSON.stringify(ids)}`);
+    const out = { loaded: [], missing: [], failed: [] };
+    const jobs = [];
+    for (const id of new Set(ids)) {
+      if (typeof id !== 'string') throw new Error(`voice.preload: line id ${JSON.stringify(id)} is not a string`);
+      const url = urlFor(id);
+      if (!url) { out.missing.push(id); continue; }
+      jobs.push(load(url).then(() => { out.loaded.push(id); }, () => { out.failed.push(id); }));
+    }
+    return Promise.all(jobs).then(() => out);
+  }
+
+  function cached(id) {
+    const url = urlFor(id);
+    return url !== null && decoded.has(url);
+  }
+
+  // The lines likely to be asked for next. Line ids are 'ch1.s3.c04': the last
+  // part counts up through a cutscene, and the manifest is written sorted, so
+  // the entries that follow an id and share everything before its last dot are
+  // the rest of that cutscene, in order. Barks ('ch1.bark.drain.2') share a
+  // prefix only with their own alternatives, which costs a few small files.
+  const order = Object.keys(table).sort();
+  const place = new Map(order.map((id, i) => [id, i]));
+  function ahead(id, n = AHEAD) {
+    const at = place.get(id);
+    if (at === undefined) return [];
+    const stem = id.slice(0, id.lastIndexOf('.') + 1);
+    const next = [];
+    for (let i = at + 1; i < order.length && next.length < n; i++) {
+      if (!order[i].startsWith(stem)) break;
+      next.push(order[i]);
+    }
+    return next;
   }
 
   // ───────────── the one utterance ─────────────
@@ -268,17 +346,23 @@ export function createVoice(audio, cast, manifest) {
 
     const url = urlFor(line.id);
     if (url && ctx.state === 'running') {
-      watchdog(u, estimateSeconds(line, member) * 2 + 6);   // covers a fetch that never settles
-      load(url).then(
-        (buf) => { if (!u.done) playBuffer(u, buf); },
-        (err) => {
-          console.warn(`voice: could not play ${url} for line "${line.id}" (${err && err.message}); using speech synthesis`);
-          if (!u.done) fallback(u, member);
-        },
-      );
+      const ready = touch(url);
+      if (ready) {
+        playBuffer(u, ready);                                 // already decoded: starts in this task
+      } else {
+        watchdog(u, estimateSeconds(line, member) * 2 + 6);   // covers a fetch that never settles
+        load(url).then(
+          (buf) => { if (!u.done) playBuffer(u, buf); },
+          (err) => {
+            console.warn(`voice: could not play ${url} for line "${line.id}" (${err && err.message}); using speech synthesis`);
+            if (!u.done) fallback(u, member);
+          },
+        );
+      }
     } else {
       fallback(u, member);
     }
+    if (url) preload(ahead(line.id));                         // never rejects
     return true;
   }
 
@@ -307,5 +391,5 @@ export function createVoice(audio, cast, manifest) {
     return current !== null;
   }
 
-  return { say, hush, level, speaking };
+  return { say, hush, level, speaking, preload, cached };
 }

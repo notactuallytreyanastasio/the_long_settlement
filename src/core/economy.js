@@ -26,14 +26,17 @@ export const TRUST_PER_AID = 25;
  * How much lifetime trust one loan from the Mint outweighs. The ledger leans to the
  * commons while trustEarned >= loansTaken * TRUST_PER_LOAN.
  *
- * Set from the trust the five chapters actually pay for their commons scenes:
- * 50, 85, 65, 120 and 50, which is 370 in all and 74 a chapter. At 25 a player who
- * does those scenes and borrows twice a chapter leans commons at the end of every
- * chapter (50/50, 135/100, 200/150, 320/200, 370/250); one who borrows four times a
- * chapter leans mint at the end of every chapter (50/100 ... 370/500). The whole game
- * turns between the fourteenth loan and the fifteenth. It is also the price of one
+ * Set from the trust the five chapters actually pay: 50, 85, 65, 120 and 50, which is
+ * 370 in all and 74 a chapter (310 of it from commons scenes, 60 from four duty scenes).
+ * Scenes cannot be skipped, so a finished chapter has paid all of its trust and what
+ * varies between players is how often they borrowed. At 25, two loans a chapter leans
+ * commons at the end of every chapter (50/50, 135/100, 200/150, 320/200, 370/250) and
+ * four leans mint at the end of every chapter (50/100 ... 370/500). The five chapters
+ * turn between the fourteenth loan and the fifteenth. It is also the price of one
  * mutual-aid ball (TRUST_PER_AID): a loan weighs what a gift is worth.
- * test/economy.test.js asserts all of this against the chapters themselves.
+ * test/economy.test.js asserts this against the chapters themselves. The playthrough
+ * bot, over chapters 1 and 2 (135 trust, so five loans is the limit), took 3, 3, 6, 5,
+ * 4, 1, 7 and 5 loans on seeds 1 to 8: six books lean commons and two lean mint.
  */
 export const TRUST_PER_LOAN = 25;
 

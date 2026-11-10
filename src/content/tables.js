@@ -6,6 +6,8 @@
 // Every surface a ball can come to rest on slopes; there are no horizontal ledges
 // except the plunger floor, where physics turns a resting ball back into a plunger ball.
 
+const REACH = Number(process.env.REACH ?? 70), GY = Number(process.env.GY ?? 410);
+const LB = (process.env.LB ?? '45,322,45,256').split(',').map(Number);
 const L = 8;            // left wall
 const LANE = 366;       // plunger lane divider / right wall of the playfield
 const RIGHT = 392;      // outer right wall
@@ -111,7 +113,10 @@ function shell(arcR, topY) {
 function sideLane(top, bend, mouthY, width, reach) {
   const inner = [[L + width, top], [L + width, bend], [L + width + reach, mouthY]];
   const outer = [[L, bend + 20], [L + reach - 4, mouthY + 10], [L, mouthY + 50]];
-  return { inner, outer };
+  // The shot gate: a line across the diagonal part of the lane at height y, wall to wall.
+  const at = (p, q, y) => p[0] + (q[0] - p[0]) * (y - p[1]) / (q[1] - p[1]);
+  const gate = (y) => [[at(outer[0], outer[1], y), y], [at(inner[1], inner[2], y), y]];
+  return { inner, outer, gate };
 }
 
 // ═════════════════════════ VESSERY ═════════════════════════
@@ -125,7 +130,7 @@ function vessery() {
     sling: [[72, 574], [72, 648], [108, 664]], slingKick: 330,
     flipLen: 56, rest: 0.5, active: 0.62, guard: [14, 14], guardY: 552,
   });
-  const pier = sideLane(250, 330, 430, 34, 46);        // left: the pier ramp
+  const pier = sideLane(250, 330, 430, 34, REACH);        // left: the pier ramp
   const dock = { inner: pier.inner.map(mirror), outer: pier.outer.map(mirror) };   // right: the dock orbit
 
   const walls = [
@@ -160,8 +165,8 @@ function vessery() {
     ],
     slings: lo.slings,
     targets: [
-      ...bank(['lanternA', 'lanternB', 'lanternC'], [45, 322], [45, 256], 'lanterns'),
-      ...bank(['sealM', 'sealI', 'sealN', 'sealT'], [mx(45), 252], [mx(45), 328], 'seals', 0.06),
+      ...bank(['lanternA', 'lanternB', 'lanternC'], [LB[0], LB[1]], [LB[2], LB[3]], 'lanterns'),
+      ...bank(['sealM', 'sealI', 'sealN', 'sealT'], [mx(LB[2]), LB[3]], [mx(LB[0]), LB[1]], 'seals', 0.06),
     ],
     rollovers: [
       { id: 'lotL', pos: [147, 96], r: 10, group: 'lots' },
@@ -174,8 +179,8 @@ function vessery() {
       // y = 322 the test bot made the pier 2 times in five minutes and the three-ramp scene took
       // it 5:00 on average; a ball that gets into the mouth going up has made the shot.
       // the pier ramp carries the ball over the water to the right inlane
-      { id: 'pierRamp', a: [28, 398], b: [77, 398], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 140] } },
-      { id: 'dockOrbit', a: [mx(77), 398], b: [mx(28), 398], dir: [0, -1] },
+      { id: 'pierRamp', a: pier.gate(GY)[0], b: pier.gate(GY)[1], dir: [0, -1], exit: { pos: lo.inR, vel: [0, 140] } },
+      { id: 'dockOrbit', a: mirror(pier.gate(GY)[0]), b: mirror(pier.gate(GY)[1]), dir: [0, -1] },
     ],
     saucers: [
       { id: 'bench', pos: [76, 196], r: 14, eject: [250, 170], holdMs: 900 },

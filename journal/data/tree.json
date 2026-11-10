@@ -2756,8 +2756,8 @@
  },
  {
   "path": "src/content/cast.js",
-  "bytes": 8157,
-  "lines": 223
+  "bytes": 8265,
+  "lines": 225
  },
  {
   "path": "src/content/chapter1.js",
@@ -2791,13 +2791,13 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 14027,
-  "lines": 318
+  "bytes": 14502,
+  "lines": 323
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 7157,
-  "lines": 182
+  "bytes": 7441,
+  "lines": 185
  },
  {
   "path": "src/core/game.js",
@@ -2831,8 +2831,8 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 37001,
-  "lines": 832
+  "bytes": 51760,
+  "lines": 1076
  },
  {
   "path": "src/shell/cinema.js",
@@ -2856,8 +2856,8 @@
  },
  {
   "path": "src/shell/voice.js",
-  "bytes": 11779,
-  "lines": 312
+  "bytes": 15589,
+  "lines": 396
  },
  {
   "path": "story/BIBLE.md",
@@ -2871,13 +2871,13 @@
  },
  {
   "path": "test/economy.test.js",
-  "bytes": 8617,
-  "lines": 198
+  "bytes": 13079,
+  "lines": 277
  },
  {
   "path": "test/game.test.js",
-  "bytes": 31165,
-  "lines": 650
+  "bytes": 36071,
+  "lines": 741
  },
  {
   "path": "test/physics.test.js",
@@ -2896,13 +2896,13 @@
  },
  {
   "path": "test/slot.test.js",
-  "bytes": 6682,
-  "lines": 144
+  "bytes": 7311,
+  "lines": 156
  },
  {
   "path": "test/story.test.js",
-  "bytes": 4899,
-  "lines": 96
+  "bytes": 9014,
+  "lines": 163
  },
  {
   "path": "test/tables.test.js",
@@ -2911,8 +2911,8 @@
  },
  {
   "path": "tools/render-voices.mjs",
-  "bytes": 11744,
-  "lines": 266
+  "bytes": 14151,
+  "lines": 310
  },
  {
   "path": "tools/serve.mjs",

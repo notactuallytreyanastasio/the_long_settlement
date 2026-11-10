@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  currentScene, objectiveProgress, registerHit, litIds, resolveStage, lineSeconds,
+  currentScene, objectiveProgress, registerHit, litIds, resolveStage, lineSeconds, eligibleBarks, preloadIds,
 } from '../src/core/story.js';
 
 const scene = (objective) => ({ id: 't.s', title: 'T', objective });
@@ -92,4 +92,71 @@ test('lineSeconds: grows with word count, throws without text', () => {
   assert.ok(Math.abs(five - 2.5) < 1e-9, `five words took ${five}`);
   assert.ok(Math.abs(thirty - 12) < 1e-9, `thirty words took ${thirty}`);
   assert.throws(() => lineSeconds({ id: 'ch1.x' }), /ch1\.x has no text/);
+});
+
+// ───────── barks and preloading ─────────
+
+const ln = (id, extra = {}) => ({ id, who: 'x', text: 'x', ...extra });
+const voiced = {
+  chapters: [{
+    id: 'v1',
+    prologue: [ln('p1'), ln('p2'), ln('p3'), ln('p4')],
+    scenes: [
+      { id: 'v1.s1', briefing: [ln('s1.b1'), ln('s1.b2')], cutscene: [ln('s1.c1'), ln('s1.c2'), ln('s1.c3'), ln('s1.c4'), ln('s1.c5')] },
+      { id: 'v1.s2', briefing: [ln('s2.b1')], cutscene: [ln('s2.c1'), ln('s2.c2')] },
+    ],
+    epilogue: [ln('e1'), ln('e2'), ln('e3'), ln('e4')],
+    barks: {
+      launch: [ln('bk.launch.1'), ln('bk.launch.2', { minScene: 1 })],
+      drain: [ln('bk.drain.1', { minScene: 1 })],
+      idle: [],
+    },
+  }],
+};
+const mode = (m, scene = 0, cine = null) => ({ mode: m, chapter: 0, scene, cine });
+const cineOf = (kind, lines, index) => ({ kind, lines, index });
+
+test('eligibleBarks: a line with minScene waits for game.scene >= minScene', () => {
+  const ch = voiced.chapters[0];
+  const idsOf = (key, scene) => eligibleBarks(ch, key, scene).map((l) => l.id);
+  assert.deepEqual(idsOf('launch', 0), ['bk.launch.1']);
+  assert.deepEqual(idsOf('launch', 1), ['bk.launch.1', 'bk.launch.2']);
+  assert.deepEqual(idsOf('launch', 5), ['bk.launch.1', 'bk.launch.2']);
+  assert.deepEqual(idsOf('drain', 0), [], 'a key can be left with nobody to speak');
+  assert.deepEqual(idsOf('drain', 1), ['bk.drain.1']);
+  assert.deepEqual(idsOf('idle', 0), []);
+  assert.deepEqual(idsOf('jackpot', 0), [], 'a key the chapter lacks is no lines');
+  const bad = { id: 'vx', barks: { launch: [ln('bk.bad', { minScene: 'two' })] } };
+  assert.throws(() => eligibleBarks(bad, 'launch', 3), /bark bk\.bad has minScene "two"/);
+  assert.throws(() => eligibleBarks({ id: 'vy', barks: { launch: 'hello' } }, 'launch', 0), /vy barks\.launch is not a list: "hello"/);
+});
+
+test('preloadIds: title and card want the opening of the prologue', () => {
+  assert.deepEqual(preloadIds(voiced, mode('title')), ['p1', 'p2', 'p3']);
+  assert.deepEqual(preloadIds(voiced, mode('card'), 2), ['p1', 'p2']);
+  assert.deepEqual(preloadIds(voiced, mode('end')), []);
+});
+
+test('preloadIds: a running cinematic wants its next few lines, and what follows a cutscene', () => {
+  const ch = voiced.chapters[0];
+  assert.deepEqual(preloadIds(voiced, mode('cine', 0, cineOf('prologue', ch.prologue, 0))), ['p2', 'p3', 'p4']);
+  assert.deepEqual(preloadIds(voiced, mode('cine', 0, cineOf('prologue', ch.prologue, 2))), ['p4'], 'after a prologue the reels wait');
+  assert.deepEqual(preloadIds(voiced, mode('cine', 0, cineOf('prologue', ch.prologue, 3))), []);
+  const cut1 = ch.scenes[0].cutscene;
+  assert.deepEqual(preloadIds(voiced, mode('cine', 0, cineOf('scene', cut1, 0))), ['s1.c2', 's1.c3', 's1.c4']);
+  assert.deepEqual(preloadIds(voiced, mode('cine', 0, cineOf('scene', cut1, 2))), ['s1.c4', 's1.c5', 's2.b1'],
+    'near its end, the next scene\'s briefing, which is spoken the moment play resumes');
+  assert.deepEqual(preloadIds(voiced, mode('cine', 1, cineOf('scene', ch.scenes[1].cutscene, 1))), ['e1', 'e2', 'e3'],
+    'the last cutscene runs straight into the epilogue');
+  assert.deepEqual(preloadIds(voiced, mode('cine', 2, cineOf('epilogue', ch.epilogue, 1))), ['e3', 'e4']);
+  assert.throws(() => preloadIds(voiced, mode('cine')), /needs game\.cine/);
+});
+
+test('preloadIds: at the reels and the table, the briefing, the cutscene opening and the eligible barks', () => {
+  assert.deepEqual(preloadIds(voiced, mode('play', 0)), ['s1.b1', 's1.b2', 's1.c1', 's1.c2', 's1.c3', 'bk.launch.1']);
+  assert.deepEqual(preloadIds(voiced, mode('slot', 1)), ['s2.b1', 's2.c1', 's2.c2', 'bk.launch.1', 'bk.launch.2', 'bk.drain.1']);
+  assert.deepEqual(preloadIds(voiced, mode('play', 1), 0), ['s2.b1', 'bk.launch.1', 'bk.launch.2', 'bk.drain.1']);
+  assert.deepEqual(preloadIds(voiced, mode('slot', 2)), [], 'no scene left');
+  assert.throws(() => preloadIds(voiced, mode('paused')), /does not know mode "paused"/);
+  assert.throws(() => preloadIds(voiced, mode('play'), -1), /ahead must be an integer >= 0, got -1/);
 });

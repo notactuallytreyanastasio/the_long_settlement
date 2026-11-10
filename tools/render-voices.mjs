@@ -8,18 +8,31 @@
 // the manifest already holds the same hash, so a re-run only renders what
 // changed. The radio effect is applied at playback, not baked in.
 //
+// The output directory is made to match the content exactly. After a run the
+// only .m4a files in it are those of lines that exist now, saying what those
+// lines say now:
+//   - a file whose line id is no longer in the content is deleted, whether or
+//     not the old manifest knew about it;
+//   - a file whose hash changed is deleted BEFORE its replacement is rendered,
+//     so a failed render leaves no file (and the game falls back to speech
+//     synthesis for that line) rather than the old words under a new subtitle.
+// Nothing but <id>.m4a files is ever deleted. Because of this, rendering a
+// fixture into the real directory would empty it: that is refused unless
+// --out is given along with --content.
+//
 //   node tools/render-voices.mjs [--content file.mjs|file.json] [--out dir]
-//                                [--concurrency n] [--force] [--prune] [--quiet]
+//                                [--concurrency n] [--force] [--dry-run] [--quiet]
 //
 //   --content   a module exporting `content` (or default), or a JSON file, in
 //               the Content shape. Default: src/content/index.js
 //   --out       where the .m4a files and manifest.json go. Default: assets/voice
-//   --prune     drop manifest entries (and their files) for lines no longer in the content
+//   --dry-run   say what would be rendered and deleted; change nothing
+//   --prune     accepted and ignored: pruning is no longer optional
 
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -32,8 +45,10 @@ function parseArgs(argv) {
     content: join(ROOT, 'src/content/index.js'),
     out: join(ROOT, 'assets/voice'),
     concurrency: Math.max(1, Math.min(6, availableParallelism())),
-    force: false, prune: false, quiet: false,
+    force: false, dryRun: false, quiet: false,
   };
+  let gaveContent = false;
+  let gaveOut = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const value = () => {
@@ -41,15 +56,19 @@ function parseArgs(argv) {
       if (v === undefined) throw new Error(`${a} needs a value`);
       return v;
     };
-    if (a === '--content') opts.content = resolve(value());
-    else if (a === '--out') opts.out = resolve(value());
+    if (a === '--content') { opts.content = resolve(value()); gaveContent = true; }
+    else if (a === '--out') { opts.out = resolve(value()); gaveOut = true; }
     else if (a === '--concurrency') {
       opts.concurrency = Number(value());
       if (!Number.isInteger(opts.concurrency) || opts.concurrency < 1) throw new Error(`--concurrency must be a positive integer, got ${argv[i]}`);
     } else if (a === '--force') opts.force = true;
-    else if (a === '--prune') opts.prune = true;
+    else if (a === '--prune') { /* always on now */ }
+    else if (a === '--dry-run') opts.dryRun = true;
     else if (a === '--quiet') opts.quiet = true;
     else throw new Error(`unknown argument ${a}`);
+  }
+  if (gaveContent && !gaveOut) {
+    throw new Error(`--content ${opts.content} without --out would delete every file in ${opts.out} that this content does not name; give --out as well`);
   }
   return opts;
 }
@@ -143,6 +162,23 @@ function pickVoice(member, installed) {
   throw new Error(`no installed voice for "${member.id}": wanted one of ${member.say.join(', ')}`);
 }
 
+/**
+ * Which of the .m4a files in the output directory must go.
+ * names: what readdir returned. keep: Set of line ids that are up to date.
+ * current: Set of every line id in the content.
+ * Returns [{ name, why: 'gone' | 'changed' }]; anything that is not <something>.m4a is left alone.
+ */
+export function staleFiles(names, keep, current) {
+  const out = [];
+  for (const name of names) {
+    if (!name.endsWith('.m4a')) continue;
+    const id = name.slice(0, -4);
+    if (keep.has(id)) continue;
+    out.push({ name, why: current.has(id) ? 'changed' : 'gone' });
+  }
+  return out.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
 const hashOf = (voice, rate, text) => createHash('sha1').update(`${voice}\n${rate}\n${text}`).digest('hex').slice(0, 16);
 
 // ───────────── rendering ─────────────
@@ -221,6 +257,23 @@ async function main() {
   log(`${lines.length} lines, ${skipped} up to date, ${jobs.length} to render with ${converter}, ${opts.concurrency} at a time`);
   for (const [id, v] of Object.entries(voiceOf)) log(`  ${id.padEnd(9)} ${v} @ ${content.cast[id].rate} wpm`);
 
+  // Everything in the directory that is not an up-to-date line goes now, before
+  // any rendering: lines that left the content, and lines about to be re-rendered.
+  const keep = new Set(Object.keys(manifest.lines));
+  const stale = staleFiles(await readdir(opts.out), keep, new Set(lines.map((l) => l.id)));
+  const gone = stale.filter((f) => f.why === 'gone').length;
+  const forgotten = Object.keys(old.lines).filter((id) => !lines.some((l) => l.id === id)).length;
+  for (const f of stale) {
+    log(`  delete ${f.name.padEnd(26)} ${f.why === 'gone' ? 'line no longer exists' : opts.force ? 'forced' : 'voice, rate or text changed'}`);
+    if (!opts.dryRun) await rm(join(opts.out, f.name));
+  }
+  log(`deleted ${stale.length} files: ${gone} for lines that no longer exist, ${stale.length - gone} to be rendered again; ${forgotten} manifest entries dropped`);
+  if (opts.dryRun) {
+    for (const job of jobs) log(`  would render ${job.id.padEnd(22)} ${job.who.padEnd(9)} ${job.voice}`);
+    log('dry run: nothing was changed');
+    return;
+  }
+
   const tmp = await mkdtemp(join(tmpdir(), 'tls-voice-'));
   let audio = 0;
   let errors;
@@ -236,21 +289,12 @@ async function main() {
     await rm(tmp, { recursive: true, force: true });
   }
 
-  // lines that left the content: kept unless --prune, so a fixture run cannot eat the real set
-  let stale = 0;
-  for (const [id, entry] of Object.entries(old.lines)) {
-    if (id in manifest.lines || lines.some((l) => l.id === id)) continue;
-    stale++;
-    if (opts.prune) await rm(join(opts.out, `${id}.m4a`), { force: true });
-    else manifest.lines[id] = entry;
-  }
-
   const sorted = { lines: Object.fromEntries(Object.entries(manifest.lines).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) };
   await writeFile(`${manifestPath}.tmp`, `${JSON.stringify(sorted, null, 1)}\n`);
   await rename(`${manifestPath}.tmp`, manifestPath);
 
   const wall = (performance.now() - t0) / 1000;
-  log(`rendered ${jobs.length - errors.length} lines (${audio.toFixed(1)}s of speech) in ${wall.toFixed(2)}s; ${stale} stale ${opts.prune ? 'pruned' : 'kept'}; manifest: ${manifestPath}`);
+  log(`rendered ${jobs.length - errors.length} lines (${audio.toFixed(1)}s of speech) in ${wall.toFixed(2)}s; manifest: ${manifestPath}`);
   if (errors.length) {
     for (const e of errors) console.error(`FAILED: ${e.message}`);
     throw new Error(`${errors.length} of ${jobs.length} lines failed to render`);

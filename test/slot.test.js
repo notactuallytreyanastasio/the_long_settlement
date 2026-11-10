@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { seed } from '../src/core/rng.js';
 import { SYMBOLS, REEL_STRIPS, PAYTABLE, payoutFor, spin } from '../src/core/slot.js';
+import { chapter1 } from '../src/content/chapter1.js';
 
 const BOONS = [null, 'ballSave', 'multiball', 'doubleMarks'];
 
@@ -43,7 +44,9 @@ test('every one of the 216 combinations has a complete, well-formed payout', () 
 
 test('the named lots mean what the world says they mean', () => {
   const orb = payoutFor(['orb', 'orb', 'orb']);
-  assert.equal(orb.name, "Three Orbs: The Bearer's Lot");
+  assert.equal(orb.name, 'The Lot Falls', "chapter 1's rigged spin shows this name");
+  assert.equal(orb.name, chapter1.riggedSpin.payout.name);
+  assert.deepEqual(chapter1.riggedSpin.reels, ['orb', 'orb', 'orb']);
   assert.equal(orb.writs, 3);
   assert.equal(orb.boon, 'multiball');
 
@@ -61,7 +64,9 @@ test('the named lots mean what the world says they mean', () => {
   assert.equal(payoutFor(['scale', 'scale', 'scale']).writs, 4);
 
   const bust = payoutFor(['tide', 'tide', 'tide']);
-  assert.equal(bust.name, 'Three Tides: Foreclosed');
+  assert.equal(bust.name, 'The Churn Thrice: A Light Goes Out');
+  assert.equal(payoutFor(['tide', 'tide', 'coin']).name, 'The Churn Twice: A Lane Closes');
+  assert.match(payoutFor(['coin', 'coin', 'coin']).name, /Payable in Calm$/);
   assert.deepEqual([bust.writs, bust.marks, bust.boon], [0, 0, null]);
 });
 
@@ -75,10 +80,16 @@ test('reel order never matters; a pair pays whatever the third reel shows', () =
   assert.equal(payoutFor(['scale', 'tide', 'scale']).writs, 3);
 });
 
-test('the Undertow voids an unpaired draw and its own pair pays nothing', () => {
+test('no payout speaks of the old premise', () => {
+  for (const { payout } of PAYTABLE) {
+    assert.doesNotMatch(`${payout.name} ${payout.blurb}`, /bearer|undertow|pilgrim|stillness|shrine/i, payout.name);
+  }
+});
+
+test('the Churn voids an unpaired draw and its own pair pays nothing', () => {
   assert.equal(payoutFor(['coin', 'scale', 'gavel']).writs, 1);
   assert.equal(payoutFor(['coin', 'scale', 'tide']).writs, 0);
-  assert.equal(payoutFor(['coin', 'scale', 'tide']).name, 'Tide on the Reels: Void Draw');
+  assert.equal(payoutFor(['coin', 'scale', 'tide']).name, 'The Churn on the Reels: Void Draw');
   assert.equal(payoutFor(['tide', 'crown', 'tide']).writs, 0);
   assert.equal(payoutFor(['tide', 'crown', 'tide']).marks, 0);
 });
@@ -137,7 +148,8 @@ test('measured odds over 200k seeded spins match the design and the exact enumer
 
   assert.equal(Object.keys(byName).length, 14, 'every payout turns up');
   const share = (n) => byName[n] / N;
-  assert.ok(share('Three Tides: Foreclosed') > 0.001 && share('Three Tides: Foreclosed') < 0.004);
-  assert.ok(share("Three Orbs: The Bearer's Lot") < 0.002, 'the jackpot is rare');
+  const dark = share('The Churn Thrice: A Light Goes Out');
+  assert.ok(dark > 0.001 && dark < 0.004, `a light goes out ${dark}`);
+  assert.ok(share('The Lot Falls') < 0.002, 'the jackpot is rare');
   assert.ok(share("Three Crowns: The Mint's Favour") < 0.002);
 });

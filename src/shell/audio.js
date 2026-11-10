@@ -1,19 +1,29 @@
 // All of the game's sound, synthesised with WebAudio. No asset files.
 //
 //   createAudio() -> { unlock, sfx, music, setMuted, level, ctx, voiceBus,
-//                      duck, isMuted }          (duck/isMuted are extras for voice.js)
+//                      duck, isMuted, musicOut }   (duck/isMuted are extras for voice.js;
+//                                                   musicOut is the ducked music, for metering)
 //
 // Graph:
-//   mood buses ─► musicBus ─► duck ─┐
-//   sfxBus ─────────────────────────┼─► master ─► limiter ─► mute ─► analyser ─► out
-//   voiceBus ─► (tap analyser) ─────┤
-//   reverb (4 cross-fed feedback delays, no convolution) ─┘
+//   mood buses ─► musicBus ──────────┐
+//   mood sends ─► music reverb ──────┴─► duck ─┐
+//   sfxBus ────────────────────────────────────┼─► master ─► limiter ─► mute ─► analyser ─► out
+//   sfx send ─► sfx reverb ────────────────────┤
+//   voiceBus ─► (tap analyser) ────────────────┘
+//   (a reverb is 4 cross-fed feedback delays, no convolution)
+//
+// Music has a reverb of its own so that ALL of it passes through the duck. With
+// one shared reverb straight into master, the wet half of the music (send 0.25
+// to 0.8, and a tail that takes a second to fall 11 dB) went round the duck,
+// and that is why speech used to sit on top of music that had barely moved.
 //
 // Music is a step sequencer scheduled against ctx.currentTime with a short
 // lookahead. Each mood owns a bus, so changing mood is a 1.5 s cross-fade of
 // two gains while the old mood's already-scheduled notes ring out underneath.
 //
-// Ilse's lullaby is four notes: mi, sol, re, do.
+// Ilse's lullaby is four phrases of seven notes, one to a syllable (LULLABY).
+// The four-note MOTIF, mi sol re do, is its last phrase with the passing notes
+// taken out: "Keep ... light ... the sill".
 
 export const SFX_NAMES = [
   'flip', 'bumper', 'sling', 'target', 'rollover', 'shot', 'saucer', 'eject', 'drain',
@@ -23,10 +33,28 @@ export const SFX_NAMES = [
 
 export const MOODS = [
   'title', 'festival', 'tense', 'covert', 'sorrow', 'hope', 'march', 'mine', 'court',
-  'shrine', 'dread', 'silence',
+  'shrine', 'dread', 'silence', 'academy', 'storm', 'village', 'exchange',
 ];
 
-/** Ilse's tune as semitones above the tonic. */
+/**
+ * The lullaby, as semitones above the tonic. It was a rowing chant first: seven
+ * even notes and a rest for the recovery, the stroke on 1, 3, 5 and 7.
+ *
+ *   1  Low the lamp and long the lane       mi mi sol sol la sol mi     stays where it is
+ *   2  Hush, the water's lying still        sol sol mi mi re mi re      leans down, left open on re
+ *   3  Who goes out comes home again        la la do' do' ti la sol     goes out furthest, and does not land
+ *   4  Keep the light upon the sill         mi sol fa mi re re do       home
+ *
+ * The third is the one that gets lost: it is the only phrase above the octave
+ * and the only one that ends away from the tonic chord's lower notes, so the
+ * tune still closes without it. That is what 'sorrow' plays.
+ */
+export const LULLABY = {
+  major: [[4, 4, 7, 7, 9, 7, 4], [7, 7, 4, 4, 2, 4, 2], [9, 9, 12, 12, 11, 9, 7], [4, 7, 5, 4, 2, 2, 0]],
+  minor: [[3, 3, 7, 7, 8, 7, 3], [7, 7, 3, 3, 2, 3, 2], [8, 8, 12, 12, 10, 8, 7], [3, 7, 5, 3, 2, 2, 0]],
+};
+
+/** The last phrase's skeleton (notes 1, 2, 5 and 7 of it), as semitones above the tonic. */
 export const MOTIF = { major: [4, 7, 2, 0], minor: [3, 7, 2, 0], inverted: [3, -1, 4, 6] };
 // inverted: the minor tune's intervals (+4, -5, -2) turned upside down from the
 // same first note. Where the tune came home, this one stops on the tritone.
@@ -34,7 +62,23 @@ export const MOTIF = { major: [4, 7, 2, 0], minor: [3, 7, 2, 0], inverted: [3, -
 const LOOKAHEAD = 0.25;      // seconds of music scheduled ahead of the clock
 const TICK_MS = 40;
 const XFADE = 1.5;
-const DUCK_TO = 0.32;
+const DUCK_TO = 0.25;        // -12.04 dB
+const DUCK_DOWN = 0.12;      // seconds to get there when a voice starts
+const DUCK_UP = 0.6;         // seconds to come back when it stops
+const DUCK_HOLD = 0.3;       // sound heard on the voice bus holds the duck this long past its end
+
+/**
+ * Where a gain that set off from `from` at t0, heading for `to` over `dur`
+ * seconds along an exponential ramp (a straight line in dB), has got to at t.
+ * The duck keeps its own account of this because AudioParam.value is not
+ * dependable while a ramp is running (Firefox reports the last value set).
+ */
+export function duckAt(env, t) {
+  if (!(env.from > 0) || !(env.to > 0)) throw new Error(`duckAt: gains must be positive, got ${JSON.stringify(env)}`);
+  if (t <= env.t0) return env.from;
+  if (t >= env.t0 + env.dur) return env.to;
+  return env.from * Math.pow(env.to / env.from, (t - env.t0) / env.dur);
+}
 
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 // deterministic 0..1 scatter for "random" placement that repeats per loop pair
@@ -83,12 +127,12 @@ export function createAudio() {
   voiceBus.connect(voiceTap);
 
   // ───────────── reverb: four feedback delays, each feeding the next ─────────────
-  const reverbIn = ctx.createGain();
-  {
+  function makeReverb(dest) {
+    const reverbIn = ctx.createGain();
     const times = [0.1127, 0.1513, 0.1973, 0.2411];
     const out = ctx.createGain();
     out.gain.value = 0.55;
-    out.connect(master);
+    out.connect(dest);
     const lines = times.map((time, i) => {
       const d = ctx.createDelay(1);
       d.delayTime.value = time;
@@ -117,11 +161,13 @@ export function createAudio() {
       l.damp.connect(x);
       x.connect(lines[(i + 1) % lines.length].d);
     });
+    return reverbIn;
   }
   const sfxSend = ctx.createGain();
   sfxSend.gain.value = 0.14;
   sfxBus.connect(sfxSend);
-  sfxSend.connect(reverbIn);
+  sfxSend.connect(makeReverb(master));
+  const reverbIn = makeReverb(duckGain);      // the music's own: its tail ducks with it
 
   // ───────────── shared noise ─────────────
   const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 2), ctx.sampleRate);
@@ -482,6 +528,37 @@ export function createAudio() {
       air(t, dur, vol, f = 1200, f1 = 500) {
         noise(out, { t, dur, vol, f, f1, q: 1.2, a: dur * 0.5 });
       },
+      // thunder a long way off, or a sea falling on a deck: a crack, then the roll
+      rumble(t, dur, vol) {
+        noise(out, { t, dur: 0.09, vol: vol * 0.5, type: 'highpass', f: 1800, a: 0.002 });
+        noise(out, { t: t + 0.03, dur, vol, type: 'lowpass', f: 320, f1: 45, q: 0.7, a: 0.06 });
+        tone(out, { f: 62, f1: 31, t: t + 0.03, dur: dur * 0.6, vol: vol * 0.7, a: 0.02 });
+      },
+      // steady hiss: rain on canvas, spray. Even level, soft edges, meant to overlap itself
+      wash(t, dur, vol, f = 5200) {
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuf;
+        src.loop = true;
+        const flt = ctx.createBiquadFilter();
+        flt.type = 'highpass';
+        flt.frequency.value = f;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(vol, t + dur * 0.3);
+        g.gain.setValueAtTime(vol, t + dur * 0.7);
+        g.gain.linearRampToValueAtTime(0, t + dur);
+        src.connect(flt);
+        flt.connect(g);
+        g.connect(out);
+        src.start(t, Math.random() * 1.5);
+        src.stop(t + dur + 0.03);
+      },
+      // one phrase of the lullaby: seven even steps, the last one held.
+      // play(m, t, len, i) sounds one note; len is in seconds.
+      phrase(notes, tonic, t, s, play) {
+        if (!Array.isArray(notes) || notes.length !== 7) throw new Error(`audio: a lullaby phrase is seven notes, got ${JSON.stringify(notes)}`);
+        notes.forEach((semi, i) => play(tonic + semi, t + i * s, i === 6 ? s * 2 : s, i));
+      },
     };
     return I;
   }
@@ -581,48 +658,65 @@ export function createAudio() {
       },
     },
 
-    // A minor. The lullaby whole, in the minor: a bell first, then whistled.
+    // A minor. The lullaby with its third phrase gone: a bell first, then whistled.
+    // Phrase 1, phrase 2, a bar in which only the chord that belonged under
+    // "who goes out comes home again" is played, then phrase 4. The whistler gets
+    // as far as the breath for the third and has nothing to put on it.
     sorrow: {
       bpm: 54, div: 2, len: 64, vol: 0.75, send: 0.6,
       step(k, t, s, I) {
         const bar = k >> 3, b = k & 7;
         const chords = [[45, 52, 57, 60], [40, 52, 55, 59], [41, 53, 57, 60], [45, 52, 57, 60],
-          [41, 53, 57, 60], [45, 52, 57, 60], [40, 52, 56, 59], [45, 52, 57, 64]];
+          [45, 52, 57, 60], [40, 52, 55, 59], [41, 53, 57, 60], [45, 52, 57, 64]];
         const c = chords[bar];
         if (b === 0) {
           I.pad(c.slice(1), t, s * 8, 0.035, { cut: 650, att: 1.2 });
           I.bass(c[0] - 12, t, s * 7, 0.2, { type: 'sine' });
         }
-        if (b === 4) I.pluck(c[2], t, 0.05, { decay: 1.4, cut: 1200 });
-        const place = { 0: 0, 4: 1, 8: 2, 16: 3 };                    // mi sol | re . | do
-        if (place[k] !== undefined) I.bell(69 + MOTIF.minor[place[k]], t, 0.17, { decay: place[k] === 3 ? 4 : 2.6 });
-        const again = { 32: 0, 40: 1, 48: 2, 56: 3 };                 // once more, slower, a breath each
-        if (again[k] !== undefined) I.whistle(69 + MOTIF.minor[again[k]], t, s * (again[k] === 3 ? 7 : 5), 0.07);
+        const lost = bar % 4 === 2;
+        if (b === 4 && !lost) I.pluck(c[2], t, 0.04, { decay: 1.4, cut: 1200 });
+        if (b !== 0) return;
+        if (lost) {
+          if (bar === 6) I.air(t, s * 3, 0.03, 1800, 900);          // the breath, and no note
+          return;
+        }
+        const ph = LULLABY.minor[bar % 4];
+        if (bar < 4) {
+          I.phrase(ph, 69, t, s, (m, at, len, i) => I.bell(m, at, i % 2 === 0 ? 0.14 : 0.09, { decay: i === 6 ? (bar === 3 ? 4.5 : 3) : 1.3 }));
+        } else {
+          I.phrase(ph, 69, t, s, (m, at, len) => I.whistle(m, at, len * 0.94, 0.065));
+        }
       },
     },
 
-    // C major. The lullaby plainly, over the chords it was written for.
+    // C major. The lullaby plainly, all four phrases, over the chords it was
+    // written for: struck on a bell, then whistled (every other time round the
+    // whistle rests and a low bell rows it instead).
     hope: {
       bpm: 72, div: 2, len: 64, vol: 1.15, send: 0.45,
       step(k, t, s, I, n) {
         const bar = k >> 3, b = k & 7;
-        const chords = [[48, 55, 60, 64], [43, 55, 59, 62], [45, 52, 57, 60], [41, 53, 57, 60],
-          [48, 55, 60, 64], [43, 55, 59, 62], [43, 55, 60, 62], [48, 55, 60, 64]];
+        // C | Em | F | C over G, twice; the last bar comes down onto the root
+        const chords = [[48, 55, 60, 64], [52, 55, 59, 62], [41, 53, 57, 60], [43, 55, 60, 64],
+          [48, 55, 60, 64], [52, 55, 59, 62], [41, 53, 57, 60], [48, 55, 60, 64]];
         const c = chords[bar];
         if (b === 0) {
           I.pad(c.slice(1), t, s * 8, 0.03, { cut: 1100, att: 0.7 });
           I.bass(c[0] - 12, t, s * 6, 0.24);
         }
-        I.pluck(c[[1, 2, 3, 2, 1, 3, 2, 3][b]] + 12, t, b === 0 ? 0.06 : 0.04, { decay: 0.7, cut: 2200 });
-        const place = { 0: 0, 4: 1, 8: 2, 16: 3 };
-        if (place[k] !== undefined) I.bell(72 + MOTIF.major[place[k]], t, 0.18, { decay: place[k] === 3 ? 3.5 : 2.2 });
-        const again = { 32: 0, 36: 1, 40: 2, 56: 3 };
-        if (again[k] !== undefined) {
-          const m = 72 + MOTIF.major[again[k]];
-          if (n % 2 === 1) I.whistle(m, t, s * (again[k] === 3 ? 7 : 3.6), 0.08);
-          else I.bell(m - 12, t, 0.16, { decay: 2.4 });
+        I.pluck(c[[1, 2, 3, 2, 1, 3, 2, 3][b]], t, b === 0 ? 0.05 : 0.03, { decay: 0.7, cut: 2000 });
+        if (b === 0) {
+          const ph = LULLABY.major[bar % 4];
+          const last = bar % 4 === 3;
+          if (bar < 4) {
+            I.phrase(ph, 72, t, s, (m, at, len, i) => I.bell(m, at, i % 2 === 0 ? 0.16 : 0.11, { decay: i === 6 ? (last ? 3.5 : 2.4) : 1.1 }));
+          } else if (n % 2 === 1) {
+            I.phrase(ph, 72, t, s, (m, at, len) => I.whistle(m, at, len * 0.94, 0.075));
+          } else {
+            I.phrase(ph, 60, t, s, (m, at, len, i) => I.bell(m, at, i % 2 === 0 ? 0.13 : 0.08, { decay: i === 6 ? 3 : 1.2 }));
+          }
         }
-        if (bar >= 4 && (b === 0 || b === 4)) I.kick(t, 0.16, 70);
+        if (bar >= 4 && (b === 0 || b === 4)) I.kick(t, 0.16, 70);     // the stroke of the oars
       },
     },
 
@@ -727,6 +821,132 @@ export function createAudio() {
       },
     },
 
+    // B flat, and proud of it: field drum, a bugle call, the brass under it. But
+    // the brass plays bare fifths, so the chords are the right shape with nothing
+    // in them, and every third there is belongs to the bugle. The call is answered
+    // the first time. The second time it comes from further off, the answer is
+    // left to the drum, and the last bar stops on a bare fifth.
+    academy: {
+      bpm: 104, div: 4, len: 128, vol: 0.85, send: 0.4,
+      step(k, t, s, I, n) {
+        const bar = k >> 4, b = k & 15;
+        const roots = [46, 46, 51, 53, 46, 43, 51, 53][bar];           // Bb Bb Eb F | Bb G Eb F
+        if (b === 0) {
+          I.pad([roots, roots + 7, roots + 12], t, s * 13, 0.04, { type: 'triangle', cut: 1300, att: 0.08, rel: 0.5, spread: 3 });
+        }
+        if (b === 0 || b === 8) {
+          I.kick(t, 0.45, 76);
+          I.bass(roots - 12 + (b === 8 ? 7 : 0), t, s * 5, 0.28, { type: 'sawtooth', cut: 210 });
+        }
+        if ('x...x.xxx...x.xx'[b] === 'x') I.snare(t, b % 8 === 4 ? 0.14 : 0.06);
+        if (bar === 7 && b >= 12) I.snare(t + s * 0.5, 0.05);          // the roll into the repeat
+        const horn = (m, steps, vol = 0.04) => I.pad([m], t, s * steps, vol, { type: 'square', cut: 1700, att: 0.03, rel: 0.2, spread: 3 });
+        const call = [
+          { 0: [58, 3], 3: [58, 1], 4: [62, 4], 8: [65, 6] },           // Bb . Bb D  F
+          { 0: [70, 6], 8: [65, 3], 11: [62, 1], 12: [65, 4] },         // Bb'   F . D F
+          { 0: [67, 4], 4: [70, 4], 8: [67, 3], 11: [63, 1], 12: [67, 4] },   // the answer: G Bb G Eb G
+          { 0: [65, 6], 8: [69, 3], 12: [72, 4] },                      // F  A  C
+        ][bar];
+        if (call && call[b]) horn(call[b][0], call[b][1]);
+        if (bar === 4 || bar === 5) {                                   // the call again, an octave down, further off
+          const again = [{ 0: [46, 3], 3: [46, 1], 4: [50, 4], 8: [53, 6] }, { 0: [58, 6], 8: [53, 3], 11: [50, 1], 12: [53, 4] }][bar - 4];
+          if (again[b]) horn(again[b][0] + (n % 2 === 1 ? 12 : 0), again[b][1], 0.03);
+        }
+        // bars 6 and 7: where the answer was, the drum, and one flat seventh nobody ordered
+        if (bar === 6 && b === 8) I.pad([68], t, s * 8, 0.012, { type: 'triangle', cut: 900, att: 0.6, rel: 1 });
+        if (bar === 7 && b === 0) I.bell(65, t, 0.06, { decay: 3, detune: -8 });
+      },
+    },
+
+    // C sharp minor in a rolling six. Wind that changes its mind, a bass figure
+    // that climbs each sea and is thrown back, rain, thunder not on any beat that
+    // can be counted, and a bell-buoy a quarter-tone off everything else.
+    storm: {
+      bpm: 76, div: 6, len: 96, vol: 0.9, send: 0.5,
+      step(k, t, s, I, n) {
+        const bar = Math.floor(k / 24), b = k % 24;                     // four bars of 4 beats, six to the beat
+        const root = [37, 37, 33, 32][bar];                             // C# C# A G#
+        if (b % 12 === 0) I.wash(t, s * 18, 0.035, 4800 + 900 * ((bar + n) % 2));
+        if (b === 0) {
+          const up = (bar + n) % 2 === 0;
+          I.air(t, s * 26, 0.11, up ? 350 : 1500, up ? 1500 : 300);     // the gust: rising one bar, falling the next
+          I.pad([root + 12, root + 19, root + 24, root + 27], t, s * 22, 0.03, { cut: 520, att: 1.4, rel: 1.2, spread: 12 });
+          I.bass(root - 12, t, s * 22, 0.2, { type: 'sine' });
+        }
+        // the sea: up the minor chord in sixes, cut short where it breaks
+        const climb = [0, 7, 12, 15, 19, 24, 19, 15, 12, 7, 3, 0][b % 12];
+        const breaks = b >= 18 && bar % 2 === 1;
+        if (!breaks) I.bass(root + climb, t, s * 1.3, b % 6 === 0 ? 0.24 : 0.12, { type: 'sawtooth', cut: 240 + climb * 14 });
+        if (breaks && b === 18) { I.kick(t, 0.5, 58); I.rumble(t, 1.4, 0.16); }
+        if (b === 0 || b === 12) I.kick(t, 0.38, 54);
+        if (bar >= 2 && b % 3 === 0) I.pluck(root + 36 + (b % 6 === 0 ? 3 : 7), t, 0.035, { type: 'sawtooth', cut: 2400, decay: 0.12 });
+        // thunder: placed by the scatter, a different pair of places each time round for four rounds
+        if (b % 6 === 2 && scatter(k + 3, n % 4) > 0.86) I.rumble(t + scatter(k, n) * s * 3, 2.6, 0.3);
+        // the buoy: two strokes, the second as the swell lets go of it
+        if ((bar === 1 && b === 9) || (bar === 3 && b === 3)) {
+          I.bell(68, t, 0.09, { decay: 2.8, detune: -45 });
+          I.bell(68, t + s * 4.3, 0.045, { decay: 2.2, detune: -45 });
+        }
+      },
+    },
+
+    // G, with the fourth raised, in five: three and two, the way a net is pulled
+    // and then shaken out. Plucked tune, a drone that never moves, a hand drum.
+    // Plain and warm; the C sharp and the short bar are the strangeness. In the
+    // seventh bar the tune is the lullaby's third phrase, the lost one. Nobody on
+    // Little Brand was ever told it was lost.
+    village: {
+      bpm: 92, div: 2, len: 80, vol: 0.9, send: 0.3,
+      step(k, t, s, I, n) {
+        const bar = Math.floor(k / 10), b = k % 10;
+        const scale = [67, 69, 71, 73, 74, 76, 78, 79, 81, 83];         // G A B C# D E F# G A B
+        const tune = [
+          '0.2.4..2.1', '0..2.4.5.4', '4.5.7..5.4', '3..2.1.0..',
+          '0.2.4..2.1', '4..5.7.8.7', '..........', '4..2.1.0..',
+        ][bar];
+        const ch = tune[b];
+        if (ch !== '.') I.pluck(scale[+ch], t, b === 0 || b === 6 ? 0.15 : 0.11, { decay: 0.6, cut: 2000 });
+        if (bar === 6 && b === 0) {
+          I.phrase(LULLABY.major[2], 67, t, s, (m, at, len, i) => I.pluck(m, at, i % 2 === 0 ? 0.15 : 0.11, { decay: i === 6 ? 1.4 : 0.6, cut: 2000 }));
+        }
+        // the drone: root and fifth, restruck on the three and on the two
+        if (b === 0) { I.bass(43, t, s * 5.5, 0.26); I.pluck(62, t, 0.05, { decay: 1.2, cut: 1200 }); I.kick(t, 0.24, 118); }
+        if (b === 6) { I.bass(50, t, s * 3.5, 0.16); I.kick(t, 0.14, 150); }
+        if (b === 3 || b === 8) I.tick(t, 0.06, 1100);
+        if (b === 0 && bar % 2 === 0) I.pad([55, 62, 67], t, s * 19, 0.028, { type: 'triangle', cut: 1000, att: 0.8, rel: 1.2, spread: 5 });
+        // every other time round, someone joins in a third below, late, and only on the strong notes
+        if (n % 2 === 1 && ch !== '.' && (b === 0 || b === 6) && +ch >= 2) I.pluck(scale[+ch - 2], t + s * 0.08, 0.06, { type: 'sine', decay: 0.8, cut: 1500 });
+      },
+    },
+
+    // A minor that will not stay there: an escapement ticking sixteenths, a
+    // figure in threes laid across a bar of four so it never lines up twice, and
+    // a root that moves up every two bars and ends on a dominant, wound to go
+    // round again. One bell opens the floor. The high blips are prices.
+    exchange: {
+      bpm: 126, div: 4, len: 128, vol: 0.8, send: 0.22,
+      step(k, t, s, I, n) {
+        const bar = k >> 4, b = k & 15;
+        const root = [45, 45, 48, 48, 50, 50, 52, 52][bar];             // A A C C D D E E
+        const third = [3, 3, 4, 4, 3, 3, 4, 4][bar];
+        const top = bar === 7 ? 10 : 12;                                // the last bar is a seventh chord
+        const chord = [root + 12, root + 12 + third, root + 19, root + 12 + top];
+        I.tick(t, b % 4 === 0 ? 0.09 : 0.035, b % 2 === 0 ? 3000 : 4300);          // the escapement
+        if (k % 3 === 0) {                                              // threes against the four
+          const i = (k / 3) % 4;
+          I.pluck(chord[[0, 2, 1, 3][i]], t, i === 0 ? 0.085 : 0.06, { type: 'sawtooth', cut: 3600, decay: 0.16 });
+        }
+        if (b === 0 || b === 6 || b === 12) I.bass(root - (b === 12 ? 0 : 12) + (b === 6 ? 7 : 0), t, s * 2.2, b === 0 ? 0.3 : 0.2, { type: 'sawtooth', cut: 300 });
+        if (b === 4 || b === 12) I.block(t, 0.07, 1240);
+        if (b === 0 && bar % 2 === 0) I.pad([root + 12, root + 19, root + 24], t, s * 30, 0.016, { type: 'triangle', cut: 800, att: 0.3, rel: 0.5 });
+        if (k === 0) { I.bell(81, t, 0.13, { decay: 2.6 }); I.kick(t, 0.3, 70); }
+        // prices: short, high, where the scatter puts them; busier in the second half
+        if (scatter(k, n % 3) > (bar < 4 ? 0.88 : 0.76)) I.pluck(root + 36 + [0, 2, third, 7][Math.floor(scatter(k + 7, n) * 4)], t, 0.03, { type: 'square', cut: 5000, decay: 0.05 });
+        // the ratchet winding up the last half bar
+        if (bar === 7 && b >= 8) { I.tick(t + s * 0.5, 0.04 + (b - 8) * 0.008, 2400 + (b - 8) * 260); }
+      },
+    },
+
     silence: null,
   };
 
@@ -738,6 +958,27 @@ export function createAudio() {
   let duckAsked = false;
   let duckUntil = 0;
   let ducked = false;
+  let duckEnv = { from: 1, to: 1, t0: 0, dur: 0 };
+
+  // Move the duck now. Called from duck() the moment voice.js asks, not from the
+  // next sequencer tick: a 40 ms timer (1 s in a background tab) is a long time
+  // for a voice to be talking over full music.
+  function setDuck(want) {
+    if (want === ducked) return;
+    ducked = want;
+    const now = ctx.currentTime;
+    const from = Math.max(DUCK_TO, Math.min(1, duckAt(duckEnv, now)));
+    const to = want ? DUCK_TO : 1;
+    // an interrupted ramp finishes in proportion to what is left of it, in dB
+    const span = Math.abs(Math.log(to / from)) / Math.abs(Math.log(DUCK_TO));
+    const dur = (want ? DUCK_DOWN : DUCK_UP) * span;
+    duckEnv = { from, to, t0: now, dur };
+    const g = duckGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(from, now);
+    if (dur > 0.001) g.exponentialRampToValueAtTime(to, now + dur);
+    else g.setValueAtTime(to, now);
+  }
   const tap = new Float32Array(voiceTap.fftSize);
   const meterBuf = new Float32Array(meter.fftSize);
 
@@ -788,12 +1029,8 @@ export function createAudio() {
     }
 
     // duck under speech: asked for by voice.js, or heard on the voice bus
-    if (rms(voiceTap, tap) > 0.015) duckUntil = now + 0.45;
-    const want = duckAsked || now < duckUntil;
-    if (want !== ducked) {
-      ducked = want;
-      duckGain.gain.setTargetAtTime(want ? DUCK_TO : 1, now, want ? 0.08 : 0.35);
-    }
+    if (rms(voiceTap, tap) > 0.015) duckUntil = now + DUCK_HOLD;
+    setDuck(duckAsked || now < duckUntil);
   }
 
   function music(mood) {
@@ -825,7 +1062,14 @@ export function createAudio() {
   return {
     unlock, sfx, music, setMuted, level, ctx, voiceBus,
     /** voice.js: hold the music down while a line is spoken (also covers speechSynthesis, which WebAudio cannot hear) */
-    duck(on) { duckAsked = !!on; },
+    duck(on) {
+      duckAsked = !!on;
+      // down at once; back up only when nothing is still sounding on the voice bus (tick() sees to that)
+      if (duckAsked) setDuck(true);
+      else if (ctx.currentTime >= duckUntil) setDuck(false);
+    },
     isMuted: () => muted,
+    /** everything musical after the duck: connect an analyser here to meter it */
+    musicOut: duckGain,
   };
 }

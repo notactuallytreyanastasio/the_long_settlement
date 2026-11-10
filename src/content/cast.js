@@ -22,6 +22,8 @@
 //
 // `look` is what the cinema renderer paints from. Colours are css hex.
 // hairStyle is one of: cropped, short, tied, long, braid, bun, wild, bald, hood.
+// Role lines are what the nameplate shows the first time someone speaks, so
+// they say who a person is when met, never what they become.
 
 /** @type {Object<string, import('../core/types.js').CastMember>} */
 export const cast = {
@@ -43,7 +45,7 @@ export const cast = {
   ren: {
     id: 'ren',
     name: 'Ren Vasker',
-    role: 'Halcyon cadet, Surety to the Tribune',
+    role: 'Halcyon cadet, in arrears',
     color: '#6fa8dc',
     say: ['Evan (Enhanced)', 'Nathan (Enhanced)', 'Aman', 'Eddy (English (US))'],
     rate: 166,
@@ -58,7 +60,7 @@ export const cast = {
   ilse: {
     id: 'ilse',
     name: 'Ilse Maravel',
-    role: "Magistrate's clerk, Tribune of the Lot",
+    role: "Magistrate's clerk",
     color: '#f2c14e',
     say: ['Zoe (Premium)', 'Ava (Premium)', 'Samantha (Enhanced)', 'Samantha', 'Flo (English (US))'],
     rate: 186,
