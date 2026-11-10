@@ -64,7 +64,7 @@ const LIGHTS = {
 };
 
 const CAMERAS = {
-  wide: { target: [-0.4, 1.75, -0.6], dist: 8.6, yaw: 9, pitch: 4, fov: 46, aspect: 0.46, shadowCenter: [0, 0, -1.2], shadowRadius: 8 },
+  wide: { target: [-0.55, 1.75, -0.6], dist: 8.8, yaw: 10, pitch: 4, fov: 46, aspect: 0.46, shadowCenter: [0, 0, -1.2], shadowRadius: 8 },
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -14, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 18, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
   low: { target: [0.1, 2.0, -0.2], dist: 6.6, yaw: -6, pitch: -12, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1], shadowRadius: 8 },
@@ -84,7 +84,6 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   const [light, L] = lightOf('drum-hall', LIGHTS, lightName);
   const M = kitBMaterials(), r = rng(1907);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
-  if (low) env.shadow.size = 512;
 
   // ---- the room: floor, back wall with five windows, side walls, ceiling
   const room = group('room');
@@ -104,7 +103,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   // ---- props baked to one mesh
   const props = group('props');
   const fanCols = ['#ff7448', '#ffd65a', '#7fe6d2', '#ff8fb4', '#ffd65a', '#ff7448'];
-  WIN.forEach((o, i) => props.add(node('win' + i, windowFrame({ w: o.w, h: o.top - o.sill, arch: true, color: KB.plumDark, bars: i === 2 ? 3 : 1, fan: i === 2 ? [...fanCols, '#7fe6d2', '#ff8fb4'] : fanCols.slice(0, 4), glow: 0.85, depth: 0.4 }), M.prop, { pos: [o.x, o.sill, BACK] })));
+  WIN.forEach((o, i) => props.add(node('win' + i, windowFrame({ w: o.w, h: o.top - o.sill, arch: true, color: KB.plumDark, bars: i === 2 ? 3 : 1, fan: i === 2 ? [...fanCols, '#7fe6d2', '#ff8fb4'] : fanCols.slice(0, 4), glow: 0.85, depth: 0.4 }), M.prop, { pos: [o.x, o.sill, BACK], castShadow: false })));
   const daisMesh = dais({ w: 9.2, d: 2.3, n: 4, rise: DAIS_Y / 4, run: 0.3, color: '#fff3dc', edge: KB.wine, carpet: KB.wine });
   props.add(node('dais', daisMesh, M.prop, { pos: [0, 0, BACK + 1.25] }));
   const HOUSE = [0, DAIS_Y, BACK + 0.95], REEL_R = 0.6;
@@ -119,10 +118,10 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   props.add(node('counter', counter, M.prop, { pos: [3.25, DAIS_Y, BACK + 1.35], rot: [0, -12, 0] }));
   props.add(node('horn', horn({}), M.prop, { pos: [-4.7, DAIS_Y, BACK + 1.9], rot: [0, 30, 0] }));
   if (!low) props.add(node('files', fileStack({ n: 6, seed: 3 }), M.prop, { pos: [4.75, DAIS_Y, BACK + 1.2], rot: [0, 20, 0] }), node('writ', scroll({}), M.prop, { pos: [2.6, DAIS_Y + 1.1, BACK + 1.55], rot: [0, 40, 0] }));
-  for (const [x, z] of [[-7.2, -2.2], [7.2, -2.2], [-7.2, 1.6], [7.2, 1.6]]) props.add(node('col', column({ h: H, r: 0.36, color: '#fff3dc', band: KB.brass }), M.prop, { pos: [x, 0, z] }));
+  for (const [x, z] of [[-7.2, -2.2], [7.2, -2.2], [-7.2, 1.6], [7.2, 1.6]]) props.add(node('col', column({ h: H, r: 0.36, color: '#fff3dc', band: KB.brass }), M.prop, { pos: [x, 0, z], castShadow: !low }));
   // banners down the back wall between the windows, and two long ones flanking the Reels
   const BAN = [[-4.55, 5.9, 'tide', KB.teal], [-1.95, 6.3, 'crown', KB.wine], [1.95, 6.3, 'orb', KB.plum], [4.55, 5.9, 'coin', KB.royal]];
-  for (const [x, y, dev, col] of BAN) props.add(node('banner', banner({ w: 0.95, h: Math.abs(x) < 3 ? 3.0 : 3.6, color: col, trim: KB.brass, device: dev }), M.prop, { pos: [x, y, BACK + 0.2], rot: [0, 0, (r() - 0.5) * 3] }));
+  for (const [x, y, dev, col] of BAN) props.add(node('banner', banner({ w: 0.95, h: Math.abs(x) < 3 ? 3.0 : 3.6, color: col, trim: KB.brass, device: dev }), M.prop, { pos: [x, y, BACK + 0.2], rot: [0, 0, (r() - 0.5) * 3], castShadow: false }));
   const chans = [[0, H - 0.4, -1.6, 2.1, 1.05], [-4.3, H - 0.4, -2.6, 1.7, 0.75], [4.3, H - 0.4, -2.6, 1.7, 0.75]];
   const chanMesh = chans.map(([x, y, z, drop, rad]) => { const c = chandelier({ drop, r: rad, arms: rad > 1 ? 8 : 6 }); props.add(node('chandelier', c, M.prop, { pos: [x, y, z], castShadow: false })); return c; });
   const scL = sconce({ s: 1.5 });

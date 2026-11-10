@@ -186,6 +186,7 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
   let power = 1, target = null, written = 0, auto = 0, lastNib = 1, lift = 0, restT = 0;
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(77), NIB = [0, 0, 0], REST = onPage(-1, -0.12, -pd / 2 - 0.12, 0.05);
   let nextMote = 0, lastT = -1;
+  const SHOULDER = [SEAT[0] - 0.38 * K, 0, SEAT[2] + 0.12 * K], ARM_YAW = Math.atan2(-0.11, -0.8); // where the arm must end; the way it was modelled
   const setPower = (p) => { power = Math.max(0, Math.min(1.5, p)); };
   const setWritten = (w) => { target = w == null ? null : Math.max(0, Math.min(1, w)); };
 
@@ -204,7 +205,9 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
     if (whole < live) { const s = strokes[fixed + whole], c = onPage(s.sx, s.u0 - s.len * frac, s.v); NIB[0] = c[0]; NIB[1] = c[1]; NIB[2] = c[2]; }
     const scr = writing ? 1 : 0;
     pen.position[0] = NIB[0] + (REST[0] - NIB[0]) * lift * 0.5; pen.position[1] = NIB[1] + 0.004 + lift * 0.06 + scr * Math.abs(Math.sin(time * 31)) * 0.004; pen.position[2] = NIB[2] + (REST[2] - NIB[2]) * lift * 0.5 + scr * Math.sin(time * 23) * 0.006;
-    pen.setRot(scr * Math.sin(time * 23) * 3, 0, scr * Math.sin(time * 17) * 2);
+    // swing the forearm about the nib so its far end stays inside his shoulder wherever on the page the hand is
+    const yaw = (Math.atan2(SHOULDER[0] - pen.position[0], SHOULDER[2] - pen.position[2]) - ARM_YAW) / DEG;
+    pen.setRot(scr * Math.sin(time * 23) * 3, yaw, scr * Math.sin(time * 17) * 2);
     // candle
     const fl = 0.9 + 0.1 * Math.sin(time * 11.3) * Math.sin(time * 6.1) + 0.04 * Math.sin(time * 23);
     flameNode.scale[1] = 0.9 + 0.25 * fl + 0.08 * Math.sin(time * 15); flameNode.setRot(Math.sin(time * 3.3) * 4, time * 50, Math.sin(time * 2.7) * 6);

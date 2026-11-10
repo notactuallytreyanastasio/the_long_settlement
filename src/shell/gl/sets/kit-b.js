@@ -244,8 +244,9 @@ export function rug({ w = 4, d = 2.6, field = KB.wine, border = KB.brass, line =
   const loz = (s, c, dy) => tint(place(cylinder(s, s, y, 4), 0, dy, 0, 0, 0, 0, 1, 1, Math.min(1, (d * 0.3) / s)), c);
   parts.push(loz(Math.min(w, d) * 0.36, line, 0.016), loz(Math.min(w, d) * 0.3, medallion, 0.02), loz(Math.min(w, d) * 0.13, border, 0.024));
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) parts.push(tint(place(cylinder(0.14, 0.14, y, 4), sx * (w / 2 - 0.62), 0.016, sz * (d / 2 - 0.62)), border));
-  const nf = Math.round(d / 0.14);
-  for (const sx of [-1, 1]) for (let i = 0; i < nf; i++) parts.push(bx(0.16, 0.008, 0.05, sx * (w / 2 + 0.07), 0.005, -d / 2 + (d * (i + 0.5)) / nf, fringe));
+  // fringe on the two short ends
+  const long = d > w, span = long ? w : d, nf = Math.round(span / 0.14);
+  for (const sg of [-1, 1]) for (let i = 0; i < nf; i++) { const u = -span / 2 + (span * (i + 0.5)) / nf; parts.push(long ? bx(0.05, 0.008, 0.16, u, 0.005, sg * (d / 2 + 0.07), fringe) : bx(0.16, 0.008, 0.05, sg * (w / 2 + 0.07), 0.005, u, fringe)); }
   return setOutline(merge(parts), 0.6);
 }
 
@@ -425,12 +426,12 @@ export function bookshelf({ w = 1.6, h = 2.6, d = 0.42, rows = 4, seed = 1, colo
   return wonk(keep(merge(parts), { top: [0, h + 0.1, 0] }), { lean: lean * (r() > 0.5 ? 1 : -1), bulge: 0.02 });
 }
 
-/** A leaning tower of files tied with ribbon: `n` bundles, each a little askew. Stands on y = 0. anchors: top */
-export function fileStack({ n = 7, seed = 1, w = 0.42, d = 0.32, colors = [KB.parchment, '#ffe6b0', '#dfe8ff', '#ffd9c8'], ribbon = KB.ribbon, lean = 0.08 } = {}) {
+/** A leaning tower of files tied with ribbon: `n` bundles, each a little askew (round: false = plain boxes, a ninth of the triangles). Stands on y = 0. anchors: top */
+export function fileStack({ n = 7, seed = 1, w = 0.42, d = 0.32, colors = [KB.parchment, '#ffe6b0', '#dfe8ff', '#ffd9c8'], ribbon = KB.ribbon, lean = 0.08, round = true } = {}) {
   const r = R(seed), parts = []; let y = 0, ox = 0;
   for (let i = 0; i < n; i++) {
     const hh = 0.07 + r() * 0.09, yaw = (r() - 0.5) * 34; ox += (r() - 0.35) * lean;
-    parts.push(rb(w * (0.9 + r() * 0.2), hh, d * (0.9 + r() * 0.2), 0.012, ox, y + hh / 2, (r() - 0.5) * 0.05, colors[Math.floor(r() * colors.length)], 0, yaw, 0));
+    parts.push((round ? rb : (bw, bh, bd, _r, ...rest) => bx(bw, bh, bd, ...rest))(w * (0.9 + r() * 0.2), hh, d * (0.9 + r() * 0.2), 0.012, ox, y + hh / 2, (r() - 0.5) * 0.05, colors[Math.floor(r() * colors.length)], 0, yaw, 0));
     if (r() < 0.6) parts.push(bx(0.05, hh + 0.012, d * 1.14, ox, y + hh / 2, 0, r() < 0.7 ? ribbon : KB.teal, 0, yaw, 0));
     y += hh + 0.004;
   }

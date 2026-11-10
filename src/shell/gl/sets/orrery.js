@@ -72,7 +72,6 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   const [light, L] = lightOf('orrery', LIGHTS, lightName);
   const M = kitBMaterials(), r = rng(4040);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
-  if (low) env.shadow.size = 512;
   env.water.level = -7; env.water.shores = [];
 
   // ---- the room: a round floor, five wall bays each with an arch on the sea, a dome

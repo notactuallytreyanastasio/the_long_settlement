@@ -1035,8 +1035,8 @@ export function lanternLines({ strings, material, sprites = null, shapes = 2, se
  *   spots     [{ pos: [x, y, z], face: degrees, s?: scale }], in the order they should arrive
  *   material  kitMaterials().prop (outlined) or .speck (not);  sprites: for a glow on each light, or null
  *   hold      'lantern' | 'torch' | 'none';  detail 1 | 0;  colors: pale instance colours (COATS)
- * Returns { node, people, amount, setAmount(0..1), update(time, dt, { lit, lively }) }: setAmount is how much of the
- * crowd has turned up (they pop in and out one by one); lit 0..1.5 scales the lights; lively 0..1 how much they bob and
+ * Returns { node, people, amount, pace, setAmount(0..1), update(time, dt, { lit, lively }) }: setAmount is how much of the
+ * crowd has turned up (they pop in and out one by one, `pace` people a second, 9 by default); lit 0..1.5 scales the lights; lively 0..1 how much they bob and
  * shove (0.25 is a quiet vigil, 1 a march).
  */
 export function crowd({ spots, material, sprites = null, seed = 1, detail = 1, hold = 'lantern', colors = COATS, glow = '#ffc060', glowSize = 0.75, amount = 1, variants = 3 }) {
@@ -1048,14 +1048,16 @@ export function crowd({ spots, material, sprites = null, seed = 1, detail = 1, h
   }
   const people = spots.map((sp, i) => ({ kind: kinds[i % V], pos: sp.pos, face: sp.face || 0, s: sp.s || 0.88 + r() * 0.24, ph: r() * 6.283, col: rgb(colors[Math.floor(r() * colors.length) % colors.length]), here: i < Math.round(amount * spots.length) ? 1 : 0, glow: sprites && hold !== 'none' ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: glowSize, color: glow, alpha: 0 }) : null }));
   const Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), P = [0, 0, 0];
+  let arrived = Math.round(amount * spots.length);
   const c = {
-    node: n, people, amount,
+    node: n, people, amount, pace: 9,
     setAmount(a) { c.amount = Math.max(0, Math.min(1, a)); },
     update(time, dt = 0, { lit = 1, lively = 0.3 } = {}) {
-      const want = Math.round(c.amount * people.length);
+      const want = Math.round(c.amount * people.length), pace = c.pace * dt;
+      arrived = dt === 0 ? want : arrived + Math.max(-pace, Math.min(pace, want - arrived)); // one by one, `pace` a second: never the whole crowd in one frame
       for (let v = 0; v < V; v++) kinds[v].n = 0;
       for (let i = 0; i < people.length; i++) {
-        const p = people[i], goal = i < want ? 1 : 0, kind = p.kind, d = kind.node.instances.data, k = kind.n, A = kind.A;
+        const p = people[i], goal = i < arrived ? 1 : 0, kind = p.kind, d = kind.node.instances.data, k = kind.n, A = kind.A;
         p.here += (goal - p.here) * Math.min(1, dt * 7 + (dt === 0 ? 1 : 0));
         if (p.here < 0.02) { if (p.glow) p.glow.alpha = 0; continue; }
         const hop = Math.abs(Math.sin(time * (2.2 + lively * 2.6) + p.ph)) * 0.05 * lively, sw = Math.sin(time * 1.1 + p.ph * 1.7) * (2 + 5 * lively) * DEG, yaw = (p.face + Math.sin(time * 0.6 + p.ph) * 8 * lively) * DEG;

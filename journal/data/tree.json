@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 39205,
-  "lines": 618
+  "bytes": 39926,
+  "lines": 632
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12551,43 +12551,43 @@
  },
  {
   "path": "src/shell/gl/sets/abstract.js",
-  "bytes": 9562,
+  "bytes": 9665,
   "lines": 130
  },
  {
   "path": "src/shell/gl/sets/bench.js",
-  "bytes": 18222,
+  "bytes": 18314,
   "lines": 229
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
-  "bytes": 21135,
-  "lines": 270
+  "bytes": 21159,
+  "lines": 269
  },
  {
   "path": "src/shell/gl/sets/ferry-dawn.js",
-  "bytes": 20540,
+  "bytes": 20608,
   "lines": 256
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
-  "bytes": 28132,
-  "lines": 349
+  "bytes": 28022,
+  "lines": 348
  },
  {
   "path": "src/shell/gl/sets/index.js",
-  "bytes": 1281,
-  "lines": 29
+  "bytes": 1482,
+  "lines": 33
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
-  "bytes": 59353,
-  "lines": 773
+  "bytes": 59652,
+  "lines": 774
  },
  {
   "path": "src/shell/gl/sets/kit.js",
-  "bytes": 80400,
-  "lines": 1080
+  "bytes": 80687,
+  "lines": 1082
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12596,18 +12596,18 @@
  },
  {
   "path": "src/shell/gl/sets/ledger.js",
-  "bytes": 18938,
-  "lines": 236
+  "bytes": 19311,
+  "lines": 239
  },
  {
   "path": "src/shell/gl/sets/mint-office.js",
-  "bytes": 20978,
-  "lines": 231
+  "bytes": 20944,
+  "lines": 230
  },
  {
   "path": "src/shell/gl/sets/orrery.js",
-  "bytes": 19026,
-  "lines": 214
+  "bytes": 18992,
+  "lines": 213
  },
  {
   "path": "src/shell/gl/sets/pier-riot.js",

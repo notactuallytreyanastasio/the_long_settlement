@@ -105,7 +105,7 @@ function buildLine(engine = GL0, { light, low = false } = {}) {
     bars.instances.dirty = true;
     for (let i = 0; i < 3; i++) { // each hoop grows from the bezel to three times its size, dimming as it goes
       const u = ((time * 0.22 + i / 3) % 1 + 1) % 1, s = R0 + 0.1 + u * 1.5, a = (1 - u) * (0.35 + 0.65 * Math.min(1, lv * 2.5));
-      rings[i].setScale(s, s, 1); rings[i].tint[0] = rings[i].tint[1] = rings[i].tint[2] = a;
+      rings[i].setScale(s, s, 1); rings[i].tint[0] = 0.03 + a * 0.97; rings[i].tint[1] = 0.12 + a * 0.88; rings[i].tint[2] = 0.14 + a * 0.86; // fades to the dark's own teal, never to a black hoop
     }
     halo.alpha = (0.2 + 0.25 * lv) * (0.6 + 0.4 * power);
     env.points[0].intensity = lamps[0].base * (0.8 + 0.5 * lv);

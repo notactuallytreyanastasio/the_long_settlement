@@ -15,8 +15,12 @@ import { pierRiot } from './pier-riot.js';
 import { ferryDawn } from './ferry-dawn.js';
 import { ledger } from './ledger.js';
 import { line, black } from './abstract.js';
+import { drumHall } from './drum-hall.js';
+import { bench } from './bench.js';
+import { mintOffice } from './mint-office.js';
+import { orrery } from './orrery.js';
 
-const list = [lanternStalls, harborNight, pierRiot, ferryDawn, ledger, line, black];
+const list = [lanternStalls, harborNight, pierRiot, ferryDawn, ledger, line, black, drumHall, bench, mintOffice, orrery];
 
 export const SETS = {};
 for (const s of list) {

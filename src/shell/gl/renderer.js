@@ -223,6 +223,7 @@ export function createRenderer(canvas, opts = {}) {
         if (seen) {
           // how big it is on screen, for the outline pass (0 = unknown: always outlined)
           n._px = bounded ? sph[3] / (Math.max(Math.hypot(sph[0] - frame.camera.position[0], sph[1] - frame.camera.position[1], sph[2] - frame.camera.position[2]), 1e-3) * frame.pxUnit) : 0;
+          n._r = bounded ? sph[3] : Infinity;
           if (mat.kind === 'beam') beams.push(n);
           else if (mat.texMode === 'blend') blended.push(n);
           else opaque.push(n);
@@ -243,6 +244,19 @@ export function createRenderer(canvas, opts = {}) {
     for (let i = 1; i < list.length; i++) {
       const x = list[i], k = orderKey(x); let j = i - 1;
       while (j >= 0 && orderKey(list[j]) > k) { list[j + 1] = list[j]; j--; }
+      list[j + 1] = x;
+    }
+  }
+  /**
+   * Opaque things are drawn smallest first: figures and props, then buildings, then the ground and the
+   * backdrop, which are mostly hidden by then and fail the depth test instead of being shaded and painted
+   * over. (A true front-to-back sort means nothing for a merged set whose one mesh is everywhere at once;
+   * size is the order that works for them. Measured on the stage band: 3.1 shaded fragments a pixel -> see the report.)
+   */
+  function sortBySize(list) {
+    for (let i = 1; i < list.length; i++) {
+      const x = list[i], k = x._r; let j = i - 1;
+      while (j >= 0 && list[j]._r > k) { list[j + 1] = list[j]; j--; }
       list[j + 1] = x;
     }
   }
@@ -399,7 +413,7 @@ export function createRenderer(canvas, opts = {}) {
     opaque.length = 0; blended.length = 0; beams.length = 0; casters.length = 0; statics.length = 0; nCand = 0; staticHash = 0;
     for (let i = 0; i < env.points.length; i++) { const l = env.points[i]; addLight(l.pos[0], l.pos[1], l.pos[2], l.color, l.radius, l.intensity ?? 1, camera.target); }
     collect(scene.root);
-    sortByMaterial(opaque); sortByMaterial(casters);
+    sortBySize(opaque); sortByMaterial(casters);
     nPoints = 0;
     const lampCap = Math.min(S.MAX_POINTS, Q.maxLamps, view && view.maxLamps != null ? view.maxLamps : S.MAX_POINTS);
     for (let k = 0; k < lampCap && k < nCand; k++) { // the lanterns nearest what the camera looks at

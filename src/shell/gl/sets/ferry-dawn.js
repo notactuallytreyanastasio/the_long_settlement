@@ -36,12 +36,12 @@ const LIGHTS = {
   dawn: {
     preset: 'sunset', power: 0.55,
     env: {
-      key: { dir: dirFrom(20, 20), color: '#fff0d2' },
+      key: { dir: dirFrom(-14, 21), color: '#fff0d2' },   // the sun is just up over the headland, left of the lighthouse
       shadow: { tint: '#a79cf0', lift: 0.12, saturate: 1.3 },
       ambient: { sky: '#ffc8d8', ground: '#a8a0f0', amount: 0.2 },
       rim: { color: '#ffe6a8', amount: 1.1, edge: 0.72 },
       fog: { color: '#ffd9c8', density: 0.0032, start: 20, max: 0.86 },
-      sky: { zenith: '#6f9af0', mid: '#f7b0cc', midAt: 0.36, horizon: '#ffe6a6', below: '#ffcfae', glow: '#fff2b8', glowAmount: 0.75, sunDir: dirFrom(13.5, 5.2), sun: { color: '#ffffff', size: 3.4, halo: '#ffc870', haloAmount: 0.75 } },
+      sky: { zenith: '#6f9af0', mid: '#f7b0cc', midAt: 0.36, horizon: '#ffe6a6', below: '#ffcfae', glow: '#fff2b8', glowAmount: 0.75, sunDir: dirFrom(-7.4, 4.6), sun: { color: '#ffffff', size: 3.4, halo: '#ffc870', haloAmount: 0.75 } },
       water: { deep: '#5f8fe0', mid: '#8fb8f0', shallow: '#ffd2c2', foam: '#fffaf0', glint: '#fff0b8', glintDensity: 0.34, drift: [0.1, 0.5] },
     },
     cloud: { color: '#ffd2dc', shadowTint: '#b79cf0' },
@@ -208,7 +208,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     carrow.visible = afloat > 0;
     if (carrow.visible) {
       const u = afloatNow;
-      carrow.position[0] = -1.8 - u * 15; carrow.position[1] = WATER + Math.sin(time * 1.4) * 0.03; carrow.position[2] = RAIL_Z - 6.4 - u * 44;
+      carrow.position[0] = -1.8 - u * 7.5; carrow.position[1] = WATER + Math.sin(time * 1.4) * 0.03; carrow.position[2] = RAIL_Z - 6.4 - u * 44;
       const s = 1 + u * 2.2; carrow.scale[0] = carrow.scale[1] = carrow.scale[2] = s; carrow.setRot(Math.sin(time * 1.1) * 3, time * 9, Math.sin(time * 1.5) * 4);
       carrowGlow.pos[0] = carrow.position[0]; carrowGlow.pos[1] = carrow.position[1] + 0.26 * s; carrowGlow.pos[2] = carrow.position[2]; carrowGlow.size[0] = carrowGlow.size[1] = 1.5 * s; carrowGlow.alpha = 0.75 + 0.1 * Math.sin(time * 5);
     } else carrowGlow.alpha = 0;

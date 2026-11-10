@@ -67,7 +67,6 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   const [light, L] = lightOf('mint-office', LIGHTS, lightName);
   const M = kitBMaterials(), r = rng(808);
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
-  if (low) env.shadow.size = 512;
   const WL = wing(-1, BW, BACK, FW, WING_Z), WR = wing(1, BW, BACK, FW, WING_Z);
   const PANEL_H = 3.3, PAN = { color: KB.wine, panel: '#d8527a', bead: KB.brass, rail: KB.wineDark };
 

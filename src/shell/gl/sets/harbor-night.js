@@ -146,7 +146,6 @@ function build(engine = GL0, { light, low = false } = {}) {
   for (const z of [-9.5, -18.6]) mid.add(node('hawser', tint(tube(curve([[PIER_X + PIER_W / 2 + 0.06, 0.5, z], [PIER_X + PIER_W / 2 + 0.3, 0.1, z - 0.1], [FERRY[0] - 1.5, WATER + 0.8, z - (z < -14 ? -0.8 : 0.8)]], 8), 0.028, 5, { crease: 180 }), PAL.rope), M.prop));
   for (const [x, z, s, seed] of [[-9.5, -17, 1.4, 3], [-11, -16.2, 0.9, 5], [11.5, -22, 1.8, 8]]) mid.add(node('rock', rock({ seed, s }), M.prop, { pos: [x, WATER - 0.05, z] }));
   const boatMesh = boat({ len: 3.1, hull: PAL.cream, keel: PAL.red, pennant: PAL.yellow, seed: 1 });
-  if (low) mid.add(node('boat', boatMesh, M.prop, { pos: BOAT, rot: [2, 70, 3] })); // low: moored still, inside the mid mesh (saves two draws)
   mid.traverse((n) => { n.castShadow = false; });
 
   // strings: from the great mast across the quay and out to the ferry's masthead, and the ferry dressed overall
@@ -198,8 +197,8 @@ function build(engine = GL0, { light, low = false } = {}) {
   const foreground = mergeStatic(fg, 'foreground');
   scene.root.add(foreground);
 
-  // ---- a small boat on the left of the pier, bobbing (low: it is part of `mid`)
-  const boatNode = low ? null : node('boat', boatMesh, M.prop, { pos: BOAT, rot: [0, 70, 0] });
+  // ---- a small boat on the left of the pier, bobbing
+  const boatNode = low ? null : node('boat', boatMesh, M.prop, { pos: BOAT, rot: [0, 70, 0] }); // low: no boat (3k triangles nobody looks at in the band)
   if (boatNode) { boatNode.castShadow = false; scene.root.add(boatNode); }
 
   // ---- sprites first: everything below adds glows to them
@@ -221,7 +220,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     // interleave, so a thin crowd is thin everywhere
     for (let i = 0; i < Math.max(pierSide.length, quaySide.length); i++) { if (i < pierSide.length) spots.push(pierSide[i]); if (i < quaySide.length) spots.push(quaySide[i]); }
   }
-  const folk = crowd({ spots: low ? spots.filter((_, i) => i % 5 < 3) : spots, material: M.prop, sprites, seed: 11, amount: L.crowd, glow: '#ffc060', variants: low ? 2 : 3 });
+  const folk = crowd({ spots: low ? spots.filter((_, i) => i % 2 === 0) : spots, material: M.prop, sprites, seed: 11, amount: L.crowd, glow: '#ffc060', variants: low ? 2 : 3 });
   scene.root.add(folk.node);
 
   // ---- lamps: six fixed point lights

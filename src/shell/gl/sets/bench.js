@@ -81,7 +81,6 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   const [light, L] = lightOf('bench', LIGHTS, lightName);
   const M = kitBMaterials(), r = rng(311), night = L.night;
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
-  if (low) env.shadow.size = 512;
   const WL = wing(-1, BW, BACK, FW, WING_Z), WR = wing(1, BW, BACK, FW, WING_Z);
 
   // ---- the room
@@ -90,7 +89,7 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   const WIN = { x: -0.9, w: 2.5, sill: 1.3, top: 4.75, arch: true };
   const DOOR = { x: -3.4, w: 1.5, sill: 0, top: 2.62 };
   room.add(node('back', wall({ w: BW * 2 + 0.4, h: H, t: 0.4, color: '#ffd6c2', openings: [DOOR, WIN] }), M.wall, { pos: [0, 0, BACK] }));
-  room.add(node('corridor', setGlow(tint(place(box(2.6, 3.0, 0.1), DOOR.x, 1.5, BACK - 1.3), night ? '#ffb45e' : '#ffe2b0'), 0.9), M.flat));
+  room.add(node('corridor', setGlow(tint(place(box(2.6, 3.0, 0.1), DOOR.x, 1.5, BACK - 1.3), night ? '#fff0a8' : '#fff6d8'), 1), M.flat));
   room.add(node('wainscot', wainscot({ w: 6.3, h: 1.3, n: 5, color: KB.plum, panel: '#8d62d4', bead: KB.brass, rail: KB.plumDark }), M.wall, { pos: [1.25, 0, BACK] }));
   room.add(node('wing-l', wall({ w: WL.len + 0.3, h: H, t: 0.4, color: '#ffcbb8' }), M.wall, { pos: WL.pos, rot: [0, WL.yaw, 0] }));
   room.add(node('wing-r', wall({ w: WR.len + 0.3, h: H, t: 0.4, color: '#ffcbb8' }), M.wall, { pos: WR.pos, rot: [0, WR.yaw, 0] }));
@@ -101,6 +100,7 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
 
   // ---- props
   const props = group('props'), deco = (n) => { n.castShadow = false; return n; };
+  const far = (n) => (low ? deco(n) : n); // low: only the desk and chair throw shadows
   props.add(deco(node('window', windowFrame({ w: WIN.w, h: WIN.top - WIN.sill, color: KB.plumDark, bars: 2, fan: ['#7fe6d2', '#ffd65a', '#ff8fb4', '#ffd65a', '#7fe6d2'], glow: night ? 0.85 : 0.5, depth: 0.4 }), M.prop, { pos: [WIN.x, WIN.sill, BACK] })));
   for (const sx of [-1, 1]) props.add(deco(node('curtain', curtain({ w: 0.75, h: 3.7, color: KB.teal, side: sx }), M.prop, { pos: [WIN.x + sx * (WIN.w / 2 + 0.06), WIN.top + 0.25, BACK + 0.3] })));
   props.add(deco(node('rod', tint(place(box(WIN.w + 2.1, 0.07, 0.07), WIN.x, WIN.top + 0.3, BACK + 0.3), KB.brass), M.prop)));
@@ -118,16 +118,16 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   props.add(deco(node('papers', paperPile({ n: 5, seed: 3, s: 0.3 }), M.prop, { pos: [top[0] + 0.1, top[1], top[2] + 0.1] })), deco(node('ink', inkstand({}), M.prop, { pos: [top[0] - 0.35, top[1], top[2] + 0.25], rot: [0, 30, 0] })));
   props.add(deco(node('desk-files', fileStack({ n: 4, seed: 9, w: 0.36, d: 0.28 }), M.prop, { pos: [top[0] + 0.5, top[1], top[2] - 0.05] })), deco(node('writ', scroll({}), M.prop, { pos: [top[0] - 0.7, top[1], top[2] + 0.12], rot: [0, -30, 0] })));
   // books along the back wall
-  props.add(node('shelf1', bookshelf({ w: 1.7, h: 3.3, rows: 5, seed: 3, color: KB.woodRed, fill: 0.92 }), M.prop, { pos: [1.85, 0, BACK + 0.32] }));
-  props.add(node('shelf2', bookshelf({ w: 1.6, h: 2.9, rows: 5, seed: 7, color: KB.woodRed, fill: low ? 0.6 : 0.88 }), M.prop, { pos: [3.5, 0, BACK + 0.32] }));
-  props.add(node('shelf3', bookshelf({ w: 1.45, h: 2.5, rows: 4, seed: 11, color: KB.woodRed, fill: low ? 0.55 : 0.85 }), M.prop, { pos: WL.at(0.9, 0.3), rot: [0, WL.yaw, 0] }));
+  props.add(far(node('shelf1', bookshelf({ w: 1.7, h: 3.3, rows: 5, seed: 3, color: KB.woodRed, fill: 0.92 }), M.prop, { pos: [1.85, 0, BACK + 0.32] })));
+  props.add(far(node('shelf2', bookshelf({ w: 1.6, h: 2.9, rows: 5, seed: 7, color: KB.woodRed, fill: low ? 0.6 : 0.88 }), M.prop, { pos: [3.5, 0, BACK + 0.32] })));
+  props.add(far(node('shelf3', bookshelf({ w: 1.45, h: 2.5, rows: 4, seed: 11, color: KB.woodRed, fill: low ? 0.55 : 0.85 }), M.prop, { pos: WL.at(0.9, 0.3), rot: [0, WL.yaw, 0] })));
   props.add(deco(node('shelf-files', fileStack({ n: 4, seed: 5 }), M.prop, { pos: [3.5, 3.02, BACK + 0.32] })), deco(node('shelf-globe', globe({ r: 0.26 }), M.prop, { pos: WL.at(0.9, 0.3, 2.6) })));
   // shelves of box files on the right wing
   const rs = WR.at(0.4, 0.3);
-  props.add(node('shelf4', bookshelf({ w: 2.4, h: 2.7, rows: 4, seed: 15, color: KB.woodRed, colors: [KB.parchment, '#ffe6b0', '#dfe8ff', KB.teal, KB.ribbon, '#ffd9c8'], fill: low ? 0.6 : 0.9 }), M.prop, { pos: rs, rot: [0, WR.yaw, 0] }));
+  props.add(far(node('shelf4', bookshelf({ w: 2.4, h: 2.7, rows: 4, seed: 15, color: KB.woodRed, colors: [KB.parchment, '#ffe6b0', '#dfe8ff', KB.teal, KB.ribbon, '#ffd9c8'], fill: low ? 0.6 : 0.9 }), M.prop, { pos: rs, rot: [0, WR.yaw, 0] })));
   // the files: towers of them between the door and the desk
   const towers = [[-1.95, -1.35, 10, 1], [-1.2, -2.15, 13, 2], [-2.7, -2.3, 8, 3], [-0.35, -1.7, 7, 4], [0.35, -2.75, 11, 5], [-0.95, -3.3, 6, 6], [-2.0, -3.4, 9, 7], [3.95, -0.9, 12, 8], [4.75, -0.25, 8, 9], [0.4, -1.2, 4, 10]];
-  towers.forEach(([x, z, n, seed], i) => { if (low && i > 5) return; props.add(node('tower' + i, fileStack({ n, seed, w: 0.46, d: 0.36, lean: 0.07 }), M.prop, { pos: [x, 0, z], rot: [0, r() * 60 - 30, 0] })); });
+  towers.forEach(([x, z, n, seed], i) => { if (low && i > 5) return; props.add(far(node('tower' + i, fileStack({ n, seed, w: 0.46, d: 0.36, lean: 0.07, round: !low }), M.prop, { pos: [x, 0, z], rot: [0, r() * 60 - 30, 0] }))); });
   props.add(node('stool', stool({ seat: KB.teal }), M.prop, { pos: [-3.2, 0, -1.5] }));
   // framed things on the walls
   const frame = (w, h, c, c2) => merge(tint(place(box(w, h, 0.06), 0, 0, 0.03), KB.brass), tint(place(box(w - 0.14, h - 0.14, 0.02), 0, 0, 0.065), c), tint(place(box((w - 0.14) * 0.5, (h - 0.14) * 0.4, 0.02), 0, -h * 0.08, 0.075), c2));
@@ -150,7 +150,7 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   const leaf = node('door-leaf', doorLeaf({ w: DW, h: DH, color: KB.wine, glass: '#ffc878', glow: night ? 0.85 : 0.4 }), M.prop); leaf.castShadow = false;
   doorPivot.add(leaf); scene.root.add(doorPivot);
   // the corridor's light on the chamber floor: a wedge from the latch side that widens as the door opens
-  const spill = node('door-spill', setOutline(setGlow(tint(fromArrays([0, 0, 0, 0.5, 0, 0, 0, 0, 2.6, 1.9, 0, 2.3], [0, 2, 3, 0, 3, 1], null, 180), night ? '#ffc070' : '#ffe6b8'), 0.75), 0), M.flat, { pos: [DOOR.x + DW / 2 - 0.5, 0.008, BACK + 0.05], visible: false });
+  const spill = node('door-spill', setOutline(setGlow(tint(fromArrays([0, 0, 0, 0.6, 0, 0, 0.5, 0, 3.4, 2.9, 0, 3.0], [0, 2, 3, 0, 3, 1], null, 180), night ? '#fff2b0' : '#fff8dc'), 0.95), 0), M.flat, { pos: [DOOR.x + DW / 2 - 0.5, 0.008, BACK + 0.05], visible: false });
   scene.root.add(spill);
 
   // ---- the listening shell under the lip of the desk
