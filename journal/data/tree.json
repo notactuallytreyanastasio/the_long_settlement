@@ -12475,6 +12475,11 @@
   "lines": 730
  },
  {
+  "path": "src/shell/gl/atlas.js",
+  "bytes": 2172,
+  "lines": 43
+ },
+ {
   "path": "src/shell/gl/gl.js",
   "bytes": 9672,
   "lines": 159
@@ -12490,6 +12495,16 @@
   "lines": 581
  },
  {
+  "path": "src/shell/gl/renderer.js",
+  "bytes": 19595,
+  "lines": 354
+ },
+ {
+  "path": "src/shell/gl/rig.js",
+  "bytes": 9932,
+  "lines": 191
+ },
+ {
   "path": "src/shell/gl/scene.js",
   "bytes": 21702,
   "lines": 381
@@ -12498,6 +12513,11 @@
   "path": "src/shell/gl/shaders.js",
   "bytes": 19113,
   "lines": 394
+ },
+ {
+  "path": "src/shell/gl/sprites.js",
+  "bytes": 7821,
+  "lines": 131
  },
  {
   "path": "src/shell/input.js",
