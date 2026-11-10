@@ -42,6 +42,7 @@ import {
   boat, house, lighthouse, lampPost, pole, headland, cloudBank, gull, quayEdge, cobble, rock, bush,
 } from './kit.js';
 import { trimSet } from '../scene.js';
+import { withDetail } from '../mesh.js';
 
 const QUAY_Z = -7.6, WATER = -0.5;
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
@@ -390,5 +391,5 @@ function build(engine = GL0, { light = 'dusk', low = false } = {}) {
   };
 }
 
-export const lanternStalls = { id: 'lantern-stalls', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
+export const lanternStalls = { id: 'lantern-stalls', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = withDetail(o && o.low ? 0.7 : 1, () => build(g, o)); trimSet(set); return set; } };   // low: round things are cut with 0.7 of their segments (mesh.js withDetail); trimSet: each pass skips the triangles its cameras can never see
 export default lanternStalls;

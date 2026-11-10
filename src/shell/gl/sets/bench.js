@@ -31,6 +31,7 @@ import {
   desk, chair, pew, stool, bookshelf, fileStack, paperPile, scroll, hangingLamp, deskLamp, sconce, scales, globe, inkstand,
 } from './kit-b.js';
 import { trimSet } from '../scene.js';
+import { withDetail } from '../mesh.js';
 
 const BW = 4.4, BACK = -4.4, FW = 7.0, WING_Z = 2.4, H = 5.7;
 
@@ -225,5 +226,5 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   });
 }
 
-export const bench = { id: 'bench', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
+export const bench = { id: 'bench', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = withDetail(o && o.low ? 0.7 : 1, () => build(g, o)); trimSet(set); return set; } };   // low: round things are cut with 0.7 of their segments (mesh.js withDetail); trimSet: each pass skips the triangles its cameras can never see
 export default bench;

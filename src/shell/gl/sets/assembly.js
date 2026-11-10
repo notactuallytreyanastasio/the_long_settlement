@@ -14,8 +14,9 @@
 //   setDraped(n)        how many of the twelve seats are still under grey cloth (12 .. 0)
 //   setHouse(0..1)      how many of the twenty-eight delegates are in their seats (m7: 0.5)
 //   task('seat-block', i)  -> { pos, stand: null, set(v) }: the scene-5 encounter. The house in three blocks, stage left
-//                       to stage right; v 0..1 brings block i to its feet. Asking for block 0 seats everyone under a white eye.
-//   task('casting-vote') -> { pos (the treaty), stand: null, set(v) }: the scene-7 encounter, in quarters: the house
+//                       to stage right; v 0..1 brings block i to its feet. pos is the head of the delegate on the floor who
+//                       speaks for that block (marks.extras). Asking for block 0 seats everyone under a white eye.
+//   task('casting-vote') -> { pos (the teller being counted), stand: null, set(v) }: the scene-7 encounter, in quarters: the house
 //                       finds its seats (half of it after THE SUM: kit-ch8 lean8()), one arm of the horseshoe stands,
 //                       then the other, then all sit and the treaty on its table is lit.
 //   encounter(st)       (the director, at a scene's setup) everyone seated, cloths on, the eye white
@@ -51,7 +52,7 @@ const LIGHTS = { noon: { preset: 'day', power: 1, sky: 1, env: ENV }, grey: { pr
 const GREY = { key: rgb('#9a9ec8'), tint: rgb('#5a5cb4'), zenith: rgb('#8a90b8'), mid: rgb('#a8aecc'), horizon: rgb('#c4c8dc') };
 
 const CAMERAS = cams({
-  wide: { target: [0.05, 2.45, -0.6], dist: 8.8, yaw: 2, pitch: 0, fov: 47 },
+  wide: { target: [0.05, 1.95, -0.6], dist: 9.0, yaw: 2, pitch: 2, fov: 47 },
   low: { target: [0.1, 2.6, -0.2], dist: 6.4, yaw: -5, pitch: -22, fov: 60 },
   stage: { target: [0, 1.2, 0.3], dist: 9.6, yaw: -12, pitch: 6, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -1], shadowRadius: 8, outline: 0.7 },
   landscape: { target: [0, 2.2, -1.6], dist: 11, yaw: 3, pitch: 3, fov: 44 },
@@ -142,15 +143,22 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   let sky = L.sky, skyNow = L.sky, draped = 12, houseGoal = 1, houseNow = 1;
   const setSky = (v) => { sky = Math.max(0, Math.min(1, v)); }, setDraped = (n) => { draped = Math.max(0, Math.min(12, Math.round(n))); }, setHouse = (v) => { houseGoal = Math.max(0, Math.min(1, v)); };
   const rise = [0, 0, 0], arms = [0, 0];
-  const blockAt = (b) => { let x = 0, y = 0, z = 0, n = 0; for (const p of people) if (p.block === b && p.s.row === 0) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } if (!n) for (const p of people) if (p.block === b) { x += p.s.pos[0]; y += p.s.pos[1]; z += p.s.pos[2]; n++; } return [Math.max(-3.3, Math.min(3.3, x / n)), y / n + 1.3, z / n + 0.3]; };
-  const blockTasks = [0, 1, 2].map((b) => unit8(blockAt(b), null, (v) => { rise[b] = v; }));
+  // Where an encounter's delegates stand on the floor of the house (the director pins its extras here), and, left to right,
+  // the head of each: a block's unit sits on the delegate who speaks for it, so the band's ring and the table's bolts land at
+  // stage height on a person, while the block itself rises behind him.
+  const FLOOR = [{ pos: [0.62, 0, 0.8], face: -58 }, { pos: [1.9, 0, 0.72], face: -62 }, { pos: [1.28, 0, 0.12], face: -50 }];
+  const headOf = (m) => [m.pos[0], 1.02, m.pos[2] + 0.12], BY_X = [FLOOR[0], FLOOR[2], FLOOR[1]];
+  const blockTasks = [0, 1, 2].map((b) => { const u = unit8(headOf(BY_X[b]), null, (v) => { rise[b] = v; }); u.size = 0.5; return u; });
   const treatyGlow = sprites.add({ kind: 'glow', pos: [FOCUS[0], FOCUS[1] + 0.15, FOCUS[2] + 0.2], size: 2.4, color: '#fff2b0', alpha: 0 });
   let treaty = 0, treatyNow = 0;
   const ss = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const voteTask = unit8([FOCUS[0], FOCUS[1] + 0.2, FOCUS[2] + 0.2], null, (v) => {
+  const votePos = headOf(FLOOR[0]), teller = (m) => { const h = headOf(m); votePos[0] = h[0]; votePos[1] = h[1]; votePos[2] = h[2]; };
+  const voteTask = unit8(votePos, null, (v) => {
+    teller(v < 0.5 ? FLOOR[0] : FLOOR[1]);          // the ayes' teller, then the noes'
     const full = lean8() === 'mint' ? 0.5 : 1, sat = ss(0.8, 0.98, v);
     setHouse(full * (0.4 + 0.6 * ss(0, 0.24, v))); arms[0] = ss(0.3, 0.5, v) * (1 - sat); arms[1] = ss(0.56, 0.75, v) * (1 - sat); treaty = sat;
   });
+  voteTask.size = 0.5;
   const fresh = () => { rise[0] = rise[1] = rise[2] = 0; arms[0] = arms[1] = 0; treaty = 0; uproar = 0; setSky(1); skyNow = 1; setDraped(12); };
   let uproar = 0;
   const encounter = () => { fresh(); setHouse(1); };
@@ -205,7 +213,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     marks: {
       ...marks8(), focus: FOCUS, lectern: { pos: [LEC[0], 0, LEC[2] + 0.95], face: 180 }, bar: { pos: [4.2, 0, 0.8], face: -70 }, gallery: { pos: [Math.sin(34 * DEG) * (RW - 0.95), GAL_Y, CZ - Math.cos(34 * DEG) * (RW - 0.95)], face: -34 },
       draped: dead.map((s) => [s.pos[0], s.pos[1], s.pos[2]]),
-      extras: [{ pos: [0.62, 0, 0.8], face: -58 }, { pos: [1.9, 0, 0.72], face: -62 }, { pos: [1.28, 0, 0.12], face: -50 }],
+      extras: FLOOR,
     },
     extra: { setSky, setDraped, setHouse, cue, task, encounter, setback },
   });

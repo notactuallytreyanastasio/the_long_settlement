@@ -190,27 +190,28 @@ function build(engine = null, { light, low = false } = {}) {
   const lampStar = sprites.add({ kind: 'sparkle', pos: LAMP, size: 1.5, color: '#fff6d0', alpha: 0.7 });
 
   // ---- the live stage's two tasks (see the header): Tobb's hopper table on an easel, and the three roof hatches
-  const EASEL = [2.05, 0, -1.45], BAR_X = [-0.42, 0, 0.42], BAR_H = [0.86, 0.66, 0.2], BAR_COL = [K6.cream, K6.yellow, K6.coral];
+  const EASEL = [1.2, 0, -0.95];      // low and near the middle: the band's HUD plates cover the top corners of the frame
+  const BAR_X = [-0.42, 0, 0.42], BAR_H = [0.86, 0.66, 0.2], BAR_COL = [K6.cream, K6.yellow, K6.coral];
   const easel = group('easel');
   easel.add(node('easel-frame', merge(
-    tint(place(box(1.56, 1.2, 0.05), 0, 1.5, 0), '#2c4a66'), tint(place(box(1.68, 0.07, 0.09), 0, 2.12, 0), K6.timberDark), tint(place(box(1.68, 0.07, 0.12), 0, 0.88, 0.02), K6.timberDark),
-    tint(place(box(0.07, 2.2, 0.07), -0.7, 1.1, -0.08, -7, 0, 0), K6.timberDark), tint(place(box(0.07, 2.2, 0.07), 0.7, 1.1, -0.08, -7, 0, 0), K6.timberDark), tint(place(box(0.07, 2.0, 0.07), 0, 1.0, -0.42, 16, 0, 0), K6.timberDark),
-    tint(place(box(1.3, 0.02, 0.02), 0, 1.0, 0.035), K6.chalk)), M.prop));
-  const bars = BAR_X.map((bx, i) => { const n = node('easel-bar' + i, setGlow(tint(place(box(0.26, 1, 0.02), 0, 0.5, 0), BAR_COL[i]), 0.5), M.prop, { pos: [bx, 1.02, 0.04] }); n.castShadow = false; n.setScale(1, 0.001, 1); n.visible = false; easel.add(n); return n; });
-  easel.position[0] = EASEL[0]; easel.position[2] = EASEL[2]; easel.setRot(0, -16, 0); easel.visible = false;
+    tint(place(box(1.56, 1.2, 0.05), 0, 1.2, 0), '#2c4a66'), tint(place(box(1.68, 0.07, 0.09), 0, 1.82, 0), K6.timberDark), tint(place(box(1.68, 0.07, 0.12), 0, 0.58, 0.02), K6.timberDark),
+    tint(place(box(0.07, 1.9, 0.07), -0.7, 0.95, -0.08, -7, 0, 0), K6.timberDark), tint(place(box(0.07, 1.9, 0.07), 0.7, 0.95, -0.08, -7, 0, 0), K6.timberDark), tint(place(box(0.07, 1.8, 0.07), 0, 0.9, -0.42, 16, 0, 0), K6.timberDark),
+    tint(place(box(1.3, 0.02, 0.02), 0, 0.7, 0.035), K6.chalk)), M.prop));
+  const bars = BAR_X.map((bx, i) => { const n = node('easel-bar' + i, setGlow(tint(place(box(0.26, 1, 0.02), 0, 0.5, 0), BAR_COL[i]), 0.5), M.prop, { pos: [bx, 0.72, 0.04] }); n.castShadow = false; n.setScale(1, 0.001, 1); n.visible = false; easel.add(n); return n; });
+  easel.position[0] = EASEL[0]; easel.position[2] = EASEL[2]; easel.setRot(0, -10, 0); easel.visible = false;
   scene.root.add(easel);
   const barV = [0, 0, 0];
   const setBar = (i, v) => { barV[i] = v; bars[i].visible = v > 0.01; bars[i].setScale(1, Math.max(0.001, BAR_H[i] * v), 1); };
   const HATCH_X = [-2.3, 0.1, 2.4], hatches = HATCH_X.map((hx, i) => {
     const g = group('hatch' + i);
-    g.add(node('hatch-shaft', place(shaft({ w: 1.1, h: 0.9, dir: [0.16 - 0.1 * i, 0.2, 1], len: 5.6, cards: 2, color: '#b8c8ff', spread: 0.3 }), hx, 5.5, -0.3, 90, 0, 0), M.shaft));
-    g.add(node('hatch-patch', patch({ w: 1.3, d: 1.5, panes: 2, shear: 0, color: '#c4d2ff', glow: 0.6 }), M.flat, { pos: [hx + 0.5 - 0.3 * i, 0.014, 0.75] }));
+    g.add(node('hatch-shaft', place(shaft({ w: 1.5, h: 1.0, dir: [0.16 - 0.1 * i, 0.2, 1], len: 5.7, cards: 3, color: '#eef3ff', spread: 0.25 }), hx, 5.5, -0.5, 90, 0, 0), M.shaft));
+    g.add(node('hatch-patch', patch({ w: 1.7, d: 1.7, panes: 2, shear: 0, color: '#e4ecff', glow: 0.85 }), M.flat, { pos: [hx + 0.5 - 0.3 * i, 0.014, 0.55] }));
     g.visible = false; scene.root.add(g);
-    return { g, glow: sprites.add({ kind: 'glow', pos: [hx, 4.6, -0.2], size: 3.2, color: '#b8c8ff', alpha: 0 }), v: 0 };
+    return { g, glow: sprites.add({ kind: 'glow', pos: [hx + 0.3, 1.3, -0.1], size: 2.6, color: '#c8d6ff', alpha: 0 }), v: 0 };
   });
   const surge = pulse(1.7);
   const tallyUnits = BAR_X.map((bx, i) => taskUnit({
-    pos: [EASEL[0] + bx, 1.5, EASEL[2] + 0.1], stand: [EASEL[0] - 1.05 + bx * 0.5, 0.25],
+    pos: [EASEL[0] + bx, 1.2, EASEL[2] + 0.1], stand: [EASEL[0] - 1.0 + bx * 0.5, 0.2],
     apply(v, fresh) { if (fresh) { easel.visible = true; for (const h of hatches) h.v = 0; setKey(false); setVote(0); } setBar(i, v); },
   }));
   const hatchUnits = HATCH_X.map((hx, i) => taskUnit({

@@ -444,7 +444,7 @@ function paintFunctional(kit, layout, at = {}) {
     }
     const lab = table.labels[s.id]; if (lab) plate(s.id, lab, s.lamp[0] - s.dir[0] * 54, s.lamp[1] - s.dir[1] * 54, 10);
   }
-  for (const y of LANE_Y) socket(table.plunger.pos[0], y, 5.5);
+  for (const y of LANE_Y) socket(table.plunger.pos[0], y, 6.6);
   for (const t of layout.targets) {
     const lab = table.labels[t.id]; if (!lab || lab.length > 2) continue;
     const x = t.mid[0] + t.front[0] * 17, y = t.mid[1] + t.front[1] * 17;
@@ -793,7 +793,7 @@ export function createTableView(content, tableId, opts = {}) {
     if (fl && fr) for (let i = 0; i < 7; i++) { const u = i / 6, x = fl.pivot[0] + (fr.pivot[0] - fl.pivot[0]) * (0.14 + 0.72 * u), y = Math.min(table.drainY - 8, Math.max(fl.pivot[1], fr.pivot[1]) + 38 + 16 * Math.sin(u * Math.PI)); saveLamps.push(addLamp('', 'save', WX(x), 0.03, WZ(y), 0.07, 0.035, 0.07, P.save, 0.62, 0)); } }
   const ballGlow = []; for (let i = 0; i < BALLS; i++) { const g = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: R * 7, color: '#ffffff', alpha: 0 }); g.visible = false; ballGlow.push(g); }
   const armLamps = [-1.86, 1.86].map((x) => addLamp('', 'arm', x, 0.76, -4.66, 0.1, 0.07, 0.1, P.spin, 0.7, 1.4));
-  const laneLamps = LANE_Y.map((y) => addLamp('', 'lane', WX(table.plunger.pos[0]), 0.004, WZ(y), 0.05, 0.012, 0.05, P.want, 0.42, 0));
+  const laneLamps = LANE_Y.map((y) => addLamp('', 'lane', WX(table.plunger.pos[0]), 0.004, WZ(y), 0.062, 0.014, 0.062, P.want, 0.55, 0));
   const chargeLamps = []; for (let i = 0; i < 9; i++) chargeLamps.push(addLamp('', 'charge', (i - 4) * 0.2, 0.582, -4.135, 0.04, 0.02, 0.04, P.spin, 0, 0));
   if (lamps.length > LAMPS) throw new Error(`table3d: table ${tableId} has ${lamps.length} lamps; the instanced call holds ${LAMPS}`);
   const fillLamp = table.reels.fill.map((id) => lampById.get(id) || null);
@@ -866,7 +866,7 @@ export function createTableView(content, tableId, opts = {}) {
   // lamp tones: 0 wanted, 1 spin, 2 done, 3 lot, 4 flash, 5 power, 6 save, 7 loan, 8 credit, 9 white-hot, 10.. the multiball colours
   const MULTI = ['#ff7ad1', '#7df2ff', '#ffd24a', '#6dffb0'].map(rgb);
   const TONES = [C.want, C.spin, C.done, C.lot, C.flash, C.power, C.save, C.loan, C.credit, C.hot, ...MULTI];
-  const HALO = { target: 0.3, rail: 0.5, port: 0.75, face: 0.55, save: 0.6, lever: 0.6 };
+  const HALO = { target: 0.3, rail: 0.5, port: 0.75, face: 0.55, save: 0.6, lever: 0.6, lane: 0.75 };
   const STRENGTH = { bumper: 0.35, sling: 0.2, target: 0.5, rollover: 0.35, saucer: 0.7, shot: 1, payout: 1, kickback: 0.5, save: 0.5 };
   const LEVER_SIGN = turned(90, 0, [0, 1, 0])[2] > 0 ? 1 : -1; // +1: a positive pitch tips +Y toward +Z (the player)
   let power = 0, ownPower = 0, portFlash = 0, saveFlash = 0, multi = false, liveBalls = 0, onEnergy = null, lastCells = null, lastPaying = false;

@@ -23,6 +23,7 @@ import { createSprites } from '../sprites.js';
 import { kitMaterials } from './kit.js';
 import { KB, kitBMaterials, setShell, lightOf, norm3, wall, windowFrame, shaftCards, rug, column, gear, globe, telescope, scroll, fileStack } from './kit-b.js';
 import { trimSet } from '../scene.js';
+import { withDetail } from '../mesh.js';
 
 const O = [0, 0, -2.6], RW = 6.9, WALL_H = 5.6, HUB_Y = 3.0;
 
@@ -209,5 +210,5 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   });
 }
 
-export const orrery = { id: 'orrery', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
+export const orrery = { id: 'orrery', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = withDetail(o && o.low ? 0.7 : 1, () => build(g, o)); trimSet(set); return set; } };   // low: round things are cut with 0.7 of their segments (mesh.js withDetail); trimSet: each pass skips the triangles its cameras can never see
 export default orrery;

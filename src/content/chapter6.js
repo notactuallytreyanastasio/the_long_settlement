@@ -540,10 +540,9 @@ export const chapter6 = {
         set: 'lantern-line', light: 'night', mode: 'walk',
         party: ['ilse', 'foss'],
         opposition: { kind: 'force', who: ['lantern-file'], name: "SIX HUNDRED PACES" },
-        extras: ['docker-lantern', 'docker-lantern'],
         setback: { cue: 'escort-forms-up', show: "Halcyon's escort forms up at the head of the quay; the nearest lanterns waver and give a pace, and Ilse stops." },
         beats: [
-          { at: 0, cue: 'six-hundred-paces', name: "Six hundred paces", show: "The open quay at night between dark warehouses, the great lamp white at its far end. Two dockers stand at the head of it with paper lanterns. Ilse starts across, the grey coat six paces behind her." },
+          { at: 0, cue: 'six-hundred-paces', name: "Six hundred paces", show: "The open quay at night between dark warehouses, the great lamp white at its far end. Nobody stands on it. Ilse starts across, the grey coat six paces behind her." },
           { at: 1, cue: 'the-quay-is-ours', name: "The quay is ours tonight", show: "Lanterns come out of the warehouse doors: the first pairs take their places down both sides." },
           { at: 2, cue: 'twenty-and-twenty', name: "Twenty and twenty", show: "Two files stand half way to the lamp-house, facing each other across the lane." },
           { at: 3, cue: 'the-line-stands', name: "The line stands", show: "Two whole files of lanterns run the length of the quay. Ilse is at the mouth of the lane between them." },

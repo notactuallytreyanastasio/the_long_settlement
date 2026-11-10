@@ -278,12 +278,12 @@ export const chapter7 = {
       // Not a fight. An officer walks up a stair to say what he did, with the dock coming up behind to watch.
       encounter: {
         set: 'hall-steps', light: 'dusk', mode: 'walk',
-        party: ['sable', 'ren'],
+        party: ['sable'],
         opposition: { kind: 'force', who: ['fourth-step'], name: "THE FOURTH STEP" },
         extras: ['ilse'],
-        setback: { cue: 'dock-comes-up', show: "The watchers press up the flight behind them and are waved back down; the two brothers wait on the stair." },
+        setback: { cue: 'dock-comes-up', show: "The watchers press up the flight behind them and are waved back down; the Assessor waits on the stair." },
         beats: [
-          { at: 0, cue: 'up-from-the-cutter', name: "Up from the cutter", show: "The steps of the Mint hall late in the afternoon, the great doors shut under a red seal. The Tribune waits on the broad fourth step. The Assessor comes along it toward her in his black boots, his brother behind him." },
+          { at: 0, cue: 'up-from-the-cutter', name: "Up from the cutter", show: "The steps of the Mint hall late in the afternoon, the great doors shut under a red seal. The Tribune waits on the broad fourth step. The Assessor comes along it toward her in his black boots, alone." },
           { at: 1, cue: 'a-word-tribune', name: "A word, Tribune", show: "A few of the dock have come up to the ends of the step to watch." },
           { at: 2, cue: 'this-one-is-about-me', name: "This one is about me", show: "The flight below is filling. He is nearly up to her." },
           { at: 3, cue: 'the-fourth-step', name: "The fourth step", show: "The dock stands at both ends of the step and all down the flight, quiet. The Assessor has stopped beside her." },
@@ -539,10 +539,10 @@ export const chapter7 = {
         set: 'fish-dock', light: 'day', mode: 'walk',
         party: ['sable', 'thorne'],
         opposition: { kind: 'force', who: ['quay-walk'], name: "ARTICLE SIX" },
-        extras: ['ilse', 'ren'],
+        extras: ['ilse'],
         setback: { cue: 'dock-closes-in', show: "The dock closes across the quay to look at her; the Assessor stops and waits until a way is made." },
         beats: [
-          { at: 0, cue: 'his-other-prisoner', name: "His other prisoner", show: "The fish dock next morning, the slate chalked full by the trestle. The Tribune and Ren wait at the table. The Assessor comes along the quay from the mole, and a step behind him, at her own request, the Proctor." },
+          { at: 0, cue: 'his-other-prisoner', name: "His other prisoner", show: "The fish dock next morning, the slate chalked full by the trestle. The Tribune waits at the table. The Assessor comes along the quay from the mole, and a step behind him, at her own request, the Proctor." },
           { at: 1, cue: 'along-the-quay', name: "Along the quay", show: "They are half way along. More of the dock has gathered to see who it is." },
           { at: 2, cue: 'three-in-one-place', name: "Three in one place", show: "They have reached the trestles. The dock stands round, most of the quarter, and nobody speaks." },
         ],

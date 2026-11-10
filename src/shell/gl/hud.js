@@ -1005,11 +1005,28 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   g.translate(0, -out * (HUD_BAND_HEAD + top + 30));
   g.globalAlpha = 1 - out;
   // the score is on the strip at the foot: the head of the band has the opposition at the right and the chain at the left, and the rest is the party's
-  const opp = drawOpposition(g, B.x + B.w - 10, top, stage, now, Math.min(B.w - 44, 190));
-  drawBoons(g, B.x + B.w - 10, opp.bottom + 5, boonsOf(game, stage));
-  const gapL = B.x + 8;
-  const gapR = opp.left - 6;
-  drawCombo(g, clamp(gapL + 62, B.x + 62, Math.max(B.x + 62, gapR - 62)), top - 4, stage.combo, now, Math.max(96, Math.min(150, gapR - gapL)));
+  // The opposition's pill is at the right unless the thing the party is working on (fx.goal: the ring the stage draws
+  // on it) is up there under it: then the pill takes the left and the chain the right. Decided per scene, with a
+  // margin either way, so it does not change sides while the camera breathes.
+  const gk = scene ? scene.id : '';
+  if (sideSeen.key !== gk) { sideSeen.key = gk; sideSeen.left = false; sideSeen.since = now; }
+  if (fx.goal) {
+    const high = fx.goal.y < top + 58;
+    if (!sideSeen.left && high && fx.goal.x > B.x + B.w * 0.54) sideSeen.left = true;
+    else if (sideSeen.left && (!high || fx.goal.x < B.x + B.w * 0.4)) sideSeen.left = false;
+  }
+  const oppW = Math.min(B.w - 44, 190);
+  let oppRight = B.x + B.w - 10;
+  if (sideSeen.left) {
+    // measured first (drawn clear), so it can stand flush left
+    const a0 = g.globalAlpha; g.globalAlpha = 0;
+    const m = drawOpposition(g, oppRight, top, stage, now, oppW);
+    g.globalAlpha = a0; oppRight = B.x + 10 + (oppRight - m.left);
+  }
+  const opp = drawOpposition(g, oppRight, top, stage, now, oppW);
+  drawBoons(g, oppRight, opp.bottom + 5, boonsOf(game, stage));
+  if (sideSeen.left) drawCombo(g, B.x + B.w - 70, top - 4, stage.combo, now, 130);
+  else drawCombo(g, clamp(B.x + 70, B.x + 62, Math.max(B.x + 62, opp.left - 68)), top - 4, stage.combo, now, Math.max(96, Math.min(150, opp.left - 14 - B.x)));
   g.restore();
 
   // ── what is said, and what the stage has come to ── in the voice strip under the band, never on the picture
@@ -1036,6 +1053,8 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   if (at && out < 0.5) { g.save(); g.globalAlpha = 1 - out * 2; drawSpeaking(g, clamp(at.x, B.x + 24, B.x + B.w - 24), Math.max(at.y, top + 52), fx); g.restore(); }
 }
 
+// Which side the opposition's pill has taken this scene (see drawPlay). A cache of the view, not of the game.
+const sideSeen = { key: null, left: false, since: 0 };
 // When the stage last came to a new beat, so its name can be shown and then got out of the way. A cache of the clock, not of the game.
 const beatSeen = { key: null, since: 0 };
 const BEAT_SHOWN = 4.5; // seconds a scene's name and beat stay up

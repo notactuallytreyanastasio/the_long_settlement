@@ -32,6 +32,7 @@ import {
   pew, clerkCounter, chandelier, sconce, reelDrum, reelHouse, reelAngle, lever, lotDrum, horn, fileStack, scroll,
 } from './kit-b.js';
 import { trimSet } from '../scene.js';
+import { withDetail } from '../mesh.js';
 
 const W = 16, BACK = -5, FRONT = 5.5, H = 7.2, DAIS_Y = 0.6;
 
@@ -265,5 +266,5 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   });
 }
 
-export const drumHall = { id: 'drum-hall', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
+export const drumHall = { id: 'drum-hall', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = withDetail(o && o.low ? 0.7 : 1, () => build(g, o)); trimSet(set); return set; } };   // low: round things are cut with 0.7 of their segments (mesh.js withDetail); trimSet: each pass skips the triangles its cameras can never see
 export default drumHall;

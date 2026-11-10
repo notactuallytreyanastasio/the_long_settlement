@@ -34,6 +34,7 @@ import {
   pier, ferry, gangway, townBank, floatLight,
 } from './kit.js';
 import { trimSet } from '../scene.js';
+import { withDetail } from '../mesh.js';
 
 const QUAY_Z = -5.2, WATER = -0.5;
 const FLOAT_COLS = ['#ffc860', '#ffb04a', '#ffdf8a', '#ff9458', '#ffd070', '#ff9fc0', '#8fe8d8']; // mostly candle gold; picked with a squared random, so the pink and the teal are rare
@@ -345,5 +346,5 @@ function build(engine = GL0, { light, low = false } = {}) {
 // colour a mesh but keep its dark parts dark (multiplies)
 function tint2(mesh, color) { const c = rgb(color), C = mesh.colors; for (let i = 0; i < C.length; i += 3) { C[i] *= c[0]; C[i + 1] *= c[1]; C[i + 2] *= c[2]; } return mesh; }
 
-export const harborNight = { id: 'harbor-night', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = build(g, o); trimSet(set); return set; } };   // trimSet: each pass skips the triangles its cameras can never see
+export const harborNight = { id: 'harbor-night', lights: Object.keys(LIGHTS), cameras: Object.keys(CAMERAS), build: (g, o) => { const set = withDetail(o && o.low ? 0.7 : 1, () => build(g, o)); trimSet(set); return set; } };   // low: round things are cut with 0.7 of their segments (mesh.js withDetail); trimSet: each pass skips the triangles its cameras can never see
 export default harborNight;

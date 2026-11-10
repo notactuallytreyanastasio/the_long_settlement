@@ -104,9 +104,14 @@ function slingArt(k, G, cols, w = 9, angle = 0) { for (const s of G.slings) { st
 /** A flat shape with an ink edge. */
 function slab(k, pts, col, ink = true) { fillPts(k, pts, col); if (ink) edge(k, pts); }
 /** Little roofs seen from above: [x, y, w, h, angle] each, two tones either side of the ridge. */
-function roofs(k, list, a, b, ink = k.P.ink) {
+function roofs(k, list, a, b, ink = k.P.ink, shade = 'rgba(40,60,120,0.3)', chimney = '#fff6dc') {
   const g = k.g;
-  for (const [x, y, w, h, an = 0] of list) { g.save(); g.translate(x, y); g.rotate(an); g.fillStyle = a; g.fillRect(-w / 2, -h / 2, w, h / 2); g.fillStyle = b; g.fillRect(-w / 2, 0, w, h / 2); g.strokeStyle = ink; g.lineWidth = 1.3; g.lineJoin = 'round'; g.strokeRect(-w / 2, -h / 2, w, h); g.beginPath(); g.moveTo(-w / 2, 0); g.lineTo(w / 2, 0); g.stroke(); g.restore(); }
+  for (const [x, y, w, h, an = 0] of list) {
+    g.save(); g.translate(x + 3, y + 5); g.rotate(an); g.fillStyle = shade; g.fillRect(-w / 2, -h / 2, w, h); g.restore();   // the shadow it stands in
+    g.save(); g.translate(x, y); g.rotate(an); g.fillStyle = a; g.fillRect(-w / 2, -h / 2, w, h / 2); g.fillStyle = b; g.fillRect(-w / 2, 0, w, h / 2);
+    g.strokeStyle = ink; g.lineWidth = 1.3; g.lineJoin = 'round'; g.strokeRect(-w / 2, -h / 2, w, h); g.beginPath(); g.moveTo(-w / 2, 0); g.lineTo(w / 2, 0); g.stroke();
+    g.fillStyle = chimney; g.fillRect(w * 0.2, -h * 0.34, 4.5, 4.5); g.strokeRect(w * 0.2, -h * 0.34, 4.5, 4.5); g.restore();
+  }
 }
 const star = (k, x, y, r0, r1, n, fill, rot = 0) => { const g = k.g; g.save(); g.translate(x, y); g.rotate(rot); k.star(0, 0, r0, r1, n, fill); g.restore(); };
 
@@ -210,7 +215,7 @@ ART.saltmere = {
       for (const [col, lw, dash] of [['#8fa3c0', 9, []], ['#eaf2fb', 5, []], ['#56698a', 5, [2, 7]]]) { g.strokeStyle = col; g.lineWidth = lw; g.setLineDash(dash); g.beginPath(); g.moveTo(214, 296); g.bezierCurveTo(170, 400, 110, 330, 96, 392); g.stroke(); } g.setLineDash([]);
     }, true);
     // the town: slate roofs, close together against the wind
-    roofs(k, [[52, 150, 30, 20, 0.3], [88, 128, 26, 18, -0.2], [70, 190, 28, 18, 0.1], [118, 166, 30, 20, 0.5], [112, 208, 24, 16, -0.3], [146, 100, 28, 18, 0.2], [44, 222, 22, 16, -0.1], [130, 60, 26, 18, -0.4]], '#b9c9e2', '#9db2d2', '#56698a');
+    roofs(k, [[50, 132, 30, 20, 0.2], [84, 118, 28, 19, 0.2], [58, 164, 28, 19, 0.2], [92, 150, 30, 20, 0.2], [124, 132, 26, 18, 0.2], [74, 198, 26, 18, 0.2], [112, 184, 26, 18, 0.2], [118, 96, 26, 18, 0.2], [140, 58, 26, 18, -0.4]], '#7f9cd0', '#5f7fb8', P.ink, 'rgba(50,80,140,0.28)', '#eaf2fb');
     // stillsalt, standing out of the ground in shards
     for (const [x, y, s] of [[236, 380, 1], [130, 404, 0.8], [330, 110, 0.9], [34, 96, 0.9], [196, 76, 0.8]]) for (const [dx, h, w, c] of [[-6, 15, 6, '#7fd6ff'], [3, 21, 7, '#bff2ff'], [10, 12, 5, '#5fb8ec']]) { g.beginPath(); g.moveTo(x + dx * s, y); g.lineTo(x + (dx - w / 2) * s, y - h * 0.4 * s); g.lineTo(x + dx * s, y - h * s); g.lineTo(x + (dx + w / 2) * s, y - h * 0.4 * s); g.closePath(); g.fillStyle = c; g.fill(); g.strokeStyle = P.ink; g.lineWidth = 1.1; g.stroke(); }
     // the pit: terraces stepping down to the shafts
@@ -382,7 +387,7 @@ ART.brand = {
     k.land(isle, '#4c5686', { shallow: '#234a80', foam: '#c8d4f6' });
     inside(k, isle, () => { specks(k, 3, 260, '#65709e', [0, 0, 400, 480], 2.6, 1.5); specks(k, 4, 120, '#343d6a', [0, 0, 400, 480], 2.2, 1.4); }, true);
     // the village: every roof dark
-    roofs(k, [[212, 96, 30, 20, 0.2], [252, 80, 26, 18, -0.3], [300, 108, 28, 18, 0.4], [176, 256, 26, 18, -0.2], [300, 380, 28, 18, 0.3], [222, 392, 24, 16, -0.4], [60, 236, 26, 18, 0.1], [156, 404, 24, 16, 0.2]], '#343d6a', '#262f5c', '#141a3c');
+    roofs(k, [[212, 96, 30, 20, 0.2], [252, 80, 26, 18, -0.3], [300, 108, 28, 18, 0.4], [176, 256, 26, 18, -0.2], [300, 380, 28, 18, 0.3], [222, 392, 24, 16, -0.4], [60, 236, 26, 18, 0.1], [156, 404, 24, 16, 0.2]], '#3a4474', '#2a3360', '#141a3c', 'rgba(6,10,34,0.45)', '#56618e');
     // reefs: black rock in a ring of foam under each bumper
     for (const b of k.table.bumpers) {
       const R = rng(b.pos[0]), pts = []; for (let i = 0; i < 11; i++) { const a = (i / 11) * TAU, r = b.r + 20 + R() * 14; pts.push([b.pos[0] + Math.cos(a) * r, b.pos[1] + Math.sin(a) * r * 0.9]); }
@@ -460,7 +465,7 @@ ART.tallis = {
   envNight: { key: { color: '#ffd9a0' }, shadow: { tint: '#6a3a8a', lift: 0.12 }, ambient: { sky: '#c88a6a', ground: '#7a4a8a', amount: 0.16 }, rim: { color: '#ffe9c0' }, water: { deep: '#141a44', mid: '#22306a', shallow: '#4a5a98' } },
   envDay: { water: { deep: '#1f3a6e', mid: '#35609a', shallow: '#7fa6c8' } },
   glints: [[150, 600, 224, 700]],
-  labelAt: { pit1: [140, 262], pit2: [234, 262], strongroom: [46, 242], clearingOrbit: [312, 506] },
+  labelAt: { pit1: [140, 262], pit2: [238, 182], strongroom: [46, 242], clearingOrbit: [274, 538] },
   paint(k) {
     const { g, P } = k, G = geo(k.table), all = [[0, 0], [400, 0], [400, 800], [0, 800]];
     chequer(k, all, '#f8ecd2', '#e6c9a0', 26, Math.PI / 4);
@@ -539,7 +544,7 @@ ART.kedge = {
   env: { key: { dir: [-0.66, 0.46, -0.5], color: '#ffe0bc' }, shadow: { tint: '#8a7ad8' }, ambient: { sky: '#ffc8b8', ground: '#8f86e0' }, water: { deep: '#5a54b4', mid: '#b874b0', shallow: '#ffc09a', glint: '#fff0c0', glintDensity: 0.26 } },
   envDay: { water: { deep: '#2f7fc8', mid: '#4fb0dc', shallow: '#a0e4d8' } },
   glints: [[110, 470, 270, 560]],
-  labelAt: { hopper: [226, 222] },
+  labelAt: { hopper: [226, 222], crane1: [142, 300] },
   paint(k) {
     const { g, P } = k, G = geo(k.table);
     k.sea(P.sea);
@@ -633,7 +638,7 @@ ART.fishdock = {
   booth: { awning: ['#2f86e0', '#ffffff'], post: ['#ffffff', '#2f86e0'], fascia: ['#ffffff', '#e8483a'], back: '#1f3f6e', bulbs: ['#e8483a', '#ffffff'], pillar: ['#ffffff', '#e8483a'] },
   envDay: { key: { color: '#fffdf2' }, water: { deep: '#1888d0', mid: '#2cbce6', shallow: '#98f4e6' } },
   glints: [[110, 480, 270, 700]],
-  labelAt: { pawl1: [282, 196], pawl2: [234, 256], pawl3: [186, 316], drum: [84, 246] },
+  labelAt: { pawl1: [282, 196], pawl2: [234, 256], pawl3: [186, 316], drum: [84, 246], hallRamp: [60, 500] },
   paint(k) {
     const { g, P } = k, G = geo(k.table);
     k.sea(P.sea);

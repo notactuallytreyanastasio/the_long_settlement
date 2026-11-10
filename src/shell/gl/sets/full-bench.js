@@ -11,12 +11,13 @@
 // Same shape as sets/lantern-stalls.js. Figures face +Z, cameras look toward -Z (the bench), the strip x -3.2..3.2, z 0..1.6 is clear.
 //   speak(i)          which magistrate is speaking (0, 1, 2; -1 none): he leans forward and nods
 //   The court's business is shown by three desk lamps on the bench, one at each magistrate's place (dark = not yet
-//   satisfied), and by three exhibits on the clerk's table below it: the log, the ciphered instruction, the irons.
+//   satisfied), and by three exhibits on a small table at the bar of the court (stage right, x 2.3, z 0.16, behind
+//   the standing marks): the log, the ciphered instruction, the irons.
 //   encounter(st)     (the director, when a scene's encounter is set up here) lamps out, exhibits as the hearing opens
 //   beat(cue, i, of, done, total)   the lamps come up left to right with the objective (any encounter on this set)
 //   task('exhibit', i)  -> { pos, stand: null, size, set(v) }: scene 1. i 0 the log (it opens and is lit), 1 the ciphered
-//                     instruction (laid on the table), 2 the irons (struck: they fall open). On the clerk's table, so the
-//                     band's ring and the table's bolts land at stage height.
+//                     instruction (laid on the table), 2 the irons (struck: they fall open).
+//   marks.extras      [0] the witness's place, behind and to the right of whoever is being answered (scene 2: Maravel)
 //   setback(cue)      the bench confers: the three turn in to the middle one and the lamps dip, about a second and a half
 //   cue(lineId)       cutscene lines ch8.s1.c* / ch8.s2.c* and ch8.epi.*: the lamps burn (the court has ruled or is at rest)
 // Light names: 'morning' (the default: the core's 'day' builds it), 'afternoon', and the core's 'dusk' as an alias of 'afternoon'.
@@ -127,11 +128,14 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const deskAt = seats.map((s) => [s[0] + 0.72, DAIS + 1.62, BACK + 2.1 + 0.26]);
   { const stems = group('desk-stems'); for (const p of deskAt) stems.add(node('stem', merge(tint(place(cylinder(0.1, 0.13, 0.04, 8), 0, 0.02, 0), C8.brassDark), tint(place(cylinder(0.022, 0.022, 0.3, 6), 0, 0.04, 0), C8.brass)), M.prop, { pos: p })); const st = mergeStatic(stems, 'desk-stems'); st.castShadow = false; scene.root.add(st); }
   const shades = deskAt.map((p, i) => { const n = node('desk-shade' + i, setOutline(setGlow(tint(place(sphere(0.15, 10, 7), 0, 0.42, 0), '#ffffff'), 1), 0.7), M.lantern, { pos: p }); n.castShadow = false; scene.root.add(n); return n; });
-  // the exhibits on the clerk's table (its right half), each its own node so the hearing can light, lay and strike them
-  const EX = [[0.12, 0.8, CLERK[2] + 0.06], [0.62, 0.8, CLERK[2] + 0.1], [1.02, 0.8, CLERK[2] + 0.12]];
+  // the exhibits table: a small table at the bar of the court, stage right at the back of the strip (clear of every standing
+  // mark), where the band can see it at stage height. Each exhibit is its own node so the hearing can light, lay and strike it.
+  const EXT = [2.3, 0, 0.16];
+  { const t = node('exhibits-table', merge(tint(place(box(1.12, 0.08, 0.56), 0, 0.7, 0), C8.woodRed), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z]) => tint(place(cylinder(0.045, 0.06, 0.68, 6), x * 0.48, 0, z * 0.2), C8.woodDark)), tint(place(box(1.04, 0.26, 0.03), 0, 0.54, 0.27), '#27a0a8'), tint(place(box(1.12, 0.03, 0.03), 0, 0.73, 0.28), C8.brass)), M.prop, { pos: EXT }); scene.root.add(t); }
+  const EX = [[EXT[0] - 0.36, 0.74, EXT[2] + 0.02], [EXT[0] + 0.02, 0.74, EXT[2] + 0.04], [EXT[0] + 0.34, 0.74, EXT[2] + 0.06]];
   const exNode = (name, mesh, p, rot) => { const n = node(name, mesh, M.prop, { pos: p, rot }); n.castShadow = false; scene.root.add(n); return n; };
-  const logBook = exNode('ex-log', merge(tint(place(box(0.5, 0.07, 0.4), 0, 0.035, 0), '#7a3048'), tint(place(box(0.44, 0.03, 0.34), 0, 0.085, 0), C8.parchment), ...[-0.1, 0, 0.1].map((z) => tint(place(box(0.34, 0.006, 0.02), 0, 0.103, z), C8.navy))), EX[0], [24, 6, 0]);
-  const cipher = exNode('ex-cipher', merge(tint(place(box(0.3, 0.4, 0.012), 0, 0.2, 0), C8.parchment), ...[0.3, 0.24, 0.18].map((y) => tint(place(box(0.2, 0.014, 0.004), 0, y, 0.009), C8.navy)), setGlow(tint(place(cylinder(0.045, 0.045, 0.014, 8), 0.07, 0.08, 0.012, 90, 0, 0), C8.oxblood), 0.4)), EX[1], [-24, -8, 0]);
+  const logBook = exNode('ex-log', merge(tint(place(box(0.34, 0.06, 0.4), 0, 0.03, 0), '#7a3048'), tint(place(box(0.3, 0.03, 0.35), 0, 0.07, 0), C8.parchment), ...[-0.1, 0, 0.1].map((z) => tint(place(box(0.22, 0.006, 0.02), 0, 0.088, z), C8.navy))), EX[0], [24, 6, 0]);
+  const cipher = exNode('ex-cipher', merge(tint(place(box(0.28, 0.4, 0.012), 0, 0.2, 0), C8.parchment), ...[0.3, 0.24, 0.18].map((y) => tint(place(box(0.19, 0.014, 0.004), 0, y, 0.009), C8.navy)), setGlow(tint(place(cylinder(0.045, 0.045, 0.014, 8), 0.07, 0.08, 0.012, 90, 0, 0), C8.oxblood), 0.4)), EX[1], [-18, -8, 0]);
   const ironA = exNode('ex-irons', merge(tint(place(torus(0.11, 0.032, 10, 5), -0.1, 0.03, 0), '#8f97c8'), tint(place(box(0.14, 0.03, 0.04), 0.02, 0.03, 0), '#8f97c8')), EX[2], [0, 10, 0]);
   const ironB = exNode('ex-irons2', tint(place(torus(0.11, 0.032, 10, 5), 0.11, 0, 0), '#8f97c8'), [EX[2][0] + 0.02, EX[2][1] + 0.03, EX[2][2]], [0, 10, 0]);
   // the clock on the right wall: slow
@@ -211,6 +215,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
     marks: {
       ...marks8(), focus: FOCUS, bench: heads,
       dock: { pos: [DOCK[0] - 0.5, 0.14, DOCK[2] + 0.1], face: DOCK_YAW - 20 }, dock2: { pos: [DOCK[0] + 0.55, 0.14, DOCK[2] - 0.35], face: DOCK_YAW - 20 },
+      extras: [{ pos: [1.42, 0, 0.02], face: -46 }],
       stand: { pos: [STAND[0], 0.14, STAND[2] - 0.1], face: STAND_YAW + 20 }, clerk: { pos: [CLERK[0] + 1.6, 0, CLERK[2] + 0.3], face: -30 }, doorL: { pos: DL.pos, face: DL.yaw }, doorR: { pos: DR.pos, face: DR.yaw },
     },
     extra: { speak, task, cue, encounter, beat, setback },

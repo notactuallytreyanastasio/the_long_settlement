@@ -257,7 +257,7 @@ export function withDetail(k, fn) {
   try { return fn(); } finally { DETAIL = before; }
 }
 export const detail = () => DETAIL;
-const lodSeg = (n) => (DETAIL >= 1 || n <= 6 ? n : Math.max(6, Math.round(n * DETAIL)));
+const lodSeg = (n) => (DETAIL >= 1 || n <= 8 ? n : Math.max(8, Math.round(n * DETAIL)));
 const lodRings = (n) => (DETAIL >= 1 || n <= 4 ? n : Math.max(4, Math.round(n * DETAIL)));
 
 /**

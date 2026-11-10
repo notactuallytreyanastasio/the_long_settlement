@@ -55,7 +55,9 @@ addClip('workUp', { dur: 0.62, impact: 0.27, keys: [[0, null, 0, 0, 0], [0.14, '
 addClip('workDown', { dur: 0.64, impact: 0.28, keys: [[0, null, 0, 0, 0], [0.15, 'chopUp', -0.02, 0.05, 0.08], [0.28, 'chopDown', 0.1, 0, -0.12], [0.44, 'chopDown', 0.1, 0, -0.04], [0.64, null, 0, 0, 0]] });
 addClip('shove', { dur: 0.62, impact: 0.27, keys: [[0, null, 0, 0, 0], [0.14, 'pushBack', -0.06, 0, -0.06], [0.27, 'pushHit', 0.14, 0, 0.06], [0.44, 'pushHit', 0.12, 0, 0], [0.62, null, 0, 0, 0]] });
 addClip('kneelTap', { dur: 0.66, impact: 0.28, keys: [[0, null, 0, 0, 0], [0.15, 'crouch', 0, 0, -0.08], [0.28, 'kneelWork', 0.06, 0, -0.05], [0.46, 'kneelWork', 0.06, 0, 0], [0.66, null, 0, 0, 0]] });
-addClip('creep', { dur: 0.5, impact: 0.26, keys: [[0, null, 0, 0, 0], [0.12, 'crouch', 0, 0, -0.1], [0.26, 'stride', 0.1, 0.02, 0], [0.4, 'crouch', 0.04, 0, -0.04], [0.5, null, 0, 0, 0]] });
+addPose('sneak', { hips: { r: [16, 0, 0], p: [0, -0.085, 0] }, chest: [20, 0, 0], head: [-26, 0, 0], legL: [-48, 0, 8], shinL: [78, 0, 0], legR: [-30, 0, -8], shinR: [70, 0, 0], armL: [-20, 0, 26], foreL: [-70, 0, 0], armR: [-20, 0, -26], foreR: [-70, 0, 0] });
+addPose('sneakStep', { hips: { r: [20, 0, 0], p: [0, -0.07, 0.04] }, chest: [22, 8, 0], head: [-30, -8, 0], legL: [-70, 0, 6], shinL: [60, 0, 0], legR: [10, 0, -6], shinR: [60, 0, 0], armL: [30, 0, 24], foreL: [-60, 0, 0], armR: [-50, 0, -20], foreR: [-60, 0, 0] });
+addClip('creep', { dur: 0.5, impact: 0.26, keys: [[0, null, 0, 0, 0], [0.12, 'sneak', -0.02, 0, -0.08], [0.26, 'sneakStep', 0.1, 0.03, 0.03], [0.4, 'sneak', 0.04, 0, -0.04], [0.5, null, 0, 0, 0]] });
 
 // rank-and-file ids whose doubles are told apart by castVariant. Named people are never varied.
 const VARIED = {};
@@ -613,7 +615,7 @@ export const MODES = {
   fight:   { jab: 'strike', chop: 'strike2', reach: 1, hold: 'stand', team: true, tab: false, route: false },
   work:    { jab: 'workDown', chop: 'workDown', reach: 0, hold: 'stand', team: false, tab: true, route: false },
   hold:    { jab: 'shove', chop: 'shove', reach: 0.5, hold: 'brace', team: false, tab: true, route: false },
-  stealth: { jab: 'creep', chop: 'creep', reach: 0, hold: 'crouch', team: false, tab: true, route: true },
+  stealth: { jab: 'creep', chop: 'creep', reach: 0, hold: 'sneak', team: false, tab: true, route: true },
   talk:    { jab: '', chop: '', reach: 0, hold: 'stand', team: false, tab: true, route: false, poses: ['talkPoint', 'talkBoth', 'talkOpen'] },
   walk:    { jab: 'hop', chop: 'hop', reach: 0, hold: 'stand', team: false, tab: true, route: true },
 };
@@ -702,7 +704,7 @@ function fightOn(S, opts = {}) {
     if (isUnit(t)) { out[0] = t.pos[0]; out[1] = t.pos[1]; out[2] = t.pos[2]; return out; }
     if (t) return S.toWorld(t.x + t.kx, mode === MODES.talk ? t.ch.height * 0.8 : chestY(t), t.z, out);
     const k = Math.min(nPips(), Math.floor(frac() * nPips()) + 1);
-    return S.toWorld(pipX(k), 0.05, route.z, out);
+    return S.toWorld(pipX(k), 0.05, 0.12, out);
   }
 
   /** Energy from the table: a 2D spark from where the ball struck to the actor's chest, or (tableaux) to the thing itself. */
@@ -872,7 +874,11 @@ function fightOn(S, opts = {}) {
         if (i === 0) { x = sx; z = sz; } else if (i === 1) { x = t.pos[0] + Math.max(0.55, t.pos[0] - sx); z = sz - 0.08; } else { x = sx - 0.8; z = sz + 0.3; }
       } else if (t) x = t.gx - STANDOFF - 0.1 - i * 0.76;
     } else if (mode === MODES.hold) x = -0.5 - i * 0.74 + 0.55 * p;
-    else if (mode === MODES.talk) x = -0.62 - i * 0.78;
+    else if (mode === MODES.talk) {
+      // a pace and a half short of whoever (or whatever) is being talked to
+      const t = target(false), txx = isUnit(t) ? (t.stand ? t.stand[0] : t.pos[0] - 0.6) : t ? t.gx : 1.2;
+      x = clamp(txx - 1.5, -1.5, 0.3) - i * 0.78;
+    }
     else if (kind === 'people') x = s[0] - 0.25 + 0.45 * p;
     out[0] = clamp(x, -HALF_W + 0.45 + 0.1 * i, HALF_W - 0.45); out[1] = z; return out;      // never off the strip
   }
@@ -906,9 +912,6 @@ function fightOn(S, opts = {}) {
     if (lo > hi) { lo = -HALF_TAB; hi = HALF_TAB; }
     tab.half = clamp((hi - lo) / 2 + 0.1, HALF_TAB, HALF_W);
     tab.cx = clamp((hi + lo) / 2, -HALF_W - 0.6 + tab.half, HALF_W + 0.6 - tab.half);
-    // a thing that hangs high would be behind the opposition's pill at the right of the head row: it is framed left of the middle
-    const t = mode.route ? null : target(false);
-    if (isUnit(t) && t.pos[1] > 1.0) { const c2 = t.pos[0] + 0.16 * tab.half; if (c2 > tab.cx) { tab.cx = c2; tab.half = clamp(Math.max(tab.half, tab.cx - lo + 0.05), HALF_TAB, HALF_W); } }
   }
 
   /** A new scene's encounter on this stage. Figures already here walk to their new places; cut: everyone is simply there. */
@@ -930,7 +933,9 @@ function fightOn(S, opts = {}) {
     // the route of the modes that are a journey: from the first thing to the last, or across the strip to the set's goal mark
     const gm = set.marks && set.marks.goal ? set.marks.goal.pos : null, nu = S.units.length;
     const stand = (u) => (u.stand ? u.stand[0] : u.pos[0] - 0.62);
-    route.x1 = nu ? stand(S.units[nu - 1]) : gm ? gm[0] - 0.55 : 2.0; route.x0 = nu > 1 ? stand(S.units[0]) : Math.min(-2.2, route.x1 - 2.4); route.z = 0.8;
+    // (walking, the things along the way are passed, not arrived at: the route is the strip; creeping, two things or more ARE the route)
+    route.x1 = gm ? gm[0] - 0.55 : mode === MODES.stealth && nu && stand(S.units[nu - 1]) > -0.4 ? stand(S.units[nu - 1]) : 2.0;
+    route.x0 = mode === MODES.stealth && nu > 1 && stand(S.units[0]) < route.x1 - 1.2 ? stand(S.units[0]) : Math.min(-2.2, route.x1 - 2.6); route.z = 0.8;
     const wants = (a, id) => a && a.wear === wearOf(id);
     for (let i = 0; i < st.party.length; i++) {
       const id = st.party[i]; let a = S.find(id);
@@ -1145,7 +1150,7 @@ function fightOn(S, opts = {}) {
       const fr = front();
       if (mode === MODES.hold && fr.length) S.toWorld(fr[0].x + fr[0].kx - 0.55, 0.62, 0.8, goal.pos);      // the line itself, between them
       else aimOf(tg, goal.pos);
-      goal.size = isUnit(tg) ? tg.size || 0.5 : 0.5;
+      goal.size = isUnit(tg) ? tg.size || 0.5 : mode === MODES.hold ? 0.34 : 0.42;
     }
   };
 
@@ -1192,10 +1197,10 @@ function fightOn(S, opts = {}) {
         const n = goal.n, lit = Math.floor(frac() * n + 1e-6);
         for (let k = 0; k < MAX_PIPS; k++) {
           const q = pips[k]; q.on = false; if (k >= n) continue;
-          S.toWorld(pipX(k + 1), 0.03, route.z + 0.38, P3);
+          S.toWorld(pipX(k + 1), 0.03, 0.12, P3);
           if (projectTo(camera, P3, rect, HIT)) { q.on = true; q.x = HIT[0]; q.y = HIT[1]; q.lit = k < lit; }
         }
-        goal.r = clamp(0.09 * ppu, 4, 8);
+        goal.r = clamp(0.085 * ppu, 4.5, 8);
       }
       goal.fade = 1 - clamp(grow * 2.5, 0, 1);
     } else { for (let i = 0; i < sparks.length; i++) sparks[i].live = false; sparks.length = 0; goal.x = NaN; }

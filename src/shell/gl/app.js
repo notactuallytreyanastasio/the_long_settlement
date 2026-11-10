@@ -280,7 +280,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const F = { content: null, game: null, stage: null, camera: stageCam, rect: bandCss, voice: null, hit, events: frameEvents, cine: 0, pad: { top: 0, bottom: 0 }, quality: tierName };
   const voice = { who: '', level: 0, line: null };
   const hudFx = {};
-  const anchors = {}, anchorPool = [];
+  const anchors = {}, anchorPool = [], goalAt = { x: 0, y: 0 };
   let lastT = null, lastKind = null, cineW = 1, veil = 0, titleSet = null, tview = null, lastLight = null, lastLit = null;
   let acc = 0, accN = 0, ema = 0;
 
@@ -465,6 +465,9 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     hudFx.sub = isStage ? director.sub || null : null;
     hudFx.cues = isStage ? director.cues || null : null;
     hudFx.inset = isStage && insetRect.w > 0 ? insetRect : null;
+    // where the stage has put the encounter's ring (logical px), so the HUD can keep its pills off the thing being worked on
+    const dg = isStage ? director.goal : null;
+    if (dg && dg.on && dg.kind === 'ring' && dg.x === dg.x) { goalAt.x = dg.x / k; goalAt.y = dg.y / k; hudFx.goal = goalAt; } else hudFx.goal = null;
     hudFx.k = k;
     hudFx.loading = total > 0 && queue.length > 0 ? 1 - queue.length / total : 1;
     hudFx.quality = tierName;
