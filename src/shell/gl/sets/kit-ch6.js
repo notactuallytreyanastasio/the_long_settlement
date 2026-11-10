@@ -410,7 +410,7 @@ export function shelfBay({ w = 1.4, h = 3.2, d = 0.45, rows = 4, kind = 'books',
         if (r() > 0.1) parts.push(setOutline(bx(bw - 0.012, bh, d * 0.66, x + bw / 2, y0 + bh / 2, 0.02, colors[Math.floor(r() * colors.length)], 0, 0, -tilt), 0.6));
         x += bw + (tilt ? 0.06 : 0);
       }
-    } else {
+    } else if (kind === 'rope') {
       const n = Math.max(1, Math.floor(w / 0.62));
       for (let i = 0; i < n; i++) { const rr = Math.min(rh * 0.42, 0.26) * (0.85 + r() * 0.2), x = -w / 2 + (w / n) * (i + 0.5); parts.push(tint(place(torus(rr * 0.72, rr * 0.3, 10, 5), x, y0 + rr, 0.03, 90 + (r() - 0.5) * 10, 0, 0), i % 2 ? K6.rope : K6.rope2), tint(place(torus(rr * 0.72, rr * 0.3, 10, 5), x, y0 + rr, -0.1, 90, 0, 0), K6.rope2)); }
     }

@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 25960,
-  "lines": 489
+  "bytes": 26582,
+  "lines": 496
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12565,9 +12565,24 @@
   "lines": 229
  },
  {
+  "path": "src/shell/gl/sets/carrow-dusk.js",
+  "bytes": 1047,
+  "lines": 17
+ },
+ {
+  "path": "src/shell/gl/sets/carrow-morning.js",
+  "bytes": 18821,
+  "lines": 215
+ },
+ {
   "path": "src/shell/gl/sets/commons-hall.js",
-  "bytes": 19954,
+  "bytes": 19952,
   "lines": 237
+ },
+ {
+  "path": "src/shell/gl/sets/commons-queue.js",
+  "bytes": 21416,
+  "lines": 242
  },
  {
   "path": "src/shell/gl/sets/compact-hall.js",
@@ -12578,6 +12593,11 @@
   "path": "src/shell/gl/sets/corvane-study.js",
   "bytes": 17616,
   "lines": 209
+ },
+ {
+  "path": "src/shell/gl/sets/counting-room.js",
+  "bytes": 17590,
+  "lines": 188
  },
  {
   "path": "src/shell/gl/sets/court.js",
@@ -12593,6 +12613,11 @@
   "path": "src/shell/gl/sets/dark-village.js",
   "bytes": 23348,
   "lines": 230
+ },
+ {
+  "path": "src/shell/gl/sets/dormitory.js",
+  "bytes": 23345,
+  "lines": 259
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
@@ -12615,6 +12640,11 @@
   "lines": 257
  },
  {
+  "path": "src/shell/gl/sets/ferry-storm.js",
+  "bytes": 18336,
+  "lines": 187
+ },
+ {
   "path": "src/shell/gl/sets/fish-dock.js",
   "bytes": 24259,
   "lines": 285
@@ -12626,8 +12656,8 @@
  },
  {
   "path": "src/shell/gl/sets/hall-steps.js",
-  "bytes": 15587,
-  "lines": 208
+  "bytes": 16184,
+  "lines": 207
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
@@ -12661,7 +12691,7 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch2.js",
-  "bytes": 79238,
+  "bytes": 79230,
   "lines": 979
  },
  {
@@ -12671,8 +12701,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
-  "bytes": 35349,
-  "lines": 461
+  "bytes": 35734,
+  "lines": 463
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
@@ -12681,17 +12711,17 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch6.js",
-  "bytes": 54124,
+  "bytes": 54145,
   "lines": 658
  },
  {
   "path": "src/shell/gl/sets/kit-ch7.js",
-  "bytes": 68716,
-  "lines": 859
+  "bytes": 68808,
+  "lines": 860
  },
  {
   "path": "src/shell/gl/sets/kit-ch8.js",
-  "bytes": 57295,
+  "bytes": 57225,
   "lines": 638
  },
  {
@@ -12721,7 +12751,7 @@
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
-  "bytes": 19062,
+  "bytes": 19063,
   "lines": 224
  },
  {
@@ -12751,22 +12781,27 @@
  },
  {
   "path": "src/shell/gl/sets/quarter-flame.js",
-  "bytes": 20974,
+  "bytes": 21012,
   "lines": 232
  },
  {
   "path": "src/shell/gl/sets/quay-break.js",
-  "bytes": 14795,
+  "bytes": 14784,
   "lines": 163
  },
  {
+  "path": "src/shell/gl/sets/shore-dusk.js",
+  "bytes": 19216,
+  "lines": 234
+ },
+ {
   "path": "src/shell/gl/sets/under-lane.js",
-  "bytes": 20433,
+  "bytes": 20432,
   "lines": 210
  },
  {
   "path": "src/shell/gl/sets/wreck-shore.js",
-  "bytes": 17429,
+  "bytes": 17503,
   "lines": 177
  },
  {

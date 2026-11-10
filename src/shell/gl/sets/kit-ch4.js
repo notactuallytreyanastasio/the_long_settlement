@@ -344,13 +344,15 @@ export function breakwater({ len = 14, h = 1.9, w = 2.2, seed = 1, block = 1.1 }
  */
 export function swell({ deep = '#2038a8', mid = '#2f6fd8', lit = '#49c8d8', foam = '#f4fbff' } = {}) {
   const body = deform(sphere(1, 12, 6), (p) => {
-    const t = Math.max(0, p[1]);
-    p[0] *= 3; p[2] = p[2] * 1.2 + t * t * 0.55; p[1] = t * (1 - 0.28 * Math.abs(p[0]) / 3);
-  }, 30);
-  gradientY(body, deep, lit, 0, 0.95);
-  { const c = rgb(mid), C = body.colors, P = body.positions; for (let i = 0; i < P.length; i += 3) if (P[i + 2] < 0) { const k = 0.5; C[i] += (c[0] - C[i]) * k; C[i + 1] += (c[1] - C[i + 1]) * k; C[i + 2] += (c[2] - C[i + 2]) * k; } }
-  const cap = []; for (let i = 0; i < 5; i++) { const u = (i - 2) / 2; cap.push(place(blob({ rx: 0.62, ry: 0.2, rz: 0.34, lumps: 0.7, seed: i + 2, seg: 7, rings: 4 }), u * 2.0, 0.9 * (1 - 0.3 * Math.abs(u)) , 0.62 - 0.12 * Math.abs(u))); }
-  return setOutline(merge(body, setGlow(tint(merge(cap), foam), 0.55)), 0.7);
+    const t = Math.max(0, p[1]), u = p[0];
+    p[0] *= 3; p[2] = p[2] * (1.15 - 0.5 * t) + t * t * 0.5; p[1] = Math.pow(t, 0.8) * (1 - 0.3 * u * u);
+  }, 34);
+  gradientY(body, deep, mid, 0, 0.6);
+  { const c = rgb(lit), C = body.colors, P = body.positions; for (let i = 0; i < P.length; i += 3) if (P[i + 1] > 0.55 && P[i + 2] > 0.1) { C[i] = c[0]; C[i + 1] = c[1]; C[i + 2] = c[2]; } }
+  // the crest: a thin broken line of foam along the top, and a few gobs of it sliding down the face
+  const crest = []; for (const [x0, x1] of [[-2.2, -0.9], [-0.6, 0.7], [1.0, 2.1]]) crest.push(tube(curve([[x0, 0.97 * (1 - 0.3 * (x0 / 3) ** 2), 0.52], [(x0 + x1) / 2, 1.03 * (1 - 0.3 * ((x0 + x1) / 6) ** 2), 0.6], [x1, 0.97 * (1 - 0.3 * (x1 / 3) ** 2), 0.52]], 5), (t) => 0.05 + 0.06 * Math.sin(t * Math.PI), 5, { crease: 180 }));
+  for (const [x, y, s] of [[-1.5, 0.62, 0.16], [0.3, 0.7, 0.2], [1.6, 0.55, 0.14]]) crest.push(place(blob({ rx: s * 1.6, ry: s * 0.5, rz: s, lumps: 0.6, seed: x + 3, seg: 6, rings: 4 }), x, y, 0.86 - y * 0.2));
+  return setOutline(merge(body, setGlow(tint(merge(crest), foam), 0.5)), 0.7);
 }
 
 /**
@@ -372,7 +374,7 @@ export function seaSwells({ rows, material, level = 0, seed = 1, colors = {} }) 
         const w = list[i], cyc = (time * 0.22 * w.sp + w.ph / 6.283) % 1, up = Math.sin(cyc * Math.PI);
         P[0] = w.x + Math.sin(time * 0.3 + w.ph) * 0.4; P[1] = level - 0.12; P[2] = w.z + (cyc - 0.5) * 3.2 * w.s * 0.5;
         quat.fromEuler(Q, 0, w.yaw * DEG, Math.sin(time * 0.7 + w.ph) * 0.05 * amount);
-        S3[0] = w.s; S3[1] = Math.max(0.02, w.s * up * (0.25 + 1.1 * amount) * (0.75 + 0.25 * Math.sin(time * 0.5 + w.ph * 2))); S3[2] = w.s;
+        S3[0] = w.s; S3[1] = Math.max(0.02, w.s * up * (0.12 + 0.62 * amount) * (0.75 + 0.25 * Math.sin(time * 0.5 + w.ph * 2))); S3[2] = w.s;
         m4.fromTRS(Mx, P, Q, S3); d.set(Mx, i * 20);
       }
       n.instances.dirty = true;
@@ -387,7 +389,7 @@ export function seaSwells({ rows, material, level = 0, seed = 1, colors = {} }) 
 export function rainField({ count = 110, area = [14, 8, 10], at = [0, 4, -2], material, wind = [-3.2, -13, 1.2], color = '#cfe6ff', len = 0.9, seed = 1 }) {
   const q = R(seed), drops = [];
   for (let i = 0; i < count; i++) drops.push({ x: q(), y: q(), z: q(), sp: 0.8 + q() * 0.5 });
-  const n = new Node('rain', { mesh: setGlow(setOutline(tint(place(box(0.022, len, 0.022), 0, len / 2, 0), color), 0), 0.75), material }); n.castShadow = false;
+  const n = new Node('rain', { mesh: setGlow(setOutline(tint(place(box(0.015, len, 0.015), 0, len / 2, 0), color), 0), 0.75), material }); n.castShadow = false;
   n.instances = makeInstances(count); n.instances.count = count;
   const Q = quat.create(), S3 = [1, 1, 1], P = [0, 0, 0], Mx = m4.create();
   quat.fromEuler(Q, Math.atan2(wind[2], -wind[1]), 0, Math.atan2(wind[0], -wind[1]) * -1);

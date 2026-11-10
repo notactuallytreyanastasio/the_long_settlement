@@ -27,7 +27,7 @@ const LIGHTS = {
   night: {
     preset: 'night', power: 1.15,
     env: {
-      key: { dir: dirFrom(-150, 42), color: '#7890e8' },
+      key: { dir: dirFrom(-26, 30), color: '#7890e8' },
       shadow: { tint: '#3040ac', lift: 0.12, saturate: 1.3 },
       ambient: { sky: '#4a62d8', ground: '#3a2e9c', amount: 0.18 },
       rim: { color: '#c8b4ff', amount: 0.9, edge: 0.74 },
@@ -81,12 +81,12 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   scene.root.add(folk.node);
 
   // ---- the chain: boats from the steps to the bar and on between the walls
-  const NB = low ? 10 : 15, sk = skiff({}), boats = node('boats', sk, M.prop), pans = node('pans', flame({ r: 0.17, h: 0.44, seg: 5, root: '#ffffff', tip: C8.kelpDeep }), M.lantern), rowers = node('rowers', townsfolk({ hold: 'none', detail: 0 }), M.prop);
+  const NB = low ? 9 : 12, sk = skiff({}), boats = node('boats', sk, M.prop), pans = node('pans', flame({ r: 0.17, h: 0.44, seg: 5, root: '#ffffff', tip: C8.kelpDeep }), M.lantern), rowers = node('rowers', townsfolk({ hold: 'none', detail: 0 }), M.prop);
   for (const n of [boats, pans, rowers]) { n.castShadow = false; n.instances = makeInstances(n === rowers ? NB * 2 : NB); n.instances.count = n === rowers ? NB * 2 : NB; scene.root.add(n); }
   const chain = [];
   for (let i = 0; i < NB; i++) {
-    const u = i / (NB - 1), z = QUAY_Z - 3.4 - Math.pow(u, 1.3) * 118, x = STEP_X + (LANE_X - STEP_X) * Math.min(1, u * 2.4) + Math.sin(u * 7) * 0.9 * (1 - u), s = 1.4 + u * 2.4; // far boats are drawn larger, or they are a pixel
-    chain.push({ x, z, s, yaw: 90 + (i % 2 ? 1 : -1) * (14 + r() * 26), ph: r() * 6.28, lit: 0, glow: sprites.add({ kind: 'glow', pos: [x, 0.8, z], size: 1.6 + u * 5, color: C8.kelp, alpha: 0 }) });
+    const u = i / (NB - 1), z = QUAY_Z - 3.4 - Math.pow(u, 1.3) * 118, x = STEP_X + (LANE_X - STEP_X) * Math.min(1, u * 2.4) + Math.sin(u * 7) * 0.9 * (1 - u), s = 1.4 + u * 1.5; // far boats are drawn larger, or they are a pixel
+    chain.push({ x, z, s, yaw: 90 + (i % 2 ? 1 : -1) * (14 + r() * 26), ph: r() * 6.28, lit: 0, glow: sprites.add({ kind: 'glow', pos: [x, 0.8, z], size: 1.5 + u * 2.6, color: C8.kelp, alpha: 0 }) });
   }
   const FIRST = [chain[0].x, WATER + 1.3, chain[0].z];
   env.water.shores.push([chain[0].x, chain[0].z, 1.1, 0.5]);

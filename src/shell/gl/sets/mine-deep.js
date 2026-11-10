@@ -41,7 +41,7 @@ const LIGHTS = {
       shadow: { tint: '#3a2fb4', lift: 0.13, saturate: 1.35 },
       ambient: { sky: '#5a4ce0', ground: '#3a2c9c', amount: 0.15 },
       rim: { color: '#9fe8ff', amount: 0.75, edge: 0.72 },
-      fog: { color: '#2c2aa8', density: 0.03, start: 9, max: 0.86 },
+      fog: { color: '#2a28a8', density: 0.03, start: 12, max: 0.86 },
       sky: { zenith: '#1a1670', mid: '#24208a', midAt: 0.5, horizon: '#2c2aa8', below: '#241e84', stars: 0, moon: 0, sunDir: norm3([0, 1, -0.2]) },
       water: null,
     },
@@ -66,7 +66,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
 
   // ---- the rock
   const rockG = group('rock');
-  rockG.add(node('cave', cave({ w: W, h: HGT, len: LEN, seg: low ? 10 : 14, rings: low ? 9 : 13, seed: 7, lump: 1.25, flat: 0.62, narrow: NARROW, colors: ['#3c32a8', '#5a4ecc', '#4a40b8', '#7264e0', '#584cc6', '#8676ea'], bands: 6 }), M.rock, { pos: [0, -0.15, FRONT] }));
+  rockG.add(node('cave', cave({ w: W, h: HGT, len: LEN, seg: low ? 10 : 14, rings: low ? 9 : 13, seed: 7, lump: 1.25, flat: 0.62, narrow: NARROW, colors: ['#3428a0', '#4c40c4', '#3c30ac', '#5e50d6', '#463abc', '#6c5ee0'], bands: 6 }), M.rock, { pos: [0, -0.15, FRONT] }));
   rockG.add(node('end', tint(place(box(9, 6, 0.4), 0, 3, FRONT - LEN - 0.1), '#241e84'), M.rock));
   scene.root.add(mergeStatic(rockG, 'rock'));
   const floorG = group('floor');
@@ -164,7 +164,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   const sprites = scene.sprites = createSprites(low ? 128 : 320);
   const winAt = [OFF[0] - 0.9, 1.5, OFF[2] + 0.9];
   const lamps = [
-    { name: 'hook', pos: lampPos, color: '#ffc468', radius: 9.5, base: 1.5 },
+    { name: 'hook', pos: lampPos, color: '#ffc468', radius: 7.2, base: 1.4 },
     { name: 'office', pos: winAt, color: '#ffb450', radius: 5.0, base: 1.25 },
     { name: 'hand', pos: [handPos[0], handPos[1] + 0.2, handPos[2] + 0.2], color: '#ffd080', radius: 3.6, base: 1.2 },
     { name: 'shaft', pos: [CAGE[0], 3.4, CAGE[2] + 0.4], color: '#8fc8ff', radius: 6.0, base: 1.3, flicker: 0, fixed: true },

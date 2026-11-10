@@ -381,6 +381,13 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (isStage) {
       if (!director.set) { hud.fillStyle = '#000'; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); }
       if (director.fade > 0.003) { hud.globalAlpha = clamp(director.fade, 0, 1); hud.fillStyle = director.fadeColor || INK; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); hud.globalAlpha = 1; }
+      // an empty table dims their world: the lamps and figures go down in the director, and a veil of night comes
+      // over the whole band (on a sunlit set the lamps alone do not show it). A ball at the plunger lifts half of it.
+      const fight = stage && stage.phase === 'fight' && director.stage ? director.stage.fight : null;
+      if (fight && cineW < 0.999) {
+        const a = clamp((0.5 - fight.power) / 0.25, 0, 1) * 0.36 * (1 - smooth(cineW));
+        if (a > 0.004) { hud.globalAlpha = a; hud.fillStyle = '#0b1030'; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); hud.globalAlpha = 1; }
+      }
       hud.save(); director.drawOverlay(hud); hud.restore();
     }
     if (veil > 0.003) { hud.globalAlpha = smooth(clamp(veil, 0, 1)); hud.fillStyle = INK; hud.fillRect(0, 0, cssW, cssH); hud.globalAlpha = 1; }

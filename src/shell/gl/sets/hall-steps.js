@@ -20,12 +20,12 @@
 // low: true drops the watchers below, the shafts, the planting and the studs, and halves the crowd.
 
 import { m4, quat, rng, DEG, rgb } from '../math.js';
-import { merge, tint, place, plane, box, sphere, setGlow, setOutline } from '../mesh.js';
+import { merge, tint, place, plane, box, sphere, lathe, torus, setGlow } from '../mesh.js';
 import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMaterial } from '../fx.js';
 import { PAL, kitMaterials, anchorAt, pickLight, cloudBank, gull, tree, bush } from './kit.js';
-import { C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, rows, folk7, dirFrom, norm7, stairs7, mintHall, auditSeal, lampStandard, banner7, oddsBoard } from './kit-ch7.js';
+import { C7, STD_MARKS, STD_CAMERAS, shell7, sunShafts, rows, folk7, dirFrom, norm7, stairs7, tiles, mintHall, auditSeal, lampStandard, banner7, oddsBoard } from './kit-ch7.js';
 
 const HX = 0.85, Z_UP = -1.95, Z_DN = 2.45, RISE = 0.2, RUN = 0.42, N_UP = 6, FLOOR = RISE * N_UP, PORT_Z = Z_UP - RUN * N_UP;
 const SMOCKS = ['#4fc0d4', '#ff9470'];
@@ -34,24 +34,24 @@ const LIGHTS = {
   afternoon: {
     preset: 'sunset', power: 0.85, sun: 0.3, seal: true, crowd: 0.6,
     env: {
-      key: { dir: dirFrom(-152, 15), color: '#ffd9a0' },
-      shadow: { tint: '#7468de', lift: 0.1, saturate: 1.45 },
+      key: { dir: dirFrom(-126, 17), color: '#ffd9a0' },
+      shadow: { tint: '#6a5fd8', lift: 0.07, saturate: 1.5 },
       ambient: { sky: '#ffb090', ground: '#8a6ad8', amount: 0.15 },
       rim: { color: '#ffe0a0', amount: 0.6, edge: 0.76 },
       fog: { density: 0.0016, start: 26, max: 0.6 },
-      sky: { zenith: '#2a3cb8', mid: '#7a6ae4', midAt: 0.42, horizon: '#ffb8a0', below: '#f6a878', glow: '#ffd890', glowAmount: 0.3, sunDir: dirFrom(-152, 15), sun: { size: 2.4 } },
+      sky: { zenith: '#2a3cb8', mid: '#7a6ae4', midAt: 0.42, horizon: '#ffb8a0', below: '#f6a878', glow: '#ffd890', glowAmount: 0.3, sunDir: dirFrom(-126, 17), sun: { size: 2.4 } },
       water: null,
     },
-    cloud: { color: '#ffc8b0', shadowTint: '#b070c8' }, ray: 0.22, rayColor: '#ffd088', mote: '#ffd890',
+    cloud: { color: '#ffc8b0', shadowTint: '#b070c8' }, ray: 0.34, rayColor: '#ffd088', mote: '#ffd890',
   },
   noon: {
     preset: 'day', power: 0, sun: 0.34, seal: false, crowd: 1,
     env: {
-      key: { dir: dirFrom(-146, 56), color: '#fff6dc' },
-      shadow: { tint: '#8a94ea', lift: 0.08, saturate: 1.35 },
+      key: { dir: dirFrom(-148, 33), color: '#fff6dc' },
+      shadow: { tint: '#929cf0', lift: 0.1, saturate: 1.35 },
       ambient: { sky: '#bfe4ff', ground: '#ffe9b0', amount: 0.12 },
       fog: { density: 0.0012, start: 30, max: 0.5 },
-      sky: { zenith: '#1a62d8', mid: '#4aa8f2', midAt: 0.42, horizon: '#c9eefa', below: '#bfe6f4', sunDir: dirFrom(-146, 56) },
+      sky: { zenith: '#1a62d8', mid: '#4aa8f2', midAt: 0.42, horizon: '#c9eefa', below: '#bfe6f4', sunDir: dirFrom(-148, 33) },
       water: null,
     },
     cloud: { color: '#ffffff', shadowTint: '#b4c6f8' }, ray: 0, rayColor: '#fff6d0', mote: '#ffffff',
@@ -74,9 +74,10 @@ function build(engine = null, { light, low = false } = {}) {
   const ground = group('ground');
   ground.add(node('below', tint(place(plane(90, 40, 1, 1), 0, -1.0, 22), '#f1dcae'), M.ground));
   ground.add(node('terrace', tint(place(box(70, 1.6, 30), 0, -0.8, Z_UP - 15), '#f6e2b8'), M.ground));
-  ground.add(node('fourth', tint(place(box(44, 1.0, Z_DN - Z_UP), 0, -0.5, (Z_DN + Z_UP) / 2), '#fff3d6'), M.ground));
-  ground.add(node('down', stairs7({ w: 44, n: 5, rise: RISE, run: RUN, colors: [C7.stone2, C7.stone] }), M.ground, { pos: [0, -1.0, Z_DN + RUN * 5] }));
-  ground.add(node('up', stairs7({ w: 15.2, n: N_UP, rise: RISE, run: RUN }), M.ground, { pos: [HX, 0, Z_UP] }));
+  ground.add(node('fourth', tint(place(box(44, 1.0, Z_DN - Z_UP), 0, -0.5, (Z_DN + Z_UP) / 2), '#ffe6cc'), M.ground));
+  ground.add(node('paving', place(tiles({ w: 44, d: Z_DN - Z_UP - 0.5, nx: 40, nz: 4, colors: ['#ffe9d2', '#f6b7a6'] }), 0, 0.004, (Z_DN + Z_UP) / 2 - 0.2), M.flat));
+  ground.add(node('down', stairs7({ w: 44, n: 5, rise: RISE, run: RUN, colors: ['#f7cdb4', '#ffe6cc'], nose: '#e9a892' }), M.ground, { pos: [0, -1.0, Z_DN + RUN * 5] }));
+  ground.add(node('up', stairs7({ w: 15.2, n: N_UP, rise: RISE, run: RUN, colors: ['#ffe6cc', '#f7c4ae'], nose: '#e9a892' }), M.ground, { pos: [HX, 0, Z_UP] }));
   // the brass strip let into the fourth step, where the line was held
   const strip = [tint(place(box(15.2, 0.03, 0.12), HX, 0.012, Z_DN - 0.3), C7.brass)];
   if (!low) for (let i = 0; i < 26; i++) strip.push(tint(place(box(0.07, 0.035, 0.07), HX - 7.2 + i * 0.576, 0.02, Z_DN - 0.3, 0, 45, 0), C7.brassDark));
@@ -85,16 +86,19 @@ function build(engine = null, { light, low = false } = {}) {
 
   // ---- the hall
   const near = group('near');
-  const hall = mintHall({ w: 13, h: 4.8, d: 3.2, colX: [-5.7, -3.55, -1.6, 1.6, 3.55, 5.7], doorW: 2.6, doorH: 3.6, doors: 'shut', dome: true, body: 7, detail: low ? 0 : 1 });
+  const hall = mintHall({ w: 13, h: 4.8, d: 3.2, colX: [-5.7, -3.55, -1.6, 1.6, 3.55, 5.7], doorW: 2.6, doorH: 3.6, doors: 'shut', dome: true, body: 7, detail: low ? 0 : 1, wall: '#ffa98c' });
   near.add(node('hall', hall, M.prop, { pos: HALL }));
   for (const sx of [-1, 1]) { // the cheeks of the stair, a planter on each
     const x = HX + sx * 8.05;
     near.add(node('cheek', merge(tint(place(box(0.9, 1.75, RUN * N_UP + 0.5), 0, 0.875, -RUN * N_UP / 2), C7.stone2), tint(place(box(1.06, 0.14, RUN * N_UP + 0.66), 0, 1.8, -RUN * N_UP / 2), C7.stone), tint(place(box(0.7, 0.3, 0.7), 0, 2.0, -0.5), C7.royalDark)), M.prop, { pos: [x, 0, Z_UP] }));
     if (!low) near.add(node('shrub', bush({ seed: 3 + sx, s: 1.25, color: sx < 0 ? PAL.leaf : PAL.leafDark }), M.prop, { pos: [x, 2.1, Z_UP - 0.5] }));
   }
+  // blue urns with clipped bays at the foot of the flight
+  if (!low) for (const sx of [-1, 1]) near.add(node('urn', merge(tint(lathe([[0, 0], [0.24, 0], [0.2, 0.08], [0.34, 0.34], [0.36, 0.52], [0.26, 0.62], [0.3, 0.68], [0, 0.68]], 9, { crease: 50 }), C7.royal), tint(place(torus(0.33, 0.035, 9, 3), 0, 0.47, 0), C7.brass), tint(place(sphere(0.42, 9, 6), 0, 1.02, 0), sx < 0 ? PAL.leaf : PAL.leaf2), ...[0, 1, 2, 3, 4].map((k) => tint(place(sphere(0.07, 5, 3), Math.cos(k * 1.3) * 0.36, 1.05 + Math.sin(k * 2.1) * 0.2, Math.sin(k * 1.3) * 0.36 + 0.1), k % 2 ? PAL.coral : PAL.yellow))), M.prop, { pos: [HX + sx * 4.15, 0, Z_UP + 0.42] }));
   // the lamp standards either side of the doors
   const stdL = lampStandard({ h: 2.7, lit }), LAMPS = [anchorAt(hall, 'lampL', HALL), anchorAt(hall, 'lampR', HALL)].map((p) => [p[0], FLOOR, PORT_Z - 1.0]);
-  LAMPS[0][0] = HX - 2.5; LAMPS[1][0] = HX + 2.5;
+  LAMPS[0][0] = HX - 1.6; LAMPS[1][0] = HX + 1.6; LAMPS[0][2] = LAMPS[1][2] = PORT_Z - 0.02;
+  LAMPS.push([HX - 5.6, 0, Z_UP + 0.35], [HX + 5.6, 0, Z_UP + 0.35]);
   for (const p of LAMPS) near.add(node('standard', stdL, M.prop, { pos: p }));
   // Tobb's board, on the wall between the second and third columns
   const BOARD = [HX - 2.62, FLOOR + 1.15, PORT_Z - 3.2 + 0.3], ob = oddsBoard({ w: 1.5, h: 1.2, seed: 5 });
@@ -108,7 +112,7 @@ function build(engine = null, { light, low = false } = {}) {
   scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(near, 'near'));
 
   // ---- the seal, and the chalk: their own nodes, the script changes them
-  const sealNode = node('seal', setGlow(auditSeal({ r: 0.36, span: 2.3 }), 0.25), M.prop, { pos: anchorAt(hall, 'sealAt', HALL) }); sealNode.castShadow = false; sealNode.visible = L.seal;
+  const sealNode = node('seal', setGlow(auditSeal({ r: 0.38, span: 2.3 }), 0.45), M.prop, { pos: anchorAt(hall, 'sealAt', HALL) }); sealNode.castShadow = false; sealNode.visible = L.seal;
   const chalkPos = BOARD;
   const oddsNode = node('chalk-odds', ob.odds, M.flat, { pos: chalkPos }), tableNode = node('chalk-table', ob.table, M.flat, { pos: chalkPos, visible: false });
   oddsNode.castShadow = tableNode.castShadow = false;
@@ -124,31 +128,26 @@ function build(engine = null, { light, low = false } = {}) {
   // ---- sprites, crowd, lamps
   const sprites = scene.sprites = createSprites(low ? 128 : 256);
   const face = (p) => Math.atan2(0 - p[0], 0.6 - p[2]) / DEG;
-  const sideSpots = [...rows(3, 9, -8.2, -4.7, -1.5, 1.5, face), ...rows(5, 9, 4.7, 8.2, -1.5, 1.5, face)], spots = [];
+  const sideSpots = [...rows(3, 9, -6.9, -3.9, -1.7, -0.5, face), ...rows(5, 9, 3.9, 6.9, -1.7, -0.5, face)], spots = [];
   for (let i = 0; i < 9; i++) spots.push(sideSpots[i], sideSpots[9 + i]);
   const folk = folk7({ spots: low ? spots.filter((_, i) => i % 2 === 0) : spots, material: M.prop, seed: 5, coats: SMOCKS.slice(0, low ? 1 : 2), amount: L.crowd });
   scene.root.add(folk.node);
-  // the dock, on the flight below, backs to us: only the wide marks see them
   const foreground = group('foreground');
-  if (!low) {
-    const fs = []; for (let i = 0; i < 9; i++) { const k = 1 + (i % 3), z = Z_DN + RUN * (k + 0.45) + (r() - 0.5) * 0.1; fs.push({ pos: [-3.4 + i * 0.85 + (r() - 0.5) * 0.3, -RISE * (k + 1), z], face: 180 + (r() - 0.5) * 30, s: 1.0 + r() * 0.15 }); }
-    const watchers = folk7({ spots: fs, material: M.prop, seed: 21, coats: ['#3f8fd0', '#f0845c'], amount: 1 });
-    watchers.update(0, 0, { lively: 0 }); foreground.add(watchers.node);
-  }
   scene.root.add(foreground);
 
   const lampAt = LAMPS.map((p) => [p[0], p[1] + 2.5, p[2]]);
   const lamps = [
     { name: 'standard-left', pos: lampAt[0], color: '#ffc468', radius: 5.6, base: 1.1 },
     { name: 'standard-right', pos: lampAt[1], color: '#ffc468', radius: 5.6, base: 1.1 },
-    { name: 'doors', pos: [HX, FLOOR + 2.0, PORT_Z - 2.2], color: '#ffb858', radius: 4.2, base: 0.8, flicker: 0.02 },
+    { name: 'step-left', pos: lampAt[2], color: '#ffc468', radius: 5.2, base: 1.1 },
+    { name: 'step-right', pos: lampAt[3], color: '#ffc468', radius: 5.2, base: 1.1 },
   ];
   const glows = lit ? lampAt.map((p) => ({ sprite: sprites.add({ kind: 'glow', pos: p, size: 2.3, color: '#ffb450', alpha: 0 }), base: 0.62 })) : [];
   const FINIAL = anchorAt(hall, 'finial', HALL);
   const domeStar = sprites.add({ kind: 'sparkle', pos: FINIAL, size: 2.4, color: '#fffbe6', alpha: 0 });
   const SEAL = anchorAt(hall, 'sealAt', HALL), sealGlow = sprites.add({ kind: 'glow', pos: [SEAL[0], SEAL[1], SEAL[2] + 0.2], size: 1.5, color: '#ff6a50', alpha: 0 });
 
-  if (!low && L.ray > 0) scene.root.add(node('sun-shafts', sunShafts(env.key.dir, [[HX - 2.8, PORT_Z - 1.2, 12, 1.1, FLOOR], [HX + 1.0, PORT_Z - 2.6, 13, 1.5, FLOOR + 1.2], [HX + 4.6, PORT_Z - 1.6, 12, 1.0, FLOOR]], L.rayColor), rayMaterial({ power: 1.3, near: 0.02, far: L.ray })));
+  if (!low && L.ray > 0) scene.root.add(node('sun-shafts', sunShafts(env.key.dir, [[HX - 2.6, PORT_Z - 2.9, 11, 1.0, FLOOR + 0.6], [HX + 3.0, PORT_Z - 2.9, 12, 1.1, FLOOR + 0.9], [HX + 5.4, PORT_Z - 2.9, 11, 0.9, FLOOR + 0.4], [HX - 5.0, PORT_Z - 2.9, 12, 0.8, FLOOR + 0.5]], L.rayColor), rayMaterial({ power: 1.2, near: 0.03, far: L.ray })));
 
   const clouds = cloudBank({ style: 'painted', count: 8, seed: 9, arc: [150, 212], radius: [240, 420], height: [60, 230], size: [0.8, 1.6], speed: 0.05, ...L.cloud });
   scene.root.add(clouds.node);

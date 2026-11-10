@@ -514,7 +514,8 @@ export function mintHall({ w = 12, h = 4.8, d = 3.2, cols = 6, colX = null, door
   const side = (hw - doorW / 2);
   for (const sx of [-1, 1]) parts.push(bx(side, h, 0.5, sx * (doorW / 2 + side / 2), h / 2, -d, wall));
   parts.push(bx(doorW, h - doorH, 0.5, 0, (h + doorH) / 2, -d, wall));
-  parts.push(bx(w, 1.0, 0.56, 0, 0.5, -d + 0.02, C7.royalDark), bx(doorW + 0.5, 0.26, 0.6, 0, doorH + 0.13, -d + 0.06, stone));
+  for (const sx of [-1, 1]) parts.push(bx(side - 0.26, 1.0, 0.56, sx * (doorW / 2 + 0.26 + (side - 0.26) / 2), 0.5, -d + 0.02, C7.royalDark));
+  parts.push(bx(doorW + 0.5, 0.26, 0.6, 0, doorH + 0.13, -d + 0.06, stone));
   for (const sx of [-1, 1]) parts.push(bx(0.26, doorH, 0.6, sx * (doorW / 2 + 0.13), doorH / 2, -d + 0.06, stone));
   parts.push(bx(doorW, doorH, 0.1, 0, doorH / 2, -d - 0.5, doors === 'open' ? '#ffc070' : '#3a2a6e'));
   if (doors === 'open') parts[parts.length - 1] = setGlow(parts[parts.length - 1], 0.6);

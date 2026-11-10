@@ -121,8 +121,8 @@ function build(engine = null, { light, low = false } = {}) {
   scene.root.add(wave, crest);
 
   // ---- the flame, the rings, the light that comes from them
-  const fl = node('flame', flameMesh({ r: 0.62, h: 2.0, seg: 9, root: '#ffffff', tip: '#fff0a0' }), M.lantern, { pos: FIRE }); fl.castShadow = false;
-  const flq = node('flame-quarter', flameMesh({ r: 0.62, h: 2.0, seg: 9, root: '#f0e8ff', tip: '#7d6be0' }), M.lantern, { pos: FIRE }); flq.castShadow = false;
+  const fl = node('flame', flameMesh({ r: 0.62, h: 2.0, seg: 9, root: '#ffffff', tip: '#ffc848' }), M.lantern, { pos: FIRE }); fl.castShadow = false;
+  const flq = node('flame-quarter', flameMesh({ r: 0.62, h: 2.0, seg: 9, root: '#d8c8ff', tip: '#6448e0' }), M.lantern, { pos: FIRE }); flq.castShadow = false;
   scene.root.add(fl, flq);
   const RING_Y = FIRE[1] + 0.95;
   const rings = [
@@ -191,16 +191,16 @@ function build(engine = null, { light, low = false } = {}) {
     mix3(env.ambient.sky, sQ, sW, w); mix3(env.ambient.ground, gQ, gW, w); mix3(env.shadow.tint, tQ, tW, w); mix3(env.rim.color, rQ, rW, w);
     env.ambient.amount = QUARTER.amb + (WHITE.amb - QUARTER.amb) * w;
     // the flame itself: one mesh for each colour, cross-faded by scale
-    const flick = 1 + 0.07 * Math.sin(time * 9.1) + 0.05 * Math.sin(time * 14.7 + 1), hgt = (0.3 + 0.7 * w) * flick, wid = 0.5 + 0.5 * w;
+    const flick = 1 + 0.07 * Math.sin(time * 9.1) + 0.05 * Math.sin(time * 14.7 + 1), hgt = (0.4 + 0.6 * w) * flick, wid = 0.55 + 0.45 * w;
     fl.visible = w > 0.03; flq.visible = q > 0.03;
     fl.scale[0] = fl.scale[2] = wid * Math.min(1, w * 3) * (1 + 0.04 * Math.sin(time * 11)); fl.scale[1] = hgt * Math.min(1, w * 3); fl.setRot(0, time * 40, Math.sin(time * 3.1) * 2.5);
     flq.scale[0] = flq.scale[2] = wid * Math.min(1, q * 3) * 0.96; flq.scale[1] = hgt * 1.02 * Math.min(1, q * 3); flq.setRot(0, time * -33, Math.sin(time * 2.6) * 4);
     const fy = FIRE[1] + hgt * 0.9;
     mix3(env.points[0].color, cQuarter, cWhite, w); mix3(env.points[1].color, cQuarter, cWhite, w);
     env.points[0].intensity *= 0.42 + 0.58 * w; env.points[0].radius = 9 + 6 * w; env.points[1].intensity *= 0.35 + 0.65 * w;
-    mix3(halo.color, cQuarter, cWhite, w); halo.size[0] = halo.size[1] = 4.2 + 5.5 * w; halo.alpha = (0.5 - 0.14 * w) * flick; halo.pos[1] = fy;
-    core.size[0] = core.size[1] = 1.3 + 2.2 * w; core.alpha = 0.45 - 0.2 * w; core.pos[1] = FIRE[1] + hgt * 0.7; mix3(core.color, cQuarter, ONE, 0.4 + 0.6 * w);
-    star.size[0] = star.size[1] = (1.6 + 3.4 * w) * flick; star.pos[1] = fy; star.rot = time * 0.15; star.alpha = 0.55 + 0.4 * w;
+    mix3(halo.color, cQuarter, cWhite, w); halo.size[0] = halo.size[1] = 4.2 + 5.5 * w; halo.alpha = (0.5 - 0.3 * w) * flick; halo.pos[1] = fy;
+    core.size[0] = core.size[1] = 1.3 + 2.2 * w; core.alpha = 0.16; core.pos[1] = FIRE[1] + hgt * 0.7; mix3(core.color, cQuarter, ONE, 0.4 + 0.6 * w);
+    star.size[0] = star.size[1] = (1.6 + 3.4 * w) * flick; star.pos[1] = fy; star.rot = time * 0.15; star.alpha = 0.3 + 0.5 * w; mix3(star.color, cQuarter, ONE, 0.3 + 0.7 * w);
     cone.visible = w > 0.08; cone.tint[0] = cone.tint[1] = cone.tint[2] = w;
     moonShafts.tint[0] = moonShafts.tint[1] = moonShafts.tint[2] = 0.35 + 0.65 * q;   // the moon only shows in the room once the lamp is down
     // the engine: turning while the lamp is whole, run down and stopped at a quarter

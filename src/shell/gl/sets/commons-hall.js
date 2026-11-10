@@ -214,8 +214,8 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   function tick(time, dt, pw, live) {
     folk.update(time, dt, FOLK);
     if (!live) return;
-    if (time > nextSteam) { nextSteam = time + 0.42; const p = pots[Math.floor(rnd() * pots.length)]; sprites.puff(p, { count: 1, size: 0.42, rise: 0.55, spread: 0.1, life: 2.2, color: night ? '#fff0e0' : '#ffffff' }); }
-    if (!low && time > nextBowl) { nextBowl = time + 1.3; P[0] = (rnd() < 0.5 ? -1 : 1) * TX + (rnd() - 0.5) * 0.4; P[1] = 0.74; P[2] = TZ + (rnd() - 0.5) * TLEN * 0.8; sprites.puff(P, { count: 1, size: 0.2, rise: 0.3, spread: 0.04, life: 1.4, color: '#fff6ea' }); }
+    if (time > nextSteam) { nextSteam = time + 0.42; const p = pots[Math.floor(rnd() * pots.length)]; sprites.puff(p, { count: 1, size: 0.2, rise: 0.6, spread: 0.1, life: 1.9, color: night ? '#fff0e0' : '#ffffff' }); }
+    if (!low && time > nextBowl) { nextBowl = time + 1.3; P[0] = (rnd() < 0.5 ? -1 : 1) * TX + (rnd() - 0.5) * 0.4; P[1] = 0.74; P[2] = TZ + (rnd() - 0.5) * TLEN * 0.8; sprites.puff(P, { count: 1, size: 0.1, rise: 0.3, spread: 0.04, life: 1.2, color: '#fff6ea' }); }
   }
 
   const SM_MARKS = stageMarks();

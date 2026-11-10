@@ -275,11 +275,11 @@ export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, wat
 }
 
 /**
- * The sea standing up: a wall of water `w` long (along X) and `h` high, its face toward +Z, the crest curling over toward
- * the viewer with a lip of foam. Origin: the middle of its foot. Scale the node in Y to raise it. Use materials8().sea.
+ * The sea standing up: a wall of water `w` long (along X) and `h` high, its face toward +Z, a band of foam along
+ * its crest. Origin: the middle of its foot. Scale the node in Y to raise it. Use materials8().sea.
  */
 export function seaWall({ w = 120, h = 9, seg = 28, seed = 1, bow = 0, deep = '#1c3ca8', mid = '#2f7fe0', high = '#63d6e6', foam = '#f4ffff' } = {}) {
-  const prof = [[7, 0], [3.4, 0.04], [1.3, 0.26], [0.2, 0.56], [0.1, 0.8], [0.5, 0.93], [1.2, 1.0], [1.9, 0.94], [1.7, 0.86]], cols = [deep, deep, mid, mid, high, foam, foam, foam, foam].map((c) => rgb(c));
+  const prof = [[7, 0], [3.4, 0.04], [1.3, 0.26], [0.2, 0.56], [0.0, 0.78], [-0.5, 0.9], [-0.9, 0.93], [-1.8, 1.0], [-3.4, 0.96]], cols = [deep, deep, mid, mid, high, high, foam, foam, foam].map((c) => rgb(c));
   const pos = [], idx = [], np = prof.length, C = [];
   for (let i = 0; i <= seg; i++) {
     const u = i / seg, x = (u - 0.5) * w, lump = 1 + 0.1 * Math.sin(u * 23 + seed) + 0.07 * Math.sin(u * 57 + seed * 2.3) + (i % 2 ? 0.035 : -0.035), back = bow * (u - 0.5) * (u - 0.5) * 4;
@@ -288,7 +288,7 @@ export function seaWall({ w = 120, h = 9, seg = 28, seed = 1, bow = 0, deep = '#
   for (let i = 0; i < seg; i++) for (let j = 0; j < np - 1; j++) { const a = i * np + j, b = (i + 1) * np + j; idx.push(a, b, b + 1, a, b + 1, a + 1); }
   const m = fromArrays(pos, idx, null, 180);
   for (let i = 0; i < C.length; i++) { m.colors[i * 3] = C[i][0]; m.colors[i * 3 + 1] = C[i][1]; m.colors[i * 3 + 2] = C[i][2]; }
-  return setOutline(m, (x, y) => (y > h * 0.7 ? 1 : 0));
+  return setOutline(m, 0);
 }
 
 /** A tubby open boat for instancing (pale: the instance colour paints it), bow toward +Z, waterline at y = 0. anchors: pan (the fire pan on its bow post), seats[2] */
@@ -601,7 +601,7 @@ export function goat({ seed = 1, coat = '#fff6ea', patch = '#c8a078', s = 1, gra
 }
 
 /** One beach pebble for instancing (white: tint per instance). */
-export function pebble() { return setOutline(scaleMesh(sphere(1, 6, 3), 1, 0.42, 0.8), 0); }
+export function pebble() { return setOutline(cylinder(1, 0.72, 0.3, 6), 0); }
 
 /**
  * Carrow's beach: shingle falling gently from a grassy back (z = +front, y = 0 from there back to the stage) down to the

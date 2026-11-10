@@ -28,7 +28,7 @@ const LIGHTS = {
   flight: {
     preset: 'night', power: 1.2, lamp: 0, sea: 1, crowd: 1, panic: 1,
     env: {
-      key: { dir: dirFrom(-152, 40), color: '#7c92ec' },
+      key: { dir: dirFrom(-30, 34), color: '#7c92ec' },
       shadow: { tint: '#2c3aa6', lift: 0.12, saturate: 1.3 },
       ambient: { sky: '#4a5cd6', ground: '#3a2a98', amount: 0.17 },
       rim: { color: '#ffc890', amount: 0.9, edge: 0.74 },
@@ -75,7 +75,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const fA = (name) => anchorAt(fm, name, FERRY, FERRY_YAW), gate = fA('gate');
   env.water.shores.push([FERRY[0] + 2.6, FERRY[2], 2.2, 0.6], [FERRY[0] - 2.6, FERRY[2], 2.2, 0.6]);
   // everyone aboard: the foredeck, the afterdeck and the deckhouse roof, as instances that ride with the hull
-  const NP = low ? 14 : 24, aboard = node('aboard', townsfolk({ hold: 'none', detail: low ? 0 : 1 }), M.prop); aboard.castShadow = false; aboard.instances = makeInstances(NP); aboard.instances.count = NP; scene.root.add(aboard);
+  const NP = low ? 12 : 20, aboard = node('aboard', townsfolk({ hold: 'none', detail: 0 }), M.prop); aboard.castShadow = false; aboard.instances = makeInstances(NP); aboard.instances.count = NP; scene.root.add(aboard);
   const riders = []; for (let i = 0; i < NP; i++) { const k = i % 3, lz = k === 0 ? 2.0 + r() * 2.6 : k === 1 ? -3.4 - r() * 1.3 : -2.4 + r() * 2.4, lx = (r() - 0.5) * (k === 2 ? 1.6 : 2.3), ly = k === 2 ? 2.78 : 0.76; riders.push({ lx, ly, lz, ph: r() * 6.28, s: 0.8 + r() * 0.2, col: COATS[i % COATS.length], yaw: r() * 360 }); }
 
   // ---- the quay: the lantern on its crook over the gangway foot, carts on their sides, what was dropped
@@ -100,7 +100,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   // ---- the crowd on the quay, pressing toward the gangway
   const spots = [];
-  for (let i = 0; i < 34; i++) { const a = r() * 6.28, d = 0.8 + Math.sqrt(i) * 0.62 + r() * 0.3, x = GX + 0.4 + Math.cos(a) * d * 1.25, z = QUAY_Z + 1.9 + Math.abs(Math.sin(a)) * d * 0.62; if (z > -0.5 && Math.abs(x) < 3.6) continue; spots.push({ pos: [x, 0, z], face: Math.atan2(GX - x, (QUAY_Z + 0.4) - z) / DEG }); }
+  for (let i = 0; i < 28; i++) { const a = r() * 6.28, d = 0.8 + Math.sqrt(i) * 0.62 + r() * 0.3, x = GX + 0.4 + Math.cos(a) * d * 1.25, z = QUAY_Z + 1.9 + Math.abs(Math.sin(a)) * d * 0.62; if (z > -0.5 && Math.abs(x) < 3.6) continue; spots.push({ pos: [x, 0, z], face: Math.atan2(GX - x, (QUAY_Z + 0.4) - z) / DEG }); }
   const folk = crowd({ spots: low ? spots.filter((_, i) => i % 2 === 0) : spots, material: M.prop, sprites, seed: 21, amount: L.crowd, hold: 'none', variants: 2 });
   folk.pace = 14; scene.root.add(folk.node);
 

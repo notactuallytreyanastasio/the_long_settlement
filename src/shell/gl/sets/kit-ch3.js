@@ -192,7 +192,7 @@ export function bunk({ w = 0.86, len = 1.75, number = 19, seed = 1, iron = H3.ir
     for (const sx of [-1, 1]) parts.push(bx(0.045, 0.07, len, sx * hw, y, -len / 2, iron));
     for (const z of [0, -len]) parts.push(bx(w, 0.07, 0.045, 0, y, z, iron));
     parts.push(rb(w - 0.06, 0.13, len - 0.06, 0.04, 0, y + 0.085, -len / 2, sheet));
-    const fold = made ? 0.36 : 0.5 + r() * 0.2;
+    const fold = made ? 0.27 : 0.2 + r() * 0.1;
     parts.push(rb(w - 0.02, 0.15, len * (1 - fold) - 0.04, 0.04, 0, y + 0.1, -(len * (1 - fold)) / 2 + 0.0, blanket, 0, made ? 0 : (r() - 0.5) * 6, 0));
     parts.push(bx(w - 0.015, 0.155, 0.11, 0, y + 0.1, -len * (1 - fold) + 0.14, blanket2));
     parts.push(rb(w * 0.62, 0.11, 0.3, 0.05, 0, y + 0.2, -len + 0.24, '#ffffff', 0, made ? 0 : (r() - 0.5) * 14, 0));

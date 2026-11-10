@@ -38,7 +38,7 @@ const LIGHTS = {
       sky: { zenith: '#101c7c', mid: '#3a3cb8', midAt: 0.38, horizon: '#ff8f9a', below: '#c86ab0', glow: '#ffc890', glowAmount: 0.8, sunDir: dirFrom(-16, -1.5), stars: 0.6, sun: { color: '#ffe0b0', size: 2.4, halo: '#ff9a70', haloAmount: 0.8 } },
       water: { deep: '#1a2890', mid: '#3a4cc8', shallow: '#c878c0', foam: '#fff0f0', glint: '#ffc8c0', glintDensity: 0.3, drift: [0.5, 0.25] },
     },
-    cloud: { color: '#ff9ab0', shadowTint: '#5a48b8' }, shingle: 0.92, hill: ['#3a3cb0', '#6a5cd0', '#4a3ea8'],
+    cloud: { color: '#ff9ab0', shadowTint: '#5a48b8' }, shingle: 0.92, hill: ['#5a4cc8', '#9a6cd8', '#4a3ea8'],
   },
   day: {
     preset: 'day', power: 0, surf: 0.3,
@@ -77,7 +77,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   // the long rope, made fast to a ring on the breakwater and run down the shingle
   near.add(node('rope', tint(tube(curve([[1.0, BW_H + 0.12, BW_Z + 0.6], [0.9, 0.9, BW_Z + 1.5], [0.4, 0.04, -2.0], [-1.0, 0.04, -1.2], [-2.3, 0.04, -1.9], [-3.6, 0.03, -0.9]], 20), 0.03, 5, { crease: 180 }), PAL.rope), M.prop), node('ring', tint(place(GL0.torus(0.13, 0.03, 8, 4), 1.0, BW_H + 0.14, BW_Z + 0.75, 20, 0, 0), PAL.iron), M.prop));
   // ---- what came ashore with them
-  near.add(node('hatch', hatchCover({ s: 1.5, seed: 2 }), M.prop, { pos: [-1.25, 0.5, -2.35], rot: [-58, 16, -5] }), node('hatch-rock', crag({ w: 1.5, h: 0.7, d: 0.9, seed: 21, low: dark ? '#4a48b8' : '#9a90e0', high: dark ? '#8f8cf0' : '#d8d0f8' }), M.prop, { pos: [-1.3, 0, -2.85] }), node('spar', spar({ len: 3.4 }), M.prop, { pos: [-3.7, 0.0, -2.9], rot: [0, 24, 0] }), node('cask', barrel({ r: 0.27, h: 0.62, color: '#c8643e' }), M.prop, { pos: [-2.7, 0.26, -1.5], rot: [86, 30, 0] }));
+  near.add(node('hatch', hatchCover({ s: 1.3, seed: 2 }), M.prop, { pos: [-1.3, 0.34, -2.3], rot: [-40, 18, -6] }), node('hatch-rock', crag({ w: 1.5, h: 0.7, d: 0.9, seed: 21, low: dark ? '#4a48b8' : '#9a90e0', high: dark ? '#8f8cf0' : '#d8d0f8' }), M.prop, { pos: [-1.3, 0, -2.85] }), node('spar', spar({ len: 3.4 }), M.prop, { pos: [-3.7, 0.0, -2.9], rot: [0, 24, 0] }), node('cask', barrel({ r: 0.27, h: 0.62, color: '#c8643e' }), M.prop, { pos: [-2.7, 0.26, -1.5], rot: [86, 30, 0] }));
   near.add(node('weed1', kelp({ s: 0.9, seed: 2 }), M.flat, { pos: [-1.1, 0.01, -1.0] }), node('weed2', kelp({ s: 0.7, seed: 5 }), M.flat, { pos: [1.3, 0.01, -2.3] }), node('weed3', kelp({ s: 1.0, seed: 8 }), M.flat, { pos: [-3.4, 0.01, 0.6] }), node('weed4', kelp({ s: 0.7, seed: 11 }), M.flat, { pos: [3.6, 0.01, 0.9] }));
   // ---- what the island brought down: blankets (the dry ones), a hooded lantern on a pole, a creel, a stretcher of oars
   const POLE = [1.55, 0, -2.55], poleMesh = netPole({ h: 2.35, arm: 0.5, seed: 5 });
@@ -95,7 +95,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   const tower = cappedLamp({ h: 6.5, r: 1.5, colors: dark ? ['#8f8cf0', '#5a58d0'] : [C4.stone, C4.slate] });
   far.add(node('tower', tower, FAR, { pos: TOWER }));
   if (!low) for (const [x, z, s, seed] of [[8.5, -47, 1.5, 3], [14, -49, 1.3, 7], [-2.5, -50, 1.2, 9]]) far.add(node('hut', stoneHut({ seed, w: 2.6 * s, d: 2.2 * s, h: 2.0 * s, roofH: 1.4 * s, ...(dark ? { wall: '#8a86e8', roof: '#4a44b0', shutters: '#c878c0' } : {}) }), FAR, { pos: [x, topAt(x, z) - 1.2, z], rot: [0, (seed % 7) * 9 - 20, 0] }));
-  for (const [x, z, w, h, seed] of [[-14, -22, 4, 3.4, 5], [-19, -30, 5, 5.5, 8], [-9, -40, 3, 2.2, 11]]) far.add(node('stack', crag({ w, h, d: w * 0.8, seed, low: dark ? '#2a2c98' : '#7a70d8', high: dark ? '#5a5ad0' : '#c8c0f8' }), FAR, { pos: [x, WATER - 0.1, z] }));
+  for (const [x, z, w, h, seed] of [[-14, -22, 4, 3.4, 5], [-19, -30, 5, 5.5, 8], [-9, -40, 3, 2.2, 11], [12, -50, 16, 13.5, 14], [26, -48, 20, 15, 17], [-6, -52, 12, 10.5, 20]]) far.add(node('stack', crag({ w, h, d: w * 0.8, seed, low: dark ? '#2a2c98' : '#7a70d8', high: dark ? '#5a5ad0' : '#c8c0f8' }), FAR, { pos: [x, WATER - 0.1, z] }));
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir); env.water.level = WATER;
@@ -116,7 +116,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   const spots = []; for (let i = 0; i < 11; i++) { const onSteps = i >= 8; spots.push(onSteps ? { pos: [2.9 + (i % 2 ? 0.3 : -0.3), BW_H - (i - 7) * (BW_H / 5) * 1.4, BW_Z + 1.2 + (i - 8) * 0.5], face: 10 } : { pos: [BW_X0 + 1.2 + i * 0.6 + (i > 3 ? 1.9 : 0), BW_H + 0.1, BW_Z + 0.3 - (i % 2) * 0.5], face: (i % 3 - 1) * 14 }); }
   const folk = crowd({ spots, material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 4, amount: 1 });
   scene.root.add(folk.node);
-  const swells = seaSwells({ rows: [{ z: -9.5, n: 3, span: 20, size: 1.25, speed: 1.0 }, { z: -16, n: 3, span: 30, size: 1.9, speed: 0.8 }, ...(low ? [] : [{ z: -26, n: 4, span: 50, size: 2.8, speed: 0.7 }])], material: M.prop, level: WATER, seed: 3, colors: dark ? { deep: '#1a2890', mid: '#3a4cc8', lit: '#c878c0', foam: '#fff0f4' } : { deep: '#1d6ed0', mid: '#2ba8e0', lit: '#7fe8dc', foam: '#ffffff' } });
+  const swells = seaSwells({ rows: [{ z: -9.5, n: 3, span: 20, size: 1.25, speed: 1.0 }, { z: -16, n: 3, span: 30, size: 1.9, speed: 0.8 }, ...(low ? [] : [{ z: -26, n: 4, span: 50, size: 2.8, speed: 0.7 }])], material: M.ground, level: WATER, seed: 3, colors: dark ? { deep: '#1a2890', mid: '#3a4cc8', lit: '#c878c0', foam: '#fff0f4' } : { deep: '#1d6ed0', mid: '#2ba8e0', lit: '#7fe8dc', foam: '#ffffff' } });
   for (const w of swells.list) w.x -= 13;
   scene.root.add(swells.node);
   // the lantern on the pole

@@ -794,7 +794,7 @@ export function driftFire({ r = 0.5, seed = 1, stones = 9 } = {}) {
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2 + rr() * 0.4, len = r * (1.3 + rr() * 0.5);
     const log = gradientY(cylinder(0.055, 0.035, len, 5), '#4a3050', '#f2e0c0', 0, len * 0.5);
-    parts.push(place(place(log, 0, 0, 0, 0, 0, 52), Math.cos(a) * r * 0.62, 0.02, Math.sin(a) * r * 0.62, 0, -a / DEG + 180, 0));
+    parts.push(place(place(log, 0, 0, 0, 0, 0, 40), Math.cos(a) * r * 0.7, 0.02, Math.sin(a) * r * 0.7, 0, -a / DEG, 0));
   }
   parts.push(setGlow(tint(place(blob({ rx: r * 0.5, ry: 0.07, rz: r * 0.5, lumps: 0.7, seed: 5, seg: 7, rings: 4 }), 0, 0.04, 0), '#ff8a30'), 1));
   return keep(merge(parts), { fire: [0, 0.1, 0] });
