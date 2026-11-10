@@ -183,7 +183,7 @@ async function tick() {
   }
 
   const all = changedPaths().filter((c) => !SENSITIVE.test(c.path));
-  if (!all.length) { log('no changes'); return; }
+  if (!all.length) { if (!pushIfDue()) log('no changes'); return; }
   const paths = all.map((c) => c.path);
   execFileSync('git', ['add', '-A', '--', ...paths], { cwd: REPO }); // -A here only records deletions of the named paths
   // Only this tick's snapshot may describe this commit; an older one would repeat its news.
@@ -201,8 +201,23 @@ async function tick() {
     'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>',
   ].filter(Boolean).join('\n\n');
   execFileSync('git', ['commit', '-q', '-m', subject, '-m', body], { cwd: REPO });
+  if (!pushIfDue(subject)) log(subject, 'committed; push held');
+}
+
+// Every push redeploys Pages with ~120 MB of site (78 MB of it voice audio). Pushing on every
+// 150 s tick meant ~20 deploys an hour while the agent was busy, and Pages started timing out
+// in syncing_files (runs 42889569769, 42894414389: two 10-minute attempts each). Commits still
+// happen every tick, so nothing is lost; pushes are spaced at least PUSH_EVERY apart.
+const PUSH_EVERY = Number(process.env.SYNC_PUSH_EVERY || 600) * 1000;
+let lastPush = 0;
+function pushIfDue(subject) {
+  const ahead = spawnSync('git', ['rev-list', '--count', 'origin/main..main'], { cwd: REPO, encoding: 'utf8' });
+  if (ahead.status !== 0 || Number(ahead.stdout.trim()) === 0) return false;
+  if (Date.now() - lastPush < PUSH_EVERY) return false;
   const push = spawnSync('git', ['push', '-q', 'origin', 'main'], { cwd: REPO, encoding: 'utf8' });
-  log(subject, push.status === 0 ? 'pushed' : `PUSH FAILED: ${push.stderr}`);
+  if (push.status === 0) lastPush = Date.now();
+  log(subject ?? `${ahead.stdout.trim()} held commit(s)`, push.status === 0 ? 'pushed' : `PUSH FAILED: ${push.stderr}`);
+  return true;
 }
 
 const once = process.argv.includes('--once');
