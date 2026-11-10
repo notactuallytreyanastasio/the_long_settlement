@@ -292,7 +292,7 @@ export function createRenderer(canvas, opts = {}) {
     {
       const p = P.sky, u = p.u, sk = env.sky, sun = sk.sun; frameUniforms(p); setCull(false);
       gl.uniformMatrix4fv(u.uInvViewProj, false, camera.invViewProj);
-      gl.uniform3fv(u.uZenith, sk.zenith); gl.uniform3fv(u.uHorizon, sk.horizon); gl.uniform3fv(u.uBelow, sk.below);
+      gl.uniform3fv(u.uZenith, sk.zenith); gl.uniform4f(u.uSkyMid, sk.mid[0], sk.mid[1], sk.mid[2], sk.midAt); gl.uniform3fv(u.uHorizon, sk.horizon); gl.uniform3fv(u.uBelow, sk.below);
       gl.uniform4f(u.uGlow, sk.glow[0], sk.glow[1], sk.glow[2], sk.glowAmount);
       gl.uniform3fv(u.uSunDir, sk.sunDir || env.key.dir);
       gl.uniform4f(u.uSunColor, sun.color[0], sun.color[1], sun.color[2], sun.size * DEG);

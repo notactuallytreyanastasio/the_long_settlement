@@ -30,7 +30,7 @@ export function cloudMesh(seed = 1, { width = 10, puffs = 5 } = {}) {
  *                arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25 })
  *   -> { node, update(time) }   add node to the scene root; update turns the whole ring slowly (degrees/second = speed)
  */
-export function createClouds({ count = 14, seed = 1, radius = [160, 420], height = [38, 120], size = [0.8, 2.2], arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25, fog = 0.35 } = {}) {
+export function createClouds({ count = 14, seed = 1, radius = [220, 480], height = [16, 110], size = [0.7, 1.5], arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25, fog = 0.3 } = {}) {
   const r = rng(seed);
   const mat = material({ name: 'cloud', outline: false, rim: 0, fog, shadowTint, receiveShadow: false, castShadow: false, bandEdge: -0.18, bandSoft: 0.01 });
   const n = new Node('clouds', { mesh: tint(cloudMesh(seed, { width: 30, puffs: 6 }), color), material: mat });
@@ -38,8 +38,8 @@ export function createClouds({ count = 14, seed = 1, radius = [160, 420], height
   const inst = makeInstances(count);
   for (let i = 0; i < count; i++) {
     const a = (arc[0] + (i + r() * 0.8) / count * (arc[1] - arc[0])) * DEG, d = radius[0] + r() * (radius[1] - radius[0]);
-    const s = (size[0] + r() * (size[1] - size[0])) * (d / 250);
-    setInstance(inst, i, m4.trs(Math.sin(a) * d, height[0] + r() * (height[1] - height[0]) * (d / radius[1]), Math.cos(a) * d, 0, a / DEG + 90 + (r() - 0.5) * 30, 0, s));
+    const s = (size[0] + r() * (size[1] - size[0])) * (d / 300);
+    setInstance(inst, i, m4.trs(Math.sin(a) * d, height[0] + r() * r() * (height[1] - height[0]), Math.cos(a) * d, 0, a / DEG + 90 + (r() - 0.5) * 30, 0, s));
   }
   n.instances = inst;
   return { node: n, material: mat, update(time) { n.setRot(0, time * speed, 0); } };

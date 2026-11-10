@@ -270,9 +270,9 @@ export function buildDemo(lightName = 'sunset') {
   const env = makeEnv(lightName, {
     water: { shores: [[0, 0, 4.85, 1.0], [4.9, 3.6, 0.55, 0.6], [-5.6, 2.2, 0.75, 0.6], [5.6, -3.2, 0.9, 0.7], [-3.4, 6.0, 0.62, 0.5], [0, 5.6, 0.62, 0.45], [0, 7.0, 0.62, 0.45]] },
     points: [
-      { pos: JETTY_LAMP, color: '#ffab45', radius: 6.5, intensity: lamps },
-      { pos: [-0.9, 6.6, -1.0], color: '#ffd77a', radius: 9, intensity: lamps * 0.8 },
-      { pos: [1.2, 1.55, 0.35], color: '#ffb85a', radius: 2.6, intensity: lamps * 0.8 },
+      { pos: JETTY_LAMP, color: '#ffab45', radius: 5.5, intensity: lamps * 0.7 },
+      { pos: [-0.9, 6.5, -1.0], color: '#ffd77a', radius: 3.2, intensity: lamps * 0.6 },
+      { pos: [1.2, 1.5, 0.5], color: '#ffb85a', radius: 2.2, intensity: lamps * 0.6 },
     ],
   });
   const scene = createScene(env);
@@ -299,7 +299,7 @@ export function buildDemo(lightName = 'sunset') {
   const tuftMesh = merge([0, 1, 2].map((i) => tint(place(cone(0.035, 0.2 + i * 0.05, 5), (i - 1) * 0.05, 0, 0, (i - 1) * 6, i * 50, (1 - i) * 16), C.grassDark)));
   const tufts = node('tufts', tuftMesh, mat); tufts.castShadow = false;
   const r = rng(11); tufts.instances = makeInstances(46);
-  for (let i = 0; i < 46; i++) { const a = r() * 6.283, d = 0.6 + Math.sqrt(r()) * 2.6; setInstance(tufts.instances, i, m4.trs(Math.cos(a) * d, 0.89, Math.sin(a) * d, 0, r() * 360, 0, 0.7 + r() * 0.8), r() > 0.7 ? [1.25, 1.2, 0.9] : [1, 1, 1]); }
+  for (let i = 0; i < 46; i++) { const a = r() * 6.283, d = 0.6 + Math.sqrt(r()) * 2.6; setInstance(tufts.instances, i, m4.trs(Math.cos(a) * d, 0.89, Math.sin(a) * d, 0, r() * 360, 0, 0.45 + r() * 0.5), r() > 0.6 ? [1.5, 1.25, 0.9] : [1.15, 1.1, 1]); }
   scene.root.add(tufts);
 
   // the boat bobs, so it stays its own node
@@ -307,9 +307,9 @@ export function buildDemo(lightName = 'sunset') {
   scene.root.add(boatNode);
 
   // the lighthouse beam: two additive cones turning with the lamp
-  const rayMat = rayMaterial({ power: 1.0, near: 0.5, far: 0.0 });
+  const rayMat = rayMaterial({ power: 1.4, near: lightName === 'night' ? 0.3 : 0.16, far: 0.0 });
   const beam = group('beam', { pos: [-0.9, 0.86 + 5.6, -1.0] });
-  const ray = tint(rayMesh(26, 0.3, 3.4, 20), '#ffe9a0');
+  const ray = tint(rayMesh(24, 0.3, 2.4, 20), '#ffe9a0');
   beam.add(node('ray1', ray, rayMat, { rot: [0, 0, 82] }), node('ray2', ray, rayMat, { rot: [0, 0, -82] }));
   beam.visible = lamps > 0;
   scene.root.add(beam);
@@ -327,7 +327,7 @@ export function buildDemo(lightName = 'sunset') {
   // sprites: lamp bloom, chimney smoke, wind, sparkles
   const sprites = scene.sprites = createSprites(256);
   const glowA = lamps > 0 ? 1 : 0.0;
-  const gTower = sprites.add({ kind: 'glow', pos: [-0.9, 6.45, -1.0], size: 5.2, color: '#ffd77a', alpha: 0.55 * glowA });
+  const gTower = sprites.add({ kind: 'glow', pos: [-0.9, 6.45, -1.0], size: 4.2, color: '#ffd77a', alpha: 0.4 * glowA });
   const gJetty = sprites.add({ kind: 'glow', pos: JETTY_LAMP, size: 2.4, color: '#ffa63f', alpha: 0.8 * glowA });
   const gKid = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 1.3, color: '#ffa63f', alpha: 0.85 * Math.max(glowA, 0.35) });
   const gWin = sprites.add({ kind: 'glow', pos: [1.25, 1.48, 0.42], size: 0.9, color: '#ffc060', alpha: 0.6 * glowA });
@@ -375,7 +375,7 @@ export function buildDemo(lightName = 'sunset') {
     const fl = 0.9 + 0.1 * Math.sin(time * 13) * Math.sin(time * 7.3);
     kid.lampLight.light.intensity = Math.max(lamps, 0.25) * fl;
     const lw = kid.lampLight.world; gKid.pos[0] = lw[12]; gKid.pos[1] = lw[13]; gKid.pos[2] = lw[14];
-    env.points[0].intensity = lamps * (0.93 + 0.07 * Math.sin(time * 11.1) * Math.sin(time * 5.7));
+    env.points[0].intensity = lamps * 0.7 * (0.93 + 0.07 * Math.sin(time * 11.1) * Math.sin(time * 5.7));
     gJetty.size[0] = gJetty.size[1] = 2.4 * (0.95 + 0.05 * Math.sin(time * 11.1));
 
     // boat

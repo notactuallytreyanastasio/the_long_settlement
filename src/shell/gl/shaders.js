@@ -119,7 +119,9 @@ void main() {
   // rim: a bright edge where the surface turns away from the eye, on the side the key light reaches
   float fres = 1.0 - max(dot(N, V), 0.0);
   float ra = fwidth(fres) * 0.75 + 0.01;
-  float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(-0.25, 0.2, ndl) * uMat.x;
+  // flat ground seen at a grazing angle must not light up: only surfaces that are actually turning get a rim
+  float curved = smoothstep(0.0004, 0.003, length(fwidth(N)));
+  float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(-0.1, 0.25, ndl) * curved * uMat.x;
   col = mix(col, max(col, base * 0.4 + uRimColor), rim * min(1.0, length(uRimColor) * 2.0));
   float glow = clamp(vColor.a + uMat.y, 0.0, 1.0);
   col = mix(col, base, glow);
@@ -204,7 +206,7 @@ void main() {
 export const SKY_FS = `
 precision highp float;
 in vec3 vFar; out vec4 frag;
-uniform vec3 uCamPos; uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uBelow;
+uniform vec3 uCamPos; uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uBelow; uniform vec4 uSkyMid; // rgb, a = where it sits 0..1
 uniform vec4 uGlow;     // rgb, a = amount: the warm band low on the horizon under the sun
 uniform vec3 uSunDir; uniform vec4 uSunColor; // rgb, a = angular radius (radians)
 uniform vec4 uSunHalo;  // rgb, a = strength
@@ -214,9 +216,10 @@ float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32)
 void main() {
   vec3 d = normalize(vFar - uCamPos);
   float h = d.y;
-  vec3 col = mix(uHorizon, uZenith, smoothstep(0.0, 1.0, pow(max(h, 0.0), 0.55)));
+  float ht = pow(max(h, 0.0), 0.75);
+  vec3 col = ht < uSkyMid.a ? mix(uHorizon, uSkyMid.rgb, smoothstep(0.0, uSkyMid.a, ht)) : mix(uSkyMid.rgb, uZenith, smoothstep(uSkyMid.a, 1.0, ht));
   float az = max(dot(normalize(d.xz + vec2(1e-5)), normalize(uSunDir.xz + vec2(1e-5))), 0.0);
-  float low = 1.0 - smoothstep(0.0, 0.34, abs(h));
+  float low = 1.0 - smoothstep(0.0, 0.2, abs(h));
   col = mix(col, uGlow.rgb, low * (0.3 + 0.7 * az * az) * uGlow.a);
   col = mix(col, uBelow, smoothstep(0.0, -0.06, h));
   float ang = acos(clamp(dot(d, uSunDir), -1.0, 1.0)); float r = uSunColor.a; float aa = fwidth(ang) * 1.2;
@@ -267,7 +270,7 @@ float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 *
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
 // Lens-shaped white strokes in drifting rows: the highlights of a drawn sea.
 float dashes(vec2 p, float scale, float density, float t) {
-  vec2 q = p * vec2(0.42, 1.25) * scale;
+  vec2 q = p * vec2(0.5, 0.72) * scale;
   q.x += sin(q.y * 0.83 + t * 0.4) * 0.45;
   vec2 c = floor(q); float rnd = hash(c);
   q.x += (rnd - 0.5) * 0.9 + sin(t * 0.3 + rnd * 20.0) * 0.18; c = floor(q); rnd = hash(c + 0.37);
@@ -276,7 +279,7 @@ float dashes(vec2 p, float scale, float density, float t) {
   float on = step(1.0 - density, rnd);
   float len = 0.24 + 0.2 * fract(rnd * 13.0);
   float lens = max(1.0 - (f.x * f.x) / (len * len), 0.0);
-  float th = 0.17 * lens * life;
+  float th = 0.2 * lens * life;
   float y = abs(f.y + sin(f.x * 6.0 + rnd * 9.0) * 0.06);
   float aa = fwidth(q.y) * 0.9;
   return on * (1.0 - smoothstep(th - aa, th + aa, y)) * step(0.02, th);
@@ -322,7 +325,7 @@ void main() {
   col = mix(col, uFoamColor * mix(uShadowTint * 1.15, vec3(1.0), sh), foam);
   // lantern light pools on the water, stretched toward the eye like a reflection
   vec3 pl = pointLights(vWorld, vec3(0.0, 1.0, 0.0), 0.3);
-  col += pl * (0.45 + 0.4 * col);
+  col += pl * (0.16 + 0.34 * col);
   frag = vec4(applyFog(col, dist, 1.0), 1.0);
 }`;
 

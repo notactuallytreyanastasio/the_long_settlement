@@ -257,10 +257,10 @@ const DAY = {
   key: { dir: [0.5, 0.78, 0.38], color: '#fff6dc' },
   shadow: { tint: '#8f9be6', lift: 0.06, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#bfe4ff', ground: '#ffe9b0', amount: 0.1 },
-  rim: { color: '#fffbe6', amount: 0.55, edge: 0.7 },
+  rim: { color: '#fffbe6', amount: 0.55, edge: 0.78 },
   fog: { color: null, density: 0.0045, max: 0.92, start: 12 },
   sky: {
-    zenith: '#2f86e0', horizon: '#aee6f5', below: '#7fd0e6', glow: '#fff7d0', glowAmount: 0.45,
+    zenith: '#1c66d2', mid: '#49a6ee', midAt: 0.38, horizon: '#bfeaf7', below: '#8fd6ea', glow: '#fffbe0', glowAmount: 0.4,
     sun: { color: '#fffdf0', size: 2.6, halo: '#fff2b0', haloAmount: 0.5 }, moon: 0, stars: 0,
   },
   water: {
@@ -275,14 +275,14 @@ const SUNSET = {
   key: { dir: [-0.72, 0.3, -0.34], color: '#ffd09a' },
   shadow: { tint: '#7c6fd0', lift: 0.08, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#ff9d8a', ground: '#7a5cc0', amount: 0.1 },
-  rim: { color: '#ffd27a', amount: 0.9, edge: 0.62 },
+  rim: { color: '#ffd27a', amount: 0.9, edge: 0.74 },
   fog: { color: null, density: 0.005, max: 0.94, start: 10 },
   sky: {
-    zenith: '#3b4fb8', horizon: '#ffb37a', below: '#e88a6a', glow: '#ffe07a', glowAmount: 0.85,
-    sun: { color: '#fff4c8', size: 3.6, halo: '#ffb24a', haloAmount: 0.6 }, moon: 0, stars: 0.25,
+    zenith: '#473fae', mid: '#f0728c', midAt: 0.3, horizon: '#ffc46a', below: '#f0a070', glow: '#fff0a0', glowAmount: 0.7,
+    sun: { color: '#fff4c8', size: 3.6, halo: '#ffb24a', haloAmount: 0.6 }, moon: 0, stars: 0,
   },
   water: {
-    level: 0, deep: '#3458b8', mid: '#5a74cc', shallow: '#f2a48c', foam: '#fff1dc', glint: '#ffe9a8', glintDensity: 0.2,
+    level: 0, deep: '#2b4db5', mid: '#4a7fd8', shallow: '#7fdcd2', foam: '#fff4e0', glint: '#ffe9a8', glintDensity: 0.2,
     drift: [0.35, 0.12], shores: [],
   },
   outline: { color: null, width: 1 },
@@ -293,10 +293,10 @@ const NIGHT = {
   key: { dir: [-0.42, 0.62, 0.5], color: '#8fb4ff' },
   shadow: { tint: '#2d3f9c', lift: 0.1, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#3a58c8', ground: '#27358a', amount: 0.14 },
-  rim: { color: '#bcd6ff', amount: 0.6, edge: 0.68 },
+  rim: { color: '#bcd6ff', amount: 0.6, edge: 0.76 },
   fog: { color: null, density: 0.0055, max: 0.9, start: 10 },
   sky: {
-    zenith: '#0f1f6e', horizon: '#3a5fd0', below: '#2a48b0', glow: '#6f9cf0', glowAmount: 0.5,
+    zenith: '#0b1764', mid: '#1b3aa8', midAt: 0.4, horizon: '#4878e0', below: '#2f55c0', glow: '#7fa8f4', glowAmount: 0.5,
     sun: { color: '#fbfbe8', size: 3.0, halo: '#8fb0ff', haloAmount: 0.35 }, moon: 0.75, stars: 1,
   },
   water: {
@@ -342,7 +342,7 @@ function deepMerge(a, b) {
  *   ambient  { sky, ground, amount }                         hemisphere fill added on top
  *   rim      { color, amount, edge }                         edge 0..1: higher = thinner rim
  *   fog      { color (null = sky.horizon), density, max, start }
- *   sky      { zenith, horizon, below, glow, glowAmount, sun: { color, size (degrees), halo, haloAmount }, moon (0 or crescent 0..1), stars }
+ *   sky      { zenith, mid, midAt (0..1 height of the mid colour), horizon, below, glow, glowAmount, sun: { color, size (degrees), halo, haloAmount }, moon (0 or crescent 0..1), stars }
  *   water    null, or { level, deep, mid, shallow, foam, glint, glintDensity, drift [x, z], shores [[x, z, radius, bandWidth], ...] }
  *   outline  { color (null = each material's own), width (multiplier on every material's width) }
  *   points   [{ pos [x, y, z], color, radius, intensity }]   fixed lanterns (moving ones: node.light)
