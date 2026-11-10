@@ -206,7 +206,7 @@ function vessery() {
 
 // ═════════════════════════ SALTMERE ═════════════════════════
 // A mine and a court. Steeper, with a headframe wall splitting the top: salt lanes and
-// the shaft bumpers stacked on the right, and on the left a single narrow gallery that
+// the shaft bumpers stacked on the right, and up the middle a single narrow gallery that
 // climbs to the Orrery. The Orrery is a dead-end lane: hard to enter, certain once in.
 
 function saltmere() {
@@ -214,15 +214,18 @@ function saltmere() {
   const lo = lower({
     divX: 30, divTop: 600, elbow: 664, pivot: [122, 702],
     sling: [[68, 566], [68, 652], [108, 670]], slingKick: 380,
-    flipLen: 57, rest: 0.52, active: 0.62, guard: [10, 14], guardY: 558,
+    flipLen: 57, rest: 0.52, active: 0.62, guard: [3, 18], guardY: 558,
   });
   const cause = sideLane(270, 360, 452, 32, 42);       // left: the causeway ramp
   const courtBase = sideLane(240, 350, 440, 30, 40);   // right: the court orbit, narrower
   const court = { inner: courtBase.inner.map(mirror), outer: courtBase.outer.map(mirror) };
 
-  // the gallery to the Orrery: leans toward the flippers, flared at the mouth
-  const galL = [[96, 138], [100, 300], [88, 356]];
-  const galR = [[130, 138], [134, 300], [150, 356]];
+  // The gallery to the Orrery leans seven degrees, flared at the mouth. It sits between
+  // the two angles a flipper gives easily (the near-side shot off the base and the cross
+  // shot off the tip), so it has to be aimed for. Directly above a flipper's base it was
+  // fed by every reflex flip: the bot made it 23 times in six minutes.
+  const galL = [[174.5, 138], [154, 300], [147, 356]];
+  const galR = [[208.5, 138], [188, 300], [181, 356]];
 
   const walls = [
     ...sh.walls, ...lo.walls,
@@ -238,7 +241,9 @@ function saltmere() {
     ...[236, 270, 304, 338].map((x) => ({ a: [x, 74], b: [x, 118] })),
     // the Orrery gallery, with a peaked roof so nothing rests on it
     ...poly(galL), ...poly(galR),
-    ...poly([[96, 138], [113, 120], [130, 138]]),
+    ...poly([[174.5, 138], [191.5, 120], [208.5, 138]]),
+    // the picket line: a loose rail on the left flats
+    { a: [58, 196], b: [100, 232] },
   ];
 
   return {
@@ -258,7 +263,7 @@ function saltmere() {
     ],
     slings: lo.slings,
     targets: [
-      ...bank(['strikeA', 'strikeB', 'strikeC'], [137, 290], [134, 206], 'strike'),
+      ...bank(['strikeA', 'strikeB', 'strikeC'], [152.3, 290], [162.9, 206], 'strike'),
       ...bank(['lienL', 'lienI', 'lienE', 'lienN'], [mx(41), 246], [mx(41), 330], 'lien'),
     ],
     rollovers: [
@@ -273,7 +278,7 @@ function saltmere() {
       { id: 'courtOrbit', a: [mx(L + 30), 300], b: [LANE, 300], dir: [0, -1] },
     ],
     saucers: [
-      { id: 'orrery', pos: [114, 160], r: 12, eject: [30, 320], holdMs: 1400 },
+      { id: 'orrery', pos: [189, 160], r: 12, eject: [-40, 317], holdMs: 1400 },
     ],
     plunger: { pos: [379, 770], maxSpeed: 2100 },
     drainY: 792,
@@ -284,9 +289,10 @@ function saltmere() {
       motif: 'stillsalt',
     },
     decor: [
-      { text: 'SALTMERE', pos: [215, 440], size: 28 },
-      { text: 'IN ARREARS', pos: [215, 466], size: 11 },
-      { text: 'ORRERY', pos: [70, 250], size: 9, angle: -1.5708 },
+      { text: 'SALTMERE', pos: [187, 470], size: 28 },
+      { text: 'IN ARREARS', pos: [187, 496], size: 11 },
+      { text: 'ORRERY', pos: [172, 250], size: 9, angle: -1.445 },
+      { text: 'PICKET', pos: [84, 206], size: 8, angle: 0.71 },
       { text: 'CAUSEWAY', pos: [40, 420], size: 9, angle: -1.14 },
       { text: 'CIRCUIT BENCH', pos: [322, 410], size: 9, angle: 1.14 },
       { text: 'NOTICE OF FORECLOSURE', pos: [200, 560], size: 8 },

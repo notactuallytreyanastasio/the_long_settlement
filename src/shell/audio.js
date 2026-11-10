@@ -349,6 +349,9 @@ export function createAudio() {
     // A suspended context has a frozen clock: anything scheduled now would all
     // fire together on resume. Before the first gesture there is no sound.
     if (ctx.state !== 'running') return;
+    // Measured in Chrome: for a moment after resume() the state reads 'running'
+    // while currentTime is still 0. The gap check below then lets one of each
+    // sound through and drops the repeats, so nothing stacks up when it starts.
     const t = ctx.currentTime;
     if (t - (lastSfx[name] ?? -1) < (MIN_GAP[name] ?? 0.012)) return;
     lastSfx[name] = t;

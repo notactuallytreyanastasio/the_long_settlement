@@ -36,8 +36,8 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 13173,
-  "lines": 307
+  "bytes": 13610,
+  "lines": 313
  },
  {
   "path": "src/core/economy.js",
@@ -76,8 +76,8 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 36760,
-  "lines": 829
+  "bytes": 37001,
+  "lines": 832
  },
  {
   "path": "src/shell/cinema.js",
