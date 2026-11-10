@@ -16,7 +16,8 @@ let materialId = 1;
  *   bandEdge     0.05   where the terminator sits in N.L (-1..1); higher = more of the form in shadow
  *   bandStep     0.4    N.L distance between successive steps when bands > 2
  *   bandSoft     0.006  softness added to the terminator (antialiasing is automatic on top)
- *   spec         0      strength 0..1 of the hard specular dot;  specSize 0.05 (bigger = bigger dot)
+ *   spec         0      strength 0..1 of the hard specular dot;  specSize 0.02 (0.01 a glint, 0.06 a big
+ *                       glossy patch as on a vinyl toy)
  *   specColor    '#ffffff'
  *   rim          1      multiplier on the scene rim light. Use 0 for ground and other large flat surfaces:
  *                       seen at a grazing angle they would light up all over
@@ -46,7 +47,7 @@ export function material(opts = {}) {
   return {
     id: materialId++, name: opts.name || '', kind: opts.kind || 'toon',
     bands: opts.bands ?? 2, bandEdge: opts.bandEdge ?? 0.05, bandStep: opts.bandStep ?? 0.4, bandSoft: opts.bandSoft ?? 0.006,
-    spec: opts.spec ?? 0, specSize: opts.specSize ?? 0.05, specColor: rgb(opts.specColor || '#ffffff'),
+    spec: opts.spec ?? 0, specSize: opts.specSize ?? 0.02, specColor: rgb(opts.specColor || '#ffffff'),
     rim: opts.rim ?? 1, emissive: opts.emissive ?? 0, lightUp: opts.lightUp ?? 0,
     shadowTint: opts.shadowTint ? rgb(opts.shadowTint) : null,
     receiveShadow: opts.receiveShadow ?? true, castShadow: opts.castShadow ?? (opts.kind !== 'beam' && texMode !== 'blend'),
@@ -234,6 +235,14 @@ export function nodeBounds(root) {
   const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity], p = [0, 0, 0];
   root.traverse((n) => {
     if (!n.mesh) return;
+    if (n.bones) { // a batched figure: each vertex is placed by its own bone
+      const P = n.mesh.positions, B = n.mesh.bones;
+      for (let i = 0; i < B.length; i++) {
+        v3.transformPoint(p, [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]], n.bones[B[i]].world);
+        for (let k = 0; k < 3; k++) { if (p[k] < min[k]) min[k] = p[k]; if (p[k] > max[k]) max[k] = p[k]; }
+      }
+      return;
+    }
     const b = bounds(n.mesh);
     for (let i = 0; i < 8; i++) {
       v3.transformPoint(p, [i & 1 ? b.max[0] : b.min[0], i & 2 ? b.max[1] : b.min[1], i & 4 ? b.max[2] : b.min[2]], n.world);

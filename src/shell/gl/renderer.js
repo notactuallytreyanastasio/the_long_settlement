@@ -13,8 +13,12 @@ const MAX_CAND = 32;
 
 /**
  * createRenderer(canvas, { antialias = true, dprCap = 2 }) ->
- *   { render(scene, camera, timeSeconds), stats, ctx, gl, resize(), invalidate(mesh), dispose() }
- * stats after each render: { drawCalls, triangles, nodes, lights, cpuMs, width, height }
+ *   { render(scene, camera, timeSeconds, view = null), stats, ctx, gl, resize(), invalidate(mesh), dispose() }
+ * `view` = { x, y, w, h } in CSS pixels from the canvas's top-left draws into that rectangle only
+ * (and sets the camera's aspect from it), so one canvas can hold several scenes: a table and a
+ * stage band above it. Each call clears its own rectangle and renders its own shadow map; a view
+ * may carry shadowCenter [x, y, z] and shadowRadius to fit that map to what it shows.
+ * stats after each render call: { drawCalls, triangles, nodes, lights, cpuMs, width, height }
  */
 export function createRenderer(canvas, opts = {}) {
   const ctx = createContext(canvas, opts);
@@ -187,12 +191,12 @@ export function createRenderer(canvas, opts = {}) {
     }
   }
 
-  function fitShadow(env, cam) {
+  function fitShadow(env, cam, view) {
     const sh = env.shadow;
     const size = sh.size || 1024;
     if (!shadow || shadowSize !== size) { if (shadow) { gl.deleteFramebuffer(shadow.fbo); gl.deleteTexture(shadow.tex); } shadow = createShadowTarget(gl, size); shadowSize = size; }
-    const c = sh.center || cam.target;
-    const r = sh.radius > 0 ? sh.radius : v3.dist(cam.position, cam.target) * 0.62;
+    const c = (view && view.shadowCenter) || sh.center || cam.target;
+    const r = view && view.shadowRadius > 0 ? view.shadowRadius : sh.radius > 0 ? sh.radius : v3.dist(cam.position, cam.target) * 0.62;
     const L = env.key.dir;
     v3.addScaled(eye, c, L, r * 3);
     m4.lookAt(lightView, eye, c, Math.abs(L[1]) > 0.98 ? UPX : UP);
@@ -203,11 +207,17 @@ export function createRenderer(canvas, opts = {}) {
     frame.shadowTexel = texel;
   }
 
-  function render(scene, camera, time = 0) {
+  function render(scene, camera, time = 0, view = null) {
     if (ctx.lost) return stats;
     const t0 = performance.now();
     ctx.resize();
-    const W = ctx.width, H = ctx.height, env = scene.env;
+    const env = scene.env, dpr = ctx.dpr;
+    // the part of the canvas this call draws into, in device pixels with GL's bottom-left origin
+    let VX = 0, VY = 0, W = ctx.width, H = ctx.height;
+    if (view) {
+      VX = Math.round(view.x * dpr); W = Math.max(1, Math.round(view.w * dpr)); H = Math.max(1, Math.round(view.h * dpr));
+      VY = ctx.height - Math.round(view.y * dpr) - H;
+    }
     camera.update(W / H);
     stats.drawCalls = 0; stats.triangles = 0; stats.nodes = 0; stats.width = W; stats.height = H;
     frame = frame || {}; frame.env = env; frame.camera = camera; frame.time = time; frame.shadowOn = !!env.shadow.on; frame.shadowTexel = 0.01;
@@ -232,8 +242,8 @@ export function createRenderer(canvas, opts = {}) {
 
     // ---- shadow map ----
     if (frame.shadowOn) {
-      fitShadow(env, camera);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, shadow.fbo); gl.viewport(0, 0, shadow.size, shadow.size);
+      fitShadow(env, camera, view);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, shadow.fbo); gl.viewport(0, 0, shadow.size, shadow.size); gl.disable(gl.SCISSOR_TEST);
       gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5, 3);
       let p = null;
@@ -249,7 +259,8 @@ export function createRenderer(canvas, opts = {}) {
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, shadow.tex); gl.activeTexture(gl.TEXTURE0);
 
     // ---- main pass ----
-    gl.viewport(0, 0, W, H);
+    gl.viewport(VX, VY, W, H);
+    if (view) { gl.enable(gl.SCISSOR_TEST); gl.scissor(VX, VY, W, H); } else gl.disable(gl.SCISSOR_TEST);
     const fc = env.fog.color || env.sky.horizon;
     gl.clearColor(fc[0], fc[1], fc[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setCull(true);
@@ -342,7 +353,7 @@ export function createRenderer(canvas, opts = {}) {
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sp.count); stats.drawCalls++; stats.triangles += sp.count * 2;
     }
 
-    gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null);
+    gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null); gl.disable(gl.SCISSOR_TEST);
     stats.cpuMs = performance.now() - t0;
     return stats;
   }

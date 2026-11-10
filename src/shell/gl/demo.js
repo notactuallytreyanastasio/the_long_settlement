@@ -8,7 +8,7 @@ import {
   m4, rng, DEG,
   sphere, ellipsoid, superellipsoid, blob, cylinder, cone, lathe, limb, torus, box, roundedBox, extrude, tube, curve, spherePatch, disc,
   merge, tint, paint, place, deform, setGlow, setOutline, mirrorX, gradientY, clone, scale as scaleMesh,
-  Node, node, group, material, makeEnv, createScene, createCamera, mergeStatic, batchFigure, makeInstances, setInstance, makeLight,
+  Node, node, group, material, makeEnv, createScene, createCamera, mergeStatic, batchFigure, frameBox, nodeBounds, makeInstances, setInstance, makeLight,
   createRig, idle, blink, createSpring, springs, aimAxis, squash,
   createSprites, createClouds, rayMesh, rayMaterial, createAtlas,
 } from './index.js';
@@ -352,6 +352,7 @@ export function buildDemo(lightName = 'sunset') {
     { name: 'high', target: [0, 0.6, 2.2], dist: 25, yaw: 0, pitch: 52, fov: 34 },
     { name: 'into the light', target: [-0.9, 4.6, -1.0], dist: 15, yaw: lightName === 'sunset' ? 122 : lightName === 'night' ? 143 : 232, pitch: -9, fov: 42 },
     { name: 'portrait', target: [0.34, 1.6, 1.75], dist: 2.3, yaw: 8, pitch: 2, fov: 28 },
+    { name: 'framed', frame: true, target: [0.3, 1.45, 1.75], dist: 4, yaw: -28, pitch: 9, fov: 30 }, // camera placed by frameBox() around the figure
   ];
   let shot = shots[0], orbit = true;
   function setShot(n, still = false) {
@@ -367,7 +368,8 @@ export function buildDemo(lightName = 'sunset') {
   function update(time, dt) {
     // camera
     const yaw = shot.yaw + (orbit ? Math.sin(time * 0.25) * 5 : 0);
-    camera.orbit(shot.target, shot.dist, yaw, shot.pitch);
+    if (shot.frame) frameBox(camera, nodeBounds(kid.root), { yaw, pitch: shot.pitch, margin: 1.25 }); // (allocates: a real game would frame once, not per frame)
+    else camera.orbit(shot.target, shot.dist, yaw, shot.pitch);
 
     // figure: stand, with a wave every few seconds, then idle life and springs
     const cyc = time % 9, wave = cyc > 5.5 ? Math.min(1, (cyc - 5.5) / 0.4) * Math.min(1, (9 - cyc) / 0.5) : 0, w = wave * wave * (3 - 2 * wave);

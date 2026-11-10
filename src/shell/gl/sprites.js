@@ -44,7 +44,7 @@ export function createSprites(capacity = 512) {
     remove(s) { const i = sys.fixed.indexOf(s); if (i >= 0) sys.fixed.splice(i, 1); },
     spawn(o) {
       if (sys.live >= capacity) return; // full: drop the particle rather than grow mid-frame
-      const k = sys.live++ * PF, c = o.color ? rgb(o.color) : WHITE, p = o.pos, v = o.vel || ZERO;
+      const k = sys.live++ * PF, c = o.color ? colorOf(o.color) : WHITE, p = o.pos, v = o.vel || ZERO;
       sim[k] = p[0]; sim[k + 1] = p[1]; sim[k + 2] = p[2]; sim[k + 3] = v[0]; sim[k + 4] = v[1]; sim[k + 5] = v[2];
       sim[k + 6] = o.size ?? 0.3; sim[k + 7] = o.endSize ?? sim[k + 6]; sim[k + 8] = o.life ?? 1; sim[k + 9] = 0;
       sim[k + 10] = c[0]; sim[k + 11] = c[1]; sim[k + 12] = c[2]; sim[k + 13] = o.alpha ?? 1;
@@ -127,4 +127,6 @@ export function createSprites(capacity = 512) {
 }
 
 const WHITE = [1, 1, 1], ZERO = [0, 0, 0], P = [0, 0, 0], V = [0, 0, 0];
+const parsed = new Map(); // colour strings are parsed once, so spawning allocates nothing
+function colorOf(c) { if (typeof c !== 'string') return c; let v = parsed.get(c); if (!v) { v = rgb(c); parsed.set(c, v); } return v; }
 export const SPRITE_FLOATS = FLOATS;

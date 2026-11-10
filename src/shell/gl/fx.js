@@ -30,8 +30,11 @@ export function cloudMesh(seed = 1, { width = 10, puffs = 5 } = {}) {
 /**
  * A ring of drifting clouds as one instanced draw.
  * createClouds({ count = 14, seed = 1, radius = [220, 480], height = [16, 110], size = [0.7, 1.5],
- *                arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25 })
- *   -> { node, update(time) }   add node to the scene root; update turns the whole ring slowly (degrees/second = speed)
+ *                arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25, fog = 0.3 })
+ *   -> { node, material, update(time) }
+ * Add node to the scene root; update(time) turns the whole ring slowly (degrees/second = speed).
+ * radius is the distance band from the origin, height the altitude band, arc the compass range in
+ * degrees (0 = +Z, 180 = -Z: a portrait camera sees only about 20 degrees of it, so aim the arc).
  */
 export function createClouds({ count = 14, seed = 1, radius = [220, 480], height = [16, 110], size = [0.7, 1.5], arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25, fog = 0.3 } = {}) {
   const r = rng(seed);

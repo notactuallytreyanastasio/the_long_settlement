@@ -20,13 +20,14 @@
 <div id="bar"><button id="bLight">light</button><button id="bShot">shot</button></div>
 <pre id="fatal" hidden></pre>
 <script type="module">
-// Query string:  ?light=day|sunset|night   ?shot=0..5   ?still=1 (no camera drift)
+// Query string:  ?light=day|sunset|night   ?shot=0..6   ?still=1 (no camera drift)
+//                ?split=1 (two views in one canvas: a side-on stage band on top, the shot below)
 //                ?t=12.5 (freeze at that time, for screenshots)   ?hud=0   ?dpr=1 (cap the pixel ratio)
 const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glDemo = { error: f.textContent }; };
 window.addEventListener('error', (e) => fatal(e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
 try {
-  const { createRenderer } = await import('../src/shell/gl/index.js');
+  const { createRenderer, createCamera } = await import('../src/shell/gl/index.js');
   const { buildDemo, LIGHTS } = await import('../src/shell/gl/demo.js');
   const q = new URLSearchParams(location.search);
   const light = q.get('light') || 'sunset';
@@ -44,14 +45,21 @@ try {
   if (fixedT !== null) { // run up to the frozen moment in fixed steps so springs and particles have settled
     for (let t = Math.max(0, fixedT - 4); t < fixedT; t += 1 / 60) { demo.update(t, 1 / 60); demo.scene.root.updateWorld(null); }
   }
+  const split = q.get('split') === '1', stageCam = createCamera({ fov: 26 });
   let last = performance.now(), t = fixedT ?? 0, avg = 0, frames = 0, upd = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const u0 = performance.now();
     if (fixedT === null) { t += dt; demo.update(t, dt); } else demo.update(fixedT, 0);
     upd += (performance.now() - u0 - upd) * 0.05;
-    const s = renderer.render(demo.scene, demo.camera, t);
-    avg += (s.cpuMs - avg) * 0.05; frames++;
+    let s, cost;
+    if (split) { // the same scene twice: a wide short band from the side, and the chosen shot under it
+      const cw = canvas.clientWidth, ch = canvas.clientHeight, band = Math.round(ch * 0.26);
+      stageCam.orbit([0.3, 1.35, 1.9], 6.2, -62 + Math.sin(t * 0.3) * 4, 7);
+      s = renderer.render(demo.scene, stageCam, t, { x: 0, y: 0, w: cw, h: band, shadowCenter: stageCam.target, shadowRadius: 4.5 }); cost = s.cpuMs; const d1 = s.drawCalls;
+      s = renderer.render(demo.scene, demo.camera, t, { x: 0, y: band, w: cw, h: ch - band }); cost += s.cpuMs; s.drawCalls += d1;
+    } else { s = renderer.render(demo.scene, demo.camera, t); cost = s.cpuMs; }
+    avg += (cost - avg) * 0.05; frames++;
     if (!hud.hidden && frames % 15 === 0) hud.textContent = `${light} / ${demo.shots[shotN].name}\n${s.drawCalls} draws  ${(s.triangles / 1000).toFixed(1)}k tris  ${s.lights} lamps\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms\n${s.width}x${s.height}`;
     window.glDemo.frames = frames;
     requestAnimationFrame(frame);
