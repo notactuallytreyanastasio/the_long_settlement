@@ -268,22 +268,24 @@ export function buildDemo(lightName = 'sunset') {
   if (!LIGHTS.includes(lightName)) throw new Error(`demo: unknown light "${lightName}" (have ${LIGHTS.join(', ')})`);
   const lamps = { day: 0.0, sunset: 0.95, night: 1.25 }[lightName];
   const env = makeEnv(lightName, {
+    shadow: { center: [0, 2, 2], radius: 10 },
     water: { shores: [[0, 0, 4.85, 1.0], [4.9, 3.6, 0.55, 0.6], [-5.6, 2.2, 0.75, 0.6], [5.6, -3.2, 0.9, 0.7], [-3.4, 6.0, 0.62, 0.5], [0, 5.6, 0.62, 0.45], [0, 7.0, 0.62, 0.45]] },
     points: [
-      { pos: JETTY_LAMP, color: '#ffab45', radius: 5.5, intensity: lamps * 0.7 },
+      { pos: JETTY_LAMP, color: '#ffab45', radius: 5.0, intensity: lamps * 0.6 },
       { pos: [-0.9, 6.5, -1.0], color: '#ffd77a', radius: 3.2, intensity: lamps * 0.6 },
       { pos: [1.2, 1.5, 0.5], color: '#ffb85a', radius: 2.2, intensity: lamps * 0.6 },
     ],
   });
   const scene = createScene(env);
   const mat = material({ name: 'base' });
+  const groundMat = material({ name: 'ground', rim: 0 }); // flat ground would catch the rim light all over
   const figMat = material({ name: 'figure', bandEdge: 0.0, outline: { width: 2.6, self: 0.7 } });
   const atlas = faceAtlas();
   const faceMat = material({ name: 'face', map: atlas.texture, texMode: 'blend', outline: false, rim: 0 });
 
   // everything that never moves is one mesh
   const set = group('set');
-  for (const m of islandMeshes()) set.add(node('island', m, mat));
+  for (const m of islandMeshes()) set.add(node('island', m, groundMat));
   set.add(node('lighthouse', lighthouse(), mat, { pos: [-0.9, 0.86, -1.0] }));
   set.add(node('cottage', cottage(), mat, { pos: [1.75, 0.88, -0.35], rot: [0, -24, 0] }));
   set.add(node('tree1', tree(3), mat, { pos: [2.75, 0.86, 1.2], scale: 1.0 }));
@@ -309,7 +311,7 @@ export function buildDemo(lightName = 'sunset') {
   // the lighthouse beam: two additive cones turning with the lamp
   const rayMat = rayMaterial({ power: 1.4, near: lightName === 'night' ? 0.3 : 0.16, far: 0.0 });
   const beam = group('beam', { pos: [-0.9, 0.86 + 5.6, -1.0] });
-  const ray = tint(rayMesh(24, 0.3, 2.4, 20), '#ffe9a0');
+  const ray = tint(rayMesh(24, 0.3, 1.8, 20), '#ffe9a0');
   beam.add(node('ray1', ray, rayMat, { rot: [0, 0, 82] }), node('ray2', ray, rayMat, { rot: [0, 0, -82] }));
   beam.visible = lamps > 0;
   scene.root.add(beam);
@@ -317,7 +319,7 @@ export function buildDemo(lightName = 'sunset') {
   const shaft = node('shaft', tint(rayMesh(1.9, 0.08, 1.15, 16), '#ffb85a'), rayMaterial({ power: 1.6, near: 0.4, far: 0.0 }), { pos: [JETTY_LAMP[0], JETTY_LAMP[1] - 0.05, JETTY_LAMP[2]] });
   shaft.visible = lamps > 0; scene.root.add(shaft);
 
-  const clouds = createClouds({ count: 16, seed: 5, shadowTint: lightName === 'day' ? '#b9c8f6' : lightName === 'sunset' ? '#c77fb0' : '#3b4fa8', color: lightName === 'night' ? '#8fa4e6' : lightName === 'sunset' ? '#ffd9b8' : '#ffffff' });
+  const clouds = createClouds({ count: 9, seed: 5, arc: [128, 232], height: [10, 95], speed: 0.12, shadowTint: lightName === 'day' ? '#b9c8f6' : lightName === 'sunset' ? '#c77fb0' : '#3b4fa8', color: lightName === 'night' ? '#8fa4e6' : lightName === 'sunset' ? '#ffd9b8' : '#ffffff' });
   scene.root.add(clouds.node);
 
   const kid = buildKid(figMat, faceMat, atlas);
@@ -375,7 +377,7 @@ export function buildDemo(lightName = 'sunset') {
     const fl = 0.9 + 0.1 * Math.sin(time * 13) * Math.sin(time * 7.3);
     kid.lampLight.light.intensity = Math.max(lamps, 0.25) * fl;
     const lw = kid.lampLight.world; gKid.pos[0] = lw[12]; gKid.pos[1] = lw[13]; gKid.pos[2] = lw[14];
-    env.points[0].intensity = lamps * 0.7 * (0.93 + 0.07 * Math.sin(time * 11.1) * Math.sin(time * 5.7));
+    env.points[0].intensity = lamps * 0.6 * (0.93 + 0.07 * Math.sin(time * 11.1) * Math.sin(time * 5.7));
     gJetty.size[0] = gJetty.size[1] = 2.4 * (0.95 + 0.05 * Math.sin(time * 11.1));
 
     // boat

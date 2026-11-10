@@ -13,11 +13,13 @@ const qa = quat.create(), qb = quat.create(), va = v3.create(), vb = v3.create()
 
 /**
  * createRig(root) -> { root, joints: { name: node }, reset(), apply(pose, weight = 1), blend(a, b, t), joint(name) }
- * Every named node under root is a joint. Names must be unique within one rig.
+ * Every named node under root is a joint (root itself is not: move the figure about by it freely).
+ * Names must be unique within one rig.
  */
 export function createRig(root) {
   const nodes = [], index = new Map();
-  root.traverse((n) => { if (!n.name) return; if (index.has(n.name)) throw new Error(`createRig: two nodes are named "${n.name}"`); index.set(n.name, nodes.length); nodes.push(n); });
+  root.traverse((n) => { if (!n.name || n === root) return; // the root is the figure's placement in the world: yours, not the rig's
+    if (index.has(n.name)) throw new Error(`createRig: two nodes are named "${n.name}"`); index.set(n.name, nodes.length); nodes.push(n); });
   const rest = new Float32Array(nodes.length * 10);
   nodes.forEach((n, i) => { rest.set(n.position, i * 10); rest.set(n.rotation, i * 10 + 3); rest.set(n.scale, i * 10 + 7); });
   const compiled = new WeakMap();

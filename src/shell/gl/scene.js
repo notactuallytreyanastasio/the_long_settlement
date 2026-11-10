@@ -18,7 +18,10 @@ let materialId = 1;
  *   bandSoft     0.006  softness added to the terminator (antialiasing is automatic on top)
  *   spec         0      strength 0..1 of the hard specular dot;  specSize 0.05 (bigger = bigger dot)
  *   specColor    '#ffffff'
- *   rim          1      multiplier on the scene rim light (0 = none)
+ *   rim          1      multiplier on the scene rim light. Use 0 for ground and other large flat surfaces:
+ *                       seen at a grazing angle they would light up all over
+ *   lightUp      0      0..1 bends the key light toward straight up for this material (clouds, canopies:
+ *                       lit on top whatever the sun is doing)
  *   emissive     0      0..1 added to the per-vertex glow: the surface shows its flat colour, unlit
  *   shadowTint   null   override the scene's shadow tint for this material ('#rrggbb')
  *   receiveShadow true, castShadow true
@@ -44,7 +47,7 @@ export function material(opts = {}) {
     id: materialId++, name: opts.name || '', kind: opts.kind || 'toon',
     bands: opts.bands ?? 2, bandEdge: opts.bandEdge ?? 0.05, bandStep: opts.bandStep ?? 0.4, bandSoft: opts.bandSoft ?? 0.006,
     spec: opts.spec ?? 0, specSize: opts.specSize ?? 0.05, specColor: rgb(opts.specColor || '#ffffff'),
-    rim: opts.rim ?? 1, emissive: opts.emissive ?? 0,
+    rim: opts.rim ?? 1, emissive: opts.emissive ?? 0, lightUp: opts.lightUp ?? 0,
     shadowTint: opts.shadowTint ? rgb(opts.shadowTint) : null,
     receiveShadow: opts.receiveShadow ?? true, castShadow: opts.castShadow ?? (opts.kind !== 'beam' && texMode !== 'blend'),
     fog: opts.fog ?? 1, map: opts.map || null, texMode, alphaCut: opts.alphaCut ?? 0.5,
@@ -255,7 +258,7 @@ export function frameBox(cam, box, { yaw = 0, pitch = 12, aspect = cam.aspect, m
 
 const DAY = {
   key: { dir: [0.5, 0.78, 0.38], color: '#fff6dc' },
-  shadow: { tint: '#8f9be6', lift: 0.06, radius: 0, center: null, size: 1024, on: true },
+  shadow: { tint: '#8f9be6', lift: 0.06, saturate: 1.3, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#bfe4ff', ground: '#ffe9b0', amount: 0.1 },
   rim: { color: '#fffbe6', amount: 0.55, edge: 0.78 },
   fog: { color: null, density: 0.0045, max: 0.92, start: 12 },
@@ -272,8 +275,8 @@ const DAY = {
 };
 
 const SUNSET = {
-  key: { dir: [-0.72, 0.3, -0.34], color: '#ffd09a' },
-  shadow: { tint: '#7c6fd0', lift: 0.08, radius: 0, center: null, size: 1024, on: true },
+  key: { dir: [-0.78, 0.33, 0.28], color: '#ffd09a' },
+  shadow: { tint: '#7c6fd0', lift: 0.08, saturate: 1.35, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#ff9d8a', ground: '#7a5cc0', amount: 0.1 },
   rim: { color: '#ffd27a', amount: 0.9, edge: 0.74 },
   fog: { color: null, density: 0.005, max: 0.94, start: 10 },
@@ -290,8 +293,8 @@ const SUNSET = {
 };
 
 const NIGHT = {
-  key: { dir: [-0.42, 0.62, 0.5], color: '#8fb4ff' },
-  shadow: { tint: '#2d3f9c', lift: 0.1, radius: 0, center: null, size: 1024, on: true },
+  key: { dir: [-0.42, 0.62, 0.5], color: '#7797ea' },
+  shadow: { tint: '#2d3f9c', lift: 0.1, saturate: 1.2, radius: 0, center: null, size: 1024, on: true },
   ambient: { sky: '#3a58c8', ground: '#27358a', amount: 0.14 },
   rim: { color: '#bcd6ff', amount: 0.6, edge: 0.76 },
   fog: { color: null, density: 0.0055, max: 0.9, start: 10 },
@@ -336,7 +339,7 @@ function deepMerge(a, b) {
  * (colours are [r, g, b] arrays after this call; key.dir must stay normalised: use setKeyDir()).
  *
  *   key      { dir (toward the light), color }               the sun or moon; casts the shadows
- *   shadow   { tint, lift, radius, center, size, on }        tint = what white paper looks like in shadow;
+ *   shadow   { tint, lift, saturate, radius, center, size, on }  tint = what white paper looks like in shadow;
  *                                                            radius/center = area the shadow map covers
  *                                                            (0 / null: follows the camera target)
  *   ambient  { sky, ground, amount }                         hemisphere fill added on top

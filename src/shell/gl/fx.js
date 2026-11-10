@@ -12,27 +12,24 @@ import { Node, material, makeInstances, setInstance } from './scene.js';
 export function cloudMesh(seed = 1, { width = 10, puffs = 5 } = {}) {
   const r = rng(seed * 977 + 13), parts = [];
   for (let i = 0; i < puffs; i++) {
-    const u = puffs === 1 ? 0.5 : i / (puffs - 1), mid = 1 - Math.abs(u - 0.5) * 2;
-    const rad = width * (0.13 + 0.14 * mid + r() * 0.05);
-    const b = sphere(rad, 12, 8);
-    place(b, (u - 0.5) * width * 0.8 + (r() - 0.5) * width * 0.06, rad * 0.55 + r() * rad * 0.2, (r() - 0.5) * width * 0.16);
-    parts.push(b);
+    const u = puffs === 1 ? 0.5 : i / (puffs - 1), mid = Math.sin(u * Math.PI);
+    const rad = width * (0.09 + 0.1 * mid + r() * 0.04);
+    // every ball sits on the same flat base, so the underside is one straight line
+    parts.push(place(sphere(rad, 14, 10), (u - 0.5) * width * 0.78 + (r() - 0.5) * width * 0.05, rad * 0.45, (r() - 0.5) * width * 0.1));
   }
-  // a couple of smaller balls up top for a lumpier silhouette
-  for (let i = 0; i < 2; i++) { const rad = width * (0.1 + r() * 0.05); parts.push(place(sphere(rad, 10, 7), (r() - 0.5) * width * 0.4, width * 0.2 + r() * width * 0.08, (r() - 0.5) * width * 0.1)); }
   const m = merge(parts);
-  return setOutline(deform(m, (p) => { if (p[1] < 0) p[1] *= 0.15; }), 0);
+  return setOutline(deform(m, (p) => { if (p[1] < 0) p[1] = 0; }), 0);
 }
 
 /**
  * A ring of drifting clouds as one instanced draw.
- * createClouds({ count = 14, seed = 1, radius = [160, 420], height = [38, 120], size = [0.8, 2.2],
+ * createClouds({ count = 14, seed = 1, radius = [220, 480], height = [16, 110], size = [0.7, 1.5],
  *                arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25 })
  *   -> { node, update(time) }   add node to the scene root; update turns the whole ring slowly (degrees/second = speed)
  */
 export function createClouds({ count = 14, seed = 1, radius = [220, 480], height = [16, 110], size = [0.7, 1.5], arc = [0, 360], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.25, fog = 0.3 } = {}) {
   const r = rng(seed);
-  const mat = material({ name: 'cloud', outline: false, rim: 0, fog, shadowTint, receiveShadow: false, castShadow: false, bandEdge: -0.18, bandSoft: 0.01 });
+  const mat = material({ name: 'cloud', outline: false, rim: 0, fog, shadowTint, receiveShadow: false, castShadow: false, bandEdge: 0.1, bandSoft: 0.01, lightUp: 0.75 });
   const n = new Node('clouds', { mesh: tint(cloudMesh(seed, { width: 30, puffs: 6 }), color), material: mat });
   n.castShadow = false;
   const inst = makeInstances(count);

@@ -127,12 +127,12 @@ export function createRenderer(canvas, opts = {}) {
     if (u.uView) gl.uniformMatrix4fv(u.uView, false, cam.view);
     if (u.uProj) gl.uniformMatrix4fv(u.uProj, false, cam.proj);
     if (u.uShadowVP) gl.uniformMatrix4fv(u.uShadowVP, false, shadowVP);
-    if (u.uShadowNormalBias) gl.uniform1f(u.uShadowNormalBias, frame.shadowTexel * 1.6);
+    if (u.uShadowNormalBias) gl.uniform1f(u.uShadowNormalBias, frame.shadowTexel * 1.5);
     if (u.uCamPos) gl.uniform3fv(u.uCamPos, cam.position);
     if (u.uKeyDir) gl.uniform3fv(u.uKeyDir, env.key.dir);
     if (u.uKeyColor) gl.uniform3fv(u.uKeyColor, env.key.color);
     if (u.uShadowTint) gl.uniform3fv(u.uShadowTint, env.shadow.tint);
-    if (u.uShadowLift) gl.uniform1f(u.uShadowLift, env.shadow.lift);
+    if (u.uShadowLift) gl.uniform2f(u.uShadowLift, env.shadow.lift, env.shadow.saturate ?? 1.3);
     if (u.uAmbSky) { const a = env.ambient.amount, s = env.ambient.sky, g = env.ambient.ground; gl.uniform3f(u.uAmbSky, s[0] * a, s[1] * a, s[2] * a); gl.uniform3f(u.uAmbGround, g[0] * a, g[1] * a, g[2] * a); }
     if (u.uRimColor) { const a = env.rim.amount, c = env.rim.color; gl.uniform3f(u.uRimColor, c[0] * a, c[1] * a, c[2] * a); gl.uniform1f(u.uRimEdge, env.rim.edge); }
     if (u.uFogColor) { const f = env.fog, c = f.color || env.sky.horizon; gl.uniform3fv(u.uFogColor, c); gl.uniform3f(u.uFogParams, f.density, f.max, f.start); }
@@ -152,6 +152,7 @@ export function createRenderer(canvas, opts = {}) {
     gl.uniform3fv(u.uSpecColor, m.specColor);
     gl.uniform4f(u.uMat, m.rim, m.emissive, m.receiveShadow ? 1 : 0, m.fog);
     if (m.shadowTint) gl.uniform4f(u.uMatShadow, m.shadowTint[0], m.shadowTint[1], m.shadowTint[2], 1); else gl.uniform4f(u.uMatShadow, 0, 0, 0, 0);
+    gl.uniform1f(u.uLightUp, m.lightUp);
     gl.uniform1i(u.uTexMode, m.texMode === 'none' ? 0 : m.texMode === 'decal' ? 1 : 2);
     gl.uniform1f(u.uAlphaCut, m.texMode === 'cutout' ? m.alphaCut : 0.004);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texOf(m.map));

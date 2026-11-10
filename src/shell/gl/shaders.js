@@ -65,14 +65,16 @@ vec3 pointLights(vec3 P, vec3 N, float wrap) {
 // ------------------------------------------------------------------------------------ toon
 
 export const TOON_VS = COMMON_VS + `
-uniform mat4 uShadowVP; uniform vec4 uUvRect; uniform float uShadowNormalBias;
+uniform mat4 uShadowVP; uniform vec4 uUvRect; uniform float uShadowNormalBias; uniform vec3 uKeyDir;
 out vec3 vWorld; out vec3 vNormal; out vec2 vUv; out vec4 vColor; out vec4 vShadow; out vec4 vTint;
 void main() {
   ${MODEL}
   vec4 w = model * vec4(aPos, 1.0);
   vWorld = w.xyz; vNormal = normalize(nm * aNormal);
   vUv = aUv * uUvRect.zw + uUvRect.xy; vColor = aColor; vTint = tint;
-  vShadow = uShadowVP * vec4(w.xyz + vNormal * uShadowNormalBias, 1.0);
+  // push the lookup off the surface, further where the surface turns from the light: that is where a shadow map lies
+  float turn = 1.0 - clamp(dot(vNormal, uKeyDir), 0.0, 1.0);
+  vShadow = uShadowVP * vec4(w.xyz + vNormal * uShadowNormalBias * (1.0 + 2.5 * turn), 1.0);
   gl_Position = uViewProj * w;
 }`;
 
@@ -81,7 +83,8 @@ precision highp float;
 in vec3 vWorld; in vec3 vNormal; in vec2 vUv; in vec4 vColor; in vec4 vShadow; in vec4 vTint;
 out vec4 frag;
 uniform vec3 uCamPos; uniform vec3 uKeyDir; uniform vec3 uKeyColor;
-uniform vec3 uShadowTint; uniform float uShadowLift;
+uniform vec3 uShadowTint; uniform vec2 uShadowLift; // lift, saturation
+uniform float uLightUp;
 uniform vec3 uAmbSky; uniform vec3 uAmbGround;
 uniform vec3 uRimColor; uniform float uRimEdge;
 uniform vec4 uBand;      // bands, edge, step between extra bands, softness
@@ -99,7 +102,7 @@ void main() {
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
   vec3 toCam = uCamPos - vWorld; float dist = length(toCam); vec3 V = toCam / dist;
-  float ndl = dot(N, uKeyDir);
+  float ndl = dot(N, normalize(mix(uKeyDir, vec3(0.0, 1.0, 0.0), uLightUp)));
   float aa = fwidth(ndl) * 0.75 + uBand.w;
   float lit = 0.0; float steps = max(uBand.x - 1.0, 1.0);
   for (int i = 0; i < 4; i++) { if (float(i) >= steps) break; float e = uBand.y + float(i) * uBand.z; lit += smoothstep(e - aa, e + aa, ndl); }
@@ -107,7 +110,8 @@ void main() {
   float sh = uMat.z > 0.5 ? shadowAt(vShadow) : 1.0;
   lit = min(lit, sh);
   vec3 tintS = mix(uShadowTint, uMatShadow.rgb, uMatShadow.a);
-  vec3 shade = base * tintS; shade = mix(shade, tintS * 0.55, uShadowLift);
+  // shadow tone: the base colour seen through the tint, then re-saturated so it shifts hue instead of greying
+  vec3 shade = base * tintS; shade = mix(vec3(dot(shade, vec3(0.3, 0.55, 0.15))), shade, uShadowLift.y); shade = max(mix(shade, tintS * 0.55, uShadowLift.x), 0.0);
   vec3 col = mix(shade, base * uKeyColor, lit);
   col += base * mix(uAmbGround, uAmbSky, smoothstep(-0.35, 0.35, N.y));
   vec3 pl = pointLights(vWorld, N, 0.0);
@@ -119,9 +123,7 @@ void main() {
   // rim: a bright edge where the surface turns away from the eye, on the side the key light reaches
   float fres = 1.0 - max(dot(N, V), 0.0);
   float ra = fwidth(fres) * 0.75 + 0.01;
-  // flat ground seen at a grazing angle must not light up: only surfaces that are actually turning get a rim
-  float curved = smoothstep(0.0004, 0.003, length(fwidth(N)));
-  float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(-0.1, 0.25, ndl) * curved * uMat.x;
+  float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(0.0, 0.1, ndl) * uMat.x;
   col = mix(col, max(col, base * 0.4 + uRimColor), rim * min(1.0, length(uRimColor) * 2.0));
   float glow = clamp(vColor.a + uMat.y, 0.0, 1.0);
   col = mix(col, base, glow);
@@ -312,7 +314,7 @@ void main() {
   float dens = uGlint.a * (0.6 + 0.4 * sh) + sunLobe * 0.7;
   float fade = 1.0 - smoothstep(60.0, 150.0, dist);
   vec2 pd = p + uDrift * t;
-  float g = dashes(pd, 1.0, dens, t) * (1.0 - smoothstep(25.0, 60.0, dist)) + dashes(pd + 31.7, 0.33, dens, t * 0.7) * smoothstep(18.0, 45.0, dist) * fade;
+  float g = dashes(pd, 1.0, dens, t) * (1.0 - smoothstep(40.0, 85.0, dist)) + dashes(pd + 31.7, 0.33, dens, t * 0.7) * smoothstep(35.0, 70.0, dist) * fade;
   g *= smoothstep(0.5, 0.9, d);
   col = mix(col, uGlint.rgb, g * (0.75 + 0.25 * sh));
   // foam: a solid lapping edge and broken rings travelling outward
@@ -380,8 +382,9 @@ void main() {
     float dT = length(p - vec2(tx, y0)); float sT = 0.42 * (tx + 1.0) / (c.x + 1.0);
     float dC = dS, s = sS; if (dT < dS) { dC = dT; s = sT; }
     float head = vPhase * 1.6; float win = (s - (head - 0.6)) / 0.6;
-    float w = 0.075 * sin(clamp(win, 0.0, 1.0) * 3.14159);
-    float a = (1.0 - smoothstep(w - 0.02, w + 0.01, dC)) * step(0.004, w);
+    float w = 0.042 * sin(clamp(win, 0.0, 1.0) * 3.14159);
+    float ce = fwidth(dC);
+    float a = (1.0 - smoothstep(w - ce, w + ce, dC)) * step(0.004, w);
     o = vec4(vColor.rgb, 1.0) * a * vColor.a;
   } else if (vKind < 4.5) {     // 4 ring: an expanding foam ring on the ground; phase thins it
     float w = 0.16 * (1.0 - vPhase) + 0.02;

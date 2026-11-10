@@ -12481,13 +12481,13 @@
  },
  {
   "path": "src/shell/gl/demo.js",
-  "bytes": 28312,
-  "lines": 400
+  "bytes": 28520,
+  "lines": 402
  },
  {
   "path": "src/shell/gl/fx.js",
-  "bytes": 3696,
-  "lines": 61
+  "bytes": 3479,
+  "lines": 58
  },
  {
   "path": "src/shell/gl/gl.js",
@@ -12511,23 +12511,23 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 19663,
-  "lines": 354
+  "bytes": 19732,
+  "lines": 355
  },
  {
   "path": "src/shell/gl/rig.js",
-  "bytes": 10544,
-  "lines": 205
+  "bytes": 10695,
+  "lines": 207
  },
  {
   "path": "src/shell/gl/scene.js",
-  "bytes": 21827,
-  "lines": 381
+  "bytes": 22190,
+  "lines": 384
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 19450,
-  "lines": 397
+  "bytes": 19800,
+  "lines": 400
  },
  {
   "path": "src/shell/gl/sprites.js",
