@@ -7351,8 +7351,8 @@
  },
  {
   "path": "test/game.test.js",
-  "bytes": 63954,
-  "lines": 1182
+  "bytes": 65960,
+  "lines": 1213
  },
  {
   "path": "test/physics.test.js",
@@ -7361,8 +7361,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 19206,
-  "lines": 335
+  "bytes": 22136,
+  "lines": 377
  },
  {
   "path": "test/rng.test.js",
@@ -7381,8 +7381,8 @@
  },
  {
   "path": "test/story.test.js",
-  "bytes": 12121,
-  "lines": 203
+  "bytes": 14012,
+  "lines": 228
  },
  {
   "path": "test/tables.test.js",

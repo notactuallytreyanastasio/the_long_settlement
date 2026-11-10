@@ -10,6 +10,7 @@ import {
   SPIN_COST, LOAN, TRUST_PER_GIFT, initEcon, paySpin, applyPayout, takeLoan, spendWrit, awardPoints,
 } from '../src/core/economy.js';
 import { seed, next } from '../src/core/rng.js';
+import { content as shipped } from '../src/content/index.js';
 
 // ───────────────────────── fixture content ─────────────────────────
 // A box: one open-bottomed column. The plunger fires straight up through three
@@ -776,6 +777,36 @@ test('save: reels this build cannot honour are refused or repaired, never played
   // three locked reels with nothing turning would never settle: they are cleared
   const stuck = load({ ...ok, source: 'lanes', cells: [{ sym: 'coin', spin: 0 }, { sym: 'coin', spin: 0 }, { sym: 'coin', spin: 0 }] })().game.reels;
   assert.deepEqual([stuck.cells, stuck.source], [EMPTY, null]);
+});
+
+test('spotting, on the real table: a second hit on a lit lantern lights its neighbour, and the bank can be finished on one target', () => {
+  // chapter one, scene one: light lanterns A, B and C (standup targets, one bank)
+  const scene0 = shipped.chapters[0].scenes[0];
+  assert.deepEqual(scene0.objective, { kind: 'all', ids: ['lanternA', 'lanternB', 'lanternC'] });
+  const table = shipped.tables[shipped.chapters[0].tableId];
+  const B = table.targets.find((t) => t.id === 'lanternB');
+  const mid = [(B.a[0] + B.b[0]) / 2, (B.a[1] + B.b[1]) / 2];
+  const len = Math.hypot(B.b[0] - B.a[0], B.b[1] - B.a[1]);
+  // a ball thrown at the middle of lantern B from 30 units off its face, on whichever side is open
+  const nrm = [-(B.b[1] - B.a[1]) / len, (B.b[0] - B.a[0]) / len];
+  const throwAt = (g, side) => ({ ...g, barkCool: QUIET, phys: { ...g.phys, balls: [{ id: 900 + g.phys.nextBallId, pos: [mid[0] + nrm[0] * 30 * side, mid[1] + nrm[1] * 30 * side], vel: [-nrm[0] * 500 * side, -nrm[1] * 500 * side], state: 'live', inside: [] }] } });
+  const g = playAt(0, 0, { writs: 0 }, shipped);
+  const lit = (x) => Object.keys(x.hits).filter((k) => x.hits[k] > 0).sort();
+  const hitB = (from) => {
+    for (const side of [1, -1]) {
+      let r;
+      try { r = playUntil(throwAt(from, side), (x, fx) => count(fx, 'target') > 0 || x.mode !== 'play', shipped, 60); } catch { continue; }
+      if (count(r.effects, 'target') === 1) return r;
+    }
+    throw new Error('the thrown ball did not reach lantern B from either side');
+  };
+  let r = hitB(g);
+  assert.deepEqual(lit(r.game), ['lanternB'], 'the first hit lights B itself');
+  r = hitB(r.game);
+  assert.deepEqual(lit(r.game), ['lanternA', 'lanternB'], 'the second, on B again, is passed down the bank');
+  assert.equal(count(r.effects, 'objective'), 1, 'and sounds as progress');
+  r = hitB(r.game);
+  assert.equal(r.game.mode, 'cine', 'the third finishes the bank and the scene');
 });
 
 // ───────────────────────── the reels on the table ─────────────────────────

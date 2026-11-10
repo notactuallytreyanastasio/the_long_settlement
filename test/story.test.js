@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   currentScene, objectiveProgress, registerHit, litIds, resolveStage, lineSeconds, eligibleBarks, preloadIds,
-  metSpeakers, spinIds,
+  metSpeakers, spinIds, spotFor,
 } from '../src/core/story.js';
 
 const scene = (objective) => ({ id: 't.s', title: 'T', objective });
@@ -47,6 +47,31 @@ test('objectiveProgress throws on an unknown kind, no ids, or a count without n'
   assert.throws(() => objectiveProgress(scene({ kind: 'most', ids: ['a'] }), {}, 0), /unknown objective kind "most"/);
   assert.throws(() => objectiveProgress(scene({ kind: 'all', ids: [] }), {}, 0), /no ids/);
   assert.throws(() => objectiveProgress(scene({ kind: 'count', ids: ['a'] }), {}, 0), /positive integer n/);
+});
+
+test('spotFor: a lit standup passes its hit to the nearest unlit target of its bank, and to nothing else', () => {
+  const table = { id: 't', targets: [
+    { id: 'a', group: 'bank' }, { id: 'b', group: 'bank' }, { id: 'c', group: 'bank' }, { id: 'd', group: 'bank' },
+    { id: 'x', group: 'other' }, { id: 'lone' },
+  ] };
+  const all = scene({ kind: 'all', ids: ['a', 'b', 'c', 'd', 'x', 'lone', 'lane'] });
+  assert.equal(spotFor(table, all, {}, 'b'), 'b', 'an unlit target counts for itself');
+  assert.equal(spotFor(table, all, { b: 1 }, 'b'), 'a', 'lit: the nearest unlit, the lower one on a tie');
+  assert.equal(spotFor(table, all, { a: 1, b: 2 }, 'b'), 'c');
+  assert.equal(spotFor(table, all, { a: 1, b: 1, c: 1 }, 'a'), 'd', 'however far along the bank');
+  assert.equal(spotFor(table, all, { a: 1, b: 1, c: 1, d: 1 }, 'a'), 'a', 'a finished bank spots nothing: not the other bank');
+  assert.equal(spotFor(table, all, { x: 1 }, 'x'), 'x', 'a bank of one');
+  assert.equal(spotFor(table, all, { lone: 1 }, 'lone'), 'lone', 'a target with no group');
+  assert.equal(spotFor(table, all, { lane: 1 }, 'lane'), 'lane', 'not a target at all (a lane, a saucer)');
+  assert.equal(spotFor(table, all, {}, 'zzz'), 'zzz', 'not in the objective');
+  // only targets the objective names are spotted to
+  const two = scene({ kind: 'all', ids: ['a', 'd'] });
+  assert.equal(spotFor(table, two, { a: 1 }, 'a'), 'd');
+  assert.equal(spotFor(table, two, {}, 'b'), 'b', 'a target of the bank the objective does not name is not in play');
+  // count and sequence objectives are left alone
+  assert.equal(spotFor(table, scene({ kind: 'count', ids: ['a', 'b'], n: 5 }), { a: 3 }, 'a'), 'a');
+  assert.equal(spotFor(table, scene({ kind: 'sequence', ids: ['a', 'b'] }), { a: 1 }, 'a'), 'a');
+  assert.throws(() => spotFor(null, all, { a: 1 }, 'a'), /spotFor needs a table with targets/);
 });
 
 test('registerHit: all counts first hits, count counts every hit, sequence ignores wrong hits', () => {
