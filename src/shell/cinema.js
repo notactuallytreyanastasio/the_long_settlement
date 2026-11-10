@@ -346,6 +346,7 @@ const BUILDS = {
   small: { sw: 100, hw: 51, neck: 19, s: 0.9 },
 };
 const AGES = {
+  child: { jaw: 0.6, lines: 0 },
   young: { jaw: 0.56, lines: 0 },
   mid: { jaw: 0.64, lines: 1 },
   old: { jaw: 0.69, lines: 2 },
@@ -381,16 +382,22 @@ function emoteOf(name) {
   return e;
 }
 
+const CHILD_RE = /\bchild\b|\bboy\b|\bgirl\b|\b(nine|ten|eleven|twelve|thirteen)\b|\b(9|1[0-3])\b/;
 const _looks = new WeakMap();
 function lookOf(member) {
   let k = _looks.get(member);
   if (k) return k;
   const L = member.look;
   if (!L) throw new Error(`cinema: cast member '${member.id}' has no look`);
-  const b = BUILDS[L.build];
+  let b = BUILDS[L.build];
   if (!b) throw new Error(`cinema: cast member '${member.id}' has unknown look.build '${L.build}' (slim, broad, small)`);
-  const a = AGES[L.age];
+  // The contract has three ages. A child is told from the descriptor (or age:'child'), and is not a small adult:
+  // a head nearly as large on narrow shoulders, a short chin, eyes set low and wide, and a place lower on the stage.
+  const markText = String(L.mark || '').toLowerCase();
+  const child = L.age === 'child' || CHILD_RE.test(markText) || CHILD_RE.test(String(member.role || '').toLowerCase());
+  const a = child ? AGES.child : AGES[L.age];
   if (!a) throw new Error(`cinema: cast member '${member.id}' has unknown look.age '${L.age}' (young, mid, old)`);
+  if (child) b = { sw: /too (large|big)|oversize|outgrown|hand-me-down/.test(markText) ? 90 : 80, hw: 50, neck: 15, s: 0.8 };
   for (const f of ['skin', 'hair', 'coat', 'trim']) {
     if (!L[f]) throw new Error(`cinema: cast member '${member.id}' is missing look.${f}`);
     rgb(L[f]);
@@ -398,16 +405,18 @@ function lookOf(member) {
   const hs = String(L.hairStyle === undefined ? '' : L.hairStyle).toLowerCase();
   const hit = HAIR_STYLES.find(([, re]) => re.test(hs));
   if (!hit) throw new Error(`cinema: cast member '${member.id}' has look.hairStyle '${L.hairStyle}' that matches no drawn style (${HAIR_STYLES.map((h) => h[0]).join(', ')})`);
-  const mark = String(L.mark || '').toLowerCase();
+  const mark = markText;
   k = {
-    ...b, ...a, style: hit[0], mark,
+    ...b, ...a, style: hit[0], mark, child,
+    chin: child ? 65 : 73, eyeDy: child ? 6 : 0, drop: child ? 78 : 0,
     skin: L.skin, hair: L.hair, coat: L.coat, trim: L.trim, eyes: L.eyes || '#3a2a20',
     seed: hashStr(String(member.id)),
     eyeGap: 22.5 + rnd(hashStr(String(member.id)) * 91) * 4,
-    eyeW: (L.age === 'young' ? 1.0 : 0.93) + rnd(hashStr(String(member.id)) * 53) * 0.12,
-    noseL: 0.85 + rnd(hashStr(String(member.id)) * 37) * 0.4,
-    browW: 0.8 + rnd(hashStr(String(member.id)) * 29) * 0.5,
-    mouthW: 0.92 + rnd(hashStr(String(member.id)) * 71) * 0.2,
+    eyeW: (child ? 1.14 : L.age === 'young' ? 1.0 : 0.93) + rnd(hashStr(String(member.id)) * 53) * 0.12,
+    noseL: (child ? 0.62 : 0.85) + rnd(hashStr(String(member.id)) * 37) * (child ? 0.15 : 0.4),
+    browW: (child ? 0.62 : 0.8) + rnd(hashStr(String(member.id)) * 29) * (child ? 0.2 : 0.5),
+    mouthW: (child ? 0.78 : 0.92) + rnd(hashStr(String(member.id)) * 71) * (child ? 0.1 : 0.2),
+    browUp: /(one|an|left|right) (eye)?brow (always |forever |permanently )?(raised|up|cocked|lifted)|cocked (eye)?brow/.test(mark) ? 7 : 0,
     has: (re) => re.test(mark),
     lid: /heavy-lidded|hooded eyes|half-closed/.test(mark) ? 0.8 : 1,
     smileBias: /half smil|always smil|faint smile/.test(mark) ? 0.32 : 0,
@@ -423,9 +432,10 @@ function headPath(ctx, k, cy) {
   ctx.beginPath();
   ctx.moveTo(-hw, cy - 10);
   ctx.bezierCurveTo(-hw, cy - 80, hw, cy - 80, hw, cy - 10);
-  ctx.bezierCurveTo(hw, cy + 30, jaw, cy + 64, 13, cy + 73);
-  ctx.quadraticCurveTo(0, cy + 77, -13, cy + 73);
-  ctx.bezierCurveTo(-jaw, cy + 64, -hw, cy + 30, -hw, cy - 10);
+  const ch = k.chin;
+  ctx.bezierCurveTo(hw, cy + 30, jaw, cy + ch - 9, 13, cy + ch);
+  ctx.quadraticCurveTo(0, cy + ch + 4, -13, cy + ch);
+  ctx.bezierCurveTo(-jaw, cy + ch - 9, -hw, cy + 30, -hw, cy - 10);
   ctx.closePath();
 }
 function torsoPath(ctx, k) {
@@ -525,6 +535,11 @@ function hairFront(ctx, k, cy, f, col, colHi, tone) {
   switch (k.style) {
     case 'crop':
       capPath(ctx, hw, cy, k.lines >= 2 ? 5 : 9, k.lines >= 2 ? -42 : -35, -f * 6); ctx.fill(); hi(k.lines >= 2 ? 5 : 9);
+      if (k.has(/cowlick|tuft/)) { // the bit at the crown that will not lie down
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(-f * 16, cy - 68); ctx.quadraticCurveTo(-f * 12, cy - 96, f * 10, cy - 94); ctx.quadraticCurveTo(-f * 2, cy - 86, f * 6, cy - 68); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-f * 30, cy - 64); ctx.quadraticCurveTo(-f * 32, cy - 86, -f * 14, cy - 90); ctx.quadraticCurveTo(-f * 21, cy - 80, -f * 14, cy - 64); ctx.fill();
+      }
       break;
     case 'swept':
       capPath(ctx, hw, cy, 16, -33, -f * 22); ctx.fill();
@@ -685,6 +700,9 @@ function drawFigure(ctx, member, o) {
   const headTf = () => {
     ctx.translate(f * 2, -talk * 1.4 + breathe * 0.4);
     ctx.rotate(E.tilt * f + Math.sin(t * 0.6 + k.seed * 5) * 0.012 + talk * Math.sin(t * 5 + k.seed) * 0.008);
+    if (k.child) { // a short neck, and a skull that is round rather than long
+      ctx.translate(0, 14 + cy + k.chin); ctx.scale(1.06, 0.88); ctx.translate(0, -(cy + k.chin));
+    }
   };
 
   ctx.save();
@@ -766,6 +784,25 @@ function drawFigure(ctx, member, o) {
     }
     seg(ctx, 0, 132, 0, 560, coatSh, 3);
     for (let i = 0; i < 5; i++) circ(ctx, 9, 156 + i * 58, 5, trimC);
+    if (k.has(/jersey|gansey|guernsey|knitted (jumper|sweater)|roll-?neck/)) {
+      // a fisherman's jersey under the coat: ribbed, with a rolled neck
+      const wool = tone(mix(k.trim, '#e8e2d2', 0.55)), woolSh = tone(mix(k.trim, '#3a3428', 0.5));
+      poly(ctx, [[-n - 4, -18], [0, 64], [n + 4, -18]], wool);
+      for (let i = -3; i <= 3; i++) seg(ctx, i * 7, -14, i * 5, 58 - Math.abs(i) * 17, woolSh, 1.3);
+      ctx.fillStyle = wool; rr(ctx, -n - 7, -30, n * 2 + 14, 18, 8); ctx.fill();
+      for (let i = -4; i <= 4; i++) seg(ctx, i * (n + 5) / 4.4, -29, i * (n + 5) / 4.4, -13, woolSh, 1.2);
+    }
+    if (k.has(/oilskin|sou'?wester|slicker|tarpaulin coat/)) {
+      // oilskin: a storm collar turned up, a wet sheen along the shoulder, a toggle at the throat
+      for (const sx of [-1, 1]) {
+        poly(ctx, [[sx * (n + 6), -34], [sx * (n + 30), -8], [sx * k.sw * 0.5, 34], [sx * (n + 10), 6]], sx === key ? coatHi : coatC);
+        ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(sx * k.sw * 0.5, 10); ctx.quadraticCurveTo(sx * k.sw * 0.86, 22, sx * (k.sw + 2), 90); ctx.stroke();
+        ctx.lineCap = 'butt';
+      }
+      for (let i = 0; i < 4; i++) { rect(ctx, -4, 150 + i * 60, 26, 7, trimC); circ(ctx, 22, 153.5 + i * 60, 4.5, trimHi); }
+      if (k.has(/patch/)) { ctx.save(); ctx.translate(-key * k.sw * 0.62, 150); ctx.rotate(0.14); rect(ctx, -22, -18, 44, 36, tone(mix(k.coat, '#6a5a3a', 0.45))); ctx.setLineDash([4, 3]); ctx.strokeStyle = trimC; ctx.lineWidth = 1.2; ctx.strokeRect(-19, -15, 38, 30); ctx.setLineDash([]); ctx.restore(); }
+    }
   }
   if (k.has(/shawl/)) {
     // a knitted shawl across the shoulders
@@ -821,11 +858,12 @@ function drawFigure(ctx, member, o) {
   ctx.save();
   headTf();
   // ears
+  const earOut = k.has(/ears? (that )?stick|jug ears|big ears/) ? 4 : k.child ? 1.5 : 0;
   for (const sx of [-1, 1]) {
     ctx.fillStyle = tone(sx === key ? k.skin : skinSh);
-    ctx.beginPath(); ctx.ellipse(sx * (hw - 1), cy + 8, 8, 14, sx * 0.12, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(sx * (hw - 1 + earOut * 0.6), cy + 8 + k.eyeDy, 8 + earOut, 14 + earOut * 0.5, sx * (0.12 + earOut * 0.04), 0, TAU); ctx.fill();
     ctx.strokeStyle = tone(skinSh); ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(sx * (hw + 1), cy + 8, 5, sx > 0 ? -1.2 : Math.PI - 1.2, sx > 0 ? 1.2 : Math.PI + 1.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(sx * (hw + 1 + earOut * 0.6), cy + 8 + k.eyeDy, 5, sx > 0 ? -1.2 : Math.PI - 1.2, sx > 0 ? 1.2 : Math.PI + 1.2); ctx.stroke();
   }
   if (k.has(/earpiece|ear-piece|earbud|the line|listener/)) {
     const sx = -f;
@@ -844,8 +882,9 @@ function drawFigure(ctx, member, o) {
   ctx.fillStyle = vgrad(ctx, cy + 44, cy + 80, [[0, rgba(skinSh, 0)], [1, rgba(skinSh, 0.6)]]);
   ctx.fillRect(-hw, cy + 44, hw * 2, 40);
   const blushCol = o.emote === 'anger' ? '#c8402a' : '#e0705a';
+  const weathered = k.has(/weather|wind-?burn|sea-?worn|leathery/);
   for (const sx of [-1, 1]) {
-    glow(ctx, sx * 30 + f * 4, cy + 26, 26, blushCol, 0.1 + 0.26 * E.blush);
+    glow(ctx, sx * 30 + f * 4, cy + 26 + k.eyeDy * 0.5, 26, blushCol, 0.1 + 0.26 * E.blush + (k.child ? 0.1 : 0) + (weathered ? 0.14 : 0));
     glow(ctx, sx * 24 + f * 4, cy - 4, 22, '#2a0f18', 0.2); // eye socket depth
   }
   if (k.has(/freckle/)) {
@@ -873,11 +912,17 @@ function drawFigure(ctx, member, o) {
   }
 
   // age
-  const lineCol = rgba(mix(k.skin, '#2a0f18', 0.6), 0.5);
+  const lineCol = rgba(mix(k.skin, '#2a0f18', 0.6), 0.2 + 0.3 * clamp((rgb(k.skin)[0] - 120) / 100));
   if (k.lines >= 1) {
     ctx.strokeStyle = lineCol; ctx.lineWidth = 1.4;
     for (const sx of [-1, 1]) {
       ctx.beginPath(); ctx.moveTo(fx0 + sx * 13, cy + 28); ctx.quadraticCurveTo(fx0 + sx * 22, cy + 38, fx0 + sx * 21, cy + 50); ctx.stroke();
+    }
+  }
+  if (weathered) { // a face that has been out in it: cheeks cut by the wind, a seam each side of the mouth
+    ctx.strokeStyle = rgba(mix(k.skin, '#2a0f18', 0.6), 0.32); ctx.lineWidth = 1.4;
+    for (const sx of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(fx0 + sx * 37, cy + 18); ctx.quadraticCurveTo(fx0 + sx * 43, cy + 34, fx0 + sx * 34, cy + 52); ctx.stroke();
     }
   }
   if (k.lines >= 2) {
@@ -894,14 +939,14 @@ function drawFigure(ctx, member, o) {
   const bp = mod(t + k.seed * 7, 3.6 + k.seed * 2);
   const blink = bp < 0.13 ? 0.08 + Math.abs(bp - 0.065) / 0.065 * 0.5 : 1;
   const gaze = f * 2.4 * (o.gaze === undefined ? 1 : o.gaze) * (k.averted ? -1.3 : 1);
-  const ey = cy + 2;
+  const ey = cy + 2 + k.eyeDy;
   for (const sgn of [-1, 1]) drawEye(ctx, fx0 + sgn * k.eyeGap, ey, sgn, E, blink, gaze, k, tone, f);
 
   // brows
   ctx.strokeStyle = tone(mix(k.hair, '#1a0c0c', k.lines >= 2 ? 0.1 : 0.35));
   ctx.lineWidth = (k.lines >= 2 ? 5 : 5.5) * k.browW; ctx.lineCap = 'round';
   for (const sgn of [-1, 1]) {
-    const ex = fx0 + sgn * k.eyeGap, by = cy - 19 - (E.open - 1) * 6;
+    const ex = fx0 + sgn * k.eyeGap, by = cy - 19 + k.eyeDy * 0.7 - (E.open - 1) * 6 - (sgn === f ? k.browUp : 0);
     ctx.beginPath();
     ctx.moveTo(ex - sgn * 15, by + E.bi);
     ctx.quadraticCurveTo(ex + sgn * 2, by - 7 + (E.bi + E.bo) * 0.3, ex + sgn * 19, by + 3 + E.bo);
@@ -916,7 +961,7 @@ function drawFigure(ctx, member, o) {
   // nose
   ctx.strokeStyle = tone(mix(k.skin, '#2a0f18', 0.42)); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(fx0 + f * 3, cy + 6);
+  ctx.moveTo(fx0 + f * 3, cy + 6 + k.eyeDy * 2);
   ctx.quadraticCurveTo(fx0 + f * 10 * k.noseL, cy + 24, fx0 + f * 7 * k.noseL, cy + 30);
   ctx.quadraticCurveTo(fx0 + f * 2, cy + 34, fx0 - f * 4 * k.noseL, cy + 30);
   ctx.stroke();
@@ -935,7 +980,7 @@ function drawFigure(ctx, member, o) {
 
   // mouth
   {
-    const mx = fx0 + f * 1, my = cy + 47;
+    const mx = fx0 + f * 1, my = cy + (k.child ? 45 : 47);
     const openA = clamp(E.mo + talk * 0.5 * (0.75 + 0.25 * Math.sin(t * 19 + k.seed * 4)), 0, 0.9);
     const w = 17 * E.mw * k.mouthW * (1 - talk * 0.08);
     const cornerY = my - E.curve * 6.5;
@@ -1081,7 +1126,7 @@ export function drawPortrait(ctx, member, x, y, size, emote, talk, t = 0) {
   glow(ctx, x + size * 0.3, y + size * 0.3, size * 0.75, '#fff2d0', 0.16);
   const hasFace = member.look && member.id !== 'narrator' && member.id !== 'crowd';
   if (hasFace) {
-    const s = (size / 232) / lookOf(member).s;
+    const s = (size / 232) / Math.max(lookOf(member).s, 0.88);
     ctx.translate(x + size / 2, y + size * 0.9);
     ctx.scale(s, s);
     drawFigure(ctx, member, { emote, talk, focus: 1, light: PORTRAIT_LIGHT, facing: 1, gaze: 0.3, t });
@@ -1174,7 +1219,7 @@ def('ledger', { amb: '#2a1a0c', rim: '#ffcf8a', key: -1 }, (ctx, t, px, info) =>
     ctx.fillText(side ? 'OWED' : 'PAID', x0 + half - mR / 2 - 8, top - lh + 1);
   }
   ctx.fillStyle = 'rgba(50,24,20,.82)'; ctx.font = `28px ${FONT_SCRIPT}`; ctx.textAlign = 'center';
-  ctx.fillText('Aurelle, in account with the Undertow', bx + half / 2, by + 36);
+  ctx.fillText('Forty lights, in account with one another', bx + half / 2, by + 36);
   ctx.fillText('The Long Settlement', bx + half * 1.5, by + 36);
   // the entries
   ctx.font = `25px ${FONT_SCRIPT}`; ctx.textAlign = 'left';
@@ -1282,13 +1327,14 @@ def('line', LINE_LIGHT, (ctx, t, px, info) => {
   }
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.font = `600 15px ${FONT_MONO}`; ctx.fillStyle = 'rgba(110,245,220,.8)';
-  ctx.fillText('THE LINE', 96 + px * 0.3, 118);
+  const live = !info.portrait || info.portrait.id === LINE_ID;
+  ctx.fillText(live ? 'THE LINE' : 'RECORDING', 96 + px * 0.3, 118);
   ctx.font = `12px ${FONT_MONO}`; ctx.fillStyle = 'rgba(110,245,220,.5)';
-  ctx.fillText('HALCYON SURETY  /  PROCTOR CHANNEL  /  SEALED', 96 + px * 0.3, 138);
+  ctx.fillText(live ? 'HALCYON SURETY  /  PROCTOR CHANNEL  /  SEALED' : `LISTENING SHELL  /  PLAYBACK  /  ${String(info.portrait.name).toUpperCase()}`, 96 + px * 0.3, 138);
   const s = Math.floor(t);
   ctx.textAlign = 'right';
   ctx.fillText(`${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}  CARRIER ${(412.5 + Math.sin(t * 0.7) * 0.2).toFixed(2)}`, 1196 + px * 0.3, 118);
-  if (mod(t, 1.2) < 0.7) circ(ctx, 80 + px * 0.3, 113, 5, '#ff5a4a');
+  if (live && mod(t, 1.2) < 0.7) circ(ctx, 80 + px * 0.3, 113, 5, '#ff5a4a');
   ctx.textAlign = 'left';
   for (let y = -40; y < 860; y += 4) rect(ctx, X0, y, XW, 1, 'rgba(0,0,0,.16)');
 });
@@ -1698,7 +1744,7 @@ def('mint-office', { amb: '#1e120c', rim: '#ffb070', key: -1 }, (ctx, t, px) => 
   ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx, 210, 96, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(sx, 210, 70, 0, TAU); ctx.stroke();
   sigilScale(ctx, sx, 212, 40, '#d8b25a', 4);
   ctx.save(); ctx.translate(sx, 210); ctx.fillStyle = '#d8b25a'; ctx.font = `600 15px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const motto = 'PAYABLE · IN · STILLNESS · MINT · OF · AURELLE · ';
+  const motto = 'PAYABLE · IN · CALM · THE · MINT · OF · AURELLE · ';
   for (let i = 0; i < motto.length; i++) { ctx.save(); ctx.rotate((i / motto.length) * TAU - Math.PI / 2); ctx.fillText(motto[i], 0, -83); ctx.restore(); }
   ctx.restore(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   // window on the harbour
@@ -2141,80 +2187,164 @@ def('ledger-room', { amb: '#0c1220', rim: '#9fc0ff', key: 1 }, (ctx, t, px) => {
   motes(ctx, 19, 60, '#c8d8ff', t, { x0: 200 + px, x1: 1100 + px, y0: 0, y1: 700, vx: 3, vy: 5, r: 1.4, a: 0.4, tw: 1, wob: 14 });
 });
 
-// ── orrery: the shrine, a brass planetarium over still water ──
-function orreryRings(ctx, cx, cy, t, mirror) {
-  const N = 6;
+// ── orrery: the lamp-engine. Turning brass rings around a cold flame, above still water ──
+/** stillsalt burning: a heavy, slow, blue-white flame */
+function coldFlame(ctx, x, y, s, t, seed) {
+  const w = Math.sin(t * 2.7 + seed * 5) * 0.07 + Math.sin(t * 1.1 + seed) * 0.05;
+  const h = 1 + 0.07 * Math.sin(t * 3.7 + seed * 3);
+  glow(ctx, x, y - s * 0.7, s * 6.5, '#6fc4ff', 0.3 + 0.04 * Math.sin(t * 2.3 + seed));
+  for (const [c, m] of [['#2a66dc', 1], ['#86d0ff', 0.68], ['#f2fcff', 0.36]]) {
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.56 * m, y);
+    ctx.bezierCurveTo(x - s * 0.9 * m, y - s * 0.7 * m * h, x - s * 0.3 * m + s * w * m, y - s * 1.2 * m * h, x + s * w * m * 2, y - s * 1.7 * m * h);
+    ctx.bezierCurveTo(x + s * 0.3 * m + s * w * m, y - s * 1.2 * m * h, x + s * 0.9 * m, y - s * 0.7 * m * h, x + s * 0.56 * m, y);
+    ctx.fill();
+  }
+}
+/** its smoke does not rise. It pours, and lies down, and whatever it lies on goes flat */
+function sinkingSmoke(ctx, x, y, fall, spread, n, t, seed, a) {
+  for (let i = 0; i < n; i++) {
+    const ph = mod(t * 0.09 + i / n + rnd(seed + i) * 0.2, 1);
+    const side = rnd(seed * 3 + i) < 0.5 ? -1 : 1;
+    const down = Math.min(1, ph * 2.6);
+    const out = Math.max(0, ph - 0.3) / 0.7;
+    const sx = x + side * (10 + rnd(seed * 5 + i) * 26) * down + side * out * spread + Math.sin(t * 0.7 + i) * 6;
+    const sy = y + fall * (1 - (1 - down) * (1 - down));
+    const r = 16 + down * 26 + out * 60;
+    ctx.fillStyle = rgba('#b8dcf4', a * (1 - ph) * (0.5 + 0.5 * down));
+    ctx.beginPath(); ctx.ellipse(sx, sy, r * (1 + out * 1.6), r * (1 - out * 0.72), 0, 0, TAU); ctx.fill();
+  }
+}
+function cog(ctx, x, y, r, teeth, a, col, dark) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  for (let i = 0; i < teeth * 2; i++) { const rr2 = i % 2 ? r : r * 0.84, an = (i / (teeth * 2)) * TAU; ctx.lineTo(Math.cos(an - 0.06) * rr2, Math.sin(an - 0.06) * rr2); ctx.lineTo(Math.cos(an + 0.06) * rr2, Math.sin(an + 0.06) * rr2); }
+  ctx.closePath(); ctx.fill();
+  circ(ctx, 0, 0, r * 0.52, dark);
+  for (let i = 0; i < 4; i++) seg(ctx, 0, 0, Math.cos(i * 1.5708) * r * 0.8, Math.sin(i * 1.5708) * r * 0.8, col, r * 0.14);
+  circ(ctx, 0, 0, r * 0.17, col);
+  ctx.restore();
+}
+function engineRings(ctx, cx, cy, t) {
+  const N = 5;
   for (let i = N - 1; i >= 0; i--) {
-    const rx = 96 + i * 52;
-    const tilt = 0.2 + 0.26 * Math.abs(Math.sin(t * (0.11 + i * 0.03) + i * 1.3));
-    const rot = (i % 2 ? -1 : 1) * t * (0.05 + i * 0.012) + i * 0.7;
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.sin(rot) * 0.5 * (mirror ? -1 : 1));
-    ctx.strokeStyle = hgrad(ctx, -rx, rx, [[0, '#6a4a16'], [0.3, '#f4dc92'], [0.55, '#b08a3a'], [0.8, '#f0d07a'], [1, '#5a3e12']]);
-    ctx.lineWidth = 7 - i * 0.6;
+    const rx = 92 + i * 50;
+    const tilt = 0.16 + 0.3 * Math.abs(Math.sin(t * (0.1 + i * 0.03) + i * 1.3));
+    const rot = Math.sin((i % 2 ? -1 : 1) * t * (0.05 + i * 0.012) + i * 0.7) * 0.5;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+    ctx.strokeStyle = hgrad(ctx, -rx, rx, [[0, '#5a3e12'], [0.3, '#e8cc82'], [0.55, '#a07a2e'], [0.8, '#dcbc6a'], [1, '#4a3410']]);
+    ctx.lineWidth = 8 - i * 0.7;
     ctx.beginPath(); ctx.ellipse(0, 0, rx, rx * tilt, 0, 0, TAU); ctx.stroke();
     ctx.strokeStyle = 'rgba(40,24,6,.6)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(0, 0, rx - 4, (rx - 4) * tilt, 0, 0, TAU); ctx.stroke();
-    if (i === N - 1) for (let k = 0; k < 60; k++) { const a = (k / 60) * TAU + t * 0.03; seg(ctx, Math.cos(a) * rx, Math.sin(a) * rx * tilt, Math.cos(a) * (rx + (k % 5 ? 7 : 13)), Math.sin(a) * (rx + (k % 5 ? 7 : 13)) * tilt, 'rgba(240,214,138,.55)', 1.3); }
-    // the body this ring carries
-    const pa = t * (0.22 + i * 0.07) * (i % 2 ? 1 : -1) + i * 2.1, px = Math.cos(pa) * rx, py = Math.sin(pa) * rx * tilt;
-    const pc = ['#e8d8b0', '#7fb6d8', '#c97a4a', '#b8c8a0', '#d8a8c8', '#f0e8d0'][i];
-    const g = ctx.createRadialGradient(px - 3, py - 3, 1, px, py, 11 + (i % 3) * 3);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, pc); g.addColorStop(1, css(mix(pc, '#000', 0.6)));
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 9 + (i % 3) * 3, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, rx - 5, (rx - 5) * tilt, 0, 0, TAU); ctx.stroke();
+    // the cold light, caught on the inside of the brass
+    ctx.strokeStyle = 'rgba(170,220,255,.5)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(0, 0, rx - 2, (rx - 2) * tilt, 0, Math.PI * 0.1, Math.PI * 0.9); ctx.stroke();
+    // a toothed ring: this is a machine, and the teeth are what turn it
+    const teeth = 36 + i * 12, spin = t * (0.05 + i * 0.01) * (i % 2 ? 1 : -1);
+    for (let k = 0; k < teeth; k++) {
+      const a = (k / teeth) * TAU + spin, c = Math.cos(a), s = Math.sin(a);
+      seg(ctx, c * rx, s * rx * tilt, c * (rx + 6), s * (rx + 6) * tilt, 'rgba(226,198,120,.6)', 1.6);
+    }
+    // each ring carries a shutter-lens that throws the flame's light out to sea as it passes
+    const pa = t * (0.2 + i * 0.06) * (i % 2 ? 1 : -1) + i * 2.1, lx = Math.cos(pa) * rx, ly = Math.sin(pa) * rx * tilt;
+    ctx.save(); ctx.translate(lx, ly); ctx.rotate(pa * 0.5);
+    rect(ctx, -9, -13, 18, 26, '#6a4a16');
+    rect(ctx, -6, -10, 12, 20, Math.sin(pa) > 0 ? 'rgba(190,232,255,.85)' : 'rgba(90,130,170,.6)');
+    ctx.strokeStyle = '#e8cc82'; ctx.lineWidth = 1.5; ctx.strokeRect(-9, -13, 18, 26);
+    ctx.restore();
     ctx.restore();
   }
-  // the Plumb in its seat
-  const pulse = 0.75 + 0.25 * Math.sin(t * 1.4);
-  glow(ctx, cx, cy, 190, '#cfeaff', 0.4 * pulse);
-  const g = ctx.createRadialGradient(cx - 12, cy - 12, 3, cx, cy, 38);
-  g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, '#cdd6e2'); g.addColorStop(1, '#3a4658');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 36, 0, TAU); ctx.fill();
+  // the burner: a brass cup on the spindle, and stillsalt burning in it
+  ctx.fillStyle = hgrad(ctx, cx - 36, cx + 36, [[0, '#4a3410'], [0.35, '#e8cc82'], [1, '#5a3e12']]);
+  ctx.beginPath(); ctx.moveTo(cx - 36, cy + 4); ctx.quadraticCurveTo(cx - 30, cy + 34, cx - 8, cy + 38); ctx.lineTo(cx + 8, cy + 38); ctx.quadraticCurveTo(cx + 30, cy + 34, cx + 36, cy + 4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#dff4ff'; ctx.beginPath(); ctx.ellipse(cx, cy + 4, 36, 7, 0, 0, TAU); ctx.fill();
+  for (let i = 0; i < 9; i++) rect(ctx, cx - 28 + i * 7 + rnd(i) * 3, cy - 2 - rnd(i * 3) * 5, 5, 5, i % 2 ? '#ffffff' : '#bfe4f8'); // the salt
+  glow(ctx, cx, cy - 30, 260, '#7fc8ff', 0.3 + 0.05 * Math.sin(t * 1.4));
+  coldFlame(ctx, cx, cy + 2, 44, t, 3);
 }
-def('orrery', { amb: '#0e1418', rim: '#ffd98a', key: -1 }, (ctx, t, px) => {
-  fillAll(ctx, vgrad(ctx, -180, 800, [[0, '#04070a'], [0.5, '#0c1216'], [1, '#020405']]));
-  const cx = 640 + px * 0.25, cy = 270, wy = 500;
-  // the dome
-  ctx.strokeStyle = 'rgba(120,110,90,.2)'; ctx.lineWidth = 2;
-  for (let i = 0; i < 15; i++) { const a = Math.PI * (0.04 + (i / 14) * 0.92); ctx.beginPath(); ctx.moveTo(cx, -90); ctx.quadraticCurveTo(cx - Math.cos(a) * 520, -40, cx - Math.cos(a) * 980, 440); ctx.stroke(); }
-  for (let i = 1; i < 5; i++) { ctx.beginPath(); ctx.ellipse(cx, -90 + i * 12, i * 170, i * 52, 0, 0, Math.PI); ctx.stroke(); }
-  // pillars
+def('orrery', { amb: '#0c151c', rim: '#a8dcff', key: -1 }, (ctx, t, px) => {
+  const cx = 640 + px * 0.25, cy = 262, wy = 500, hy = 412;
+  // night and the sea, seen through the open arcade of the lamp-house
+  fillAll(ctx, vgrad(ctx, -180, hy, [[0, '#02050a'], [0.6, '#081424'], [1, '#17304a']]));
+  stars(ctx, 41, 90, hy - 30, t);
+  ctx.fillStyle = vgrad(ctx, hy, wy, [[0, '#1c3a56'], [1, '#0a1826']]); ctx.fillRect(X0, hy, XW, wy - hy);
+  // the lane: where the smoke has lain, the sea is flat and takes the light
+  ctx.fillStyle = hgrad(ctx, cx - 620, cx + 620, [[0, 'rgba(150,205,240,0)'], [0.5, 'rgba(150,205,240,.3)'], [1, 'rgba(150,205,240,0)']]);
+  ctx.fillRect(cx - 620, hy, 1240, 16);
+  waterStreaks(ctx, 43, X0, 1540, hy + 4, wy, 50, '#9ad0f0', t, 0.3);
+  seg(ctx, X0, hy, X0 + XW, hy, 'rgba(170,215,240,.35)', 1);
+  // out on the water, ships answer
+  for (let i = 0; i < 7; i++) {
+    const x = 70 + i * 190 + rnd(i * 3.1) * 90 + px * 0.06, y = hy + 3 + rnd(i * 5) * 16;
+    const on = Math.sin(t * (0.9 + rnd(i) * 0.5) + i * 2.4) > -0.25 ? 1 : 0.12;
+    poly(ctx, [[x - 9, y], [x + 10, y], [x + 7, y + 3], [x - 7, y + 3]], '#04080e');
+    rect(ctx, x - 0.5, y - 10, 1.2, 10, '#04080e');
+    glow(ctx, x, y - 10, 16, '#ffd08a', 0.75 * on);
+    rect(ctx, x - 1, y - 11, 2.4, 2.4, rgba('#ffe6b0', on));
+    rect(ctx, x - 5, y + 5, 10, 1.4, rgba('#ffd08a', 0.4 * on));
+  }
+  // the arcade: piers and the arches between them
   for (let i = 0; i < 8; i++) {
     const side = i % 2 ? 1 : -1, d = Math.floor(i / 2), x = cx + side * (300 + d * 150) + px * (0.1 + d * 0.1), w = 34 + d * 14;
-    ctx.fillStyle = hgrad(ctx, x - w / 2, x + w / 2, [[0, '#0a0e12'], [0.4, css(mix('#3a3c3a', '#0a0e12', 0.6 - d * 0.14))], [1, '#06080a']]);
+    ctx.fillStyle = hgrad(ctx, x - w / 2, x + w / 2, side < 0 ? [[0, '#05080b'], [0.7, css(mix('#2c4658', '#070b0f', 0.5 + d * 0.1))], [1, '#6f9cb8']] : [[0, '#6f9cb8'], [0.3, css(mix('#2c4658', '#070b0f', 0.5 + d * 0.1))], [1, '#05080b']]);
     ctx.fillRect(x - w / 2, -180, w, wy + 180 + d * 14);
-    rect(ctx, x - w / 2 - 6, wy + d * 14 - 12, w + 12, 14, '#14181a');
+    rect(ctx, x - w / 2 - 6, wy + d * 14 - 12, w + 12, 14, '#10161a');
+    rect(ctx, x - w / 2 - 5, 96, w + 10, 10, '#10161a');
   }
-  // light from the oculus
-  poly(ctx, [[cx - 46, -180], [cx + 46, -180], [cx + 250, wy], [cx - 250, wy]], 'rgba(255,236,186,.075)');
-  poly(ctx, [[cx - 20, -180], [cx + 20, -180], [cx + 120, wy], [cx - 120, wy]], 'rgba(255,236,186,.06)');
-  glow(ctx, cx, -60, 300, '#fff0c8', 0.4);
-  // armature
-  seg(ctx, cx, cy + 36, cx, wy, '#6a4a16', 9); seg(ctx, cx - 3, cy + 36, cx - 3, wy, '#c9a24a', 2);
-  poly(ctx, [[cx - 70, wy], [cx + 70, wy], [cx + 30, wy - 40], [cx - 30, wy - 40]], '#4a3410');
-  orreryRings(ctx, cx, cy, t, false);
+  ctx.fillStyle = '#070b0f';
+  ctx.beginPath(); ctx.rect(X0, -180, XW, 280);
+  for (let i = -5; i < 5; i++) { // arch heads cut out of the wall above the piers
+    const xa = cx + i * 150 + (i >= -2 && i < 2 ? 0 : (i < 0 ? -1 : 1) * 0) + px * 0.15, wA = i >= -2 && i < 2 ? 150 : 150;
+    ctx.moveTo(xa + wA - 16, 100); ctx.lineTo(xa + 16, 100); ctx.quadraticCurveTo(xa + wA / 2, -10, xa + wA - 16, 100);
+  }
+  ctx.fill('evenodd');
+  // the beam the engine throws: cold light going out between the piers, turning
+  for (let i = 0; i < 3; i++) {
+    const a = t * 0.11 + i * 2.1, c = Math.cos(a);
+    const bx = cx + c * 900;
+    poly(ctx, [[cx, cy - 20], [bx - 90, hy - 30 - Math.abs(c) * 60], [bx + 90, hy + 10]], `rgba(150,210,255,${0.05 + 0.04 * Math.abs(c)})`);
+  }
+  // the hopper, and the chute that feeds the cup: tonight it is being filled by hand
+  const hx = cx - 232;
+  seg(ctx, hx + 26, 196, cx - 30, cy - 6, '#6a4a16', 9); seg(ctx, hx + 26, 193, cx - 30, cy - 9, '#d8b866', 2);
+  poly(ctx, [[hx - 34, 120], [hx + 44, 120], [hx + 30, 200], [hx + 10, 200]], '#7a5a1e');
+  poly(ctx, [[hx - 34, 120], [hx - 10, 120], [hx + 14, 200], [hx + 10, 200]], '#c9a85a');
+  rect(ctx, hx - 40, 114, 90, 8, '#e0c070');
+  seg(ctx, hx + 20, 200, hx + 20, wy, '#3a2a0c', 7);
+  for (let i = 0; i < 3; i++) { const ph = mod(t * 0.5 + i * 0.33, 1); rect(ctx, lerp(hx + 30, cx - 34, ph), lerp(190, cy - 12, ph) - 3, 4, 4, 'rgba(235,248,255,.9)'); }
+  // armature and the gear train that turns the rings
+  seg(ctx, cx, cy + 36, cx, wy, '#5a3e12', 11); seg(ctx, cx - 3, cy + 36, cx - 3, wy, '#c9a24a', 2);
+  seg(ctx, cx - 150, wy, cx - 20, cy + 150, '#4a3410', 7); seg(ctx, cx + 150, wy, cx + 20, cy + 150, '#4a3410', 7);
+  cog(ctx, cx + 62, wy - 52, 44, 14, t * 0.4, '#b08a3a', '#2a1c08');
+  cog(ctx, cx + 118, wy - 22, 26, 9, -t * 0.4 * (14 / 9) + 0.2, '#d8b866', '#2a1c08');
+  cog(ctx, cx - 58, wy - 40, 34, 11, -t * 0.52, '#8a6a26', '#2a1c08');
+  poly(ctx, [[cx - 190, wy], [cx + 190, wy], [cx + 160, wy - 16], [cx - 160, wy - 16]], '#3a2a0c');
+  engineRings(ctx, cx, cy, t);
+  sinkingSmoke(ctx, cx, cy + 10, wy - cy - 14, 380, 16, t, 5, 0.13);
   // still water
-  ctx.fillStyle = vgrad(ctx, wy, 800, [[0, '#101a20'], [1, '#020405']]); ctx.fillRect(X0, wy, XW, 500);
+  ctx.fillStyle = vgrad(ctx, wy, 800, [[0, '#0e1e2a'], [1, '#020406']]); ctx.fillRect(X0, wy, XW, 500);
   ctx.save();
   ctx.beginPath(); ctx.rect(X0, wy, XW, 500); ctx.clip();
-  fade(ctx, 0.34, () => { ctx.save(); ctx.translate(0, wy * 2); ctx.scale(1, -1); orreryRings(ctx, cx, cy, t, false); ctx.restore(); });
-  poly(ctx, [[cx - 250, wy], [cx + 250, wy], [cx + 150, 980], [cx - 150, 980]], 'rgba(255,236,186,.05)');
+  fade(ctx, 0.4, () => { ctx.save(); ctx.translate(0, wy * 2); ctx.scale(1, -1); engineRings(ctx, cx, cy, t); ctx.restore(); });
   ctx.restore();
-  for (let i = 0; i < 4; i++) { // the one ripple that will not settle
-    const r = mod(t * 22 + i * 70, 280);
-    ctx.strokeStyle = `rgba(200,225,240,${0.22 * (1 - r / 280)})`; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.ellipse(cx, wy + 78, r * 1.8, r * 0.26, 0, 0, TAU); ctx.stroke();
-  }
-  seg(ctx, X0, wy, X0 + XW, wy, 'rgba(160,190,200,.25)', 1.5);
-  // votive candles at the water's edge
-  for (let i = 0; i < 14; i++) {
-    const x = -200 + i * 128 + rnd(i) * 60 + px * 0.5, y = wy - 2;
-    if (Math.abs(x - cx) < 100) continue;
-    rect(ctx, x - 3, y - 16 - rnd(i * 3) * 12, 6, 16 + rnd(i * 3) * 12, '#d8ccb0');
-    flame(ctx, x, y - 16 - rnd(i * 3) * 12, 5, t, i);
-    for (let j = 0; j < 6; j++) rect(ctx, x - 5 + Math.sin(t * 2 + j + i) * 2.5, wy + 6 + j * 9, 10 - j, 2, rgba('#ffb85c', 0.4 - j * 0.06));
+  seg(ctx, X0, wy, X0 + XW, wy, 'rgba(160,205,230,.3)', 1.5);
+  // sacks of salt at the basin's edge, the last of them cut open
+  for (let i = 0; i < 5; i++) {
+    const x = cx - 470 + i * 46 + px * 0.5 + (i > 2 ? 700 : 0), y = wy - 2;
+    ctx.fillStyle = i % 2 ? '#6a6252' : '#7c7462'; ctx.beginPath(); ctx.ellipse(x, y - 17, 26, 19, (rnd(i) - 0.5) * 0.5, 0, TAU); ctx.fill();
+    seg(ctx, x - 10, y - 32, x + 8, y - 36, '#3a3428', 3);
+    if (i === 2 || i === 4) for (let j = 0; j < 7; j++) rect(ctx, x + 18 + j * 5, y - 6 - rnd(j) * 6, 4, 4, 'rgba(232,246,255,.85)');
   }
 }, (ctx, t, px) => {
-  motes(ctx, 21, 60, '#ffe6b0', t, { x0: 300 + px, x1: 980 + px, y0: -20, y1: 520, vx: 2, vy: 7, r: 1.5, a: 0.55, tw: 1, wob: 14 });
+  // the smoke on the floor, going out through the arches toward the sea
+  for (let i = 0; i < 7; i++) {
+    const x = mod(rnd(i * 3) * 1700 + t * (i % 2 ? 11 : -9), 1700) - 220 + px;
+    ctx.fillStyle = 'rgba(170,215,245,.05)'; ctx.beginPath(); ctx.ellipse(x, 470 + i * 14, 320, 20, 0, 0, TAU); ctx.fill();
+  }
+  motes(ctx, 21, 40, '#cfeaff', t, { x0: 300 + px, x1: 980 + px, y0: 60, y1: 500, vx: 2, vy: 9, r: 1.4, a: 0.5, tw: 1, wob: 14 });
 });
 
 // ── commons-hall: long tables, soup, a chalkboard of names ──
@@ -2321,7 +2451,7 @@ def('shore-dusk', { amb: '#2a1c3a', rim: '#ff9d5c', key: 1 }, (ctx, t, px) => {
   ctx.fillStyle = vgrad(ctx, 436, 580, [[0, '#d4795a'], [0.4, '#6a3f6a'], [1, '#232750']]); ctx.fillRect(X0, 436, XW, 150);
   waterStreaks(ctx, 61, 200, 660, 440, 570, 70, '#ffc890', t, 0.8);
   waterStreaks(ctx, 63, X0, 1540, 440, 580, 90, '#ffb8a0', t, 0.3);
-  // sand, and the tide that goes out further than it should
+  // sand, and the tide going out
   ctx.fillStyle = vgrad(ctx, 570, 800, [[0, '#5a4058'], [0.25, '#33263c'], [1, '#120e1c']]); ctx.fillRect(X0, 570, XW, 440);
   ctx.fillStyle = vgrad(ctx, 570, 640, [[0, 'rgba(240,150,100,.34)'], [1, 'rgba(240,150,100,0)']]); ctx.fillRect(X0, 570, XW, 70);
   for (let i = 0; i < 4; i++) {
@@ -2358,6 +2488,7 @@ export const BACKDROPS = Object.keys(P);
 
 // ───────────────────────── staging ─────────────────────────
 const BAR = 56;          // letterbox bar height
+const LINE_ID = 'thorne'; // the one voice that is live on the Line; any other fx:'radio' speaker is a recording played back
 const STAGE_Y = 478;     // where the base of a neck sits at wide framing
 const FIG = 1.3;         // local figure units -> stage pixels
 
@@ -2395,7 +2526,7 @@ function layout(cast, line, on) {
     if (!cast[id]) throw new Error(`cinema: line ${line.id} puts unknown cast id '${id}' on stage`);
     if (id === 'narrator') continue;                         // the Ledger is a voice, never a body
     if (id === 'crowd') { crowd = true; continue; }          // drawn as figures in the dark, behind
-    if (line.fx === 'radio' && id === line.who) continue;    // on the Line: in the ear, not in the room
+    if (line.fx === 'radio' && id === line.who && id === LINE_ID) continue;   // live on the Line: in the ear, not in the room
     if (!ids.includes(id)) ids.push(id);
   }
   const n = ids.length;
@@ -2403,31 +2534,38 @@ function layout(cast, line, on) {
   const span = n <= 1 ? 0 : Math.min(780, 400 * (n - 1));
   const xs = {};
   ids.forEach((id, i) => { xs[id] = n === 1 ? 640 : 640 - span / 2 + (span * i) / (n - 1); });
-  const speaker = ids.includes(line.who) ? line.who : null;
-  const sx = speaker ? xs[speaker] : 640;
+  // subject: who the camera and the light favour. speaker: whose mouth moves. On a radio line they differ:
+  // a recording of someone who is also in the room leaves that person standing there, listening to themselves.
+  const subject = ids.includes(line.who) ? line.who : null;
+  const speaker = line.fx === 'radio' ? null : subject;
+  const sx = subject ? xs[subject] : 640;
+  const drop = subject ? lookOf(cast[subject]).drop : 0;     // a child's face is lower: the camera goes down to it
   const camName = line.cam === undefined ? 'wide' : line.cam;
   let cam;
   switch (camName) {
     case 'wide': cam = { z: 1, cx: 640, cy: 400, low: 0 }; break;
-    case 'close': cam = speaker ? { z: 1.5, cx: sx, cy: 352, low: 0 } : { z: 1.12, cx: 640, cy: 390, low: 0 }; break;
+    case 'close': cam = subject ? { z: 1.5, cx: sx, cy: 352 + drop, low: 0 } : { z: 1.12, cx: 640, cy: 390, low: 0 }; break;
     case 'two': {
       let ox = 640;
-      if (speaker && n >= 2) {
+      if (subject && n >= 2) {
         let best = Infinity;
-        for (const id of ids) if (id !== speaker && Math.abs(xs[id] - sx) < best) { best = Math.abs(xs[id] - sx); ox = xs[id]; }
+        for (const id of ids) if (id !== subject && Math.abs(xs[id] - sx) < best) { best = Math.abs(xs[id] - sx); ox = xs[id]; }
       } else if (n >= 2) ox = xs[ids[0]] + xs[ids[1]] - sx;
-      cam = { z: n >= 2 ? 1.26 : 1.16, cx: (sx + ox) / 2, cy: 372, low: 0 };
+      cam = { z: n >= 2 ? 1.26 : 1.16, cx: (sx + ox) / 2, cy: 372 + drop * 0.5, low: 0 };
       break;
     }
     case 'low': cam = { z: 1.12, cx: sx, cy: 400, low: 1 }; break;
     default: throw new Error(`cinema: unknown cam '${camName}' on line ${line.id} (wide, close, two, low)`);
   }
-  return { ids, xs, scale, speaker, crowd, cam };
+  return { ids, xs, scale, speaker, subject, crowd, cam };
 }
 
 /** the face a listener is still wearing: their own most recent line, if it was recent */
-function lastEmote(lines, index, id) {
-  for (let i = index; i >= 0 && i >= index - 3; i--) if (lines[i].who === id) return lines[i].emote;
+function lastEmote(lines, index, id, inRoom) {
+  for (let i = index; i >= 0 && i >= index - 3; i--) {
+    if (inRoom && lines[i].fx === 'radio') continue;   // a recording of them is not their face now
+    if (lines[i].who === id) return lines[i].emote;
+  }
   return undefined;
 }
 
@@ -2543,8 +2681,18 @@ function drawRadioInset(ctx, who, line, level, tms, t) {
   ctx.restore();
   ctx.font = `600 11px ${FONT_MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = 'rgba(110,245,220,.8)';
-  ctx.fillText('THE LINE', x + 98, y + 21);
-  if (mod(t, 1.2) < 0.7) circ(ctx, x + w - 22, y + 17, 4, '#ff5a4a');
+  if (who.id === LINE_ID) {
+    ctx.fillText('THE LINE', x + 98, y + 21);
+    if (mod(t, 1.2) < 0.7) circ(ctx, x + w - 22, y + 17, 4, '#ff5a4a');
+  } else {
+    // not live: a recording, with the name of whoever was recorded and a reel turning
+    ctx.fillText('RECORDING', x + 98, y + 21);
+    ctx.fillStyle = 'rgba(110,245,220,.5)';
+    ctx.fillText(String(who.name).toUpperCase(), x + 176, y + 21);
+    ctx.strokeStyle = 'rgba(110,245,220,.8)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x + w - 22, y + 17, 6, 0, TAU); ctx.stroke();
+    for (let i = 0; i < 3; i++) { const a = t * 2.2 + i * (TAU / 3); seg(ctx, x + w - 22, y + 17, x + w - 22 + Math.cos(a) * 5, y + 17 + Math.sin(a) * 5, 'rgba(110,245,220,.8)', 1.5); }
+  }
   ctx.restore();
 }
 
@@ -2585,10 +2733,14 @@ export function drawCinema(ctx, content, game, fx) {
   const cy = clamp(lerp(c0.cy, L1.cam.cy, ce), H / 2 / z, H - H / 2 / z);
   const px = Math.sin(T * 0.07) * 16 + (cx - W / 2) * 0.06;
 
+  // whose voice the earpiece last carried: the 'line' backdrop keeps their face up while others answer
+  let heard = null;
+  for (let i = cine.index; i >= 0 && !heard; i--) if (lines[i].fx === 'radio') heard = cast[lines[i].who] || null;
+  if (!heard) heard = cast[LINE_ID] || null;
   const info = {
     tms: fx.timeMs, level: line.fx === 'radio' ? level : 0, lineT: lt, lines, index: cine.index,
-    portrait: line.fx === 'radio' ? who : cast.thorne || null,
-    portraitEmote: line.fx === 'radio' ? line.emote : lastEmote(lines, cine.index, 'thorne'),
+    portrait: line.fx === 'radio' ? who : heard,
+    portraitEmote: line.fx === 'radio' ? line.emote : heard ? lastEmote(lines, cine.index, heard.id) : undefined,
   };
 
   ctx.save();
@@ -2643,8 +2795,8 @@ export function drawCinema(ctx, content, game, fx) {
     const in1 = L1.ids.includes(id), in0 = L0 ? L0.ids.includes(id) : in1;
     const xTo = in1 ? L1.xs[id] : L0.xs[id] + (L0.xs[id] >= W / 2 ? 110 : -110);
     const xFrom = in0 && L0 ? L0.xs[id] : xTo + (xTo >= W / 2 ? 110 : -110);
-    const f1 = in1 ? (L1.speaker ? (id === L1.speaker ? 1 : 0) : 0.5) : 0;
-    const f0 = in0 && L0 ? (L0.speaker ? (id === L0.speaker ? 1 : 0) : 0.5) : f1;
+    const f1 = in1 ? (L1.subject ? (id === L1.subject ? 1 : 0) : 0.5) : 0;
+    const f0 = in0 && L0 ? (L0.subject ? (id === L0.subject ? 1 : 0) : 0.5) : f1;
     return {
       id,
       x: lerp(xFrom, xTo, me),
@@ -2653,13 +2805,13 @@ export function drawCinema(ctx, content, game, fx) {
       scale: lerp(in0 && L0 ? L0.scale : L1.scale, in1 ? L1.scale : L0.scale, me),
     };
   });
-  const spk = figs.find((f) => f.id === L1.speaker);
+  const spk = figs.find((f) => f.id === L1.subject);
   figs.sort((a, b) => a.focus - b.focus);
   for (const f of figs) {
     const m = cast[f.id];
-    const isSpk = f.id === line.who && L1.speaker === f.id;
+    const isSpk = L1.speaker === f.id;
     let facing;
-    if (isSpk) {
+    if (f === spk) {
       const others = figs.filter((o) => o !== f);
       const mean = others.length ? others.reduce((s, o) => s + o.x, 0) / others.length : f.x + 1;
       facing = mean >= f.x ? 1 : -1;
@@ -2668,10 +2820,10 @@ export function drawCinema(ctx, content, game, fx) {
     const k = lookOf(m);
     const s = FIG * f.scale * k.s * (1 + 0.05 * f.focus) * (1 + low * 0.13);
     ctx.save();
-    ctx.translate(f.x, STAGE_Y + low * 34 - f.focus * 6 + (1 - k.s) * 60);
+    ctx.translate(f.x, STAGE_Y + low * 34 - f.focus * 6 + (1 - k.s) * 60 + k.drop);
     ctx.scale(s, s);
     fade(ctx, f.alpha, () => drawFigure(ctx, m, {
-      emote: isSpk ? line.emote : lastEmote(lines, cine.index, f.id),
+      emote: isSpk ? line.emote : lastEmote(lines, cine.index, f.id, true),
       talk: isSpk ? level : 0,
       focus: f.focus,
       light,

@@ -165,3 +165,4 @@ details[open] > summary .more { display: none; }
 
 .foot { color: var(--ink-3); font: 12px var(--mono); padding-top: 40px; padding-bottom: 40px; }
 .empty { color: var(--ink-3); font-style: italic; padding: 20px 0; }
+.thread-inline { all: unset; cursor: pointer; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }

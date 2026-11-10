@@ -13,6 +13,7 @@ const ago = (iso) => {
   return `${Math.round(s / 86400)} d ago`;
 };
 const nf = new Intl.NumberFormat();
+const pl = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 
 let filter = 'all';
 try { filter = localStorage.getItem('feed-filter') || 'all'; } catch {}
@@ -31,6 +32,7 @@ function md(src) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
     .replace(/\*([^*]+)\*/g, '<i>$1</i>')
+    .replace(/\[([^\]]+)\]\(thread:([\w-]+)\)/g, '<button class="thread-inline" data-thread="$2">$1</button>')
     .replace(/\[([^\]]+)\]\((https?:[^)\s]+|[\w./#-]+)\)/g, '<a href="$2">$1</a>');
   const out = [];
   for (const block of String(src).split(/\n{2,}/)) {
@@ -59,9 +61,9 @@ function renderStats(graph, snaps, build) {
   const stats = [
     { k: 'Lines of code', v: nf.format(last?.lines ?? 0), s: `${last?.files ?? 0} files`, extra: spark(snaps.map((s) => s.lines)) },
     { k: 'Tests', v: t ? `${t.pass}/${t.total}` : '—', s: t ? (t.fail ? `${t.fail} failing` : 'all passing') : 'no suite yet', cls: testCls },
-    { k: 'Decisions', v: count('decision'), s: `${count('option')} options weighed` },
-    { k: 'Actions', v: count('action'), s: `${count('outcome')} outcomes` },
-    { k: 'Observations', v: count('observation'), s: `${count('revisit')} revisits` },
+    { k: 'Decisions', v: count('decision'), s: `${pl(count('option'), 'option')} weighed` },
+    { k: 'Actions', v: count('action'), s: pl(count('outcome'), 'outcome') },
+    { k: 'Observations', v: count('observation'), s: pl(count('revisit'), 'revisit') },
     { k: 'Syncs', v: snaps.length, s: build?.sha ? `Pages at ${build.sha.slice(0, 7)}` : 'Pages not built yet' },
   ];
   $('#stats').innerHTML = stats.map((x) => `<div class="stat"><div class="k">${x.k}</div><div class="v ${x.cls || ''}">${x.v}</div><div class="s">${esc(x.s)}</div>${x.extra || ''}</div>`).join('');
@@ -172,12 +174,7 @@ function setFilter(f) {
   filter = f;
   try { localStorage.setItem('feed-filter', filter); } catch {}
   for (const x of document.querySelectorAll('#filters button[data-f]')) x.classList.toggle('on', x.dataset.f === filter);
-  const chip = $('#thread-chip');
-  if (filter.startsWith('thread:')) {
-    const k = filter.slice(7);
-    chip.hidden = false;
-    chip.innerHTML = `Thread: ${esc(threadNames[k] || k)} <span aria-hidden="true">×</span>`;
-  } else chip.hidden = true;
+  try { history.replaceState(null, '', filter.startsWith('thread:') ? `#thread=${filter.slice(7)}` : location.pathname + location.search); } catch {}
   refresh();
 }
 
@@ -211,6 +208,9 @@ async function refresh() {
     load('tree.json', []), load('build.json', null), load('synthesis.json', null),
   ]);
   renderSynthesis(syn, entries);
+  const chip = $('#thread-chip');
+  chip.hidden = !filter.startsWith('thread:');
+  if (!chip.hidden) chip.innerHTML = `Thread: ${esc(threadNames[filter.slice(7)] || filter.slice(7))} <span aria-hidden="true">×</span>`;
   renderLive(snaps, build);
   renderStats(graph, snaps, build);
   renderPrompt(graph);
@@ -226,5 +226,5 @@ document.addEventListener('click', (ev) => {
   setFilter(`thread:${t.dataset.thread}`);
   $('#filters').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
-setFilter(filter);
+{ const m = location.hash.match(/^#thread=([\w-]+)$/); setFilter(m ? `thread:${m[1]}` : filter.startsWith('thread:') ? 'all' : filter); }
 setInterval(refresh, 60_000);
