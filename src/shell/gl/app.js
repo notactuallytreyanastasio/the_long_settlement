@@ -30,11 +30,8 @@
 import * as GL from './index.js';
 import { stageState, setsNeeded } from '../../core/stage.js';
 import { currentChapter } from '../../core/story.js';
-
-// These two are written by other hands this round. Until they exist the app goes on without them, out loud.
-const optional = (path) => import(path).catch((e) => { console.warn(`gl/app: ${path} did not load (${e && e.message}); going on without it`); return null; });
-const setsIndex = await optional('./sets/index.js');
-const hudModule = await optional('./hud.js');
+import { SETS } from './sets/index.js';
+import { drawHud } from './hud.js';
 
 /**
  * TEMPORARY, for the integrator to delete: chapter 1's sets that did not exist when this was written are stood in
@@ -64,11 +61,10 @@ const TIER_ORDER = ['high', 'mid', 'low'];
 
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const smooth = (t) => t * t * (3 - 2 * t);
-const allSets = () => (setsIndex && setsIndex.SETS) || GL.SETS;
 
 /** The set definition for a key, or null. `stood` is true when it is a TEMP_SET_FALLBACK stand-in. */
 function setDef(key) {
-  const S = allSets();
+  const S = SETS;
   if (Object.hasOwn(S, key)) return { def: S[key], stood: false };
   const other = TEMP_SET_FALLBACK[key];
   if (other && Object.hasOwn(S, other)) return { def: S[other], stood: true };
@@ -142,7 +138,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
 
   function buildSet(key, light) {
     const d = setDef(key);
-    if (!d) throw new Error(`gl/app: no set "${key}" (have ${Object.keys(allSets()).join(', ')})`);
+    if (!d) throw new Error(`gl/app: no set "${key}" (have ${Object.keys(SETS).join(', ')})`);
     const lt = lightFor(d.def, light), k = `${d.def.id}|${lt}`;
     let set = built.get(k);
     if (set) return set;
@@ -192,7 +188,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   function getSet(key, light) {
     if (key == null) return null;
     const k = pairKey(key, light);
-    if (!k) throw new Error(`gl/app: the stage asked for set "${key}", which does not exist (have ${Object.keys(allSets()).join(', ')})`);
+    if (!k) throw new Error(`gl/app: the stage asked for set "${key}", which does not exist (have ${Object.keys(SETS).join(', ')})`);
     const have = built.get(k);
     if (have) return have;
     const at = queue.findIndex((q) => q.kind === 'set' && pairKey(q.key, q.light) === k);
@@ -349,11 +345,6 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (isStage) {
       if (!director.set) { hud.fillStyle = '#000'; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); }
       if (director.fade > 0.003) { hud.globalAlpha = clamp(director.fade, 0, 1); hud.fillStyle = director.fadeColor || INK; hud.fillRect(bandCss.x, bandCss.y, bandCss.w, bandCss.h); hud.globalAlpha = 1; }
-      if (cineW > 0.001 && cineW < 0.999 || game.mode === 'play') {
-        // the seam between the stage and the table: an ink rule with a gold lip, riding the band's lower edge
-        const y = bandCss.y + bandCss.h;
-        if (y < cssH - 1) { hud.fillStyle = INK; hud.fillRect(bandCss.x, y - 3 * k, bandCss.w, 5 * k); hud.fillStyle = '#ffd24a'; hud.fillRect(bandCss.x, y - 3 * k, bandCss.w, 1.5 * k); }
-      }
       if (typeof director.drawOverlay === 'function') { hud.save(); director.drawOverlay(hud); hud.restore(); }
     }
     if (veil > 0.003) { hud.globalAlpha = smooth(clamp(veil, 0, 1)); hud.fillStyle = INK; hud.fillRect(0, 0, cssW, cssH); hud.globalAlpha = 1; }
@@ -378,8 +369,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     hudFx.quality = tierName;
     hudFx.hasSave = null;
     hud.save();
-    if (hudModule && typeof hudModule.drawHud === 'function') hudModule.drawHud(hud, content, game, isStage ? stage : null, hudFx, layout);
-    else placeholderHud(hud, content, game, stage, hudFx, layout);
+    drawHud(hud, content, game, isStage ? stage : null, hudFx, layout);
     hud.restore();
   }
 
@@ -430,7 +420,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   let drawableFor = -1;
   function canDraw(content, game) {
     if (!app.ok || disposed) return false;
-    const n = Object.keys(allSets()).length;
+    const n = Object.keys(SETS).length;
     if (n !== drawableFor) { drawable.clear(); drawableFor = n; }
     let yes = drawable.get(game.chapter);
     if (yes === undefined) {
@@ -460,40 +450,6 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   app.renderer = renderer; app.director = director; app.sets = built; app.tables = tables;
   Object.defineProperty(app, 'tier', { get: () => tierName });
   return app;
-}
-
-// ───────────────────────── TEMPORARY: a HUD until hud.js exists ─────────────────────────
-
-/** Enough to see where things are while src/shell/gl/hud.js is being written. Not styled; delete with hud.js in place. */
-function placeholderHud(g, content, game, stage, fx, layout) {
-  const L = layout.gl, W = layout.W, H = layout.H;
-  g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
-  const text = (s, x, y, px, fill = '#fff7e2') => { g.font = `800 ${px}px "Avenir Next", system-ui, sans-serif`; g.lineWidth = px * 0.28; g.strokeStyle = '#1d2146'; g.strokeText(s, x, y); g.fillStyle = fill; g.fillText(s, x, y); };
-  const ch = content.chapters[game.chapter];
-  if (game.mode === 'title') { text('THE LONG SETTLEMENT', W / 2, H * 0.3, 30); text(fx.loading < 1 ? `building ${Math.round(fx.loading * 100)}%` : 'tap to begin', W / 2, H * 0.36, 14, '#ffd24a'); return; }
-  if (game.mode === 'card') { text(`CHAPTER ${ch.number}`, W / 2, H * 0.3, 16, '#ffd24a'); text(ch.title.toUpperCase(), W / 2, H * 0.35, 30); text(ch.subtitle, W / 2, H * 0.4, 13); return; }
-  if (game.mode === 'end') { text('THE END', W / 2, H * 0.4, 30); return; }
-  if (game.mode === 'cine') {
-    const line = game.cine.lines[game.cine.index], b = L.sub;
-    g.fillStyle = '#fff7e2'; g.strokeStyle = '#1d2146'; g.lineWidth = 3;
-    g.beginPath(); g.roundRect(b.x, b.y, b.w, b.h, 16); g.fill(); g.stroke();
-    g.fillStyle = '#1d2146'; g.textAlign = 'left'; g.textBaseline = 'top';
-    g.font = '800 13px "Avenir Next", system-ui, sans-serif'; g.fillText((content.cast[line.who] ? content.cast[line.who].name : line.who).toUpperCase(), b.x + 14, b.y + 10);
-    g.font = '600 15px "Avenir Next", system-ui, sans-serif';
-    const words = line.text.split(' '); let row = '', y = b.y + 32;
-    for (const w of words) { if (g.measureText(row + w).width > b.w - 28) { g.fillText(row, b.x + 14, y); y += 20; row = ''; } row += w + ' '; }
-    g.fillText(row, b.x + 14, y);
-    g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = 'rgba(29,33,70,0.7)'; g.beginPath(); g.roundRect(L.skip.x, L.skip.y, L.skip.w, L.skip.h, 12); g.fill(); text('SKIP', L.skip.x + L.skip.w / 2, L.skip.y + L.skip.h / 2, 13);
-    return;
-  }
-  const p = stage.progress, band = fx.band, slide = -fx.cine * 80;
-  text(`${p.done}/${p.total}`, band.x + 36, band.y + 20 + slide, 15);
-  if (stage.opposition) text(stage.opposition.name.toUpperCase(), band.x + band.w - 84, band.y + 20 + slide, 12);
-  if (stage.combo.count > 1) text(`${stage.combo.count} ${stage.combo.name || 'HITS'}`, band.x + 80, band.y + 46 + slide, 16, '#ffe27a');
-  text(`${Math.floor(game.econ.score)}  W${game.econ.writs}  T${Math.round(game.econ.trust)}`, W / 2, band.y + band.h + 16, 12);
-  g.globalAlpha = 0.85 * (1 - fx.cine); g.fillStyle = '#f2553a'; g.strokeStyle = '#1d2146'; g.lineWidth = 3;
-  g.beginPath(); g.arc(L.launch.x, L.launch.y, L.launch.r, 0, 7); g.fill(); g.stroke(); g.globalAlpha = 1;
 }
 
 // ───────────────────────── TEMPORARY: the director's shape, on the slice's createEncounter / createCine ─────────────────────────

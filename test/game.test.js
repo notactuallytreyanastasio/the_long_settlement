@@ -7,7 +7,7 @@ import { lineSeconds, litIds, spinIds } from '../src/core/story.js';
 import { STEP } from '../src/core/physics.js';
 import { spin, drawSym, payoutFor, REEL_STRIPS } from '../src/core/slot.js';
 import {
-  SPIN_COST, LOAN, TRUST_PER_GIFT, initEcon, paySpin, applyPayout, takeLoan, spendWrit, awardPoints, awardBonus,
+  SPIN_COST, LOAN, TRUST_PER_GIFT, initEcon, paySpin, applyPayout, takeLoan, spendWrit, awardPoints,
 } from '../src/core/economy.js';
 import { COMBO_MULT } from '../src/core/stage.js';
 import { seed, next } from '../src/core/rng.js';
@@ -376,9 +376,10 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.deepEqual(says(r.effects), ['ch1.s1.b1', 'ch1.s1.c01!'], 'the briefing, and no launch bark on top of it');
   assert.equal(r.game.econ.writs, 2);
   assert.equal(r.game.econ.trust, 30);
-  // The jackpot a moment ago opened a chain (3); the first lane and its objective step take it past 5, so
-  // the second and third lanes are hit at combo level 2. The bonus is score only: the marks below are unmoved.
-  assert.equal(r.game.econ.score, 3 * 150 + 1000 + 2 * 150 * (COMBO_MULT[2] - 1));
+  // The jackpot a moment ago opened a chain (3); two lanes (1 each) and their objective steps (2 each) take
+  // it to 9, so the third lane is hit at chain 10: combo level 2 (COMBO_LEVELS[1] is 8). The bonus is score
+  // only: the marks below are unmoved.
+  assert.equal(r.game.econ.score, 3 * 150 + 1000 + 150 * (COMBO_MULT[2] - 1));
   assert.ok(Math.abs(r.game.econ.marks - (marks0 + 1.45)) < 1e-9, `marks ${r.game.econ.marks}`);
   assert.equal(r.game.cine.kind, 'scene');
   assert.deepEqual(moods(r.effects).slice(-1), ['sorrow']);
@@ -843,9 +844,8 @@ test('lanes: each top lane fills its own reel from its own strip, and three lock
   assert.deepEqual(r.game.rng, d3.rng, 'three draws and nothing else');
   assert.equal(count(r.effects, 'reelStop'), 3);
   assert.equal(count(r.effects, 'rollover'), 2);
-  // lane (1) + objective step (2), lane (1), lane (1): the third lane is hit at chain 5, combo level 2. Its
-  // bonus is score and nothing else; the payout's own points are not multiplied.
-  assert.deepEqual(r.game.econ, awardBonus(applyPayout(e0, payout), 150 * (COMBO_MULT[2] - 1)));
+  // (three lanes and one objective step are a chain of 5: combo level 1, no bonus; a payout's points are never multiplied)
+  assert.deepEqual(r.game.econ, applyPayout(e0, payout));
   assert.ok(r.game.toasts.some((t) => t.text === payout.name));
   assert.equal(r.game.reels.armed, true, 'a line from the lanes does not spend the lit shots');
   assert.equal(r.game.spunThisChapter, true);

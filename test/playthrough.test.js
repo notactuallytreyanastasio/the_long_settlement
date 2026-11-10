@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { content } from '../src/content/index.js';
 import { init, update, leverStatus, REELS_NEED } from '../src/core/game.js';
 import { STEP } from '../src/core/physics.js';
+import { comboOf, COMBO_MULT } from '../src/core/stage.js';
 import { leaning, ledger, aidAvailable, SPIN_COST, LOAN, TRUST_PER_LOAN, TRUST_PER_FORCED_LOAN, TRUST_PER_GIFT } from '../src/core/economy.js';
 
 // A scene the bot needs longer than this for is too hard, and the fix is geometry or the
@@ -115,8 +116,11 @@ function makeBot(seedN, policy, skill = 'steady') {
 
 const IDLE = { left: false, right: false, plunge: false, nudge: null };
 
-/** Play from the title to 'end'. Returns per-scene and per-chapter numbers and the effects seen. */
-export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSeconds = GAME_LIMIT * 3, onStep = null } = {}) {
+/**
+ * Play from the title to 'end'. Returns per-scene and per-chapter numbers and the effects seen.
+ * rewrite: applied to the game before every update (the combo test uses it to play a game with no event log).
+ */
+export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSeconds = GAME_LIMIT * 3, onStep = null, rewrite = null } = {}) {
   let game = init(seedN);
   const bot = makeBot(seedN * 7919 + 1, policy, skill);
   const scenes = [];            // { id, seconds, pulls, loans, aid, balls, lanes, shots }
@@ -137,7 +141,7 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
 
   const send = (msg) => {
     const before = game;
-    const r = update(content, game, msg);
+    const r = update(content, rewrite ? rewrite(game) : game, msg);
     game = r.game;
     seen.modes.add(game.mode);
     if (onStep) onStep(before, game, r.effects, msg);
@@ -426,3 +430,42 @@ test('the ending is a choice for a weak player too: the mediocre bot leans the w
   assert.deepEqual(never.map((r) => r.leaning), MEDIOCRE_SEEDS.map(() => 'mint'), 'never waiting');
   for (const r of [...mediocreRuns, ...never]) assert.equal(r.game.ending, r.leaning);
 });
+
+// ───────────────────────── combos change the score and nothing else ─────────────────────────
+// The stage's combo multiplies the score of table hits. It must not reach the objectives, the purse or the
+// ledger: the ending is read from loans and trust, and a combo that paid marks would let fast hands buy it.
+// Proof by playing each game twice with the same bot: once as shipped, once with the event log emptied
+// before every update (so no chain ever forms). Everything but the score must be the same, tick for tick.
+
+const sameBut = (game) => {
+  const { recent, logged, econ, ...rest } = game;
+  const { score, ...purse } = econ;
+  return { ...rest, econ: purse };
+};
+
+for (const [policy, skill, seedN] of [['commons', 'steady', 3], ['mint', 'steady', 3], ['commons', 'mediocre', 2], ['mint', 'mediocre', 2]]) {
+  test(`combos are score only: the ${skill} ${policy} bot, seed ${seedN}, plays the same game with and without them`, (t) => {
+    let top = 0;
+    const levels = [0, 0, 0, 0, 0];
+    const combo = playthrough(seedN, { policy, skill, onStep: (before, after) => {
+      if (after.logged === before.logged) return;
+      const { level } = comboOf(after.recent, after.t);
+      levels[level]++;
+      if (level > top) top = level;
+    } });
+    const plain = playthrough(seedN, { policy, skill, rewrite: (g) => (g.recent.length === 0 ? g : { ...g, recent: [] }) });
+
+    assert.ok(top >= 3, `the bot reached combo level ${top}; the comparison means nothing unless chains formed`);
+    assert.ok(combo.game.econ.score > plain.game.econ.score, 'and they paid: the score with combos is higher');
+    assert.ok(combo.game.econ.score <= plain.game.econ.score * COMBO_MULT[COMBO_MULT.length - 1], 'by no more than the top multiplier');
+    assert.deepEqual(sameBut(combo.game), sameBut(plain.game), 'the finished game is the same in everything but score: rng, marks, debt, writs, trust, loans, reels');
+    assert.deepEqual(combo.scenes, plain.scenes, 'every scene took the same time, balls, pulls, loans and gifts');
+    assert.equal(combo.tableSeconds, plain.tableSeconds);
+    assert.deepEqual(ledger(combo.game.econ), ledger(plain.game.econ), 'the two pans weigh the same');
+    assert.equal(combo.leaning, plain.leaning);
+    assert.equal(combo.game.ending, plain.game.ending, 'and the ending read from them is the same');
+    assert.equal(combo.leaning, policy, 'which is still the one this bot chose');
+    t.diagnostic(`${skill} ${policy} seed ${seedN}: score ${plain.game.econ.score} without combos, ${combo.game.econ.score} with (x${(combo.game.econ.score / plain.game.econ.score).toFixed(2)}); `
+      + `logged events by combo level 0..4: ${levels.join(' ')}; ledger ${JSON.stringify(ledger(combo.game.econ))} leans ${combo.leaning}`);
+  });
+}

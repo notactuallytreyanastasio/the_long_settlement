@@ -1,43 +1,104 @@
 // The cel renderer: draws a scene (scene.js) with a camera.
 //
 // Frame order: shadow map -> toon opaque -> outlines (inverted hull) -> water -> sky ->
-// blended decals -> additive beams -> sprites. One pass each, no post-processing chain.
+// blended decals -> additive beams -> sprites -> present (antialiasing). One pass each.
 // The render loop allocates nothing; all scratch storage is created once below.
+//
+// QUALITY. Everything that costs the GPU is a field of one quality object, changed while running
+// with renderer.setQuality('high' | 'medium' | 'low' | { ...fields }):
+//
+//   dprCap        2      the drawing buffer is the canvas's CSS size times min(devicePixelRatio, dprCap)
+//   aa            'msaa' | 'fxaa' | 'none'. msaa: 4x multisampled off-screen buffer. fxaa: plain buffer and a
+//                 nine-tap edge filter when it is copied to the canvas (keeps ink lines smooth for one extra
+//                 screen pass). none: straight to the canvas
+//   shadowSize    2048   the largest shadow map a scene may ask for (env.shadow.size is clamped to it)
+//   shadowTaps    4      4, 1 or 0 lookups per fragment. 0 compiles shadows out and skips the shadow pass
+//   shadowRate    1      redraw each scene's shadow map every Nth render() of it. With 2, a stage band and a
+//                 table drawn in the same frame take turns, so a frame pays for one shadow pass, not two
+//                 (a cut, a camera that moved the map, or a new scene always redraws at once)
+//   staticShadows true   nodes marked `static` (everything mergeStatic makes) are drawn into the shadow map
+//                 once and kept; each redraw copies that and adds only what moves
+//   maxLamps      8      point lights per fragment (compiled into the loop bound)
+//   water         'full' | 'cheap' | 'flat'  (see WATER_Q in shaders.js)
+//   cull          true   skip nodes whose bounding sphere is outside the camera (or, for the shadow pass, the light's box)
+//   outlineMinPx  0      skip the outline of anything whose bounding sphere is smaller than this on screen
+//
+// A view may override per call: { shadow: 'off', shadowSize, maxLamps }.
 
-import { v3, m4, DEG } from './math.js';
-import { createContext, createProgram, createGeometry, uploadInstances, createTexture, createShadowTarget } from './gl.js';
+import { v3, m4, DEG, frustumPlanes, sphereInFrustum, maxScale } from './math.js';
+import { boundingSphere } from './mesh.js';
+import { createContext, createProgram, createGeometry, uploadInstances, createTexture, createShadowTarget, createColorTarget, copyShadow } from './gl.js';
 import * as S from './shaders.js';
 import { SPRITE_FLOATS } from './sprites.js';
 
 const MAX_CAND = 32;
 
+/** The three tiers. `high` is what the slice was drawn with; `medium` is the phone default to start from. */
+export const QUALITY = {
+  high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0 },
+  medium: { name: 'medium', dprCap: 2, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4 },
+  low: { name: 'low', dprCap: 1.5, aa: 'none', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7 },
+};
+const WATER_Q = { full: 0, cheap: 1, flat: 2 };
+
+/** Resolve a tier name or a partial object (optionally { base: 'medium', ... }) into a full quality object. */
+export function resolveQuality(q = 'high') {
+  if (typeof q === 'string') { if (!QUALITY[q]) throw new Error(`renderer: unknown quality ${JSON.stringify(q)} (have ${Object.keys(QUALITY).join(', ')})`); return { ...QUALITY[q] }; }
+  const base = QUALITY[q.base || q.name] || QUALITY.high;
+  const out = { ...base, ...q, name: q.name || (q.base ? q.base + '*' : 'custom') }; delete out.base;
+  if (!(out.aa in { msaa: 1, fxaa: 1, none: 1 })) throw new Error(`renderer: quality.aa must be 'msaa', 'fxaa' or 'none', got ${JSON.stringify(out.aa)}`);
+  if (!(out.water in WATER_Q)) throw new Error(`renderer: quality.water must be 'full', 'cheap' or 'flat', got ${JSON.stringify(out.water)}`);
+  if (![0, 1, 4].includes(out.shadowTaps)) throw new Error(`renderer: quality.shadowTaps must be 0, 1 or 4, got ${out.shadowTaps}`);
+  out.maxLamps = Math.max(0, Math.min(S.MAX_POINTS, out.maxLamps | 0)); out.shadowRate = Math.max(1, out.shadowRate | 0);
+  return out;
+}
+
 /**
- * createRenderer(canvas, { antialias = true, dprCap = 2 }) ->
- *   { render(scene, camera, timeSeconds, view = null), stats, ctx, gl, resize(), invalidate(mesh), dispose() }
+ * createRenderer(canvas, { quality = 'high', dprCap = 2 }) ->
+ *   { render(scene, camera, timeSeconds, view = null), stats, quality, setQuality(q), measureFill(drawFn),
+ *     ctx, gl, resize(), invalidate(mesh), dispose() }
  * `view` = { x, y, w, h } in CSS pixels from the canvas's top-left draws into that rectangle only
  * (and sets the camera's aspect from it), so one canvas can hold several scenes: a table and a
- * stage band above it. Each call clears its own rectangle and renders its own shadow map; a view
- * may carry shadowCenter [x, y, z] and shadowRadius to fit that map to what it shows.
- * stats after each render call: { drawCalls, triangles, nodes, lights, cpuMs, width, height }
+ * stage band above it. Each call clears its own rectangle; a view may carry shadowCenter [x, y, z]
+ * and shadowRadius to fit the scene's shadow map to what it shows, shadow: 'off', shadowSize, maxLamps.
+ * opts.dprCap is a ceiling the quality tier cannot raise.
+ * stats after each render call: { drawCalls, triangles, nodes, culled, lights, shadowDraws, shadowTriangles,
+ *   shadowFresh (was the map redrawn this call), cpuMs, width, height }. drawCalls and triangles include the shadow pass.
  */
 export function createRenderer(canvas, opts = {}) {
-  const ctx = createContext(canvas, opts);
+  const hardDpr = opts.dprCap ?? 3;
+  let Q = resolveQuality(opts.quality || 'high');
+  const ctx = createContext(canvas, { ...opts, antialias: false, dprCap: Math.min(hardDpr, Q.dprCap) }); // antialiasing is ours, so it can change
   const gl = ctx.gl;
-  const stats = { drawCalls: 0, triangles: 0, nodes: 0, lights: 0, cpuMs: 0, width: 0, height: 0 };
+  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0 };
 
-  // ---- GPU objects (rebuilt after a context loss) ----
-  let P = null, shadow = null, skyVao = null, waterVao = null, spriteVao = null, spriteBuf = null, spriteCap = 0, white = null, shadowSize = 0;
+  // ---- GPU objects (rebuilt after a context loss, programs also after a quality change) ----
+  let programs = new Map(), skyVao = null, waterVao = null, spriteVao = null, spriteBuf = null, spriteCap = 0, white = null, nullShadow = null;
+  let colorTarget = null, overdraw = false, shadowSlots = 0;
+  const shadowOf = new WeakMap(); // scene -> its shadow maps and what is in them
+
+  const defines = () => `#define LAMPS ${Q.maxLamps}\n#define PCF ${Q.shadowTaps}\n#define WATER_Q ${WATER_Q[Q.water]}\n`;
+  const SOURCES = { toon: [S.TOON_VS, S.TOON_FS], outline: [S.OUTLINE_VS, S.OUTLINE_FS], depth: [S.DEPTH_VS, S.DEPTH_FS], beam: [S.BEAM_VS, S.BEAM_FS], sky: [S.SKY_VS, S.SKY_FS], water: [S.WATER_VS, S.WATER_FS], sprite: [S.SPRITE_VS, S.SPRITE_FS], present: [S.PRESENT_VS, S.PRESENT_FS] };
+  /** A program by family and variant ('' | 'I' instanced | 'S' skinned, plus 'C' cutout for depth), compiled on first use. */
+  function prog(family, variant = '') {
+    const key = family + variant + (overdraw ? '!' : '');
+    let p = programs.get(key);
+    if (!p) {
+      const src = SOURCES[family];
+      let defs = defines() + (variant.includes('I') ? '#define INSTANCED\n' : '') + (variant.includes('S') ? '#define SKINNED\n' : '') + (variant.includes('C') ? '#define CUTOUT\n' : '');
+      let fs = src[1];
+      // fill measurement: every fragment that would be shaded adds one step of red instead
+      if (overdraw && family !== 'depth' && family !== 'present') fs = fs.replace('void main()', 'void shade_()') + '\nvoid main() { shade_(); frag = vec4(8.0 / 255.0, 0.0, 0.0, 0.0); }';
+      p = createProgram(gl, key, src[0], fs, defs);
+      if (family === 'sprite') p.attribs = { aCorner: gl.getAttribLocation(p.program, 'aCorner'), iA: gl.getAttribLocation(p.program, 'iA'), iB: gl.getAttribLocation(p.program, 'iB'), iC: gl.getAttribLocation(p.program, 'iC'), iD: gl.getAttribLocation(p.program, 'iD') };
+      programs.set(key, p);
+    }
+    return p;
+  }
+  function dropPrograms() { for (const p of programs.values()) gl.deleteProgram(p.program); programs = new Map(); spriteVao = null; }
 
   function build() {
-    const mk = (name, vs, fs, defs = '') => createProgram(gl, name, vs, fs, defs);
-    P = {
-      toon: mk('toon', S.TOON_VS, S.TOON_FS), toonI: mk('toon-instanced', S.TOON_VS, S.TOON_FS, '#define INSTANCED'), toonS: mk('toon-skinned', S.TOON_VS, S.TOON_FS, '#define SKINNED'),
-      outline: mk('outline', S.OUTLINE_VS, S.OUTLINE_FS), outlineI: mk('outline-instanced', S.OUTLINE_VS, S.OUTLINE_FS, '#define INSTANCED'), outlineS: mk('outline-skinned', S.OUTLINE_VS, S.OUTLINE_FS, '#define SKINNED'),
-      depth: mk('shadow-depth', S.DEPTH_VS, S.DEPTH_FS), depthI: mk('shadow-depth-instanced', S.DEPTH_VS, S.DEPTH_FS, '#define INSTANCED'), depthS: mk('shadow-depth-skinned', S.DEPTH_VS, S.DEPTH_FS, '#define SKINNED'),
-      beam: mk('beam', S.BEAM_VS, S.BEAM_FS), sky: mk('sky', S.SKY_VS, S.SKY_FS), water: mk('water', S.WATER_VS, S.WATER_FS),
-      sprite: mk('sprite', S.SPRITE_VS, S.SPRITE_FS),
-    };
-    shadow = null; shadowSize = 0;
+    programs = new Map(); colorTarget = null; nullShadow = null; spriteVao = null; spriteBuf = null; spriteCap = 0;
     const tri = (data) => {
       const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
       const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
@@ -46,19 +107,27 @@ export function createRenderer(canvas, opts = {}) {
     };
     skyVao = tri([-1, -1, 0, 3, -1, 0, -1, 3, 0]);
     waterVao = tri([-1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0, -1, -1, 0, 1, 1, 0, 1]);
-    // sprites: a unit quad, instanced
-    spriteVao = gl.createVertexArray(); gl.bindVertexArray(spriteVao);
-    const qb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    const sp = P.sprite.program, aC = gl.getAttribLocation(sp, 'aCorner');
-    gl.enableVertexAttribArray(aC); gl.vertexAttribPointer(aC, 2, gl.FLOAT, false, 0, 0);
-    spriteBuf = gl.createBuffer(); spriteCap = 0; gl.bindBuffer(gl.ARRAY_BUFFER, spriteBuf);
-    ['iA', 'iB', 'iC'].forEach((nm, k) => { const l = gl.getAttribLocation(sp, nm); if (l < 0) return; gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 4, gl.FLOAT, false, SPRITE_FLOATS * 4, k * 16); gl.vertexAttribDivisor(l, 1); });
-    gl.bindVertexArray(null);
     const c = document.createElement('canvas'); c.width = c.height = 1; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 1, 1);
     white = createTexture(gl, c, { mips: false });
+    warm();
   }
+  /** Compile what every frame uses now, so the first frame after a load or a quality change does not hitch on it. */
+  function warm() { for (const f of ['toon', 'outline', 'depth']) for (const v of ['', 'I', 'S']) prog(f, v); prog('beam'); prog('sky'); prog('water'); prog('sprite'); prog('present'); }
   build();
   ctx.onRestored = build;
+
+  function spriteGeometry(p) { // the sprite VAO is tied to the sprite program's attribute locations
+    if (spriteVao && spriteVao.owner === p) return;
+    if (spriteVao) gl.deleteVertexArray(spriteVao.vao);
+    const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+    const qb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(p.attribs.aCorner); gl.vertexAttribPointer(p.attribs.aCorner, 2, gl.FLOAT, false, 0, 0);
+    if (!spriteBuf) { spriteBuf = gl.createBuffer(); spriteCap = 0; }
+    gl.bindBuffer(gl.ARRAY_BUFFER, spriteBuf);
+    ['iA', 'iB', 'iC', 'iD'].forEach((nm, k) => { const l = p.attribs[nm]; if (l < 0) return; gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 4, gl.FLOAT, false, SPRITE_FLOATS * 4, k * 16); gl.vertexAttribDivisor(l, 1); });
+    gl.bindVertexArray(null);
+    spriteVao = { vao, owner: p };
+  }
 
   // ---- lazily uploaded resources ----
   function geoOf(mesh, owner) {
@@ -82,20 +151,63 @@ export function createRenderer(canvas, opts = {}) {
   }
 
   // ---- per-frame scratch ----
-  const opaque = [], blended = [], beams = [], casters = [];
+  const opaque = [], blended = [], beams = [], casters = [], statics = [];
   const boneMats = new Float32Array(S.MAX_BONES * 16);
   const nm3 = new Float32Array(9), tint4 = new Float32Array(4), lightView = m4.create(), lightProj = m4.create(), shadowVP = m4.create();
-  const eye = v3.create(), tmp = v3.create(), UP = v3.create(0, 1, 0), UPX = v3.create(1, 0, 0), IDENT = m4.create();
+  const eye = v3.create(), UP = v3.create(0, 1, 0), UPX = v3.create(1, 0, 0);
   const candPos = new Float32Array(MAX_CAND * 4), candCol = new Float32Array(MAX_CAND * 4), candScore = new Float32Array(MAX_CAND);
   const pointPos = new Float32Array(S.MAX_POINTS * 4), pointCol = new Float32Array(S.MAX_POINTS * 4), foam = new Float32Array(S.MAX_FOAM * 4);
-  let nCand = 0, nPoints = 0, nFoam = 0, frame = null;
+  const planes = new Float32Array(24), sph = new Float32Array(4);
+  let nCand = 0, nPoints = 0, nFoam = 0, frame = null, staticHash = 0, shadowR = 0, wantCasters = false;
 
   function addLight(x, y, z, color, radius, intensity, target) {
     if (nCand >= MAX_CAND || intensity <= 0 || radius <= 0) return;
+    if (Q.cull && !sphereInFrustum(planes, x, y, z, radius)) return; // a lamp that reaches nothing on screen
     const k = nCand++;
     candPos[k * 4] = x; candPos[k * 4 + 1] = y; candPos[k * 4 + 2] = z; candPos[k * 4 + 3] = radius;
     candCol[k * 4] = color[0]; candCol[k * 4 + 1] = color[1]; candCol[k * 4 + 2] = color[2]; candCol[k * 4 + 3] = intensity;
     candScore[k] = Math.hypot(x - target[0], y - target[1], z - target[2]) - radius;
+  }
+
+  /** World bounding sphere of what a node draws, into `sph`. False when it cannot be bounded (then it is never culled). */
+  function sphereOf(n) {
+    const mesh = n.mesh;
+    if (n.bones) { // a skinned figure: around its joints, padded by how far any vertex is from its joint
+      const b = n.bones; let cx = 0, cy = 0, cz = 0;
+      for (let i = 0; i < b.length; i++) { const w = b[i].world; cx += w[12]; cy += w[13]; cz += w[14]; }
+      cx /= b.length; cy /= b.length; cz /= b.length;
+      let r = 0, sc = 1;
+      for (let i = 0; i < b.length; i++) { const w = b[i].world, d = Math.hypot(w[12] - cx, w[13] - cy, w[14] - cz); if (d > r) r = d; const s = maxScale(w); if (s > sc) sc = s; }
+      if (mesh._boneR === undefined) { const P = mesh.positions; let m = 0; for (let i = 0; i < P.length; i += 3) { const d = P[i] * P[i] + P[i + 1] * P[i + 1] + P[i + 2] * P[i + 2]; if (d > m) m = d; } mesh._boneR = Math.sqrt(m); }
+      sph[0] = cx; sph[1] = cy; sph[2] = cz; sph[3] = r + mesh._boneR * sc;
+      return true;
+    }
+    const bs = boundingSphere(mesh), w = n.world;
+    if (n.instances) {
+      const inst = n.instances; let ib = inst._bs;
+      if (!ib || inst.dirty || ib[4] !== inst.count) {
+        if (!ib) ib = inst._bs = new Float32Array(5);
+        const D = inst.data; let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity, pad = 0;
+        for (let i = 0; i < inst.count; i++) {
+          const o = i * 20, x = D[o + 12], y = D[o + 13], z = D[o + 14];
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z;
+          const s = Math.sqrt(Math.max(D[o] * D[o] + D[o + 1] * D[o + 1] + D[o + 2] * D[o + 2], D[o + 4] * D[o + 4] + D[o + 5] * D[o + 5] + D[o + 6] * D[o + 6], D[o + 8] * D[o + 8] + D[o + 9] * D[o + 9] + D[o + 10] * D[o + 10]));
+          const p = (Math.hypot(bs[0], bs[1], bs[2]) + bs[3]) * s; if (p > pad) pad = p;
+        }
+        ib[0] = (x0 + x1) / 2; ib[1] = (y0 + y1) / 2; ib[2] = (z0 + z1) / 2; ib[3] = Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + pad; ib[4] = inst.count;
+      }
+      sph[0] = w[0] * ib[0] + w[4] * ib[1] + w[8] * ib[2] + w[12]; sph[1] = w[1] * ib[0] + w[5] * ib[1] + w[9] * ib[2] + w[13]; sph[2] = w[2] * ib[0] + w[6] * ib[1] + w[10] * ib[2] + w[14];
+      sph[3] = ib[3] * maxScale(w);
+      return true;
+    }
+    sph[0] = w[0] * bs[0] + w[4] * bs[1] + w[8] * bs[2] + w[12]; sph[1] = w[1] * bs[0] + w[5] * bs[1] + w[9] * bs[2] + w[13]; sph[2] = w[2] * bs[0] + w[6] * bs[1] + w[10] * bs[2] + w[14];
+    sph[3] = bs[3] * maxScale(w);
+    return true;
+  }
+  /** Is the sphere inside the box the shadow map covers (generously along the light)? */
+  function inShadowBox() {
+    const m = lightView, x = m[0] * sph[0] + m[4] * sph[1] + m[8] * sph[2] + m[12], y = m[1] * sph[0] + m[5] * sph[1] + m[9] * sph[2] + m[13];
+    return Math.abs(x) < shadowR + sph[3] && Math.abs(y) < shadowR + sph[3];
   }
 
   function collect(n) {
@@ -106,10 +218,19 @@ export function createRenderer(canvas, opts = {}) {
       const mat = n.material;
       if (!mat) throw new Error(`renderer: node "${n.name}" has a mesh but no material`);
       if (!n.instances || n.instances.count > 0) {
-        if (mat.kind === 'beam') beams.push(n);
-        else if (mat.texMode === 'blend') blended.push(n);
-        else opaque.push(n);
-        if (mat.castShadow && n.castShadow && mat.kind !== 'beam' && mat.texMode !== 'blend') casters.push(n);
+        const bounded = Q.cull && n.cull && sphereOf(n);
+        const seen = !bounded || sphereInFrustum(planes, sph[0], sph[1], sph[2], sph[3]);
+        if (seen) {
+          // how big it is on screen, for the outline pass (0 = unknown: always outlined)
+          n._px = bounded ? sph[3] / (Math.max(Math.hypot(sph[0] - frame.camera.position[0], sph[1] - frame.camera.position[1], sph[2] - frame.camera.position[2]), 1e-3) * frame.pxUnit) : 0;
+          if (mat.kind === 'beam') beams.push(n);
+          else if (mat.texMode === 'blend') blended.push(n);
+          else opaque.push(n);
+        } else stats.culled++;
+        if (wantCasters && mat.castShadow && n.castShadow && mat.kind !== 'beam' && mat.texMode !== 'blend' && (!bounded || inShadowBox())) {
+          if (n.static && Q.staticShadows) { statics.push(n); staticHash = (Math.imul(staticHash, 31) + n.id + (n.instances ? n.instances.count * 7919 : 0)) | 0; }
+          else casters.push(n);
+        }
       }
     }
     const c = n.children;
@@ -117,7 +238,7 @@ export function createRenderer(canvas, opts = {}) {
   }
 
   const orderKey = (n) => (n.instances ? 1e6 : n.bones ? 2e6 : 0) + n.material.id;
-  const variant = (n, plain, inst, skin) => (n.instances ? inst : n.bones ? skin : plain);
+  const variantOf = (n) => (n.instances ? 'I' : n.bones ? 'S' : '');
   function sortByMaterial(list) { // insertion sort: the list barely changes between frames
     for (let i = 1; i < list.length; i++) {
       const x = list[i], k = orderKey(x); let j = i - 1;
@@ -143,13 +264,22 @@ export function createRenderer(canvas, opts = {}) {
     if (u.uRimColor) { const a = env.rim.amount, c = env.rim.color; gl.uniform3f(u.uRimColor, c[0] * a, c[1] * a, c[2] * a); gl.uniform1f(u.uRimEdge, env.rim.edge); }
     if (u.uFogColor) { const f = env.fog, c = f.color || env.sky.horizon; gl.uniform3fv(u.uFogColor, c); gl.uniform3f(u.uFogParams, f.density, f.max, f.start); }
     if (u.uPointCount) { gl.uniform1i(u.uPointCount, nPoints); if (nPoints > 0) { gl.uniform4fv(u.uPointPos, pointPos); gl.uniform4fv(u.uPointCol, pointCol); } }
-    if (u.uShadowMap) { gl.uniform1i(u.uShadowMap, 1); gl.uniform2f(u.uShadowOn, frame.shadowOn ? 1 : 0, 1 / (shadowSize || 1)); }
+    if (u.uShadowMap) { gl.uniform1i(u.uShadowMap, 1); gl.uniform2f(u.uShadowOn, frame.shadowOn ? 1 : 0, 1 / (frame.shadowSize || 1)); }
     if (u.uMap) gl.uniform1i(u.uMap, 0);
     if (u.uTime) gl.uniform1f(u.uTime, frame.time);
   }
 
   let curCull = true;
   function setCull(on) { if (on === curCull) return; curCull = on; if (on) gl.enable(gl.CULL_FACE); else gl.disable(gl.CULL_FACE); }
+  /** Blend state in one place, so the fill measurement can turn every pass additive. */
+  function blend(mode) {
+    if (overdraw) { gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); return; }
+    if (mode === 'off') { gl.disable(gl.BLEND); return; }
+    gl.enable(gl.BLEND);
+    if (mode === 'alpha') gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    else if (mode === 'add') gl.blendFunc(gl.ONE, gl.ONE);
+    else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // premultiplied
+  }
 
   function applyToonMaterial(p, m) {
     const u = p.u;
@@ -166,7 +296,7 @@ export function createRenderer(canvas, opts = {}) {
     setCull(!m.doubleSided);
   }
 
-  function drawNode(p, n, opacity) {
+  function drawNode(p, n, opacity, shadowPass = false) {
     const u = p.u, inst = n.instances;
     const geo = geoOf(n.mesh, inst ? n : null);
     if (inst && (inst.dirty || !geo.instBuf)) { uploadInstances(gl, geo, inst.data, inst.count); inst.dirty = false; }
@@ -177,25 +307,26 @@ export function createRenderer(canvas, opts = {}) {
     if (u.uUvRect) gl.uniform4fv(u.uUvRect, n.uvRect);
     if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
     gl.bindVertexArray(geo.vao);
-    if (inst) { gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count); stats.triangles += geo.triangles * inst.count; }
-    else { gl.drawElements(gl.TRIANGLES, geo.count, geo.indexType, 0); stats.triangles += geo.triangles; }
-    stats.drawCalls++;
+    const tris = inst ? geo.triangles * inst.count : geo.triangles;
+    if (inst) gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count);
+    else gl.drawElements(gl.TRIANGLES, geo.count, geo.indexType, 0);
+    stats.triangles += tris; stats.drawCalls++;
+    if (shadowPass) { stats.shadowTriangles += tris; stats.shadowDraws++; }
   }
 
   function drawToonList(list) {
     let p = null, mat = null;
     for (let i = 0; i < list.length; i++) {
-      const n = list[i], want = variant(n, P.toon, P.toonI, P.toonS);
+      const n = list[i], want = prog('toon', variantOf(n));
       if (want !== p) { p = want; gl.useProgram(p.program); mat = null; }
       if (n.material !== mat) { mat = n.material; applyToonMaterial(p, mat); }
       drawNode(p, n, mat.opacity);
     }
   }
 
-  function fitShadow(env, cam, view) {
+  /** Where the light looks from for this view: fills lightView, shadowVP and returns the texel size in world units. */
+  function fitShadow(env, cam, view, size) {
     const sh = env.shadow;
-    const size = sh.size || 1024;
-    if (!shadow || shadowSize !== size) { if (shadow) { gl.deleteFramebuffer(shadow.fbo); gl.deleteTexture(shadow.tex); } shadow = createShadowTarget(gl, size); shadowSize = size; }
     const c = (view && view.shadowCenter) || sh.center || cam.target;
     const r = view && view.shadowRadius > 0 ? view.shadowRadius : sh.radius > 0 ? sh.radius : v3.dist(cam.position, cam.target) * 0.62;
     const L = env.key.dir;
@@ -205,12 +336,36 @@ export function createRenderer(canvas, opts = {}) {
     lightView[12] = Math.round(lightView[12] / texel) * texel; lightView[13] = Math.round(lightView[13] / texel) * texel; // stop the edges crawling
     m4.ortho(lightProj, -r, r, -r, r, 0.1, r * 6);
     m4.multiply(shadowVP, lightProj, lightView);
-    frame.shadowTexel = texel;
+    shadowR = r;
+    return texel;
+  }
+  const sameMat = (a, b) => { for (let i = 0; i < 16; i++) if (a[i] !== b[i]) return false; return true; };
+  function dropShadowTarget(t) { if (t) { gl.deleteFramebuffer(t.fbo); gl.deleteTexture(t.tex); } }
+  function shadowEntry(scene, size) {
+    let e = shadowOf.get(scene);
+    if (!e || e.gen !== ctx.generation || e.size !== size) {
+      if (e && e.gen === ctx.generation) { dropShadowTarget(e.target); dropShadowTarget(e.kept); }
+      e = { gen: ctx.generation, size, target: createShadowTarget(gl, size), kept: null, vp: m4.create(), keptVP: m4.create(), keptHash: 0, keptValid: false, texel: 0.01, tick: 0, slot: e ? e.slot : shadowSlots++, fresh: true };
+      shadowOf.set(scene, e);
+    }
+    return e;
+  }
+  function drawCasters(list) {
+    let p = null, mat = null;
+    for (let i = 0; i < list.length; i++) {
+      const n = list[i], m = n.material, cut = m.texMode === 'cutout';
+      const want = prog('depth', variantOf(n) + (cut ? 'C' : ''));
+      if (want !== p) { p = want; gl.useProgram(p.program); gl.uniformMatrix4fv(p.u.uViewProj, false, shadowVP); mat = null; }
+      if (cut && m !== mat) { mat = m; gl.uniform1i(p.u.uMap, 0); gl.uniform1f(p.u.uAlphaCut, m.alphaCut); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texOf(m.map)); }
+      setCull(!m.doubleSided);
+      drawNode(p, n, 1, true);
+    }
   }
 
   function render(scene, camera, time = 0, view = null) {
     if (ctx.lost) return stats;
     const t0 = performance.now();
+    ctx.dprCap = Math.min(hardDpr, Q.dprCap);
     ctx.resize();
     const env = scene.env, dpr = ctx.dpr;
     // the part of the canvas this call draws into, in device pixels with GL's bottom-left origin
@@ -220,17 +375,34 @@ export function createRenderer(canvas, opts = {}) {
       VY = ctx.height - Math.round(view.y * dpr) - H;
     }
     camera.update(W / H);
-    stats.drawCalls = 0; stats.triangles = 0; stats.nodes = 0; stats.width = W; stats.height = H;
-    frame = frame || {}; frame.env = env; frame.camera = camera; frame.time = time; frame.shadowOn = !!env.shadow.on; frame.shadowTexel = 0.01;
+    stats.drawCalls = 0; stats.triangles = 0; stats.nodes = 0; stats.culled = 0; stats.shadowDraws = 0; stats.shadowTriangles = 0; stats.shadowFresh = false; stats.width = W; stats.height = H;
+    frame = frame || {}; frame.env = env; frame.camera = camera; frame.time = time; frame.shadowTexel = 0.01; frame.shadowSize = 16;
+    frame.pxUnit = (2 * Math.tan(camera.fov * DEG / 2)) / H; // world units per device pixel at depth 1
+    frame.shadowOn = !!env.shadow.on && Q.shadowTaps > 0 && !(view && view.shadow === 'off');
+    frustumPlanes(planes, camera.viewProj);
+
+    // ---- shadow map: decide first whether this call redraws it, so the gather knows whether to list casters ----
+    let entry = null, redraw = false, shadowTex = null;
+    if (frame.shadowOn) {
+      const size = Math.min((view && view.shadowSize) || env.shadow.size || 1024, Q.shadowSize);
+      entry = shadowEntry(scene, size);
+      const texel = fitShadow(env, camera, view, size);
+      entry.tick++;
+      redraw = entry.fresh || Q.shadowRate <= 1 || !sameMat(entry.vp, shadowVP) || (entry.tick + entry.slot) % Q.shadowRate === 0;
+      if (redraw) entry.texel = texel; else shadowVP.set(entry.vp); // not this time: look the old map up with the matrix it was drawn with
+      frame.shadowTexel = entry.texel; frame.shadowSize = size;
+    }
+    wantCasters = redraw;
 
     // ---- gather ----
     scene.root.updateWorld(null);
-    opaque.length = 0; blended.length = 0; beams.length = 0; casters.length = 0; nCand = 0;
+    opaque.length = 0; blended.length = 0; beams.length = 0; casters.length = 0; statics.length = 0; nCand = 0; staticHash = 0;
     for (let i = 0; i < env.points.length; i++) { const l = env.points[i]; addLight(l.pos[0], l.pos[1], l.pos[2], l.color, l.radius, l.intensity ?? 1, camera.target); }
     collect(scene.root);
     sortByMaterial(opaque); sortByMaterial(casters);
     nPoints = 0;
-    for (let k = 0; k < S.MAX_POINTS && k < nCand; k++) { // the lanterns nearest what the camera looks at
+    const lampCap = Math.min(S.MAX_POINTS, Q.maxLamps, view && view.maxLamps != null ? view.maxLamps : S.MAX_POINTS);
+    for (let k = 0; k < lampCap && k < nCand; k++) { // the lanterns nearest what the camera looks at
       let best = -1, bs = Infinity;
       for (let i = 0; i < nCand; i++) if (candScore[i] < bs) { bs = candScore[i]; best = i; }
       candScore[best] = Infinity;
@@ -238,50 +410,73 @@ export function createRenderer(canvas, opts = {}) {
     }
     stats.lights = nPoints;
 
-    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true); gl.disable(gl.BLEND); gl.colorMask(true, true, true, true);
     gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); curCull = true;
 
-    // ---- shadow map ----
     if (frame.shadowOn) {
-      fitShadow(env, camera, view);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, shadow.fbo); gl.viewport(0, 0, shadow.size, shadow.size); gl.disable(gl.SCISSOR_TEST);
-      gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT);
-      gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5, 3);
-      let p = null;
-      for (let i = 0; i < casters.length; i++) {
-        const n = casters[i], want = variant(n, P.depth, P.depthI, P.depthS);
-        if (want !== p) { p = want; gl.useProgram(p.program); gl.uniformMatrix4fv(p.u.uViewProj, false, shadowVP); }
-        setCull(!n.material.doubleSided);
-        drawNode(p, n, 1);
-      }
-      gl.disable(gl.POLYGON_OFFSET_FILL);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    } else if (!shadow) { shadow = createShadowTarget(gl, 16); shadowSize = 16; }
-    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, shadow.tex); gl.activeTexture(gl.TEXTURE0);
+      if (redraw) {
+        gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, entry.size, entry.size);
+        gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5, 3); gl.clearDepth(1);
+        let cleared = false;
+        if (statics.length > 0) {
+          // what never moves: drawn once into a map of its own, copied in before the moving things each time
+          if (!entry.kept) entry.kept = createShadowTarget(gl, entry.size);
+          if (!entry.keptValid || entry.keptHash !== staticHash || !sameMat(entry.keptVP, shadowVP)) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, entry.kept.fbo); gl.clear(gl.DEPTH_BUFFER_BIT);
+            drawCasters(statics);
+            entry.keptValid = true; entry.keptHash = staticHash; entry.keptVP.set(shadowVP);
+          }
+          if (casters.length > 0) { copyShadow(gl, entry.kept, entry.target); cleared = true; }
+        }
+        if (statics.length > 0 && casters.length === 0) shadowTex = entry.kept.tex; // nothing moves: the kept map is the map
+        else {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, entry.target.fbo);
+          if (!cleared) gl.clear(gl.DEPTH_BUFFER_BIT);
+          drawCasters(casters);
+          shadowTex = entry.target.tex;
+        }
+        entry.lastTex = shadowTex; entry.vp.set(shadowVP); entry.fresh = false; stats.shadowFresh = true;
+        gl.disable(gl.POLYGON_OFFSET_FILL);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      } else shadowTex = entry.lastTex;
+    } else {
+      if (!nullShadow) nullShadow = createShadowTarget(gl, 16);
+      shadowTex = nullShadow.tex;
+    }
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, shadowTex); gl.activeTexture(gl.TEXTURE0);
 
-    // ---- main pass ----
+    // ---- main pass, into the canvas or the off-screen buffer that is antialiased on the way out ----
+    const aa = overdraw ? 'none' : Q.aa;
+    if (aa !== 'none') {
+      const samples = aa === 'msaa' ? 4 : 0;
+      if (!colorTarget || colorTarget.w !== ctx.width || colorTarget.h !== ctx.height || (colorTarget.samples > 1) !== (samples > 1)) { if (colorTarget) colorTarget.dispose(); colorTarget = createColorTarget(gl, ctx.width, ctx.height, samples); }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, colorTarget.fbo);
+    } else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); if (colorTarget) { colorTarget.dispose(); colorTarget = null; } }
     gl.viewport(VX, VY, W, H);
-    if (view) { gl.enable(gl.SCISSOR_TEST); gl.scissor(VX, VY, W, H); } else gl.disable(gl.SCISSOR_TEST);
+    gl.enable(gl.SCISSOR_TEST); gl.scissor(VX, VY, W, H);
     const fc = env.fog.color || env.sky.horizon;
-    gl.clearColor(fc[0], fc[1], fc[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (overdraw) { gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT); } // colour was cleared once for the whole measurement
+    else { gl.clearColor(fc[0], fc[1], fc[2], 1); gl.clearDepth(1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); }
+    blend('off');
     setCull(true);
-    frameUniforms(P.toon); frameUniforms(P.toonI); frameUniforms(P.toonS);
+    frameUniforms(prog('toon')); frameUniforms(prog('toon', 'I')); frameUniforms(prog('toon', 'S'));
     drawToonList(opaque);
 
     // outlines: the same meshes again, pushed out along their smoothed normals, back faces only
     gl.cullFace(gl.FRONT); setCull(true);
     {
-      const px = (2 * Math.tan(camera.fov * DEG / 2)) / H, ref = v3.dist(camera.position, camera.target);
+      const ref = v3.dist(camera.position, camera.target);
       let p = null, mat = null;
       for (let i = 0; i < opaque.length; i++) {
         const n = opaque[i], m = n.material;
         if (!m.outline || m.outline.width <= 0) continue;
-        const want = variant(n, P.outline, P.outlineI, P.outlineS);
+        if (n._px > 0 && n._px < Q.outlineMinPx) continue; // too small on screen for its line to read
+        const want = prog('outline', variantOf(n));
         if (want !== p) { p = want; frameUniforms(p); mat = null; }
         if (m !== mat) {
           mat = m;
           const oc = env.outline.color || m.outline.color;
-          gl.uniform4f(p.u.uOutline, m.outline.width * env.outline.width * ctx.dpr, px, ref, 0);
+          gl.uniform4f(p.u.uOutline, m.outline.width * env.outline.width * ctx.dpr, frame.pxUnit, ref, 0);
           gl.uniform4f(p.u.uOutlineColor, oc[0], oc[1], oc[2], m.outline.self);
         }
         drawNode(p, n, 1);
@@ -292,21 +487,23 @@ export function createRenderer(canvas, opts = {}) {
     // water
     const wt = env.water;
     if (wt) {
-      const p = P.water, u = p.u; frameUniforms(p); setCull(false);
+      const p = prog('water'), u = p.u; frameUniforms(p); setCull(false);
       const half = camera.far * 0.95;
       gl.uniform4f(u.uWaterXform, camera.position[0], wt.level, camera.position[2], half);
       gl.uniform3fv(u.uDeep, wt.deep); gl.uniform3fv(u.uMid, wt.mid); gl.uniform3fv(u.uShallow, wt.shallow); gl.uniform3fv(u.uFoamColor, wt.foam);
-      gl.uniform4f(u.uGlint, wt.glint[0], wt.glint[1], wt.glint[2], wt.glintDensity);
-      gl.uniform2f(u.uDrift, wt.drift[0], wt.drift[1]);
+      if (u.uGlint) gl.uniform4f(u.uGlint, wt.glint[0], wt.glint[1], wt.glint[2], wt.glintDensity);
+      if (u.uDrift) gl.uniform2f(u.uDrift, wt.drift[0], wt.drift[1]);
       nFoam = Math.min(wt.shores.length, S.MAX_FOAM);
       for (let i = 0; i < nFoam; i++) { const s = wt.shores[i]; foam[i * 4] = s[0]; foam[i * 4 + 1] = s[1]; foam[i * 4 + 2] = s[2]; foam[i * 4 + 3] = s[3] ?? 1; }
       gl.uniform1i(u.uFoamCount, nFoam); if (nFoam > 0) gl.uniform4fv(u.uFoam, foam);
+      const bx = wt.box; // one rounded rectangle of shore: [centre x, centre z, half x, half z, corner radius, band width]
+      if (bx) { gl.uniform4f(u.uShoreBox, bx[0], bx[1], bx[2], bx[3]); gl.uniform2f(u.uShoreBoxR, bx[4] ?? 0.2, bx[5] ?? 0.2); } else gl.uniform2f(u.uShoreBoxR, 0, 0);
       gl.bindVertexArray(waterVao); gl.drawArrays(gl.TRIANGLES, 0, 6); stats.drawCalls++; stats.triangles += 2;
     }
 
     // sky, behind everything
     {
-      const p = P.sky, u = p.u, sk = env.sky, sun = sk.sun; frameUniforms(p); setCull(false);
+      const p = prog('sky'), u = p.u, sk = env.sky, sun = sk.sun; frameUniforms(p); setCull(false);
       gl.uniformMatrix4fv(u.uInvViewProj, false, camera.invViewProj);
       gl.uniform3fv(u.uZenith, sk.zenith); gl.uniform4f(u.uSkyMid, sk.mid[0], sk.mid[1], sk.mid[2], sk.midAt); gl.uniform3fv(u.uHorizon, sk.horizon); gl.uniform3fv(u.uBelow, sk.below);
       gl.uniform4f(u.uGlow, sk.glow[0], sk.glow[1], sk.glow[2], sk.glowAmount);
@@ -319,8 +516,8 @@ export function createRenderer(canvas, opts = {}) {
       gl.bindVertexArray(skyVao); gl.drawArrays(gl.TRIANGLES, 0, 3); stats.drawCalls++; stats.triangles += 1;
     }
 
-    // blended decals (faces), in scene order
-    gl.depthMask(false); gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    // blended decals (faces, painted clouds), in scene order
+    gl.depthMask(false); blend('alpha');
     if (blended.length) {
       gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-1, -2);
       drawToonList(blended);
@@ -329,7 +526,7 @@ export function createRenderer(canvas, opts = {}) {
 
     // beams: additive, both faces
     if (beams.length) {
-      const p = P.beam; frameUniforms(p); setCull(false); gl.blendFunc(gl.ONE, gl.ONE);
+      const p = prog('beam'); frameUniforms(p); setCull(false); blend('add');
       let mat = null;
       for (let i = 0; i < beams.length; i++) {
         const n = beams[i];
@@ -341,29 +538,80 @@ export function createRenderer(canvas, opts = {}) {
 
     // sprites: one instanced call; additive kinds write zero alpha under a premultiplied blend
     const sp = scene.sprites;
-    if (sp && sp.pack() > 0) {
-      const p = P.sprite, u = p.u; frameUniforms(p); setCull(false);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    if (sp && sp.pack(camera) > 0) {
+      const p = prog('sprite'), u = p.u; frameUniforms(p); setCull(false);
+      blend('premul');
       gl.uniform3fv(u.uCamRight, camera.right); gl.uniform3fv(u.uCamUp, camera.upDir);
       const L = env.key.dir; let lx = v3.dot(L, camera.right), ly = v3.dot(L, camera.upDir); const ll = Math.hypot(lx, ly) || 1;
       gl.uniform2f(u.uLight2, lx / ll, ly / ll);
       const ink = env.outline.color; if (ink) gl.uniform3fv(u.uInk, ink); else gl.uniform3f(u.uInk, 0.11, 0.15, 0.26);
-      gl.bindVertexArray(spriteVao); gl.bindBuffer(gl.ARRAY_BUFFER, spriteBuf);
+      if (u.uSpriteMap) { gl.uniform1i(u.uSpriteMap, 0); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texOf(sp.texture)); }
+      spriteGeometry(p);
+      gl.bindVertexArray(spriteVao.vao); gl.bindBuffer(gl.ARRAY_BUFFER, spriteBuf);
       if (spriteCap < sp.capacity) { gl.bufferData(gl.ARRAY_BUFFER, sp.capacity * SPRITE_FLOATS * 4, gl.DYNAMIC_DRAW); spriteCap = sp.capacity; }
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, sp.data, 0, sp.count * SPRITE_FLOATS);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sp.count); stats.drawCalls++; stats.triangles += sp.count * 2;
     }
 
-    gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null); gl.disable(gl.SCISSOR_TEST);
+    gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null);
+
+    // ---- present ----
+    if (aa !== 'none') {
+      colorTarget.resolve(VX, VY, W, H);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(VX, VY, W, H); gl.scissor(VX, VY, W, H);
+      const p = prog('present'); gl.useProgram(p.program);
+      gl.disable(gl.DEPTH_TEST); gl.depthMask(false); setCull(false);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, colorTarget.tex);
+      gl.uniform1i(p.u.uTex, 0); gl.uniform2f(p.u.uTexel, 1 / colorTarget.w, 1 / colorTarget.h); gl.uniform1f(p.u.uFxaa, aa === 'fxaa' ? 1 : 0);
+      gl.bindVertexArray(skyVao); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.bindVertexArray(null);
+      gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+    }
+    gl.disable(gl.SCISSOR_TEST);
     stats.cpuMs = performance.now() - t0;
     return stats;
   }
 
-  return {
+  const api = {
     ctx, gl, stats, render,
+    get quality() { return Q; },
+    /**
+     * Change the quality tier (or some fields of it) while running. Shaders whose compile-time switches
+     * changed are compiled again at once, so the cost lands here and not in the next frame.
+     */
+    setQuality(q) {
+      const before = defines();
+      Q = resolveQuality(typeof q === 'object' && !q.base && !q.name ? { ...Q, ...q, name: Q.name.replace(/\*$/, '') + '*' } : q);
+      ctx.dprCap = Math.min(hardDpr, Q.dprCap);
+      if (defines() !== before && !ctx.lost) { dropPrograms(); warm(); }
+      return Q;
+    },
+    /**
+     * How many fragments one frame shades: runs drawFn() (which calls render() as a frame does) with every
+     * pass set to add one step of red per shaded fragment, and reads the canvas back. Fragments the depth
+     * test rejects are not counted, which is what a GPU with early depth testing pays for. The shadow pass
+     * is depth only and is not in the number. Returns { fragments, pixels, perPixel, max }. For tools, not for play.
+     */
+    measureFill(drawFn) {
+      ctx.resize();
+      overdraw = true;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, ctx.width, ctx.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      let out;
+      try {
+        drawFn();
+        const px = new Uint8Array(ctx.width * ctx.height * 4);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.readPixels(0, 0, ctx.width, ctx.height, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        let sum = 0, max = 0; for (let i = 0; i < px.length; i += 4) { sum += px[i]; if (px[i] > max) max = px[i]; }
+        out = { fragments: Math.round(sum / 8), pixels: ctx.width * ctx.height, perPixel: +(sum / 8 / (ctx.width * ctx.height)).toFixed(3), max: Math.round(max / 8), saturated: max >= 248 };
+      } finally { overdraw = false; }
+      return out;
+    },
     resize: () => ctx.resize(),
-    /** Call after editing a mesh's arrays in place, so it is uploaded again. */
-    invalidate(mesh) { if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
+    /** Call after editing a mesh's arrays in place, so it is uploaded (and measured) again. */
+    invalidate(mesh) { mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
     dispose() { const ext = gl.getExtension('WEBGL_lose_context'); if (ext) ext.loseContext(); },
   };
+  return api;
 }
+// index.js exports createRenderer only; the tiers ride along on it so nothing else needs importing.
+createRenderer.QUALITY = QUALITY;
+createRenderer.resolveQuality = resolveQuality;

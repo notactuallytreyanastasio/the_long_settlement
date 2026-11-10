@@ -283,7 +283,7 @@ export function dais({ w = 4, d = 2, n = 3, rise = 0.16, run = 0.3, color = '#ff
   for (let k = 0; k < n; k++) {
     const g = (n - 1 - k) * run;
     parts.push(rb(w + g * 2, rise, d + g * 2, 0.03, 0, rise * (k + 0.5), 0, color));
-    if (edge) parts.push(bx(w + g * 2 + 0.02, rise * 0.3, d + g * 2 + 0.02, 0, rise * (k + 0.85), 0, edge));
+    if (edge) parts.push(bx(w + g * 2 + 0.025, rise * 0.3, d + g * 2 + 0.025, 0, rise * (k + 0.62), 0, edge));
   }
   if (carpet) { // a runner down the front steps
     for (let k = 0; k < n; k++) { const g = (n - 1 - k) * run; parts.push(bx(1.1, 0.02, run + 0.06, 0, rise * (k + 1) + 0.012, d / 2 + g - run / 2 + 0.03, carpet), bx(1.1, rise, 0.02, 0, rise * (k + 0.5), d / 2 + g + 0.012, carpet)); }

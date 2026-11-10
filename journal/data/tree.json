@@ -12426,8 +12426,8 @@
  },
  {
   "path": "src/core/stage.js",
-  "bytes": 19106,
-  "lines": 325
+  "bytes": 19812,
+  "lines": 335
  },
  {
   "path": "src/core/story.js",
@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 31420,
-  "lines": 565
+  "bytes": 27437,
+  "lines": 521
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 98058,
-  "lines": 1304
+  "bytes": 98218,
+  "lines": 1300
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 57627,
-  "lines": 1581
+  "bytes": 57998,
+  "lines": 1578
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 21538,
-  "lines": 370
+  "bytes": 39205,
+  "lines": 618
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12550,8 +12550,23 @@
   "lines": 472
  },
  {
+  "path": "src/shell/gl/sets/drum-hall.js",
+  "bytes": 20050,
+  "lines": 264
+ },
+ {
+  "path": "src/shell/gl/sets/harbor-night.js",
+  "bytes": 24850,
+  "lines": 323
+ },
+ {
+  "path": "src/shell/gl/sets/index.js",
+  "bytes": 1068,
+  "lines": 25
+ },
+ {
   "path": "src/shell/gl/sets/kit-b.js",
-  "bytes": 56843,
+  "bytes": 56845,
   "lines": 738
  },
  {
@@ -12636,7 +12651,7 @@
  },
  {
   "path": "test/game.test.js",
-  "bytes": 67316,
+  "bytes": 67233,
   "lines": 1225
  },
  {
@@ -12646,8 +12661,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 26790,
-  "lines": 429
+  "bytes": 29876,
+  "lines": 472
  },
  {
   "path": "test/rng.test.js",

@@ -444,8 +444,8 @@ function drawBoons(g, right, y, boons) {
   g.textAlign = 'left';
 }
 
-/** The combo: a number that jumps when it grows, its name at level 2 and up, and a fuse that burns down. */
-function drawCombo(g, x, y, combo, now) {
+/** The combo: a number that jumps when it grows, its name at level 2 and up (kept inside maxW), and a fuse that burns down. */
+function drawCombo(g, x, y, combo, now, maxW) {
   if (!combo || !(combo.count > 0)) return;
   const level = clamp(Math.floor(combo.level || 0), 0, 4);
   const left = clamp(combo.left === undefined ? 1 : combo.left, 0, 1);
@@ -476,7 +476,7 @@ function drawCombo(g, x, y, combo, now) {
   inked(g, num, 0, 0, { fill, lw: 5, drop: 3 });
   const nw = g.measureText(num).width;
   if (name) {
-    g.font = font(level >= 3 ? 15 : 13, 800, true);
+    fit(g, name, Math.max(60, maxW / k - nw - 6), level >= 3 ? 15 : 13, MIN_TYPE, 800, true);
     inked(g, name, nw + 6, -2, { fill: level >= 3 ? fill : WHITE, lw: 4, drop: 2 });
   }
   g.restore();
@@ -960,7 +960,8 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
 
   // ── the foot of the band ──
   g.save();
-  g.translate(0, out * (HUD_BAND_FOOT + 10));
+  // the foot rides the band's lower edge down as the band grows
+  g.translate(0, fx.band ? Math.max(0, fx.band.y + fx.band.h - (B.y + B.h)) : 0);
   g.globalAlpha = 1 - out;
   const footBase = S.y - 9;
   let barked = false;
@@ -977,8 +978,11 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   const sw = drawScore(g, B.x + 10, top, game.econ.score);
   const oppBottom = drawOpposition(g, B.x + B.w - 10, top, stage, now, B.w - sw - 34);
   drawBoons(g, B.x + B.w - 10, oppBottom + 5, boonsOf(game, stage));
-  drawCombo(g, B.x + 12, top + 88, stage.combo, now);
-  if (scene) {
+  // a short band (or a deep notch) has no room for both the scene's name and a combo: the combo wins
+  const comboOn = Boolean(stage.combo && stage.combo.count > 0);
+  const comboY = Math.min(top + 88, S.y - 42);
+  drawCombo(g, B.x + 12, comboY, stage.combo, now, B.w * 0.56);
+  if (scene && !(comboOn && comboY < top + 80)) {
     const col = THREADS[scene.thread];
     if (!col) throw new Error(`hud: scene '${scene.id}' has unknown thread '${scene.thread}'`);
     const title = scene.title.toUpperCase();
@@ -1038,17 +1042,6 @@ function drawSubtitle(g, content, cine, fx, box, alpha) {
   const fill = radio ? '#e4f4ff' : narrator ? '#fbeecb' : CREAM;
   const ink = radio ? '#1c3f7a' : NAVY;
   panel(g, x, y, w, h, { r: 18, fill, ink, drop: 5, lw: 3, dash: radio ? [9, 5] : null });
-  if (narrator) {
-    // the ledger's rules and its margin
-    g.save();
-    rr(g, x + 2, y + 2, w - 4, h - 4, 16);
-    g.clip();
-    g.fillStyle = 'rgba(29,42,92,0.10)';
-    for (let ry = y + 49; ry < y + h - 6; ry += 23) g.fillRect(x + 12, ry, w - 24, 1.5);
-    g.fillStyle = 'rgba(242,85,58,0.35)';
-    g.fillRect(x + w - 30, y, 1.5, h);
-    g.restore();
-  }
 
   // the words
   const padX = 17;
@@ -1061,6 +1054,17 @@ function drawSubtitle(g, content, cine, fx, box, alpha) {
   const page = Math.min(pages - 1, Math.floor((Math.max(0, cine.lineT) / lineSeconds(line)) * pages));
   const shown = lines.slice(page * perPage, page * perPage + perPage);
   const y0 = top + Math.max(0, (perPage - shown.length) * lh * 0.28);
+  if (narrator) {
+    // the ledger's rules, one under each line, and its margin
+    g.save();
+    rr(g, x + 2, y + 2, w - 4, h - 4, 16);
+    g.clip();
+    g.fillStyle = 'rgba(29,42,92,0.12)';
+    for (let ry = y0 + 6.5; ry < y + h - 6; ry += lh) g.fillRect(x + 12, ry, w - 24, 1.5);
+    g.fillStyle = 'rgba(242,85,58,0.35)';
+    g.fillRect(x + w - 30, y, 1.5, h);
+    g.restore();
+  }
   g.fillStyle = radio ? '#17305e' : NAVY;
   g.textAlign = 'left';
   shown.forEach((l, i) => g.fillText(l, x + padX, y0 + i * lh));
@@ -1075,18 +1079,9 @@ function drawSubtitle(g, content, cine, fx, box, alpha) {
   const py = y - 17;
   const plate = radio ? '#2d6fb3' : who.color;
   panel(g, px, py, pw, 32, { r: 13, fill: plate, ink, drop: 3, lw: 3 });
-  const dark = luminance(plate) > 0.6;
-  g.lineJoin = 'round';
-  if (!dark) {
-    g.fillStyle = WHITE;
-    g.fillText(name, px + 14 + waveW, py + 21.5);
-  } else {
-    g.strokeStyle = NAVY;
-    g.lineWidth = 3;
-    g.strokeText(name, px + 14 + waveW, py + 21.5);
-    g.fillStyle = WHITE;
-    g.fillText(name, px + 14 + waveW, py + 21.5);
-  }
+  // white on a dark plate, ink on a light one: most of the cast's colours are light
+  g.fillStyle = luminance(plate) > 0.55 ? NAVY : WHITE;
+  g.fillText(name, px + 14 + waveW, py + 21.5);
   if (radio) {
     // a wave that moves with the voice
     g.beginPath();
@@ -1101,7 +1096,7 @@ function drawSubtitle(g, content, cine, fx, box, alpha) {
     g.stroke();
   }
   // the role: who this is, the first time they speak; over the Line, that it is over the Line
-  const role = radio ? 'Over the Line' : first ? who.role : '';
+  const role = radio ? 'Over the Line' : first && !narrator ? who.role : '';
   if (role) {
     g.textAlign = 'right';
     const maxW = w - pw - 40;
@@ -1217,6 +1212,17 @@ function bigButton(g, r, label, sub, fill, col, now, pulse) {
   g.textAlign = 'left';
 }
 
+/** What a tap does next, on a navy pill whose lettering blinks between cream and gold. */
+function chip(g, text, cx, y, now) {
+  g.font = font(13, 800);
+  const w = g.measureText(text).width + 32;
+  panel(g, cx - w / 2, y, w, 30, { fill: NAVY, ink: NAVY_DEEP });
+  g.fillStyle = Math.floor(now / 520) % 2 ? GOLD : CREAM;
+  g.textAlign = 'center';
+  g.fillText(text, cx, y + 19.5);
+  g.textAlign = 'left';
+}
+
 /** The title: the name of the game, and Begin (and Continue when fx.hasSave). The picture behind it is the caller's. */
 export function drawTitle(g, content, game, fx, layout) {
   checkArgs(fx, layout);
@@ -1227,7 +1233,7 @@ export function drawTitle(g, content, game, fx, layout) {
   const cx = W / 2;
   g.save();
   // a lift of light behind the name, and a foot of navy under the menu
-  bandsWash(g, 0, H * 0.56, W, H * 0.44, NAVY_DEEP, 6, 0.1, 0.62);
+  bandsWash(g, 0, H * 0.6, W, H * 0.4, NAVY_DEEP, 4, 0.1, 0.42);
   const ty = Math.max(H * 0.2, safe.top + 110);
   g.save();
   g.translate(cx, ty + 40);
@@ -1373,11 +1379,7 @@ export function drawCard(g, content, game, fx, layout) {
   }
   g.restore();
   if (t > 1.5) {
-    g.font = font(13, 800);
-    g.textAlign = 'center';
-    g.globalAlpha = Math.floor(now / 520) % 2 ? 0.65 : 1;
-    inked(g, fx.touch ? 'TAP TO GO ON' : 'ENTER TO GO ON', cx, H - Math.max(70, safe.bottom + 46), { fill: CREAM, lw: 4, drop: 2 });
-    g.globalAlpha = 1;
+    chip(g, fx.touch ? 'TAP TO GO ON' : 'ENTER TO GO ON', cx, H - Math.max(88, safe.bottom + 62), now);
   }
   g.textAlign = 'left';
   g.restore();
@@ -1386,7 +1388,7 @@ export function drawCard(g, content, game, fx, layout) {
 /** A seesaw: what was given on the left, what was borrowed on the right. The heavier end is down. No numbers. */
 function drawSeesaw(g, cx, cy, econ) {
   const { trust, loans } = ledger(econ);
-  const tilt = clamp((loans - trust) / 300, -1, 1) * 0.3; // > 0: the loans' end is down
+  const tilt = clamp((loans - trust) / 300, -1, 1) * 0.2; // > 0: the loans' end is down
   // the stand
   g.beginPath();
   g.moveTo(cx - 13, cy + 22);
@@ -1471,7 +1473,7 @@ export function drawEnd(g, content, game, fx, layout) {
   ];
   const rowH = 31;
   const wordsH = words.length * lh + 26;
-  const ph = wordsH + rows.length * rowH + 82;
+  const ph = wordsH + rows.length * rowH + 100;
   const py = top + 96;
   panel(g, px, py, pw, ph, { r: 20, drop: 6, lw: 3 });
   g.fillStyle = NAVY;
@@ -1493,14 +1495,9 @@ export function drawEnd(g, content, game, fx, layout) {
     g.fillStyle = 'rgba(29,42,92,0.14)';
     g.fillRect(px + inset, y + 9, pw - inset * 2, 1.5);
   });
-  drawSeesaw(g, cx, py + wordsH + rows.length * rowH + 30, e);
+  drawSeesaw(g, cx, py + wordsH + rows.length * rowH + 46, e);
 
-  g.font = font(13, 800);
-  g.textAlign = 'center';
-  g.globalAlpha = Math.floor(now / 520) % 2 ? 0.65 : 1;
-  inked(g, fx.touch ? 'TAP TO RETURN TO THE TITLE' : 'ENTER RETURNS TO THE TITLE', cx, H - Math.max(40, safe.bottom + 22), { fill: CREAM, lw: 4, drop: 2 });
-  g.globalAlpha = 1;
-  g.textAlign = 'left';
+  chip(g, fx.touch ? 'TAP TO RETURN TO THE TITLE' : 'ENTER RETURNS TO THE TITLE', cx, H - Math.max(62, safe.bottom + 44), now);
   drawMute(g, D(W - 30, Math.max(30, safe.top + 24), 15), Boolean(fx.muted));
   g.restore();
 }

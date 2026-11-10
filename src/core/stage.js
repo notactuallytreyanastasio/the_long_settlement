@@ -34,10 +34,20 @@ import { currentChapter, currentScene, objectiveProgress } from './story.js';
 
 /** How much each logged event adds to a chain. Anything not listed does not count (and does not break it). */
 export const COMBO_WEIGHT = Object.freeze({ bumper: 1, sling: 1, lane: 1, target: 2, saucer: 2, shot: 3, payout: 3, objective: 2 });
-/** Seconds a chain survives without a counting event. */
-export const COMBO_WINDOW = 4.5;
-/** Chain count at which each level begins: level 1 single jabs, 2 two together, 3 the team move, 4 the big one. */
-export const COMBO_LEVELS = Object.freeze([1, 5, 11, 20]);
+/**
+ * Seconds a chain survives without a counting event, and the chain count at which each level begins:
+ * level 1 single jabs, 2 two characters together, 3 the named team move, 4 the big one.
+ *
+ * Tuned on the playthrough bots so that the levels are an escalation and the top one is an occasion. With the
+ * director's first numbers (4.5 s, 1/5/11/20) a chain only ends on a drain, the count runs away, and the
+ * mediocre bot (somebody's first evening: late flips, one ball in eight missed) stood at level 4 for 31% of
+ * its time at the table and the steady bot for 73%: FESTIVAL STORM was the weather. With these, share of
+ * table time at levels 0..4 over a whole eight-chapter game:
+ *   mediocre  25 27 26 17  5 %   reaching level 2 3.7 times a minute, level 3 1.6, level 4 once in three minutes
+ *   steady     9 16 20 27 28 %   (no person plays like the steady bot)
+ */
+export const COMBO_WINDOW = 3;
+export const COMBO_LEVELS = Object.freeze([1, 8, 20, 45]);
 /** What the stage calls each level. Levels 0 and 1 have no name. */
 export const COMBO_NAMES = Object.freeze(['', '', 'DOUBLE', 'LANTERN RUSH', 'FESTIVAL STORM']);
 /** Score multiplier by level, for table hits. Score only: see comboBonus. */

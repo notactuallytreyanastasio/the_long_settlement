@@ -359,7 +359,7 @@ export const HAIR = {
   /** A pencil (or any stick) pushed through the hair: { at: [yaw, pitch], dir, length, color }. */
   pencil(hd, s, ctx) {
     const c = hd.at(s.at[0], s.at[1], s.r ?? 1.06), L = s.length || 0.26, r = 0.014;
-    const m = merge(
+    const m = s.chalk ? dye(place(cylinder(r * 1.25, r * 1.25, L, 6, { crease: 30 }), 0, -L / 2, 0), '#ffffff') : merge(
       tint(place(cylinder(r, r, L * 0.72, 6, { crease: 20 }), 0, -L * 0.36, 0), s.color || '#ffcc3a'),
       tint(place(cylinder(r * 1.08, r * 1.08, L * 0.07, 6), 0, L * 0.36, 0), '#c9d2de'),
       tint(place(cylinder(r, r, L * 0.09, 6), 0, L * 0.43, 0), '#ff8fa0'),
@@ -370,12 +370,12 @@ export const HAIR = {
   },
 
   /** A peaked cap: { color, band, peak }. Sits on top of whatever hair there is. */
-  kepi(hd, s, ctx) {
-    const R = hd.R, m = merge(
-      tint(place(scaleMesh(cylinder(R[0] * 0.92, R[0] * 0.8, R[1] * 0.62, ctx.S(18), { crease: 50 }), 1, 1, R[2] / R[0]), 0, R[1] * 0.42, -0.005), s.color),
-      tint(place(scaleMesh(cylinder(R[0] * 0.95, R[0] * 0.95, R[1] * 0.16, ctx.S(18), { crease: 50 }), 1, 1, R[2] / R[0]), 0, R[1] * 0.4, -0.005), s.band || '#ffd24a'),
-      tint(place(scaleMesh(cylinder(R[0] * 0.78, R[0] * 0.78, R[1] * 0.07, ctx.S(14), { crease: 50 }), 1, 1, 0.8), 0, R[1] * 0.42, R[2] * 0.62, 12, 0, 0), s.peak || '#2a2540'),
-      tint(place(sphere(R[0] * 0.1, 8, 6), 0, R[1] * 0.74, R[2] * 0.8), s.band || '#ffd24a'));
+  kepi(hd, s, ctx) { // { color, band, peak (false: a pillbox with no peak), tall (1 = the bailiff's) }
+    const R = hd.R, tall = s.tall ?? 1, m = merge(
+      dye(place(scaleMesh(cylinder(R[0] * 0.92, R[0] * (0.8 + (1 - tall) * 0.2), R[1] * 0.62 * tall, ctx.S(18), { crease: 50 }), 1, 1, R[2] / R[0]), 0, R[1] * 0.42, -0.005), s.color),
+      dye(place(scaleMesh(cylinder(R[0] * 0.95, R[0] * 0.95, R[1] * 0.16, ctx.S(18), { crease: 50 }), 1, 1, R[2] / R[0]), 0, R[1] * 0.4, -0.005), s.band || '#ffd24a'),
+      s.peak === false ? null : dye(place(scaleMesh(cylinder(R[0] * 0.78, R[0] * 0.78, R[1] * 0.07, ctx.S(14), { crease: 50 }), 1, 1, 0.8), 0, R[1] * 0.42, R[2] * 0.62, 12, 0, 0), s.peak || '#2a2540'),
+      dye(place(sphere(R[0] * 0.1, ctx.lo ? 5 : 8, ctx.lo ? 4 : 6), 0, R[1] * (0.42 + 0.32 * tall), R[2] * 0.8), s.band || '#ffd24a'));
     return { fixed: [m] };
   },
 };
@@ -871,8 +871,9 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       const A = [...pts.slice(0, k), cut(k - 1, k, 0.45)], Bp = [cut(k, k + 1, 0.05), ...pts.slice(k + 1)];
       return setOutline(tint(merge(strand(A, f(0, 0.57), g(0, 0.57), 6), strand(Bp, f(0.68, 1), g(0.68, 1), 6)), browSpec.color), 0.55); };
     const cy = dim.headC, nick = def.face?.brow?.nick;
-    node('browL', nick === 'L' ? nicked() : whole(), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1], browSpec.at[0], 0], parent: head });
-    node('browR', mirrorX(nick === 'R' ? nicked() : whole()), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1], -browSpec.at[0], 0], parent: head });
+    // raiseL / raiseR: one brow carried higher than the other, always (degrees); tilt: both brows angled (> 0 inner ends down)
+    node('browL', nick === 'L' ? nicked() : whole(), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1] - (browSpec.raiseL || 0), browSpec.at[0], browSpec.tilt || 0], parent: head });
+    node('browR', mirrorX(nick === 'R' ? nicked() : whole()), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1] - (browSpec.raiseR || 0), -browSpec.at[0], -(browSpec.tilt || 0)], parent: head });
   }
 
   // swinging pieces (hair, braid): spring bones
@@ -910,7 +911,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const marks = node('marks', wide, fm, { parent: pivot });
     const mouth = node('mouth', hd.patch(0, F.mouthPitch, FACE.mouth.w * mk2, FACE.mouth.h * mk2, 0.014, lo ? 3 : 5), fm, { parent: pivot });
     const fx = node('fx', wide, fm, { parent: pivot, visible: false });
-    marks.uvRect.set(faces.marks(def.id, { skin: headSkin, ...(def.face?.marks || {}) }));
+    { const ms = { skin: headSkin, ...(def.face?.marks || {}) }; marks.uvRect.set(faces.marks(JSON.stringify(ms), ms)); } // keyed by what is drawn, so look-alikes share a cell
     const table = {};
     for (const e of EMOTES) {
       table[e] = {
@@ -1199,20 +1200,15 @@ export const CAST = {
     hair: {
       color: '#d9582b', brow: '#a8421f',
       pieces: [
-        { kind: 'cap', front: 0.46, side: -0.2, back: -0.72, grow: [1.075, 1.1, 1.1], shift: [0, 0.012, -0.018] },
+        // a smooth full crown; the shape is in the fringe, the two loose locks and the braid, not in ridges on the skull
+        { kind: 'cap', front: 0.52, side: -0.24, back: -0.74, grow: [1.085, 1.115, 1.1], shift: [0, 0.012, -0.018] },
+        // the parting is over her left eye; five tufts sweep across the brow to her right, each a different length
+        { kind: 'fringe', n: 5, from: 36, to: -52, part: 26, top: 66, tips: [21, 12, 17, 8, 0], sweep: -7, gather: 0.3, r: 1.125 },
         { kind: 'locks', locks: [
-          // the parting is over her left eye; the big lock sweeps across the brow to her right
-          { pts: [[22, 64, 1.02], [6, 46, 1.11], [-18, 30, 1.12], [-40, 17, 1.09], [-52, 6, 1.05]], w: 0.085 },
-          { pts: [[30, 60, 1.03], [44, 42, 1.09], [54, 22, 1.09], [58, 2, 1.07], [55, -16, 1.06]], w: 0.07 },
-          { pts: [[-50, 40, 1.04], [-62, 22, 1.08], [-66, 2, 1.08], [-62, -20, 1.07], [-58, -32, 1.05]], w: 0.06 },
-          { pts: [[64, 30, 1.04], [72, 10, 1.07], [72, -14, 1.07], [66, -30, 1.05]], w: 0.05 },
-          { pts: [[4, 70, 1.0], [10, 86, 1.14], [26, 80, 1.2]], w: 0.03, thick: 0.9 },
-          // the back, combed down and across to the knot the braid starts from
-          { pts: [[176, 72, 1.03], [178, 34, 1.1], [-168, -6, 1.1], [-140, -30, 1.04]], w: 0.09 },
-          { pts: [[-118, 66, 1.03], [-124, 32, 1.1], [-126, 2, 1.1], [-122, -26, 1.04]], w: 0.08 },
-          { pts: [[118, 66, 1.03], [136, 30, 1.1], [162, -6, 1.1], [-166, -32, 1.05]], w: 0.085 },
-          { pts: [[84, 48, 1.03], [104, 18, 1.09], [134, -12, 1.09], [164, -34, 1.05]], w: 0.07 },
+          { pts: [[34, 62, 1.03], [48, 42, 1.1], [57, 22, 1.1], [60, 4, 1.075]], w: 0.062 },
+          { pts: [[6, 72, 1.0], [12, 88, 1.15], [30, 82, 1.22]], w: 0.03, thick: 0.9, ink: 1 },
         ] },
+        { kind: 'sidelocks', yaw: 63, top: 4, length: 0.17, w: 0.04, out: 0.016, curl: 0.024 },
         { kind: 'braid', at: [-118, -30], dir: [-0.16, -1, 0.42], length: 0.36, width: 0.05, links: 3, tie: '#ffd24a' },
         { kind: 'pencil', at: [-104, 30], dir: [-0.5, 0.8, -0.34], length: 0.22, r: 1.06, out: 0.1 },
       ],
@@ -1240,7 +1236,7 @@ export const CAST = {
 
   // Nan Okerby, 70s: lantern-maker on the Vessery docks. Old, sly, gentle. Small and round and bent, and the lantern is lit.
   nan: {
-    id: 'nan', seed: 3, skin: '#c98a5e',
+    id: 'nan', seed: 3, skin: '#b9856e',
     build: { height: 0.86, legs: 0.74, torso: 0.98, head: 1.04, width: 1.14, belly: 0.25, arms: 0.95 },
     hair: {
       color: '#f6f1ea', brow: '#efe8de',
@@ -1254,7 +1250,7 @@ export const CAST = {
         ] },
       ],
     },
-    face: { set: 'old', iris: '#7a4a26', eyeScale: 0.86, eyePitch: -8, mouthPitch: -32.5, brow: { w: 0.014, len: 21, at: [25, 9.5] }, marks: { blush: 0.6, laugh: true, blushColor: '#e8604a' } },
+    face: { set: 'old', iris: '#7a4a26', eyeScale: 0.86, eyePitch: -8, mouthPitch: -32.5, brow: { w: 0.014, len: 21, at: [25, 9.5] }, marks: { blush: 0.5, laugh: true, blushColor: '#e0625a' } },
     costume: {
       top: { color: '#2f8f8a', hem: -0.13, flare: 1.34, trim: '#1f6f72', lining: '#1a4a5a' },
       sleeves: { color: '#2f8f8a', flare: 1.2 },
