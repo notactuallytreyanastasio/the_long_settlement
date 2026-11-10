@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Set viewer: lantern-stalls</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10183a; overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: fixed; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); font: 11px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.55); padding: 5px 7px; border-radius: 6px; white-space: pre; pointer-events: none; }
+  #bar { position: fixed; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
+  #bar button { font: 12px ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 6px; padding: 6px 9px; }
+  [hidden] { display: none !important; }
+  #fatal { position: fixed; inset: 0; margin: 0; padding: 16px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: #ffd9d0; background: #2a1020; white-space: pre-wrap; overflow: auto; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="bar"><button id="bLight">light</button><button id="bCam">cam</button></div>
+<pre id="fatal" hidden></pre>
+<script type="module">
+// Query string:
+//   ?cam=wide|two|close|low|stage|landscape   a camera mark of the set ('stage' draws the 430x220 live band at the top)
+//   ?light=dusk|night|day
+//   ?t=8          freeze at that time (for screenshots; the set is run up to it first)
+//   ?dummies=0    hide the stand-in figures      ?power=0.4  lamp power 0..1.5      ?out=1  Nan's three lanterns unlit
+//   ?hud=0        ?dpr=1 (cap the pixel ratio)   ?fg=0  hide the foreground clutter
+const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glSet = { error: f.textContent }; };
+window.addEventListener('error', (e) => fatal(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
+try {
+  const GL = await import('../src/shell/gl/index.js');
+  const { lanternStalls } = await import('../src/shell/gl/sets/lantern-stalls.js');
+  const { mannequin, kitMaterials, PAL } = await import('../src/shell/gl/sets/kit.js');
+  const q = new URLSearchParams(location.search);
+  const light = q.get('light') || 'dusk';
+  let camName = q.get('cam') || 'wide';
+  const fixedT = q.has('t') ? Number(q.get('t')) : null;
+  const canvas = document.getElementById('c');
+  const renderer = GL.createRenderer(canvas, { dprCap: Number(q.get('dpr') || 2) });
+  const b0 = performance.now();
+  const set = lanternStalls.build(GL, { light });
+  const buildMs = performance.now() - b0;
+  if (q.has('power')) set.setPower(Number(q.get('power')));
+  if (q.get('out') === '1') for (const i of set.marks.nanLanterns) set.setLantern(i, 0);
+
+  // stand-ins, so scale and light on the stage can be judged without the cast
+  const dummies = GL.group('dummies'); set.actors.add(dummies);
+  const figMat = GL.material({ name: 'dummy', bandEdge: 0, outline: { width: 2.6, self: 0.7 } });
+  const coats = [PAL.yellow, PAL.teal, PAL.coral, PAL.blue, PAL.pink, PAL.violet];
+  const placeDummies = () => {
+    while (dummies.children.length) dummies.remove(dummies.children[0]);
+    if (q.get('dummies') === '0') return;
+    const spots = camName === 'stage' ? [...set.marks.party, ...set.marks.opposition] : [set.marks.a, set.marks.b, set.marks.c];
+    spots.forEach((m, i) => dummies.add(GL.node('dummy' + i, mannequin({ coat: coats[i], h: 1.0 + (i % 3) * 0.08 }), figMat, { pos: m.pos, rot: [0, m.face, 0] })));
+  };
+  placeDummies();
+
+  const camera = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
+  const hud = document.getElementById('hud');
+  if (q.get('hud') === '0') { hud.hidden = true; document.getElementById('bar').hidden = true; }
+  document.getElementById('bLight').onclick = () => { const L = lanternStalls.lights; q.set('light', L[(L.indexOf(light) + 1) % L.length]); location.search = q.toString(); };
+  document.getElementById('bCam').onclick = () => { const C = lanternStalls.cameras; camName = C[(C.indexOf(camName) + 1) % C.length]; placeDummies(); };
+
+  if (fixedT !== null) for (let t = Math.max(0, fixedT - 5); t < fixedT; t += 1 / 60) set.update(t, 1 / 60);
+  let last = performance.now(), t = fixedT ?? 0, avg = 0, upd = 0, frames = 0;
+  const draw = (time) => {
+    set.frame(camera, camName, fixedT !== null ? 0 : time);
+    set.foreground.visible = camName !== 'stage' && q.get('fg') !== '0';
+    if (camName === 'stage') { const cw = canvas.clientWidth, h = Math.round(cw * 220 / 430); return renderer.render(set.scene, camera, time, { x: 0, y: 0, w: cw, h, ...set.view('stage') }); }
+    return renderer.render(set.scene, camera, time);
+  };
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const u0 = performance.now();
+    if (fixedT === null) { t += dt; set.update(t, dt); } else set.update(fixedT, 0);
+    upd += (performance.now() - u0 - upd) * 0.05;
+    const s = draw(t);
+    avg += (s.cpuMs - avg) * 0.05; frames++;
+    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${set.id} / ${light} / ${camName}\n${s.drawCalls} draws  ${(s.triangles / 1000).toFixed(1)}k tris  ${s.lights} lamps\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms  build ${buildMs.toFixed(0)} ms\n${s.width}x${s.height}`;
+    window.glSet.frames = frames;
+    requestAnimationFrame(frame);
+  }
+  window.glSet = {
+    renderer, set, camera, frames: 0, buildMs,
+    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), version: gl.getParameter(gl.VERSION), buildMs, stats: { ...renderer.stats } }; },
+    /** Time n frames of update + render back to back. `finish` waits for the GPU each frame. */
+    bench(n = 200, finish = false) {
+      const gl = renderer.gl; let tu = 0, tr = 0, tt = t;
+      for (let i = 0; i < n; i++) { tt += 1 / 60; const a = performance.now(); set.update(tt, 1 / 60); const b = performance.now(); draw(tt); if (finish) gl.finish(); tu += b - a; tr += performance.now() - b; }
+      return { frames: n, updateMs: tu / n, renderMs: tr / n, finish, drawCalls: renderer.stats.drawCalls, triangles: renderer.stats.triangles };
+    },
+  };
+  requestAnimationFrame(frame);
+} catch (e) { fatal(e); }
+</script>
+</body>
+</html>

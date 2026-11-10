@@ -223,7 +223,7 @@ export function paperLantern({ r = 0.15, shape = 'round', tassel = true, seg = 1
   prof.push([0, y1]);
   parts.push(setGlow(lathe(prof, seg, { crease: 180 }), 0.92));
   parts.push(tint(place(cylinder(r * 0.4, r * 0.5, capH * 0.9, seg), 0, y1 - H - capH * 0.75, 0), [0.22, 0.24, 0.42]));
-  if (tassel) parts.push(tint(place(cylinder(0.006, r * 0.14, r * 0.75, 5), 0, y1 - H - capH * 0.75 - r * 0.75, 0), [0.95, 0.3, 0.25]));
+  if (tassel) parts.push(tint(place(cylinder(0.004, r * 0.09, r * 0.5, 5), 0, y1 - H - capH * 0.75 - r * 0.5, 0), [0.95, 0.3, 0.25]));
   return keepAnchors(merge(parts), { centre: [0, y1 - H / 2, 0] });
 }
 
@@ -532,11 +532,11 @@ export function cloudBank({ count = 8, seed = 1, arc = [150, 210], radius = [260
 }
 
 /** A tiny gull, wings spread along X, about 1 unit across, flying toward +Z. Scale Y of an instance to flap. */
-export function gull({ color = PAL.white, tip = '#5a6aa8' } = {}) {
+export function gull({ color = PAL.white, tip = '#8d97c9' } = {}) {
   const wing = (sx) => merge(
     tint(extrude([[0, 0], [sx * 0.3, 0.1], [sx * 0.3, 0.02], [0, -0.07]], 0.16, { crease: 30 }), color),
     tint(extrude([[sx * 0.3, 0.1], [sx * 0.52, 0.03], [sx * 0.3, 0.02]], 0.12, { crease: 30 }), tip));
-  return setOutline(merge(wing(1), wing(-1), tint(ellipsoid(0.06, 0.055, 0.15, 6, 4), color)), 0);
+  return setGlow(setOutline(merge(wing(1), wing(-1), tint(ellipsoid(0.06, 0.055, 0.15, 6, 4), color)), 0), 0.6);
 }
 
 // ------------------------------------------------------------------------------------ ground
@@ -561,7 +561,7 @@ export function quayEdge({ len = 20, drop = 1.6, seed = 1, block = 0.95 } = {}) 
 
 /** One flat rounded paving stone (radius about 1, lies on y = 0), for instancing with scatter(). */
 export function cobble() {
-  return setOutline(lathe([[1, 0.0], [0.82, 0.05], [0, 0.055]], 7, { crease: 180 }), 0);
+  return setOutline(lathe([[1, 0.0], [0.82, 0.05], [0, 0.055]], 9, { crease: 180 }), 0);
 }
 
 // ------------------------------------------------------------------------------------ stand-in
