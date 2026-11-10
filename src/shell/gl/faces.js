@@ -320,10 +320,10 @@ export function createFaces({ size = 2048, figure = null } = {}) {
   const cells = new Map();
   const cell = (name, w, h, draw) => { let r = cells.get(name); if (!r) { r = atlas.add(name, w, h, draw); cells.set(name, r); } return r; };
   // the face is shaded exactly like the skin under it, or the lid mask shows as a rectangle
-  const mat = material({ name: 'face', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: figure ? figure.rim : 1, bands: figure ? figure.bands : 2, bandEdge: figure ? figure.bandEdge : 0, bandSoft: figure ? figure.bandSoft : 0.006 });
+  const mat = material({ name: 'face', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: figure ? figure.rim : 1, bands: figure ? figure.bands : 2, bandEdge: figure ? figure.bandEdge : 0, bandSoft: figure ? figure.bandSoft : 0.006, keyLight: figure ? figure.keyLight : null });
   const emoteOf = (e) => { const E = EMOTE[e]; if (!E) throw new Error(`faces: unknown emote "${e}" (have ${EMOTES.join(', ')})`); return E; };
   // the eyeballs keep some of their own colour in shadow, or the iris goes dead when the face turns from the light
-  const eyeMat = material({ name: 'eyes', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.4 });
+  const eyeMat = material({ name: 'eyes', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.4, keyLight: mat.keyLight });
   return {
     atlas, material: mat, eyeMaterial: eyeMat,
     lid(set, emote, shut) {

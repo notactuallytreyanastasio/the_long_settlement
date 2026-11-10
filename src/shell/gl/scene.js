@@ -25,6 +25,9 @@ let materialId = 1;
  *                       lit on top whatever the sun is doing)
  *   emissive     0      0..1 added to the per-vertex glow: the surface shows its flat colour, unlit
  *   shadowTint   null   override the scene's shadow tint for this material ('#rrggbb')
+ *   keyLight     null   [x, y, z]: this material's own key direction (unit, world space, toward the light), read
+ *                       every frame, so a character light can follow the camera. The band terminator and the
+ *                       specular use it; cast shadows and the rim still come from the scene's key
  *   receiveShadow true, castShadow true
  *   fog          1      how much scene fog applies (clouds and far backdrops want less)
  *   map          null   a texture ({ source: canvas } from texture() or atlas.texture)
@@ -49,7 +52,7 @@ export function material(opts = {}) {
     bands: opts.bands ?? 2, bandEdge: opts.bandEdge ?? 0.05, bandStep: opts.bandStep ?? 0.4, bandSoft: opts.bandSoft ?? 0.006,
     spec: opts.spec ?? 0, specSize: opts.specSize ?? 0.02, specColor: rgb(opts.specColor || '#ffffff'),
     rim: opts.rim ?? 1, emissive: opts.emissive ?? 0, lightUp: opts.lightUp ?? 0,
-    shadowTint: opts.shadowTint ? rgb(opts.shadowTint) : null,
+    shadowTint: opts.shadowTint ? rgb(opts.shadowTint) : null, keyLight: opts.keyLight || null,
     receiveShadow: opts.receiveShadow ?? true, castShadow: opts.castShadow ?? (opts.kind !== 'beam' && texMode !== 'blend'),
     fog: opts.fog ?? 1, map: opts.map || null, texMode, alphaCut: opts.alphaCut ?? 0.5,
     doubleSided: !!opts.doubleSided, outline, opacity: opts.opacity ?? 1,

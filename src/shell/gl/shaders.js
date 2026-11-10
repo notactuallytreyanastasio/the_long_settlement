@@ -112,6 +112,7 @@ uniform vec4 uSpec;      // strength, size (cos threshold), unused, unused
 uniform vec3 uSpecColor;
 uniform vec4 uMat;       // rim amount, emissive, receive shadow, fog amount
 uniform vec4 uMatShadow; // rgb override of the shadow tint, a = use it
+uniform vec4 uMatKey;    // xyz = this material's own key direction (a character light), a = use it
 uniform vec4 uFlash;
 uniform sampler2D uMap; uniform int uTexMode; uniform float uAlphaCut;
 ${FOG}${SHADOW}${POINTS}
@@ -122,7 +123,8 @@ void main() {
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
   vec3 toCam = uCamPos - vWorld; float dist = length(toCam); vec3 V = toCam / dist;
-  float ndl = dot(N, normalize(mix(uKeyDir, vec3(0.0, 1.0, 0.0), uLightUp)));
+  vec3 K = mix(uKeyDir, uMatKey.xyz, uMatKey.a);
+  float ndl = dot(N, normalize(mix(K, vec3(0.0, 1.0, 0.0), uLightUp)));
   float aa = fwidth(ndl) * 0.75 + uBand.w;
   float lit = 0.0; float steps = max(uBand.x - 1.0, 1.0);
   for (int i = 0; i < 4; i++) { if (float(i) >= steps) break; float e = uBand.y + float(i) * uBand.z; lit += smoothstep(e - aa, e + aa, ndl); }
@@ -136,13 +138,13 @@ void main() {
   col += base * mix(uAmbGround, uAmbSky, smoothstep(-0.35, 0.35, N.y));
   col = lampLit(col, base, pointLights(vWorld, N, 0.0));
   // hard specular dot
-  float ndh = dot(N, normalize(uKeyDir + V));
+  float ndh = dot(N, normalize(K + V));
   float sa = fwidth(ndh) * 0.75 + 0.002;
   col = mix(col, uSpecColor, smoothstep(uSpec.y - sa, uSpec.y + sa, ndh) * uSpec.x * lit);
   // rim: a bright edge where the surface turns away from the eye, on the side the key light reaches
   float fres = 1.0 - max(dot(N, V), 0.0);
   float ra = fwidth(fres) * 0.75 + 0.01;
-  float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(0.0, 0.1, ndl) * uMat.x;
+  float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(0.0, 0.1, dot(N, uKeyDir)) * uMat.x; // the rim always comes from the scene's real key
   col = mix(col, max(col, base * 0.4 + uRimColor), rim * min(1.0, length(uRimColor) * 2.0));
   float glow = clamp(vColor.a + uMat.y, 0.0, 1.0);
   col = mix(col, base, glow);

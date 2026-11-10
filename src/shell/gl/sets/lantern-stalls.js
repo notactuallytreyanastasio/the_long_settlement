@@ -90,7 +90,7 @@ const LIGHTS = {
 // ------------------------------------------------------------------------------------ cameras and marks
 
 const CAMERAS = {
-  wide: { target: [0.15, 2.6, -1.0], dist: 10.8, yaw: 2, pitch: 4, fov: 48, aspect: 0.46, shadowCenter: [0, 0, -1.5], shadowRadius: 9.5 },
+  wide: { target: [0.1, 1.55, -0.4], dist: 8.2, yaw: 3, pitch: 5, fov: 44, aspect: 0.46, shadowCenter: [0, 0, -1.2], shadowRadius: 8 }, // figures at marks a/b/c stand between 58% and 76% of the way down: clear of a subtitle box
   two: { target: [0, 1.12, 0.6], dist: 6.0, yaw: -15, pitch: 5, fov: 31, aspect: 0.46, shadowCenter: [0, 0, 0.3], shadowRadius: 3.6 },
   close: { target: [0.02, 0.86, 0.8], dist: 3.9, yaw: 21, pitch: 3, fov: 28, aspect: 0.46, shadowCenter: [0, 0, 0.5], shadowRadius: 2.6 },
   low: { target: [0.1, 1.75, 0.2], dist: 6.4, yaw: -7, pitch: -11, fov: 56, aspect: 0.46, shadowCenter: [0, 0, -1], shadowRadius: 8 },

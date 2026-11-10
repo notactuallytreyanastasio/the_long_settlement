@@ -20,10 +20,21 @@ const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 
 /** One material and one face atlas shared by every figure. `spawn(idOrDef)` returns a character (see characters.js). */
 export function createTroupe({ detail = 1, material = null } = {}) {
-  const figMat = material || figureMaterial();
+  // the character light: figures take their terminator from a key that follows the camera (front, above, to one side),
+  // so a face is never flat or lost in shadow whatever the set's sun is doing. The rim still comes from the real sun.
+  const keyLight = new Float32Array([-0.4, 0.55, 0.73]);
+  const figMat = material || figureMaterial({ keyLight });
   const faces = createFaces({ figure: figMat });
   return {
-    figMat, faces, detail,
+    figMat, faces, detail, keyLight,
+    /** Point the character light for this camera. side: -1 light from screen left, +1 from screen right; lift: how far above. */
+    aim(camera, side = -1, lift = 0.62, across = 0.4) {
+      let bx = camera.position[0] - camera.target[0], by = camera.position[1] - camera.target[1], bz = camera.position[2] - camera.target[2];
+      const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl; by = 0;     // toward the camera, level
+      const rx = bz, rz = -bx;                                           // screen right
+      const x = bx * 0.66 + rx * across * side, y = lift, z = bz * 0.66 + rz * across * side, l = Math.hypot(x, y, z);
+      keyLight[0] = x / l; keyLight[1] = y / l; keyLight[2] = z / l;
+    },
     spawn(idOrDef, opts = {}) {
       const def = typeof idOrDef === 'string' ? CAST[idOrDef] : idOrDef;
       if (!def) throw new Error(`troupe: no cast member "${idOrDef}" (have ${Object.keys(CAST).join(', ')})`);
@@ -75,7 +86,7 @@ function followGlow(ch) { if (ch.glow) { ch.glow.pos[0] = ch.lampPos[0]; ch.glow
 
 // ------------------------------------------------------------------------------------ cutscenes
 
-const CINE_FILL = { dusk: 0.95, night: 1.15, day: 0 };
+const CINE_FILL = { dusk: 0, night: 0.5, day: 0 };
 
 /**
  * A cutscene on a set. `on` lists cast ids left to right; they stand on set.marks.a / b / c (two: marks.two).
@@ -90,7 +101,7 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
     const ch = troupe.spawn(id), m = spots[i];
     ch.id = id; ch.mark = m; ch.root.setPos(m.pos[0], m.pos[1], m.pos[2]); set.actors.add(ch.root);
     ch.glow = lampGlow(set, ch, set.light === 'day' ? 0.25 : 0.85);
-    ch.state = { emote: 'neutral', speaking: false, look: null, face: m.face, camera: null, wind: [0, 0, 0], snap: false, pose: 'stand' };
+    ch.state = { emote: 'neutral', speaking: false, look: null, face: m.face, camera: null, wind: [0, 0, 0], snap: false, pose: 'stand', lookAt: [0, 0, 0] };
     cast[id] = ch; list.push(ch);
   });
   // a warm key from the lantern side, in front of the cast: without it every face toward the camera is in shadow tone at dusk
@@ -114,10 +125,13 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
         const st = ch.state, me = ch === sp;
         st.emote = (s.emotes && s.emotes[ch.id]) || (me ? s.emote || 'neutral' : 'neutral');
         st.speaking = me; st.camera = camera; st.snap = cut;
-        st.look = me ? (camName === 'close' ? 'camera' : other ? other.headPos : 'camera') : sp ? sp.headPos : 'camera';
+        // chibi faces read from the front: nobody turns fully to profile. Looks are a blend of "at them" and "at the lens"
+        const at = me ? (camName === 'close' ? null : other) : sp, k = me ? 0.5 : 0.62;
+        if (at && camera) { st.lookAt[0] = at.headPos[0] * k + camera.position[0] * (1 - k); st.lookAt[1] = at.headPos[1] * k + (ch.headPos[1] + 0.1) * (1 - k); st.lookAt[2] = Math.max(at.headPos[2] * k + camera.position[2] * (1 - k), ch.headPos[2] + 0.5); st.look = st.lookAt; }
+        else st.look = 'camera';
         // the body turns part of the way toward whoever is speaking; the head does the rest
         const toward = me ? other : sp;
-        st.face = ch.mark.face + (toward ? clamp((toward.mark.pos[0] - ch.mark.pos[0]) * 26, -34, 34) : 0);
+        st.face = ch.mark.face + (toward ? clamp((toward.mark.pos[0] - ch.mark.pos[0]) * 14, -16, 16) : 0);
         st.wind[0] = 0.5 + Math.sin(time * 0.9 + ch.mark.pos[0]) * 0.9; st.wind[2] = Math.sin(time * 1.3) * 0.5;
         if (s.pose && me) st.pose = s.pose; else st.pose = 'stand';
         ch.update(dt, st); followGlow(ch);
@@ -133,7 +147,7 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
         H2[0] = sp.headPos[0]; H2[1] = sp.headPos[1]; H2[2] = sp.headPos[2]; H3[0] = other.headPos[0]; H3[1] = Math.min(other.headPos[1], sp.headPos[1]) - 0.42; H3[2] = other.headPos[2];
         heads.length = 0; heads.push(H2, H3);
         const side = sp.mark.pos[0] < other.mark.pos[0] ? 1 : -1;
-        frameHeads(camera, heads, { aspect, fov: 28, yaw: side * 13 + Math.sin(drift * 0.2) * 1.2, pitch: 4, pad: 0.36, fillH: 0.5, fillW: 0.94, at: 0.4 });
+        frameHeads(camera, heads, { aspect, fov: 28, yaw: side * 13 + Math.sin(drift * 0.2) * 1.2, pitch: 4, pad: 0.36, fillH: 0.5, fillW: 0.94, at: 0.47 });
         view.shadowCenter[0] = (sp.mark.pos[0] + other.mark.pos[0]) / 2; view.shadowCenter[2] = 0.5; view.shadowRadius = 3.2;
       } else {
         const name = set.cameras[camName] ? camName : 'wide';
@@ -141,6 +155,7 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
         const v = set.view(name); view.shadowCenter[0] = v.shadowCenter[0]; view.shadowCenter[1] = v.shadowCenter[1]; view.shadowCenter[2] = v.shadowCenter[2]; view.shadowRadius = v.shadowRadius;
       }
       set.env.outline.width = inkFor(camera, s.viewHeight || 852, list[0].headRadius);
+      troupe.aim(camera);
     },
   };
   return cine;
@@ -296,6 +311,7 @@ export function createEncounter(set, troupe, def) {
     camera.fov = c.fov; camera.orbit(T, c.dist * (1 - 0.06 * k) * Math.max(1, c.aspect / aspect), c.yaw + Math.sin(time * 0.21) * 1.2, c.pitch);
     set.env.shadow.center = c.shadowCenter; set.env.shadow.radius = c.shadowRadius;
     set.env.outline.width = inkFor(camera, viewHeight, party[0].headRadius);
+    troupe.aim(camera);
     return camera;
   };
   return enc;

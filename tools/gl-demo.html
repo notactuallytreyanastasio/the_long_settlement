@@ -3,78 +3,432 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Cel engine demo</title>
+<title>The Long Settlement: cel slice</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #10183a; overflow: hidden; }
-  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  #hud { position: fixed; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); font: 11px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.55); padding: 5px 7px; border-radius: 6px; white-space: pre; pointer-events: none; }
-  #bar { position: fixed; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
-  #bar button { font: 12px ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 6px; padding: 6px 9px; }
+  html, body { margin: 0; height: 100%; background: #10183a; overflow: hidden; font-family: "Avenir Next", "Trebuchet MS", ui-rounded, system-ui, sans-serif; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  canvas#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #dbg { position: fixed; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); font: 10px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); padding: 4px 6px; border-radius: 6px; white-space: pre; pointer-events: none; z-index: 5; }
+  #bar { position: fixed; right: 8px; top: 8px; display: flex; gap: 5px; z-index: 5; }
+  #bar button { font: 11px ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 6px; padding: 5px 7px; }
   [hidden] { display: none !important; }
-  #fatal { position: fixed; inset: 0; margin: 0; padding: 16px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: #ffd9d0; background: #2a1020; white-space: pre-wrap; overflow: auto; }
+  #fatal { position: fixed; inset: 0; margin: 0; padding: 16px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: #ffd9d0; background: #2a1020; white-space: pre-wrap; overflow: auto; z-index: 9; }
+
+  /* the subtitle box */
+  .sub { position: absolute; left: 14px; right: 14px; background: #fff7e2; border: 3px solid #1d2a5c; border-radius: 18px; box-shadow: 0 5px 0 #1d2a5c; padding: 20px 16px 14px; color: #1d2a5c; font-size: 16px; line-height: 1.38; font-weight: 600; }
+  .sub .who { position: absolute; left: 14px; top: -17px; padding: 4px 13px 5px; border: 3px solid #1d2a5c; border-radius: 13px; color: #fff; font-size: 14px; font-weight: 800; letter-spacing: 0.02em; box-shadow: 0 3px 0 #1d2a5c; }
+  .sub .role { position: absolute; right: 16px; top: 4px; font-size: 10px; font-weight: 700; color: #8a7fb0; text-transform: uppercase; letter-spacing: 0.06em; }
+  .sub .next { position: absolute; right: 14px; bottom: 7px; width: 0; height: 0; border: 6px solid transparent; border-top: 8px solid #f25c3a; border-bottom: 0; }
+  .tag { position: absolute; font: 700 9px/1 ui-monospace, Menlo, monospace; color: #fff; text-shadow: 0 1px 0 #1d2146, 0 0 3px #1d2146; }
+  .name { position: absolute; font-size: 13px; font-weight: 800; color: #fff7e2; text-shadow: 0 2px 0 #1d2a5c, 0 0 4px #1d2a5c; transform: translateX(-50%); white-space: nowrap; }
+  .name small { display: block; font-size: 9px; font-weight: 700; opacity: 0.9; text-align: center; }
+
+  /* live stage HUD */
+  .pill { position: absolute; background: #fff7e2; border: 2.5px solid #1d2a5c; border-radius: 11px; box-shadow: 0 3px 0 #1d2a5c; color: #1d2a5c; font-weight: 800; font-size: 11px; padding: 3px 8px; white-space: nowrap; }
+  .bar { position: absolute; height: 12px; border: 2.5px solid #1d2a5c; border-radius: 8px; background: #2a3a7c; box-shadow: 0 3px 0 #1d2a5c; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(#ff8a5c, #f2553a); border-right: 2.5px solid #1d2a5c; }
+  .combo { position: absolute; font-weight: 900; font-style: italic; color: #ffe27a; -webkit-text-stroke: 1.5px #1d2a5c; paint-order: stroke fill; text-shadow: 0 3px 0 #1d2a5c; white-space: nowrap; transform-origin: left center; }
+  .combo b { font-size: 30px; } .combo span { font-size: 13px; margin-left: 4px; color: #fff; }
+  .tick { position: absolute; background: #fff7e2; border: 2.5px solid #1d2a5c; border-radius: 10px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: #1d2a5c; transform: translate(-50%, -100%); white-space: nowrap; box-shadow: 0 2px 0 #1d2a5c; }
+  .hint { position: absolute; left: 0; right: 0; text-align: center; font-size: 12px; font-weight: 800; color: #fff7e2; text-shadow: 0 2px 0 #1d2a5c, 0 0 5px #1d2a5c; letter-spacing: 0.04em; }
+  .seam { position: absolute; left: 0; right: 0; height: 5px; background: #1d2a5c; border-top: 2px solid #ffd24a; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="hud"></div>
-<div id="bar"><button id="bLight">light</button><button id="bShot">shot</button></div>
+<canvas id="fx"></canvas>
+<div id="ui"></div>
+<div id="dbg"></div>
+<div id="bar"><button id="bView">view</button><button id="bLight">light</button><button id="bCam">cam</button></div>
 <pre id="fatal" hidden></pre>
 <script type="module">
-// Query string:  ?light=day|sunset|night   ?shot=0..6   ?still=1 (no camera drift)
-//                ?split=1 (two views in one canvas: a side-on stage band on top, the shot below)
-//                ?t=12.5 (freeze at that time, for screenshots)   ?hud=0   ?dpr=1 (cap the pixel ratio)
+// The vertical slice of the cel engine. Nothing in the live game loads this page.
+//
+//   ?view=live    (default) the live stage band above the Vessery table, both driven by the real core with a bot at the flippers.
+//                 &phase=dialogue  the encounter is over: the camera is in on the same stage and the lines play there
+//                 &until=shot|bumper|payout|drain|objective|sceneClear &after=0.3   play on to that event, then freeze
+//                 &combo=3 (force the combo level, for looking at it)
+//   ?view=cine    Nan, Ren and Ilse talking in the lantern-stalls set, with the subtitle box
+//                 &cam=wide|two|close|low  &who=nan|ren|ilse (speaker)  &emote=neutral|smile|grim|shock|tears|anger|soft  &line=0..n
+//   ?view=table   Vessery in play, driven by the real core    &until=bumper|shot|payout... &id= &after=0.08 &balls=4 &seed=3 &chapter=0..7
+//   ?view=cast    the character sheet                          &who=ren|ilse|nan|bailiff (the emote grid's subject)
+//   ?view=engine  the engine programmer's test island          &shot=0..6
+//   everywhere:   &light=dusk|night|day   &t=8 (freeze at that time, for screenshots)   &hud=0   &dpr=1   &detail=0.6
 const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glDemo = { error: f.textContent }; };
 window.addEventListener('error', (e) => fatal(e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
 try {
-  const { createRenderer, createCamera } = await import('../src/shell/gl/index.js');
-  const { buildDemo, LIGHTS } = await import('../src/shell/gl/demo.js');
+  const GL = await import('../src/shell/gl/index.js');
   const q = new URLSearchParams(location.search);
-  const light = q.get('light') || 'sunset';
-  const fixedT = q.has('t') ? Number(q.get('t')) : null;
-  const canvas = document.getElementById('c');
-  const renderer = createRenderer(canvas, { dprCap: Number(q.get('dpr') || 2) });
-  const demo = buildDemo(light);
-  let shotN = Number(q.get('shot') || 0);
-  demo.setShot(shotN, q.get('still') === '1' || fixedT !== null);
-  const hud = document.getElementById('hud');
-  if (q.get('hud') === '0') { hud.hidden = true; document.getElementById('bar').hidden = true; }
-  document.getElementById('bLight').onclick = () => { q.set('light', LIGHTS[(LIGHTS.indexOf(light) + 1) % LIGHTS.length]); location.search = q.toString(); };
-  document.getElementById('bShot').onclick = () => { shotN = (shotN + 1) % demo.shots.length; demo.setShot(shotN, q.get('still') === '1'); };
-
-  if (fixedT !== null) { // run up to the frozen moment in fixed steps so springs and particles have settled
-    for (let t = Math.max(0, fixedT - 4); t < fixedT; t += 1 / 60) { demo.update(t, 1 / 60); demo.scene.root.updateWorld(null); }
+  const num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+  const VIEWS = ['live', 'cine', 'table', 'cast', 'engine'], LIGHTS = ['dusk', 'night', 'day'], CAMS = ['wide', 'two', 'close', 'low'];
+  const viewName = q.get('view') || 'live', light = q.get('light') || 'dusk';
+  if (!VIEWS.includes(viewName)) throw new Error(`unknown view "${viewName}" (have ${VIEWS.join(', ')})`);
+  if (!LIGHTS.includes(light)) throw new Error(`unknown light "${light}" (have ${LIGHTS.join(', ')})`);
+  const fixedT = q.has('t') ? num('t', 0) : null;
+  const canvas = document.getElementById('c'), ui = document.getElementById('ui'), dbg = document.getElementById('dbg'), fxCanvas = document.getElementById('fx');
+  const renderer = GL.createRenderer(canvas, { dprCap: num('dpr', 2) });
+  if (q.get('hud') === '0') { dbg.hidden = true; document.getElementById('bar').hidden = true; }
+  const go = (k, list, cur) => () => { q.set(k, list[(list.indexOf(cur) + 1) % list.length]); q.delete('t'); location.search = q.toString(); };
+  document.getElementById('bView').onclick = go('view', VIEWS, viewName);
+  document.getElementById('bLight').onclick = go('light', LIGHTS, light);
+  document.getElementById('bCam').onclick = go('cam', CAMS, q.get('cam') || 'wide');
+  const el = (cls, parent = ui) => { const d = document.createElement('div'); d.className = cls; parent.appendChild(d); return d; };
+  const clearAll = (r, g, b) => { const gl = renderer.gl; gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, canvas.width, canvas.height); gl.clearColor(r, g, b, 1); gl.clear(gl.COLOR_BUFFER_BIT); };
+  const NAMES = { nan: ['Nan Okerby', 'Lantern-maker, Vessery docks', '#f2553a'], ren: ['Ren Vasker', 'Halcyon cadet, in arrears', '#3566c8'], ilse: ['Ilse Maravel', "Magistrate's clerk", '#e08a1c'], bailiff: ['Mint bailiff', 'Collections', '#a8324a'] };
+  function subtitleBox() {
+    const box = el('sub'), who = el('who', box), role = el('role', box), text = document.createElement('span'); box.appendChild(text); el('next', box);
+    return { box, set(id, line) { const n = NAMES[id] || [id, '', '#555']; who.textContent = n[0]; who.style.background = n[2]; role.textContent = n[1]; text.textContent = line; } };
   }
-  const split = q.get('split') === '1', stageCam = createCamera({ fov: 26 });
-  let last = performance.now(), t = fixedT ?? 0, avg = 0, frames = 0, upd = 0;
+  // stats shared by every view: each view fills these per frame
+  const S = { draws: 0, tris: 0, cpu: 0, upd: 0, sim: 0, lights: 0, extra: '' };
+  const acc = (s) => { S.draws += s.drawCalls; S.tris += s.triangles; S.cpu += s.cpuMs; S.lights = s.lights; };
+  let frames = 0, drawFrame = null, benchStep = null;
+  const avg = { cpu: 0, upd: 0, sim: 0 };
+
+  // ---------------------------------------------------------------------------------------------- the core, with a bot
+  async function makeCore() {
+    const { content } = await import('../src/content/index.js');
+    const { init, update, toSave, leverStatus } = await import('../src/core/game.js');
+    const { STEP, addLiveBall } = await import('../src/core/physics.js');
+    const { aidAvailable } = await import('../src/core/economy.js');
+    const { currentScene, objectiveProgress } = await import('../src/core/story.js');
+    const { computeLayout } = await import('../src/shell/layout.js');
+    const seedN = num('seed', 3), wantBalls = num('balls', 0);
+    let game = init(seedN);
+    { const save = toSave(game); save.chapter = num('chapter', 0); save.scene = num('scene', 0); save.econ = { ...save.econ, writs: 3 }; game = update(content, game, { type: 'load', save }).game; }
+    const tableId = content.chapters[game.chapter].tableId, table = content.tables[tableId];
+    // the flipper bot of test/playthrough.test.js
+    function mulberry(a) { return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+    const K = { lead: 0.03, wait: [0, 5], hold: [8, 16], cool: [8, 10], aim: [14, 34], plunge: [40, 80] };
+    const rnd = mulberry(seedN * 7919 + 1), span = ([lo, n]) => lo + Math.floor(rnd() * n);
+    const st = { fl: { wait: -1, hold: 0, cool: 0, aim: 20 }, fr: { wait: -1, hold: 0, cool: 0, aim: 20 }, plunge: 0, lever: 0 };
+    function bot(g) {
+      const { phys } = g, out = { left: false, right: false, plunge: false, nudge: null };
+      if (phys.balls.some((b) => b.state === 'plunger')) { if (st.plunge === 0) st.plunge = span(K.plunge); st.plunge--; out.plunge = st.plunge > 0; st.lever = 0; }
+      else {
+        const status = leverStatus(content, g), liveL = status === 'free' || status === 'pull' || status === 'loan' || status === 'credit';
+        if (liveL && !aidAvailable(g.econ)) { st.lever++; const since = st.lever - 40; out.plunge = since > 0 && since % 12 < 4; } else st.lever = 0;
+      }
+      for (const f of table.flippers) {
+        const s = st[f.id]; if (!s) continue;
+        const dirX = f.side === 'left' ? 1 : -1;
+        const near = phys.balls.some((b) => {
+          if (b.state !== 'live') return false;
+          const along = (b.pos[0] - f.pivot[0]) * dirX, lead = b.pos[1] + b.vel[1] * K.lead, slow = Math.hypot(b.vel[0], b.vel[1]) < 160;
+          return along > (slow ? s.aim : -4) && along < f.length + 6 && lead > f.pivot[1] - 26 && b.pos[1] < f.pivot[1] + 30 && b.vel[1] > -200;
+        });
+        if (s.hold > 0) { s.hold--; if (s.hold === 0) { s.cool = K.cool[0] + Math.floor(rnd() * K.cool[1]); s.aim = K.aim[0] + rnd() * K.aim[1]; } }
+        else if (s.cool > 0) s.cool--;
+        else if (s.wait >= 0) { if (s.wait === 0) s.hold = K.hold[0] + Math.floor(rnd() * K.hold[1]); s.wait--; }
+        else if (near) s.wait = K.wait[0] + Math.floor(rnd() * K.wait[1]);
+        out[f.side] = s.hold > 0;
+      }
+      return out;
+    }
+    const { tableEvents } = await import('../src/shell/gl/table3d.js');
+    const tickEvents = [], seen = {}, idle = { left: false, right: false, plunge: false, nudge: null };
+    function tick(events) {
+      if (game.mode === 'play') {
+        if (wantBalls > 0 && game.phys.balls.some((b) => b.state === 'live') && game.phys.balls.length < wantBalls) game = { ...game, phys: addLiveBall(game.phys, [150 + game.phys.balls.length * 30, 380], [(game.phys.balls.length % 2 ? 1 : -1) * 260, -420]) };
+        const before = game, msg = { type: 'tick', dt: STEP, input: bot(game) };
+        game = update(content, game, msg).game;
+        tableEvents(content, before, msg, game, tickEvents);
+        for (const e of tickEvents) { seen[e.type] = (seen[e.type] || 0) + 1; if (events) events.push(e); }
+      } else if (game.mode === 'cine') game = update(content, game, { type: 'skip' }).game;
+      else if (game.mode !== 'end') game = update(content, update(content, game, { type: 'tick', dt: STEP, input: idle }).game, { type: 'confirm' }).game;
+    }
+    return {
+      content, tableId, table, STEP, seen, computeLayout, tick,
+      get game() { return game; },
+      scene() { return currentScene(content, game); },
+      progress() { const sc = currentScene(content, game); return sc && game.hits ? objectiveProgress(sc, game.hits, game.seq) : { done: 0, total: 1, complete: false }; },
+      score() { return game.score ?? (game.econ && game.econ.score) ?? 0; },
+    };
+  }
+  /** Run a stepper to the freeze moment asked for in the query string. step(feed) advances 1/60 s and returns the frame's events. */
+  function runTo(step, core) {
+    const freezeAt = q.has('t') || q.has('until') ? num('t', 0) : null, until = q.get('until'), after = num('after', 0.08);
+    if (freezeAt === null) return false;
+    let t = 0;
+    while (t < freezeAt - 6) { step(false); t += 1 / 60; }
+    while (t < freezeAt) { step(true); t += 1 / 60; }
+    if (until) {
+      let guard = 60 * 600, hit = false;
+      while (!hit && guard-- > 0) hit = step(true).some((e) => e.type === until && (!q.has('id') || e.id === q.get('id')));
+      if (!hit) throw new Error(`no "${until}" event in ten minutes of play`);
+      for (let i = 0; i < Math.round(after * 60); i++) step(true);
+    }
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------------------------- views
+  const DEMO_LINES = [
+    { who: 'nan', cam: 'wide', emote: 'neutral', text: 'Hold that frame, will you. No, by the wire. Paper remembers every thumb.' },
+    { who: 'ren', cam: 'two', emote: 'neutral', text: 'You should lodge a claim. They are obliged to pay for damage done under a clearance order.' },
+    { who: 'nan', cam: 'close', emote: 'smile', text: 'Are they, now. And how long does the Mint take to pay an old woman for paper?' },
+    { who: 'ren', cam: 'close', emote: 'grim', text: 'Ninety days. If nobody disputes it.' },
+    { who: 'ilse', cam: 'close', emote: 'anger', text: "A rule that can be waived by the people it is meant to watch isn't a rule. It's a courtesy." },
+    { who: 'nan', cam: 'two', emote: 'soft', text: 'Tessaly is mine. My sister Wyn married a cooper there. Nineteen years dark this autumn.' },
+    { who: 'ilse', cam: 'two', emote: 'smile', text: "Oh, good, they sent someone. You're late, and you're tall, which makes up for it." },
+    { who: 'ren', cam: 'low', emote: 'shock', text: 'It says Tessaly. This one is Orm. This one, Little Brand.' },
+  ];
+
+  async function viewCine() {
+    const { lanternStalls } = await import('../src/shell/gl/sets/lantern-stalls.js');
+    const set = lanternStalls.build(GL, { light });
+    const troupe = GL.createTroupe({ detail: num('detail', 1) });
+    const cine = GL.createCine(set, troupe, { on: ['nan', 'ren', 'ilse'] });
+    const camera = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
+    const sub = subtitleBox(); sub.box.style.bottom = 'calc(26px + env(safe-area-inset-bottom))';
+    const forced = q.has('who') || q.has('emote') || q.has('cam') || q.has('line');
+    let lineN = num('line', 0) % DEMO_LINES.length, lineT = 0, t = 0, shown = -1;
+    const cur = () => { const L = DEMO_LINES[lineN]; return forced ? { who: q.get('who') || L.who, cam: q.get('cam') || L.cam, emote: q.get('emote') || L.emote, text: (DEMO_LINES.find((x) => x.who === (q.get('who') || L.who) && (!q.has('emote') || x.emote === q.get('emote'))) || DEMO_LINES.find((x) => x.who === (q.get('who') || L.who)) || L).text } : L; };
+    const state = { speaker: '', emote: '', cam: '', camera, aspect: 1, viewHeight: 852, still: fixedT !== null, snap: false };
+    function step(dt) {
+      t += dt; lineT += dt;
+      if (!forced && fixedT === null && lineT > 4.2) { lineT = 0; lineN = (lineN + 1) % DEMO_LINES.length; }
+      const L = cur();
+      if (shown !== L) { shown = L; sub.set(L.who, L.text); }
+      state.speaker = L.who; state.emote = L.emote; state.cam = L.cam; state.aspect = canvas.clientWidth / canvas.clientHeight; state.viewHeight = canvas.clientHeight;
+      set.update(t, dt); cine.update(dt, t, state);
+    }
+    canvas.addEventListener('pointerdown', () => { lineT = 0; lineN = (lineN + 1) % DEMO_LINES.length; });
+    if (fixedT !== null) for (let i = 0; i < Math.round(Math.min(fixedT, 5) * 60); i++) { if (i === 0) t = Math.max(0, fixedT - 5); step(1 / 60); }
+    drawFrame = (dt) => { if (fixedT === null) step(dt); else cine.update(0, t, state); acc(renderer.render(set.scene, camera, t, { x: 0, y: 0, w: canvas.clientWidth, h: canvas.clientHeight, ...cine.view })); S.extra = `${light} / ${state.cam} / ${state.speaker} ${state.emote}`; };
+    benchStep = () => { const a = performance.now(); step(1 / 60); const b = performance.now(); renderer.render(set.scene, camera, t, { x: 0, y: 0, w: canvas.clientWidth, h: canvas.clientHeight, ...cine.view }); return b - a; };
+    window.glDemo.set = set; window.glDemo.cine = cine; window.glDemo.camera = camera;
+  }
+
+  async function viewTable() {
+    const core = await makeCore();
+    const { createTableView } = await import('../src/shell/gl/table3d.js');
+    const view = createTableView(core.content, core.tableId, {});
+    const hud = el('pill'); hud.style.left = '12px'; hud.style.top = '14px';
+    const hint = el('hint');
+    function fit() {
+      const cw = canvas.clientWidth, ch = canvas.clientHeight, L = core.computeLayout(cw, ch), k = Math.min(cw / L.W, ch / L.H), ox = (cw - L.W * k) / 2, oy = (ch - L.H * k) / 2;
+      view.fit({ W: cw, H: oy + L.H * k, table: { x: ox + L.table.x * k, y: oy + L.table.y * k, scale: L.table.scale * k } });
+      hint.style.top = Math.round(view.rect.y - 26) + 'px';
+    }
+    fit(); window.addEventListener('resize', fit);
+    const ev = []; let t = 0, accT = 0;
+    const step = (feed) => { ev.length = 0; core.tick(ev); core.tick(ev); t += 1 / 60; if (feed) view.update(core.game, ev, 1 / 60); return ev; };
+    const frozen = runTo(step, core);
+    drawFrame = (dt) => {
+      if (!frozen) { const a = performance.now(); accT += dt; ev.length = 0; while (accT >= core.STEP) { core.tick(ev); accT -= core.STEP; } const b = performance.now(); t += dt; view.update(core.game, ev, dt); S.sim = b - a; S.upd = performance.now() - b; } else view.update(core.game, null, 0);
+      const sky = view.env.sky; clearAll(...GL.rgb(sky.horizon || '#ffd9a0'));
+      acc(view.render(renderer, t));
+      const sc = core.scene(), p = core.progress();
+      hud.textContent = `VESSERY   ${p.done}/${p.total}`; hint.textContent = sc ? sc.hint.toUpperCase() : '';
+      S.extra = `${core.tableId} ${core.game.phys ? core.game.phys.balls.length : 0} balls`;
+    };
+    benchStep = () => { const a = performance.now(); step(true); const b = performance.now(); view.render(renderer, t); return b - a; };
+    window.glDemo.table = view; window.glDemo.core = core;
+  }
+
+  async function viewLive() {
+    const core = await makeCore();
+    const { createTableView } = await import('../src/shell/gl/table3d.js');
+    const { lanternStalls } = await import('../src/shell/gl/sets/lantern-stalls.js');
+    const dialogue = q.get('phase') === 'dialogue';
+    const tview = createTableView(core.content, core.tableId, {});
+    const set = lanternStalls.build(GL, { light });
+    const troupe = GL.createTroupe({ detail: num('detail', dialogue ? 1 : 0.6) });
+    set.foreground.visible = false;
+    const enc = GL.createEncounter(set, troupe, { party: ['ren', 'ilse', 'nan'], opposition: ['bailiff', 'bailiff', 'bailiff'], title: 'MINT BAILIFFS' });
+    const stageCam = GL.createCamera({ fov: 24, near: 0.3, far: 1500 });
+    const band = { x: 0, y: 0, w: 0, h: 0 };
+    // HUD over the band
+    const seam = el('seam'), title = el('pill'), bar = el('bar'), fill = document.createElement('i'); bar.appendChild(fill);
+    const combo = el('combo'), score = el('pill'), tick = el('tick'), hint = el('hint');
+    title.textContent = enc.title; tick.hidden = true; combo.hidden = true;
+    const sub = dialogue ? subtitleBox() : null;
+    const fx = fxCanvas.getContext('2d'); let fxDpr = 1;
+    function fit() {
+      const cw = canvas.clientWidth, ch = canvas.clientHeight, L = core.computeLayout(cw, ch), k = Math.min(cw / L.W, ch / L.H), ox = (cw - L.W * k) / 2, oy = (ch - L.H * k) / 2;
+      tview.fit({ W: cw, H: oy + L.H * k, table: { x: ox + L.table.x * k, y: oy + L.table.y * k, scale: L.table.scale * k } });
+      band.w = cw; band.h = Math.round(dialogue ? ch * 0.5 : tview.rect.y + 44 * k);
+      seam.style.top = band.h - 3 + 'px';
+      title.style.right = '10px'; title.style.top = '10px'; bar.style.right = '10px'; bar.style.top = '36px'; bar.style.width = '120px';
+      score.style.left = '10px'; score.style.top = '10px'; combo.style.left = '12px'; combo.style.top = '34px';
+      hint.style.top = band.h - 24 + 'px';
+      if (sub) { sub.box.style.top = band.h - 34 + 'px'; }
+      fxDpr = Math.min(2, devicePixelRatio || 1); fxCanvas.width = Math.round(cw * fxDpr); fxCanvas.height = Math.round(ch * fxDpr);
+    }
+    fit(); window.addEventListener('resize', fit);
+    // energy travelling from the table up to whoever acts: 2D sparks over both views
+    const sparks = [], A = [0, 0], B = [0, 0], HP = [0, 0, 0];
+    let lastHit = null;
+    function cueSparks() {
+      for (const c of enc.cues) {
+        if (c.type === 'energy' && lastHit) {
+          const w = tview.where(lastHit.id); if (w) tview.project(w[0], w[1], 8, A); else tview.reelPos(1, A);
+          HP[0] = c.who.headPos[0]; HP[1] = c.who.headPos[1] - 0.25; HP[2] = c.who.headPos[2];
+          if (GL.projectTo(stageCam, HP, band, B)) sparks.push({ x0: A[0], y0: A[1], x1: B[0], y1: B[1], t: 0, big: c.big });
+        } else if (c.type === 'boon') { tview.reelPos(1, A); for (const ch of enc.party) { HP[0] = ch.headPos[0]; HP[1] = ch.headPos[1]; HP[2] = ch.headPos[2]; if (GL.projectTo(stageCam, HP, band, B)) sparks.push({ x0: A[0], y0: A[1], x1: B[0], y1: B[1], t: 0, big: true, gold: true }); } }
+        else if (c.type === 'combo' && c.level >= 2) { combo.animate([{ transform: 'scale(1.7) rotate(-6deg)' }, { transform: 'scale(1) rotate(-4deg)' }], { duration: 260, easing: 'cubic-bezier(.2,1.6,.4,1)' }); }
+      }
+    }
+    function drawSparks(dt) {
+      fx.setTransform(fxDpr, 0, 0, fxDpr, 0, 0); fx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i]; s.t += dt / 0.34; if (s.t > 1.25) { sparks.splice(i, 1); continue; }
+        fx.lineCap = 'round';
+        for (let k = 0; k < 7; k++) { // a short comet along a bowed path
+          const u = Math.min(1, Math.max(0, s.t - k * 0.035)), e = u * u * (3 - 2 * u), bow = Math.sin(e * Math.PI) * (s.x1 - s.x0 > 0 ? -40 : 40);
+          const x = s.x0 + (s.x1 - s.x0) * e + bow, y = s.y0 + (s.y1 - s.y0) * e, r = (s.big ? 6.5 : 4.5) * (1 - k / 8);
+          fx.fillStyle = k === 0 ? '#ffffff' : s.gold ? '#ffd24a' : k < 3 ? '#fff0a0' : '#ffb347'; fx.globalAlpha = s.t > 1 ? Math.max(0, 1 - (s.t - 1) * 4) : 1;
+          fx.beginPath(); fx.arc(x, y, r, 0, 6.3); fx.fill();
+          if (k === 0) { fx.strokeStyle = '#1d2a5c'; fx.lineWidth = 1.5; fx.stroke(); }
+        }
+      }
+      fx.globalAlpha = 1;
+    }
+    const DLG = [{ who: 'bailiff', emote: 'tears', text: 'All right! All right. The route can go round the stalls.' }, { who: 'nan', emote: 'smile', text: 'There. That is three names lit, and not a thumb on the paper.' }];
+    const ev = []; let t = 0, accT = 0;
+    const forceCombo = num('combo', 0);
+    const feed = (dt) => {
+      for (const e of ev) if (e.id && (e.type === 'bumper' || e.type === 'target' || e.type === 'shot' || e.type === 'sling' || e.type === 'rollover' || e.type === 'saucer')) lastHit = e;
+      if (forceCombo && enc.log.length === 0) for (let i = 0; i < forceCombo * 7; i++) enc.log.push({ t: t - 0.01, type: 'shot' });
+      if (forceCombo) enc.log.push({ t, type: 'bumper' });
+      tview.update(core.game, ev, dt); set.update(t, dt); enc.update(dt, t, ev, core.progress()); cueSparks();
+    };
+    const step = (f) => { ev.length = 0; core.tick(ev); core.tick(ev); t += 1 / 60; if (f) feed(1 / 60); return ev; };
+    const frozen = runTo(step, core);
+    if (dialogue) { enc.update(0, t, [{ type: 'sceneClear' }], core.progress()); for (let i = 0; i < 90; i++) { t += 1 / 60; set.update(t, 1 / 60); enc.update(1 / 60, t, null, null); } }
+    const heads = [];
+    function render(dt) {
+      clearAll(...GL.rgb('#1d2a5c'));
+      set.foreground.visible = false;
+      if (dialogue) { // the same stage, the camera in on the two who are talking
+        const line = DLG[Math.floor(t / 4) % DLG.length], sp = line.who === 'bailiff' ? enc.opposition[0] : enc.party.find((c) => c.id.startsWith(line.who));
+        heads.length = 0; heads.push(enc.party[0].headPos, enc.opposition[0].headPos, sp.headPos);
+        GL.frameHeads(stageCam, heads, { aspect: band.w / band.h, fov: 26, yaw: -12, pitch: 5, pad: 0.42, fillH: 0.5, fillW: 0.9, at: 0.42 });
+        set.env.shadow.center = [0, 0, 0.6]; set.env.shadow.radius = 3.4; set.env.outline.width = GL.inkFor(stageCam, band.h, 0.2); troupe.aim(stageCam);
+        for (const ch of enc.all) ch.state.speaking = ch === sp;
+        sub.set(line.who, line.text);
+        acc(renderer.render(set.scene, stageCam, t, { ...band, shadowCenter: set.env.shadow.center, shadowRadius: 3.4 }));
+      } else { enc.frame(stageCam, band.w / band.h, t, band.h); acc(renderer.render(set.scene, stageCam, t, { ...band, ...enc.view })); }
+      // the table, under the band; the band overlaps the empty sea above the cabinet's head
+      const r = tview.rect; acc(tview.render(renderer, t));
+      // HUD
+      fill.style.width = Math.round(enc.resolve * 100) + '%';
+      const cb = enc.combo; combo.hidden = cb.level < 1 || cb.count < 2;
+      if (!combo.hidden) { combo.innerHTML = `<b>${cb.count}</b><span>${GL.COMBO_NAMES[cb.level] || 'HITS'}</span>`; combo.style.transform = 'rotate(-4deg)'; combo.style.opacity = String(0.45 + 0.55 * Math.min(1, cb.left * 3)); }
+      const sc = core.scene(), p = core.progress(); score.textContent = `LANTERNS ${p.done}/${p.total}`; hint.textContent = dialogue ? '' : sc ? sc.hint.toUpperCase() : '';
+      drawSparks(dt);
+      S.extra = `combo ${cb.count} L${cb.level}  power ${enc.power.toFixed(2)}  resolve ${enc.resolve.toFixed(2)}`;
+    }
+    drawFrame = (dt) => {
+      if (!frozen && !dialogue) { const a = performance.now(); accT += dt; ev.length = 0; while (accT >= core.STEP) { core.tick(ev); accT -= core.STEP; } const b = performance.now(); t += dt; feed(dt); S.sim = b - a; S.upd = performance.now() - b; }
+      else if (dialogue && fixedT === null) { t += dt; set.update(t, dt); enc.update(dt, t, null, null); }
+      else { tview.update(core.game, null, 0); }
+      render(frozen ? 0 : dt);
+    };
+    if (frozen) { for (const s of sparks) s.t = Math.max(s.t, 0.55); }
+    benchStep = () => { const a = performance.now(); step(true); const b = performance.now(); render(1 / 60); return b - a; };
+    window.glDemo.enc = enc; window.glDemo.table = tview; window.glDemo.set = set; window.glDemo.core = core;
+  }
+
+  async function viewCast() {
+    const { EMOTES } = await import('../src/shell/gl/characters.js');
+    const { kitMaterials } = await import('../src/shell/gl/sets/kit.js');
+    // a plain studio in the set's own light, so the sheet shows what the game will show
+    const env = GL.makeEnv(light === 'dusk' ? 'sunset' : light, {
+      water: { level: -0.45, shores: [[0, 0, 4.6, 1.2]] },
+      ...(light === 'dusk' ? { key: { dir: [-0.55, 0.5, 0.67], color: '#ffe2b0' }, shadow: { tint: '#7f78e0', lift: 0.1, saturate: 1.4 }, ambient: { sky: '#ffa98e', ground: '#7d6ad0', amount: 0.16 }, rim: { color: '#ffd98a', amount: 1, edge: 0.72 } } : {}),
+      ...(light === 'night' ? { key: { dir: [-0.35, 0.6, 0.7], color: '#cdd9ff' }, shadow: { tint: '#4a5fd0', lift: 0.16, saturate: 1.3 }, ambient: { amount: 0.2 } } : {}),
+      points: light === 'day' ? [] : [{ pos: [-1.6, 1.9, 2.2], color: '#ffc98a', radius: 6, intensity: light === 'night' ? 1.1 : 0.6 }],
+    });
+    const scene = GL.createScene(env); scene.sprites = GL.createSprites(32);
+    const M = kitMaterials();
+    scene.root.add(GL.node('floor', GL.tint(GL.place(GL.cylinder(4.4, 4.6, 0.7, 40), 0, -0.7, 0), light === 'night' ? '#6f86d8' : '#ffe9bf'), M.ground));
+    const troupe = GL.createTroupe({ detail: num('detail', 1) });
+    const ids = ['ren', 'ilse', 'nan', 'bailiff'], cast = {}, spots = { ren: [-0.62, 0, 0], ilse: [-0.02, 0, 0.22], nan: [0.58, 0, 0.02], bailiff: [1.3, 0, -0.1] }, heading = { ren: 14, ilse: -4, nan: -20, bailiff: -30 };
+    for (const id of ids) { const ch = cast[id] = troupe.spawn(id); ch.root.setPos(...spots[id]); scene.root.add(ch.root); ch.glow = ch.lampPos ? scene.sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.8, color: '#ffa63f', alpha: 0.7 }) : null; }
+    const cam = GL.createCamera({ fov: 24, near: 0.2, far: 600 }), who = q.get('who') || 'ilse';
+    let cells = [], lw = 0;
+    const tag = (x, y, text) => { const d = el('tag'); d.style.left = x + 'px'; d.style.top = y + 'px'; d.textContent = text; };
+    function layout(W, H) {
+      ui.textContent = ''; cells = [];
+      const rowH = Math.round(H * 0.27);
+      cells.push({ x: 0, y: 0, w: W, h: rowH, show: ids, shot: 'group', yaw: -6, pitch: 6, state: { ren: { emote: 'smile', look: 'camera' }, ilse: { look: 'camera', emote: 'smile' }, nan: { emote: 'soft', look: 'camera' }, bailiff: { emote: 'anger', look: 'camera' } } });
+      ids.forEach((id) => { const n = el('name'); n.dataset.id = id; n.textContent = NAMES[id][0].split(' ')[0] === 'Mint' ? 'Bailiff' : NAMES[id][0].split(' ')[0]; n.style.top = rowH - 22 + 'px'; });
+      const eh = Math.round(H * 0.105), cw = W / 7;
+      ['ren', 'ilse', 'nan'].forEach((id, k) => EMOTES.forEach((e, i) => { cells.push({ x: i * cw, y: rowH + k * eh, w: cw, h: eh, show: [id], shot: 'head', of: id, yaw: (k + i) % 2 ? -20 : 20, pitch: 3, margin: 1.42, state: { [id]: { emote: e, look: 'camera', talk: e === 'smile' || e === 'shock' || e === 'anger' ? 0.8 : 0, face: 0 } } }); if (k === 0) tag(i * cw + 3, rowH + 3, e); }));
+      const ty = rowH + 3 * eh, th = Math.round(H * 0.15);
+      ['ren', 'ilse', 'nan'].forEach((id, k) => [0, 40, 90].forEach((yw, i) => cells.push({ x: k * W / 3 + i * W / 9, y: ty, w: W / 9, h: th, show: [id], shot: 'body', of: id, yaw: yw, pitch: 6, margin: 1.2, state: { [id]: { face: 0 } } })));
+      tag(3, ty + 3, 'front / three-quarter / side');
+      const cy = ty + th, chh = H - cy, clips = [['ren', 'strike', 0.27, 'anger'], ['ilse', 'cheer', 0.3, 'smile'], ['nan', null, 0, 'smile'], ['bailiff', 'hit', 0.29, 'shock']];
+      clips.forEach(([id, clip, at, emote], i) => { cells.push({ x: i * W / 4, y: cy, w: W / 4, h: chh, show: [id], shot: 'body', of: id, yaw: id === 'bailiff' ? 40 : -34, pitch: 6, margin: 1.5, act: clip ? [clip, at] : null, state: { [id]: { face: 0, emote, pose: clip ? 'stand' : 'signature' } } }); tag(i * W / 4 + 3, cy + 3, clip || 'signature'); });
+    }
+    const C3 = [0, 0, 0], st = {};
+    function aim(cell) {
+      const aspect = cell.w / cell.h, tv = Math.tan(cam.fov * GL.DEG / 2), fit = (h, w) => Math.max(h / 2 / tv, w / 2 / (tv * aspect));
+      if (cell.shot === 'group') { C3[0] = 0.32; C3[1] = 0.6; C3[2] = 0.1; cam.fov = 24; cam.orbit(C3, fit(1.5, 2.6), cell.yaw, cell.pitch); return 2.6; }
+      const ch = cast[cell.of], p = ch.root.position;
+      if (cell.shot === 'body') { C3[0] = p[0]; C3[1] = ch.height * 0.52; C3[2] = p[2]; cam.fov = 24; cam.orbit(C3, fit(ch.height * cell.margin, ch.height * 0.72 * cell.margin), cell.yaw, cell.pitch); return 1.5; }
+      const hp = ch.headPos, hs = ch.headRadius * 2.25; C3[0] = hp[0]; C3[1] = hp[1] + hs * 0.05; C3[2] = hp[2]; cam.fov = 20; cam.orbit(C3, fit(hs * cell.margin, hs * 0.86 * cell.margin), cell.yaw, cell.pitch); return 1.2;
+    }
+    let t = fixedT ?? 0; const P2 = [0, 0];
+    function draw(dt) {
+      const W = canvas.clientWidth, H = canvas.clientHeight; if (W !== lw) { lw = W; layout(W, H); }
+      if (fixedT === null) t += dt;
+      for (const id of ids) cast[id].update(fixedT === null ? dt : 0, { face: heading[id], wind: [0.6, 0, 0.2] });
+      for (const cell of cells) {
+        const rad = aim(cell); cam.update(cell.w / cell.h);
+        env.outline.width = GL.inkFor(cam, cell.h, 0.2); troupe.aim(cam);
+        for (const id of ids) {
+          const ch = cast[id]; ch.root.visible = cell.show.includes(id); if (ch.glow) ch.glow.visible = ch.root.visible;
+          if (!ch.root.visible) continue;
+          const s = st[id] || (st[id] = {}); s.emote = 'neutral'; s.talk = undefined; s.pose = 'stand'; s.look = null; s.face = heading[id]; Object.assign(s, cell.state[id]); s.camera = cam; s.snap = true;
+          if (cell.act && id === cell.of) { ch.release(); ch.act(cell.act[0]); ch.update(cell.act[1], s); ch.update(0, s); ch.release(); } else ch.update(0, s);
+          if (ch.glow) { ch.glow.pos[0] = ch.lampPos[0]; ch.glow.pos[1] = ch.lampPos[1]; ch.glow.pos[2] = ch.lampPos[2]; }
+        }
+        acc(renderer.render(scene, cam, t, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, shadowCenter: cam.target, shadowRadius: rad }));
+        if (cell.shot === 'group') for (const n of ui.querySelectorAll('.name')) { const ch = cast[n.dataset.id]; C3[0] = ch.root.position[0]; C3[1] = 0; C3[2] = ch.root.position[2]; if (GL.projectTo(cam, C3, cell, P2)) n.style.left = P2[0] + 'px'; }
+      }
+      S.extra = `${cells.length} cells`;
+    }
+    drawFrame = draw;
+    benchStep = () => { const a = performance.now(); for (const id of ids) cast[id].update(1 / 60, { face: heading[id] }); const b = performance.now(); draw(0); return b - a; };
+    window.glDemo.cast = cast;
+  }
+
+  async function viewEngine() {
+    const { buildDemo } = await import('../src/shell/gl/demo.js');
+    const demo = buildDemo(light === 'dusk' ? 'sunset' : light);
+    demo.setShot(num('shot', 0), fixedT !== null);
+    if (fixedT !== null) for (let t = Math.max(0, fixedT - 4); t < fixedT; t += 1 / 60) { demo.update(t, 1 / 60); demo.scene.root.updateWorld(null); }
+    let t = fixedT ?? 0;
+    drawFrame = (dt) => { if (fixedT === null) { t += dt; demo.update(t, dt); } else demo.update(fixedT, 0); acc(renderer.render(demo.scene, demo.camera, t)); };
+    benchStep = () => { const a = performance.now(); t += 1 / 60; demo.update(t, 1 / 60); const b = performance.now(); renderer.render(demo.scene, demo.camera, t); return b - a; };
+  }
+
+  window.glDemo = {
+    renderer, frames: 0, view: viewName,
+    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { view: viewName, renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), draws: S.draws, tris: S.tris, cpuMs: +avg.cpu.toFixed(3), size: [canvas.width, canvas.height], extra: S.extra }; },
+    /** Time n frames of (simulate + pose) and render, back to back. `finish` waits for the GPU each frame. */
+    bench(n = 300, finish = false) {
+      const gl = renderer.gl; let tu = 0, tr = 0;
+      for (let i = 0; i < n; i++) { const a = performance.now(); const u = benchStep(); if (finish) gl.finish(); const all = performance.now() - a; tu += u; tr += all - u; }
+      S.draws = 0; S.tris = 0; drawFrame(0);
+      return { view: viewName, frames: n, updateMs: +(tu / n).toFixed(3), renderMs: +(tr / n).toFixed(3), finish, draws: S.draws, tris: S.tris };
+    },
+  };
+  await ({ live: viewLive, cine: viewCine, table: viewTable, cast: viewCast, engine: viewEngine })[viewName]();
+  let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    const u0 = performance.now();
-    if (fixedT === null) { t += dt; demo.update(t, dt); } else demo.update(fixedT, 0);
-    upd += (performance.now() - u0 - upd) * 0.05;
-    let s, cost;
-    if (split) { // the same scene twice: a wide short band from the side, and the chosen shot under it
-      const cw = canvas.clientWidth, ch = canvas.clientHeight, band = Math.round(ch * 0.26);
-      stageCam.orbit([0.3, 1.35, 1.9], 6.2, -62 + Math.sin(t * 0.3) * 4, 7);
-      s = renderer.render(demo.scene, stageCam, t, { x: 0, y: 0, w: cw, h: band, shadowCenter: stageCam.target, shadowRadius: 4.5 }); cost = s.cpuMs; const d1 = s.drawCalls;
-      s = renderer.render(demo.scene, demo.camera, t, { x: 0, y: band, w: cw, h: ch - band }); cost += s.cpuMs; s.drawCalls += d1;
-    } else { s = renderer.render(demo.scene, demo.camera, t); cost = s.cpuMs; }
-    avg += (cost - avg) * 0.05; frames++;
-    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${light} / ${demo.shots[shotN].name}\n${s.drawCalls} draws  ${(s.triangles / 1000).toFixed(1)}k tris  ${s.lights} lamps\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms\n${s.width}x${s.height}`;
+    S.draws = 0; S.tris = 0; S.cpu = 0;
+    drawFrame(dt);
+    avg.cpu += (S.cpu - avg.cpu) * 0.05; avg.upd += (S.upd - avg.upd) * 0.05; avg.sim += (S.sim - avg.sim) * 0.05; frames++;
+    if (!dbg.hidden && frames % 15 === 0) dbg.textContent = `${viewName}  ${S.extra}\n${S.draws} draws  ${(S.tris / 1000).toFixed(1)}k tris  ${S.lights} lamps\nrender ${avg.cpu.toFixed(2)}  pose ${avg.upd.toFixed(2)}  sim ${avg.sim.toFixed(2)} ms   ${canvas.width}x${canvas.height}`;
     window.glDemo.frames = frames;
     requestAnimationFrame(frame);
   }
-  window.glDemo = {
-    renderer, demo, frames: 0,
-    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), version: gl.getParameter(gl.VERSION), stats: { ...renderer.stats } }; },
-    /** Time n frames of update + render back to back. `finish` waits for the GPU each frame. */
-    bench(n = 200, finish = false) {
-      const gl = renderer.gl; let tu = 0, tr = 0, tt = t;
-      const t0 = performance.now();
-      for (let i = 0; i < n; i++) { tt += 1 / 60; const a = performance.now(); demo.update(tt, 1 / 60); const b = performance.now(); renderer.render(demo.scene, demo.camera, tt); if (finish) gl.finish(); tu += b - a; tr += performance.now() - b; }
-      return { frames: n, updateMs: tu / n, renderMs: tr / n, totalMs: (performance.now() - t0) / n, finish, drawCalls: renderer.stats.drawCalls, triangles: renderer.stats.triangles };
-    },
-  };
   requestAnimationFrame(frame);
 } catch (e) { fatal(e); }
 </script>

@@ -159,6 +159,7 @@ export function createRenderer(canvas, opts = {}) {
     gl.uniform4f(u.uMat, m.rim, m.emissive, m.receiveShadow ? 1 : 0, m.fog);
     if (m.shadowTint) gl.uniform4f(u.uMatShadow, m.shadowTint[0], m.shadowTint[1], m.shadowTint[2], 1); else gl.uniform4f(u.uMatShadow, 0, 0, 0, 0);
     gl.uniform1f(u.uLightUp, m.lightUp);
+    if (m.keyLight) gl.uniform4f(u.uMatKey, m.keyLight[0], m.keyLight[1], m.keyLight[2], 1); else gl.uniform4f(u.uMatKey, 0, 0, 0, 0);
     gl.uniform1i(u.uTexMode, m.texMode === 'none' ? 0 : m.texMode === 'decal' ? 1 : 2);
     gl.uniform1f(u.uAlphaCut, m.texMode === 'cutout' ? m.alphaCut : 0.004);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texOf(m.map));

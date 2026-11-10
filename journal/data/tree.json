@@ -12491,7 +12491,7 @@
  },
  {
   "path": "src/shell/gl/faces.js",
-  "bytes": 24206,
+  "bytes": 24273,
   "lines": 343
  },
  {
@@ -12506,8 +12506,8 @@
  },
  {
   "path": "src/shell/gl/index.js",
-  "bytes": 424,
-  "lines": 11
+  "bytes": 995,
+  "lines": 18
  },
  {
   "path": "src/shell/gl/math.js",
@@ -12521,8 +12521,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 21403,
-  "lines": 369
+  "bytes": 21538,
+  "lines": 370
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12531,8 +12531,8 @@
  },
  {
   "path": "src/shell/gl/scene.js",
-  "bytes": 25200,
-  "lines": 439
+  "bytes": 25556,
+  "lines": 442
  },
  {
   "path": "src/shell/gl/sets/kit.js",
@@ -12541,13 +12541,13 @@
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
-  "bytes": 30917,
+  "bytes": 31007,
   "lines": 390
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 21087,
-  "lines": 419
+  "bytes": 21286,
+  "lines": 421
  },
  {
   "path": "src/shell/gl/sprites.js",
@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 19182,
-  "lines": 303
+  "bytes": 20684,
+  "lines": 319
  },
  {
   "path": "src/shell/gl/table3d.js",
@@ -12661,8 +12661,8 @@
  },
  {
   "path": "tools/gl-demo.html",
-  "bytes": 5820,
-  "lines": 83
+  "bytes": 37087,
+  "lines": 437
  },
  {
   "path": "tools/gl-set.html",
