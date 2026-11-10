@@ -27,7 +27,7 @@
 // ───────────────────────── table data (src/content/tables.js) ─────────────────────────
 /**
  * @typedef {Object} Table
- * @property {string} id                       'vessery' | 'saltmere'
+ * @property {string} id                       'vessery' | 'saltmere' | 'halcyon' | 'brand' | 'tallis'
  * @property {string} name
  * @property {400} width
  * @property {800} height
