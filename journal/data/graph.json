@@ -368,6 +368,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "fa38a1a4-6f1e-41f0-998e-61cd82d00c2e",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Chapters 6-8 and both endings live: 205/205 tests, 2464 voiced lines, ending follows play in 32/32 bot games",
+   "description": "Line.lean branch, leaning frozen at ch8.s5; tables kedge/fishdock/cresset; 21 new backdrops; cast foss and tamsin; 239 min / 77 MB of voice. Emulated iPhone run clean through both endings. Steady bot 43-57 min, mediocre 51-76 min. Open: never run on a real iPhone or heard; 30-34 ms backdrop build frames; mediocre bot takes ~25 loans in ch8; the Ledger reveal covers the page.",
+   "created": "2026-11-10T10:00:15.505945Z",
+   "updated": "2026-11-10T10:00:15.505945Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -538,6 +552,13 @@
    "type": "leads_to",
    "rationale": "User: \"keep it going\"; bible Part Two has the outlines",
    "created": "2026-11-10T08:49:53.368914Z"
+  },
+  {
+   "from": "cc7ff593-cc0f-4853-9098-618c6d79ea09",
+   "to": "fa38a1a4-6f1e-41f0-998e-61cd82d00c2e",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T10:00:15.508199Z"
   }
  ]
 }

@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T09:53:49.105Z",
+ "generated": "2026-11-10T10:01:23.322Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -51,63 +51,63 @@
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T09:49:28.888Z",
+ "last": "2026-11-10T10:00:24.460Z",
  "total": {
-  "responses": 1815,
-  "input": 3854,
-  "write5m": 13241090,
-  "write1h": 925907,
-  "read": 410932911,
-  "output": 4143979,
-  "thinking": 1616926,
+  "responses": 1822,
+  "input": 3870,
+  "write5m": 13603449,
+  "write1h": 1039190,
+  "read": 412310438,
+  "output": 4153539,
+  "thinking": 1617978,
   "cost": {
-   "input": 0.027,
-   "write5m": 132.4109,
-   "write1h": 10.3426,
-   "read": 82.1866,
-   "output": 160.8141,
-   "total": 385.7812
+   "input": 0.0271,
+   "write5m": 136.0345,
+   "write1h": 12.1551,
+   "read": 82.4621,
+   "output": 161.1965,
+   "total": 391.8754
   },
-  "uncachedCost": 3033.9654,
+  "uncachedCost": 3049.1733,
   "unpriced": 0
  },
  "byGroup": {
   "lead": {
-   "responses": 67,
-   "input": 176,
+   "responses": 70,
+   "input": 184,
    "write5m": 0,
-   "write1h": 348543,
-   "read": 9145171,
-   "output": 132672,
-   "thinking": 36086,
+   "write1h": 461826,
+   "read": 9443967,
+   "output": 134484,
+   "thinking": 36149,
    "cost": {
-    "input": 0.0014,
+    "input": 0.0015,
     "write5m": 0,
-    "write1h": 5.5767,
-    "read": 1.829,
-    "output": 5.3069,
-    "total": 12.714
+    "write1h": 7.3892,
+    "read": 1.8888,
+    "output": 5.3794,
+    "total": 14.6588
    },
-   "uncachedCost": 81.258,
+   "uncachedCost": 84.6272,
    "unpriced": 0
   },
   "helpers": {
-   "responses": 1343,
-   "input": 2716,
-   "write5m": 13241090,
+   "responses": 1347,
+   "input": 2724,
+   "write5m": 13603449,
    "write1h": 0,
-   "read": 270396902,
-   "output": 3763546,
-   "thinking": 1534686,
+   "read": 271475633,
+   "output": 3771294,
+   "thinking": 1535675,
    "cost": {
-    "input": 0.0217,
-    "write5m": 132.4109,
+    "input": 0.0218,
+    "write5m": 136.0345,
     "write1h": 0,
-    "read": 54.0794,
-    "output": 150.5418,
-    "total": 337.0538
+    "read": 54.2951,
+    "output": 150.8518,
+    "total": 341.2032
    },
-   "uncachedCost": 2419.6675,
+   "uncachedCost": 2431.5062,
    "unpriced": 0
   },
   "journal": {
@@ -132,22 +132,22 @@
  },
  "byModel": {
   "claude-fable-5-2": {
-   "responses": 1411,
-   "input": 2894,
-   "write5m": 13241090,
-   "write1h": 366920,
-   "read": 279573161,
-   "output": 3896728,
-   "thinking": 1570878,
+   "responses": 1418,
+   "input": 2910,
+   "write5m": 13603449,
+   "write1h": 480203,
+   "read": 280950688,
+   "output": 3906288,
+   "thinking": 1571930,
    "cost": {
-    "input": 0.0232,
-    "write5m": 132.4109,
-    "write1h": 5.8707,
-    "read": 55.9146,
-    "output": 155.8691,
-    "total": 350.0885
+    "input": 0.0233,
+    "write5m": 136.0345,
+    "write1h": 7.6832,
+    "read": 56.1901,
+    "output": 156.2515,
+    "total": 356.1827
    },
-   "uncachedCost": 2501.3416,
+   "uncachedCost": 2516.5495,
    "unpriced": 0
   },
   "claude-opus-5-5": {
@@ -620,6 +620,24 @@
    "lead": 12.714,
    "helpers": 337.0538,
    "journal": 36.0134
+  },
+  {
+   "at": "2026-11-10T09:55:00.000Z",
+   "lead": 12.714,
+   "helpers": 337.0538,
+   "journal": 36.0134
+  },
+  {
+   "at": "2026-11-10T10:00:00.000Z",
+   "lead": 14.4209,
+   "helpers": 341.2032,
+   "journal": 36.0134
+  },
+  {
+   "at": "2026-11-10T10:05:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 36.0134
   }
  ],
  "tools": {
@@ -644,9 +662,9 @@
    "Skill": 2
   },
   "helpers": {
-   "Read": 652,
+   "Read": 653,
    "Write": 54,
-   "Bash": 1063,
+   "Bash": 1066,
    "Edit": 20,
    "ToolSearch": 19,
    "mcp__deciduous__read_messages": 43,
@@ -654,15 +672,15 @@
    "mcp__deciduous__post_message": 28
   },
   "lead": {
-   "Bash": 26,
+   "Bash": 27,
    "ToolSearch": 3,
    "Skill": 1,
    "mcp__deciduous__capture_conversation_turn": 5,
    "Write": 7,
-   "mcp__deciduous__add_node": 9,
+   "mcp__deciduous__add_node": 10,
    "Workflow": 5,
    "Agent": 6,
-   "Read": 6,
+   "Read": 7,
    "AskUserQuestion": 1,
    "Edit": 2,
    "mcp__deciduous__query_nodes": 1
