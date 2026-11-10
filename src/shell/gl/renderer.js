@@ -320,6 +320,7 @@ export function createRenderer(canvas, opts = {}) {
     if (u.uTint) { tint4[0] = n.tint[0]; tint4[1] = n.tint[1]; tint4[2] = n.tint[2]; tint4[3] = n.tint[3] * opacity; gl.uniform4fv(u.uTint, tint4); }
     if (u.uUvRect) gl.uniform4fv(u.uUvRect, n.uvRect);
     if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
+    if (u.uGlow) gl.uniform1f(u.uGlow, n.glow);
     gl.bindVertexArray(geo.vao);
     const tris = inst ? geo.triangles * inst.count : geo.triangles;
     if (inst) gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count);

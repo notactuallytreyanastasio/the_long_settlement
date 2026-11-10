@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 39926,
-  "lines": 632
+  "bytes": 39974,
+  "lines": 633
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12546,8 +12546,8 @@
  },
  {
   "path": "src/shell/gl/scene.js",
-  "bytes": 27480,
-  "lines": 472
+  "bytes": 27724,
+  "lines": 474
  },
  {
   "path": "src/shell/gl/sets/abstract.js",
@@ -12566,13 +12566,13 @@
  },
  {
   "path": "src/shell/gl/sets/ferry-dawn.js",
-  "bytes": 20608,
-  "lines": 256
+  "bytes": 20771,
+  "lines": 257
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
-  "bytes": 28022,
-  "lines": 348
+  "bytes": 28206,
+  "lines": 349
  },
  {
   "path": "src/shell/gl/sets/index.js",
@@ -12581,13 +12581,13 @@
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
-  "bytes": 59652,
-  "lines": 774
+  "bytes": 60296,
+  "lines": 780
  },
  {
   "path": "src/shell/gl/sets/kit.js",
-  "bytes": 80687,
-  "lines": 1082
+  "bytes": 81252,
+  "lines": 1086
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12611,12 +12611,12 @@
  },
  {
   "path": "src/shell/gl/sets/pier-riot.js",
-  "bytes": 25967,
-  "lines": 317
+  "bytes": 26145,
+  "lines": 318
  },
  {
   "path": "src/shell/gl/shaders.js",
-  "bytes": 28490,
+  "bytes": 28594,
   "lines": 559
  },
  {
@@ -12631,7 +12631,7 @@
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 104990,
+  "bytes": 105089,
   "lines": 1431
  },
  {

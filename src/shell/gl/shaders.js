@@ -139,7 +139,7 @@ uniform vec3 uSpecColor;
 uniform vec4 uMat;       // rim amount, emissive, receive shadow, fog amount
 uniform vec4 uMatShadow; // rgb override of the shadow tint, a = use it
 uniform vec4 uMatKey;    // xyz = this material's own key direction (a character light), a = use it
-uniform vec4 uFlash;
+uniform vec4 uFlash; uniform float uGlow; // per node: multiplies the per-vertex glow (0 puts a carried lantern out)
 uniform sampler2D uMap; uniform int uTexMode; uniform float uAlphaCut;
 ${FOG}${SHADOW}${POINTS}
 void main() {
@@ -173,7 +173,7 @@ void main() {
   float ra = fwidth(fres) * 0.75 + 0.01;
   float rim = smoothstep(uRimEdge - ra, uRimEdge + ra, fres) * smoothstep(0.0, 0.1, dot(N, uKeyDir)) * uMat.x; // the rim always comes from the scene's real key
   col = mix(col, max(col, base * 0.4 + uRimColor), rim * min(1.0, length(uRimColor) * 2.0));
-  float glow = clamp(vColor.a + uMat.y, 0.0, 1.0);
+  float glow = clamp(vColor.a * uGlow + uMat.y, 0.0, 1.0);
   col = mix(col, base, glow);
   col = mix(col, uFlash.rgb, uFlash.a);
   col = applyFog(col, dist, uMat.w);

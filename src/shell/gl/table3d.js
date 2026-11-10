@@ -636,7 +636,7 @@ export function createTableView(content, tableId, opts = {}) {
   for (const x of [-2.1, 2.1]) set.add(node('wire', tint(place(box(0.03, 0.012, 7.3), x, 0.243, -0.15), P.gold), setMat));
 
   const DR = 0.5, DW = 0.66, DX = [-0.76, 0, 0.76], DY = 0.3, DZ = -4.6, HEAD_TOP = 1.0;
-  const PORT = [0, HEAD_TOP + 0.32, -4.86], LEVER = [2.1, 0.24, 3.42];
+  const PORT = [0, HEAD_TOP + 0.32, -4.86], LEVER = [2.1, 0.24, 2.1]; // the lever stands on the right rail above the launch corner, clear of where a HUD puts its button
   set.add(node('lever-hub', place(leverHubMesh(P), LEVER[0], LEVER[1], LEVER[2]), setMat));
   {
     const head = [];

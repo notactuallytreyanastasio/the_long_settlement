@@ -733,6 +733,7 @@ export { norm3 };
  *           glows [{ sprite, base, lamp? (index: follows that lamp's power) }]
  *           motes { box [x0, x1, y0, y1, z0, z1], every (seconds), color, size, vel [x, y, z], life } | null
  *           tick(time, dt, pw, live)   the set's own animation; pw = L.power * setPower; live = false on a time jump
+ * setPower(p) scales the lamps and their glows, and the room's house light with them (0 = half as bright, 1 = as designed, 1.5 = a little over).
  *           extra                      set-specific fields merged into the result }
  * Returns the set object (see sets/lantern-stalls.js for the shape).
  */
@@ -741,10 +742,15 @@ export function setShell({ id, light, L, scene, cameras, marks, actors, foregrou
   if (lamps.length > 6) throw new Error(`${id}: ${lamps.length} fixed lamps; the limit is 6 (the engine draws 8, two stay free for carried lamps)`);
   env.points = lamps.map((l) => ({ pos: l.pos, color: rgb(l.color), radius: l.radius, intensity: l.base * L.power }));
   let power = 1, lastT = -1, nextMote = 0;
+  // a room is lit mostly by its house light (the scene key), so power has to reach that too or an empty table would not dim the stage
+  const key0 = Array.from(env.key.color), amb0 = env.ambient.amount, lift0 = env.shadow.lift;
   const rnd = rng(911), P = [0, 0, 0];
   function setPower(p) { power = Math.max(0, Math.min(1.5, p)); }
   function update(time, dt = 0) {
     const pw = L.power * power, live = lastT >= 0 && time - lastT < 0.5 && dt > 0;
+    const house = power <= 1 ? 0.5 + 0.5 * power : 1 + 0.16 * (power - 1);
+    for (let i = 0; i < 3; i++) env.key.color[i] = key0[i] * house;
+    env.ambient.amount = amb0 * (0.6 + 0.4 * Math.min(1, power)); env.shadow.lift = lift0 * (0.5 + 0.5 * Math.min(1, power));
     for (let i = 0; i < lamps.length; i++) { const l = lamps[i], f = l.flicker ?? 0.05; env.points[i].intensity = l.base * pw * (1 - f + f * Math.sin(time * (7.3 + i * 1.7) + i * 2.1) * Math.sin(time * 3.1 + i)); }
     for (let i = 0; i < glows.length; i++) { const g = glows[i]; g.sprite.alpha = g.base * Math.min(1.25, g.fixed ? 1 : pw); }
     if (tick) tick(time, dt, pw, live);

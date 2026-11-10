@@ -14,7 +14,8 @@
 //   cue(lineId)           ch1.epi.01 resets (lantern in hand, the town's lights on), ch1.epi.07 sets it afloat
 //   marks.rail            a spot at the rail, port side, where the lantern is let down;  marks.focus: the lane lamp
 // The town's lanterns go out one by one over the first fifty seconds after build or cue('ch1.epi.01').
-// low: true drops the far town's windows and half its lights, the lifeboat's davits, the high clouds, two gulls.
+// low: true drops the far town's lit windows and half its lights, the lifeboat's davits, two gulls and some deck
+// clutter, and paints the clouds (kit cloudBank style 'painted') instead of modelling them.
 
 import * as GL0 from '../index.js';
 import {
@@ -115,7 +116,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   // ---- astern: Vessery
   const far = group('far');
   const HEAD = [-46, -0.6, -150], LH = [-8.2, 0, -144];
-  const headMesh = headland({ w: 96, d: 34, h: 9, seed: 3 });
+  const headMesh = headland({ w: 96, d: 34, h: 9, seed: 3 , ...(low ? { seg: 24, rings: 10 } : {}) });
   far.add(node('headland', headMesh, FAR, { pos: [HEAD[0], WATER - 0.1, HEAD[2]] }));
   { let top = 0; const Pm = headMesh.positions; for (let i = 0; i < Pm.length; i += 3) if (Math.hypot(Pm[i] + HEAD[0] - LH[0], Pm[i + 2] + HEAD[2] - LH[2]) < 5 && Pm[i + 1] > top) top = Pm[i + 1]; LH[1] = WATER - 0.1 + top - 0.8; }
   const lh = lighthouse({ h: 13, r: 2.3 });
@@ -172,9 +173,9 @@ function build(engine = GL0, { light, low = false } = {}) {
   ];
   env.points = lamps.map((l) => ({ pos: l.pos, color: rgb(l.color), radius: l.radius, intensity: l.base * L.power }));
 
-  const clouds = cloudBank({ count: low ? 5 : 9, seed: 13, arc: [156, 206], radius: [250, 430], height: [16, 120], size: [0.7, 1.5], speed: 0.06, ...L.cloud });
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 9, seed: 13, arc: [156, 206], radius: [250, 430], height: [16, 120], size: [0.7, 1.5], speed: 0.06, ...L.cloud });
   scene.root.add(clouds.node);
-  const high = low ? null : cloudBank({ count: 5, seed: 31, arc: [150, 212], radius: [300, 420], height: [170, 300], size: [0.9, 1.6], speed: 0.04, ...L.cloud });
+  const high = cloudBank({ style: 'painted', count: 5, seed: 31, arc: [150, 212], radius: [300, 420], height: [170, 300], size: [0.9, 1.6], speed: 0.04, ...L.cloud });
   if (high) scene.root.add(high.node);
   const GULLS = low ? 3 : 5;
   const gulls = node('gulls', gull({}), M.speck); gulls.instances = makeInstances(GULLS); gulls.instances.count = GULLS;

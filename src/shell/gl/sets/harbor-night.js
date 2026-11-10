@@ -19,7 +19,8 @@
 //                         posts pair by pair from the quay outward (v = 0: all dark). Other types: null
 //   cue(lineId)           stage business keyed to script lines (the march fills the quay; Cast Off calms it and brings the dawn)
 //   marks.focus           the great lantern;  marks.gangway: where the ferry is boarded (on the pier)
-// low: true drops the far town's glows, half the floating lights, a third of the crowd and one lantern string.
+// low: true drops the far town's glows, half the floating lights and cobbles, half the crowd, the small boat and one
+// lantern string, and paints the clouds (kit cloudBank style 'painted') instead of modelling them.
 
 import * as GL0 from '../index.js';
 import {
@@ -164,7 +165,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   // far: the lighthouse on its headland, and the town climbing the far arm of the bay
   const far = group('far');
   const HEAD = [-50, -0.6, -128], LH = [-9.4, 0, -122];
-  const headMesh = headland({ w: 96, d: 34, h: 9, seed: 3, grass: '#3f9a78' });
+  const headMesh = headland({ w: 96, d: 34, h: 9, seed: 3, grass: '#3f9a78' , ...(low ? { seg: 24, rings: 10 } : {}) });
   far.add(node('headland', headMesh, FAR, { pos: HEAD }));
   { let top = 0; const Pm = headMesh.positions; for (let i = 0; i < Pm.length; i += 3) if (Math.hypot(Pm[i] + HEAD[0] - LH[0], Pm[i + 2] + HEAD[2] - LH[2]) < 5 && Pm[i + 1] > top) top = Pm[i + 1]; LH[1] = HEAD[1] + top - 0.8; }
   const lh = lighthouse({ h: 13, r: 2.3 });
@@ -184,8 +185,8 @@ function build(engine = GL0, { light, low = false } = {}) {
   // ---- cobbles: one instanced draw
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
   const cobCols = ['#f6e4c0', '#dcc698', '#f0d9ae', '#d8c092', '#ecd2a6'];
-  scatter(cob, low ? 200 : 440, (i) => {
-    const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = QUAY_Z + 0.95 + row * (low ? 0.62 : 0.4) + (r() - 0.5) * 0.12;
+  scatter(cob, low ? 150 : 440, (i) => {
+    const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = QUAY_Z + 0.95 + row * (low ? 0.9 : 0.4) + (r() - 0.5) * 0.12;
     if (r() < 0.4) return null;
     const sc = 0.2 + r() * 0.09; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobCols[Math.floor(r() * cobCols.length)] };
   });
@@ -265,10 +266,10 @@ function build(engine = GL0, { light, low = false } = {}) {
   { const one = () => tint(rayMesh(70, 0.6, 7, 14), '#ffe9a0'); beam.add(node('beams', merge(place(one(), 0, 0, 0, 0, 0, 84), place(one(), 0, 0, 0, 0, 0, -84)), rayMaterial({ power: 1.3, near: L.beam, far: 0 }))); }
   scene.root.add(beam);
 
-  const clouds = cloudBank({ count: low ? 4 : 9, seed: 11, arc: [158, 204], radius: [250, 430], height: [18, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 9, seed: 11, arc: [158, 204], radius: [250, 430], height: [18, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
   scene.root.add(clouds.node);
-  // a second, higher bank: the 'low' camera looks up into forty degrees of sky
-  const high = low ? null : cloudBank({ count: 5, seed: 23, arc: [150, 212], radius: [300, 420], height: [170, 300], size: [0.9, 1.6], speed: 0.035, ...L.cloud });
+  // a second, higher bank, painted: the 'low' camera looks up into forty degrees of sky
+  const high = cloudBank({ style: 'painted', count: 5, seed: 23, arc: [150, 212], radius: [300, 420], height: [170, 300], size: [0.9, 1.6], speed: 0.035, ...L.cloud });
   if (high) scene.root.add(high.node);
 
   const actors = group('actors'); scene.root.add(actors);

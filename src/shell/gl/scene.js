@@ -78,6 +78,8 @@ let nodeId = 1;
  *   castShadow           false keeps this node out of the shadow map
  *   tint  [r, g, b, a]   multiplies the vertex colour (a is opacity for 'blend' materials)
  *   flash [r, g, b, a]   mixes the final colour toward rgb by a (hit flashes, selection)
+ *   glow                 multiplies the mesh's per-vertex glow (default 1): 0 puts out every lamp glass baked into this
+ *                        node's mesh, which for a batched figure is its skin node (the lantern it carries)
  *   uvRect [u, v, su, sv] remaps the mesh's 0..1 uvs into an atlas rectangle (swap eyes, mouths)
  *   light                { color, radius, intensity } makes the node a lantern at its world position
  *   instances            from makeInstances(): draw the mesh many times in one call
@@ -94,7 +96,7 @@ export class Node {
     this.children = []; this.parent = null; this.visible = true; this.castShadow = true;
     this.tint = new Float32Array([1, 1, 1, 1]); this.flash = new Float32Array(4); this.uvRect = new Float32Array(IDENT_RECT);
     this.light = null; this.instances = null; this.bones = null;
-    this.id = nodeId++; this.static = false; this.cull = true;
+    this.id = nodeId++; this.static = false; this.cull = true; this.glow = 1;
     this.local = m4.create(); this.world = m4.create();
     if (opts.pos) this.setPos(opts.pos[0], opts.pos[1], opts.pos[2]);
     if (opts.rot) this.setRot(opts.rot[0], opts.rot[1], opts.rot[2]);

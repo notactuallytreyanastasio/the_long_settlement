@@ -55,7 +55,7 @@ import {
   m4, quat, rng, DEG, rgb,
   sphere, ellipsoid, superellipsoid, blob, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane,
   merge, tint, paint, place, deform, setGlow, setOutline, gradientY, clone, bounds, scale as scaleMesh,
-  Node, material, makeInstances, setInstance,
+  Node, material, makeInstances, setInstance, createClouds,
 } from '../index.js';
 
 // ------------------------------------------------------------------------------------ palette
@@ -501,10 +501,11 @@ export const rock = ({ seed = 1, s = 1, low = PAL.rock2, high = PAL.rock } = {})
 
 /**
  * A far headland: a long lumpy hump, green on top with pale cliffs, sitting in the sea at y = 0.
- * w along X, d along Z, h tall. Colours blend softly (it is far away).
+ * w along X, d along Z, h tall. Colours blend softly (it is far away). seg / rings: 40 x 16 by default (2500 triangles);
+ * 24 x 10 is enough for a `low` build.
  */
-export function headland({ w = 60, d = 26, h = 14, seed = 1, grass = PAL.leaf, cliff = PAL.cliff, foot = '#e8b98a', capAt = 0.5 } = {}) {
-  const shape = () => blob({ rx: w / 2, ry: h, rz: d / 2, lumps: 0.55, seed, flatBottom: 0.92, seg: 40, rings: 16 });
+export function headland({ w = 60, d = 26, h = 14, seed = 1, grass = PAL.leaf, cliff = PAL.cliff, foot = '#e8b98a', capAt = 0.5, seg = 40, rings = 16 } = {}) {
+  const shape = () => blob({ rx: w / 2, ry: h, rz: d / 2, lumps: 0.55, seed, flatBottom: 0.92, seg, rings });
   // higher toward +X (the seaward tip), with a second lower hump behind it
   const hump = (p) => { const t = (p[0] / (w / 2) + 1) / 2; p[1] *= 0.5 + 0.5 * t + 0.22 * Math.sin(t * 9 + seed); };
   const base = gradientY(deform(shape(), hump), foot, cliff, 0, h * 0.3);
@@ -538,9 +539,12 @@ export function cloud({ seed = 1, w = 10, puffs = 5 } = {}) {
  *   arc [from, to]   compass range in degrees, 180 = toward -Z (where a default camera looks)
  *   radius [near, far], height [low, high], size [min, max] (multiplies a 30-unit-wide cloud at 300 away)
  *   color, shadowTint  lit top and underside colours;  speed degrees/second of drift
+ *   style     'solid' (default: one 840-triangle toon mesh, instanced) | 'painted' (the engine's createClouds: two
+ *             triangles a cloud, painted on a canvas; needs a DOM, and falls back to its own solid meshes without one)
  * Returns { node, material, update(time) }.
  */
-export function cloudBank({ count = 8, seed = 1, arc = [150, 210], radius = [260, 420], height = [18, 120], size = [0.8, 1.5], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.1, fog = 0.25 } = {}) {
+export function cloudBank({ count = 8, seed = 1, arc = [150, 210], radius = [260, 420], height = [18, 120], size = [0.8, 1.5], color = '#ffffff', shadowTint = '#a9b8f0', speed = 0.1, fog = 0.25, style = 'solid' } = {}) {
+  if (style === 'painted') return createClouds({ count, seed, arc, radius, height, size, color, shadowTint, speed, fog, style }); // the engine's flat painted cards; same arc convention as here
   const r = R(seed);
   const mat = material({ name: 'kit-cloud', outline: false, rim: 0, fog, shadowTint, receiveShadow: false, castShadow: false, bandEdge: 0.12, bandSoft: 0.01, lightUp: 0.7 });
   const n = new Node('clouds', { mesh: tint(cloud({ seed, w: 30, puffs: 5 }), color), material: mat });
