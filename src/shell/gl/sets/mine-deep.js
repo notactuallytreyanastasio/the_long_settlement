@@ -38,8 +38,8 @@ const LIGHTS = {
   lamp: {
     preset: 'night', power: 1.15,
     env: {
-      key: { dir: norm3([-0.34, 0.62, 0.7]), color: '#a898f0' },
-      shadow: { tint: '#3a2fb4', lift: 0.13, saturate: 1.35 },
+      key: { dir: norm3([-0.34, 0.62, 0.7]), color: '#efe6ff' },
+      shadow: { tint: '#4a3fc4', lift: 0.3, saturate: 1.35, on: false },
       ambient: { sky: '#5a4ce0', ground: '#3a2c9c', amount: 0.15 },
       rim: { color: '#9fe8ff', amount: 0.75, edge: 0.72 },
       fog: { color: '#2a28a8', density: 0.03, start: 12, max: 0.86 },

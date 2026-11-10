@@ -431,6 +431,8 @@ export const MARKS4 = {
   two: [{ pos: [-0.42, 0, 0.62], face: 24 }, { pos: [0.42, 0, 0.62], face: -24 }],
   party: [{ pos: [-1.05, 0, 0.75], face: 78 }, { pos: [-1.85, 0, 1.15], face: 72 }, { pos: [-2.5, 0, 0.5], face: 80 }],
   opposition: [{ pos: [1.05, 0, 0.75], face: -78 }, { pos: [1.85, 0, 1.15], face: -72 }, { pos: [2.55, 0, 0.5], face: -80 }],
+  // four in a cutscene (the director reads marks.cast[n]): two shallow rows no wider than a portrait 'wide' or 'low' mark sees
+  cast: { 4: [{ pos: [-1.26, 0, 0.5], face: 18 }, { pos: [-0.42, 0, 1.02], face: 7 }, { pos: [0.42, 0, 0.5], face: -7 }, { pos: [1.26, 0, 1.02], face: -18 }] },
 };
 
 /**

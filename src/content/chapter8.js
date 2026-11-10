@@ -211,18 +211,20 @@ export const chapter8 = {
       hint: 'Answer Halcyon: two shots round the ASSEMBLY orbit',
       objective: { kind: 'count', ids: ['assemblyOrbit'], n: 2 },
       reward: { points: 25000 },
-      // An argument won on the law. Counsel for Halcyon is a person (a 'crowd' voice in the script, a robed clerk
-      // on the stage); Maravel stands behind as the witness whose honest answer is against her.
+      // An argument won on the law, and the thing won is the Bench's ruling: the opposition is the motion before
+      // the three magistrates (the set's own), who come round one lamp at a time. Counsel for Halcyon (a 'crowd'
+      // voice in the script, a robed clerk on the stage) stands by, and is who steps in on a drain; Maravel stands
+      // behind him, the witness whose honest answer is against her.
       encounter: {
         set: 'full-bench', light: 'dusk', mode: 'talk',
         party: ['ilse', 'tobb'],
-        opposition: { kind: 'people', who: ['clerk'], name: 'COUNSEL FOR HALCYON' },
-        extras: ['maravel'],
+        opposition: { kind: 'force', who: ['bench-ruling'], name: 'THE MOTION TO VOID' },
+        extras: ['clerk', 'maravel'],
         setback: { cue: 'counsel-rises', show: 'Counsel rises again, courteous and unhurried, and steps into her argument; Ilse gives ground and Tobb loses his place in the tally.' },
         beats: [
-          { at: 0, cue: 'the-third-road', name: 'The third road to a lapse', show: 'Afternoon light, long across the floor. Counsel for Halcyon stands easy, stage right; Maravel behind him, called as a witness. Ilse and Tobb face them.' },
-          { at: 1, cue: 'chandlers-case', name: "The Chandlers' case", show: 'Ilse has stepped forward with one finger raised; counsel has gone back a pace and is looking at the bench, not at her.' },
-          { at: 2, cue: 'the-lot-stands', name: 'The lot stands', show: 'Counsel has given way and stands with his papers down. Ilse and Tobb upright; Maravel has not moved.' },
+          { at: 0, cue: 'the-third-road', name: 'The third road to a lapse', show: 'Afternoon light, long across the floor. The three desk lamps on the bench are dark. Counsel for Halcyon stands easy, stage right, Maravel behind him, called as a witness. Ilse and Tobb face the bench.' },
+          { at: 1, cue: 'chandlers-case', name: "The Chandlers' case", show: 'Ilse has one finger raised. One lamp burns on the bench and a second is coming up; the magistrate under it has leaned in.' },
+          { at: 2, cue: 'the-lot-stands', name: 'The lot stands', show: 'All three lamps burn. The bench has ruled; counsel has his papers down. Maravel has not moved.' },
         ],
       },
       briefing: [

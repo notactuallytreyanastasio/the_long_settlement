@@ -13,6 +13,7 @@
 //   cue(lineId)       ch8.s1.* / ch8.s2.* / ch8.epi.05: the three desk lamps on the bench burn (the court is sitting)
 //   task('magistrate', i)   -> { pos (his head), stand: null, set(v) }: the scene-1 encounter. v 0..1 brings up the desk
 //                     lamp at his place and leans him in; asking for the task puts all three lamps out first.
+//   task('bench-ruling')    -> one unit for the whole bench (scene 2): v 0..1 brings the three lamps up left to right
 // Light names: 'morning' (the default: the core's 'day' builds it), 'afternoon', and the core's 'dusk' as an alias of 'afternoon'.
 // marks: a, b, c, two, party, opposition, plus focus (the window), dock { pos, face }, dock2 { pos, face } (the second place in the dock),
 //        stand { pos, face } (the witness stand), clerk { pos, face }, doorL / doorR { pos, face }, bench: [[x, y, z] x 3] (the magistrates' heads)
@@ -159,7 +160,14 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   // how far each magistrate has been brought round: 1 = his lamp burns (the court at rest), 0 = dark (scene 1 opens)
   const won = [1, 1, 1], wonNow = [1, 1, 1];
   const benchTasks = heads.map((h, i) => unit8([h[0], h[1] - 0.35, h[2] + 0.5], null, (v) => { won[i] = v; }));
-  const task = (type, i = 0) => { if (!/magistrate|bench/.test(String(type)) || !benchTasks[i]) return null; if (i === 0) { for (let k = 0; k < 3; k++) won[k] = wonNow[k] = 0; for (const u of benchTasks) u.reset(); } return benchTasks[i]; };
+  const rulingTask = unit8([heads[1][0], heads[1][1] - 0.35, heads[1][2] + 0.5], null, (v) => { for (let k = 0; k < 3; k++) won[k] = Math.max(0, Math.min(1, v * 3 - k)); });
+  const task = (type, i = 0) => {
+    const t = String(type), dark = () => { for (let k = 0; k < 3; k++) won[k] = wonNow[k] = 0; };
+    if (t === 'bench-ruling') { dark(); return rulingTask.reset(); }
+    if (t !== 'magistrate' || !benchTasks[i]) return null;
+    if (i === 0) { dark(); for (const u of benchTasks) u.reset(); }
+    return benchTasks[i];
+  };
   const cue = (id) => { noteLean8(id); if (!/^ch8\.(s1|s2|epi)\./.test(String(id))) return false; for (let k = 0; k < 3; k++) won[k] = 1; return true; };
   const P = [0, 0, 0], V = [0, -0.2, 0];
   let nextDrip = 1.2;

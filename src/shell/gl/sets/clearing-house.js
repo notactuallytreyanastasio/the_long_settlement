@@ -189,7 +189,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   }
 
   // ---- what the live stage asks for (kit-ch5 taskUnit)
-  //   'halcyon-lock'   ch5.s5: an iron-barred door, flat to the audience at stage left, with a brass lock plate and three
+  //   'halcyon-lock'   ch5.s5: an iron-barred door, flat to the audience at stage right, with a brass lock plate and three
   //                    tumblers on it. Each third of the objective turns one home (it lights); at 1 the door swings open.
   //                    The room's lamp is kept low while they work (ch5.s5.c01 has it at 0.2).
   // setback(): the lamp is held too high for a moment, and the room jumps out of the dark
@@ -197,7 +197,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   function task(type) {
     if (type !== 'halcyon-lock') return null;
     if (lockUnit) return lockUnit;
-    const GX = -2.75, GZ = -0.55, GW = 1.3, GH = 2.25, bars = [];
+    const GX = 1.35, GZ = -0.45, GW = 1.3, GH = 2.25, bars = [];
     for (let i = 0; i < 6; i++) bars.push(tint(place(cylinder(0.028, 0.028, GH - 0.14, 6), 0.1 + i * (GW - 0.2) / 5, GH / 2, 0), TL.iron));
     for (const y of [0.1, GH - 0.06]) bars.push(bx(GW, 0.09, 0.07, GW / 2, y, 0, TL.iron));
     bars.push(bx(0.34, 0.5, 0.09, GW - 0.2, 1.08, 0.03, TL.brassDark));
@@ -206,7 +206,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     const dial = [0, 1, 2].map((k) => { const n = node('tumbler', merge(tint(place(cylinder(0.075, 0.075, 0.04, 10), 0, 0, 0, 90, 0, 0), TL.brass), bx(0.022, 0.07, 0.02, 0, 0.035, 0.025, TL.wine)), M.deco, { pos: [GW - 0.2, 1.25 - k * 0.17, 0.09] }); n.castShadow = false; leaf.add(n); return n; });
     const glow = [0, 1, 2].map((k) => sprites.add({ kind: 'glow', pos: [GX + GW - 0.2, 1.25 - k * 0.17, GZ + 0.2], size: 0.5, color: '#ffd24a', alpha: 0 }));
     scene.root.add(frame, leaf);
-    return (lockUnit = taskUnit([GX + GW - 0.2, 1.1, GZ + 0.15], [GX + GW + 0.25, 0.55], (v, time) => {
+    return (lockUnit = taskUnit([GX + GW - 0.2, 1.1, GZ + 0.15], [GX + GW - 0.85, 0.6], (v, time) => {
       setLamp(0.2);
       for (let k = 0; k < 3; k++) { const t = Math.max(0, Math.min(1, v * 3 - k)); dial[k].setRot(0, 0, t >= 1 ? 0 : 140 - 140 * t + Math.sin(time * 5 + k * 2) * 10 * (1 - t)); glow[k].alpha = t >= 1 ? 0.75 : 0.12 * t; glow[k].pos[0] = GX + (GW - 0.2) * Math.cos(open3 * 1.3); }
       const want = v >= 0.999 ? 1 : 0; open3 += (want - open3) * 0.08; leaf.setRot(0, -75 * open3, 0);

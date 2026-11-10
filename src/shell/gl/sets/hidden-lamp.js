@@ -70,8 +70,8 @@ const LIGHTS = {
 };
 
 const CAMERAS = cams({
-  wide: { target: [0.1, 1.6, -0.4], dist: 8.2, yaw: 3, pitch: 4 },
-  low: { target: [0.1, 1.85, 0.2], dist: 6.4, yaw: -7, pitch: -12, fov: 56 },
+  wide: { target: [0.1, 1.6, -0.4], dist: 9.2, yaw: 3, pitch: 4 },     // four stand here from ch4.s3.c09
+  low: { target: [0.1, 1.85, 0.2], dist: 7.4, yaw: -7, pitch: -12, fov: 56 },
 });
 
 function build(engine = GL0, { light, low = false } = {}) {

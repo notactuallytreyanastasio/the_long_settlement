@@ -199,7 +199,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   // setback(): the floor roars and the bar jumps (s1); a draught takes two slips off the cord (s3)
   let boardUnit = null, slipUnit = null, surge = 0;
   function task(type) {
-    if (type === 'price-board') return boardUnit || (boardUnit = taskUnit([LAPSE[0] + 1.3, LAPSE[1], LAPSE[2] + 0.2], null, (v, time, dt) => { surge = Math.max(0, surge - (dt || 0) / 2.2); setCrowd(1); setMood(Math.min(1, 1 - 0.3 * v + 0.4 * surge)); setLapse(0.19 + 0.12 * v + 0.14 * surge); }));
+    if (type === 'price-board') return boardUnit || (boardUnit = taskUnit([PITS[1].x - 1.55, 1.0, PITS[1].z + 1.75], null, (v, time, dt) => { surge = Math.max(0, surge - (dt || 0) / 2.2); setCrowd(1); setMood(Math.min(1, 1 - 0.3 * v + 0.4 * surge)); setLapse(0.19 + 0.12 * v + 0.14 * surge); }));
     if (type === 'sell-slips') {
       if (slipUnit) return slipUnit;
       const N = 9, X0 = 0.72, DX = 0.235, Y = 1.3, Z = 0.12, xr = X0 + (N - 1) * DX;
@@ -224,7 +224,8 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     id: 'exchange-floor', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.45,
     motes: low ? null : { box: [-2.6, 2.8, 0.6, 5.4, -5.6, -0.6], every: 0.3, color: L.mote, size: 0.07, vel: [0.03, -0.03, 0.05], life: 6, alpha: 0.75 },
     marks: {
-      ...MARKS, board: [BOARD[0], BOARD[1] + 1.2, BOARD[2]], lapse: LAPSE, focus: [0, FAN.sill + 1.0, BACK],
+      ...MARKS, extras: light === 'evening' ? [{ pos: [-0.75, 0, 0.2], face: 62 }] : null,     // evening (ch5.s3): Sable, a few paces behind Ren
+      board: [BOARD[0], BOARD[1] + 1.2, BOARD[2]], lapse: LAPSE, focus: [0, FAN.sill + 1.0, BACK],
       salt: { pos: [PITS[0].x + 1.5, 0, PITS[0].z + 1.5], face: -140 }, bond: { pos: [PITS[1].x - 1.5, 0, PITS[1].z + 1.5], face: 140 },
     },
     extra: { setCrowd, setMood, setLapse, cue, task, setback, passLamp: setback },

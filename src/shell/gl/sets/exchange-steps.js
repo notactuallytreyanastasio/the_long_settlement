@@ -295,7 +295,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
 
   return shell({
     id: 'exchange-steps', light, L, scene, cameras: CAMERAS, actors, foreground, lamps, glows, tick, dim: 0.22,
-    marks: { ...MARKS, rail: { pos: [0.95, 0, RAIL_Z + 0.42], face: 168 }, bell: MOUTH, focus: MOUTH },
+    marks: { ...MARKS, extras: light === 'morning' ? [{ pos: [0.95, 0, 0.8], face: -58 }, { pos: [1.75, 0, 0.32], face: -52 }] : null, rail: { pos: [0.95, 0, RAIL_Z + 0.42], face: 168 }, bell: MOUTH, focus: MOUTH },
     extra: { setCrowd, setMood, ring, cue: (id) => { const hit = cue(id); if (hit) litAll(); return hit; }, task, setback, passLamp: setback, crowdCount: near.people.length + mass.people.length },
   });
 }

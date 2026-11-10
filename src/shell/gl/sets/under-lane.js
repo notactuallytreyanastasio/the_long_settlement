@@ -64,7 +64,8 @@ const LIGHTS = {
 const ALIAS = { predawn: 'dawn' };
 
 const CAMERAS = cams({
-  wide: { target: [0.1, 1.45, -0.2], dist: 8.4, yaw: 3, pitch: 8 },
+  wide: { target: [0.1, 1.45, -0.2], dist: 9.4, yaw: 3, pitch: 8 },     // four stand in this boat (ch4.s4): far enough back to hold them in a portrait frame
+  low: { dist: 7.6 },
   stage: { target: [0, 1.0, 0.5], dist: 9.6, yaw: -13, pitch: 8 },
 });
 
@@ -215,7 +216,8 @@ function build(engine = GL0, { light, low = false } = {}) {
 
   return c4Shell({
     id: 'under-lane', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,
-    marks: { ...MARKS4, focus: LAMP, oar: { pos: [B[0] + seats[1][0] + 0.9, 0, B[2] - 0.55], face: 90 }, stern: { pos: [-2.9, 0, 1.0], face: 80 }, bow: { pos: [2.9, 0, 0.9], face: -90 } },
+    // marks.extras[0]: the keeper, at the bow end, while an encounter is played
+    marks: { ...MARKS4, extras: [{ pos: [2.35, 0, 0.95], face: -78 }], focus: LAMP, oar: { pos: [B[0] + seats[1][0] + 0.9, 0, B[2] - 0.55], face: 90 }, stern: { pos: [-2.9, 0, 1.0], face: 80 }, bow: { pos: [2.9, 0, 0.9], face: -90 } },
     extra: { setHood, setCutter, setLamps, setStroke, cue, task, setback, passLamp: setback },
   });
 }

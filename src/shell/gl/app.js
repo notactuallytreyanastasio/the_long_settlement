@@ -50,8 +50,11 @@ const SETTLE = 45;              // frames ignored after a tier change, a build o
 // engine: the renderer's own quality object of that name (renderer.js QUALITY: pixel ratio cap, anti-aliasing, shadow
 // size and rate, lamps per fragment, water). band: what the live band's view asks for on top of that while it is at
 // rest above the table (it is 220 px tall; in a cinematic it gets the lot).
-// Whether sets are built `low` (without their distant detail) is NOT a tier: a set is built once and the director
-// keeps its figures on it, so it cannot be swapped when the tier steps. It is decided at the start: see lowSets.
+// Whether a set is built `low` (without its distant detail) is decided per USE, not once: on a phone (lowSets) the
+// live band always stands on the low build, and a cinematic stands on the full build while the tier is 'high' and on
+// the low one after it has stepped down. Two builds of one place are told apart by the third part of their key
+// ('id|light|low' / 'id|light|full'); the director carries the figures from one to the other (stage.js adopt), and
+// every script cue a build was sent is replayed to its twin (cueLog), so the place is in the same state in both.
 export const TIERS = Object.freeze({
   high: Object.freeze({ engine: 'high', band: Object.freeze({}) }),
   mid: Object.freeze({ engine: 'medium', band: Object.freeze({ shadowSize: 512 }) }),
@@ -97,15 +100,15 @@ function chapterCast(chapter) {
   return out;
 }
 
-/** Every (set key, light) a chapter uses, in first-use order. */
+/** Every (set key, light, use) a chapter needs, in first-use order. use: 'band' for an encounter, 'lines' for its resolution and for every cinematic. */
 function chapterPairs(chapter) {
   const out = [], seen = new Set();
-  const want = (set, light) => { const k = `${set}|${light}`; if (!seen.has(k)) { seen.add(k); out.push({ set, light }); } };
+  const want = (set, light, use) => { const k = `${set}|${light}|${use}`; if (!seen.has(k)) { seen.add(k); out.push({ set, light, use }); } };
   const sets = chapter.stage.sets;
-  const lines = (ls, enc) => { for (const l of ls) if (l.bg) { if (enc && enc.set === l.bg) want(enc.set, enc.light); else want(sets[l.bg].set, sets[l.bg].light); } };
-  if (chapter.scenes[0] && chapter.scenes[0].encounter) want(chapter.scenes[0].encounter.set, chapter.scenes[0].encounter.light);   // the title turns on it
+  const lines = (ls, enc) => { for (const l of ls) if (l.bg) { if (enc && enc.set === l.bg) want(enc.set, enc.light, 'lines'); else want(sets[l.bg].set, sets[l.bg].light, 'lines'); } };
+  if (chapter.scenes[0] && chapter.scenes[0].encounter) want(chapter.scenes[0].encounter.set, chapter.scenes[0].encounter.light, 'lines');   // the title turns on it
   lines(chapter.prologue, null);
-  for (const s of chapter.scenes) { if (s.encounter) want(s.encounter.set, s.encounter.light); lines(s.cutscene, s.encounter); }
+  for (const s of chapter.scenes) { if (s.encounter) { want(s.encounter.set, s.encounter.light, 'band'); want(s.encounter.set, s.encounter.light, 'lines'); } lines(s.cutscene, s.encounter); }
   lines(chapter.epilogue, null);
   return out;
 }
@@ -154,16 +157,24 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   let planned = -1, total = 0, sincePump = 0, settle = SETTLE;
   const warmCam = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
 
-  const pairKey = (key, light) => { const d = setDef(key); return d ? `${d.def.id}|${lightFor(d.def, light)}` : null; };
+  /** Is this use of a set drawn on its low build? Never on a desktop; on a phone the band always, a cinematic once the tier has left 'high'. */
+  const lowFor = (use) => lowSets && (use === 'band' || tierName !== 'high');
+  const pairKey = (key, light, use) => { const d = setDef(key); return d ? `${d.def.id}|${lightFor(d.def, light)}|${lowFor(use) ? 'low' : 'full'}` : null; };
+  const cueLog = new Map();       // 'id|light' -> [line ids sent to any build of that place, this chapter]
 
-  function buildSet(key, light) {
+  function buildSet(key, light, use) {
     const d = setDef(key);
     if (!d) throw new Error(`gl/app: no set "${key}" (have ${Object.keys(SETS).join(', ')})`);
-    const lt = lightFor(d.def, light), k = `${d.def.id}|${lt}`;
+    const lt = lightFor(d.def, light), low = lowFor(use), place = `${d.def.id}|${lt}`, k = `${place}|${low ? 'low' : 'full'}`;
     let set = built.get(k);
     if (set) return set;
-    set = d.def.build(GL, { light: lt, low: lowSets });
+    set = d.def.build(GL, { light: lt, low });
+    if (!set || !set.scene || !set.actors || !set.cameras || typeof set.frame !== 'function') throw new Error(`gl/app: set "${key}" (${lt}) did not build a set (need scene, actors, cameras, frame)`);
+    set.place = place;
     built.set(k, set);
+    // the other build of this place has heard script cues this chapter: this one hears them now, in order
+    const heard = cueLog.get(place);
+    if (heard && set.cue) for (const id of heard) set.cue(id);
     app.stats.built++;
     // once, into a corner the next draw paints over: geometry and textures go to the GPU now, not on the frame that cuts to it
     const cams = set.cameras || {};
@@ -183,9 +194,10 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     const chapter = content.chapters[chapterIndex];
     if (!chapter || !chapter.stage || !chapter.stage.sets) { total = 0; return; }
     const pairs = chapterPairs(chapter), seen = new Set();
+    cueLog.clear();
     pairs.forEach((p, i) => {
-      const k = pairKey(p.set, p.light);
-      if (k && !built.has(k) && !seen.has(k)) { seen.add(k); queue.push({ kind: 'set', key: p.set, light: p.light }); }
+      const k = pairKey(p.set, p.light, p.use);
+      if (k && !built.has(k) && !seen.has(k)) { seen.add(k); queue.push({ kind: 'set', key: p.set, light: p.light, use: p.use }); }
       if (i === 0 && !tables.has(chapter.tableId)) queue.push({ kind: 'table', id: chapter.tableId });
     });
     // the cast, one figure a turn, after the first set and the table: the band's light figures for whoever fights,
@@ -207,30 +219,39 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     queue.shift();
     if (item.kind === 'figure') { troupe.take(item.id, 0, item.lod); app.stats.built++; settle = SETTLE; }
     else if (item.kind === 'table') { if (!tables.has(item.id)) tableNow(content, item.id); }
-    else buildSet(item.key, item.light);
+    else buildSet(item.key, item.light, item.use);
     return true;
   }
 
   /** The director's getSet, asked every frame: a built set, built now if it has to be. */
-  const asked = new Map();        // key -> Map(light -> set)
-  function getSet(key, light) {
+  const asked = new Map();        // key -> Map('light|low' or 'light|full' -> set)
+  function getSet(key, light, use = 'lines') {
     if (key == null) return null;
     let byLight = asked.get(key);
     if (!byLight) asked.set(key, byLight = new Map());
-    let set = byLight.get(light);
-    if (!set) byLight.set(light, set = buildNow(key, light));
+    const lk = lowFor(use) ? `${light}|low` : `${light}|full`;
+    let set = byLight.get(lk);
+    if (!set) byLight.set(lk, set = buildNow(key, light, use));
     return set;
   }
-  function buildNow(key, light) {
-    const k = pairKey(key, light);
+  function buildNow(key, light, use) {
+    const k = pairKey(key, light, use);
     if (!k) throw new Error(`gl/app: the stage asked for set "${key}", which does not exist (have ${Object.keys(SETS).join(', ')})`);
     const have = built.get(k);
     if (have) return have;
-    const at = queue.findIndex((q) => q.kind === 'set' && pairKey(q.key, q.light) === k);
+    const at = queue.findIndex((q) => q.kind === 'set' && pairKey(q.key, q.light, q.use) === k);
     if (at >= 0) queue.splice(at, 1);
     app.stats.urgent++;
     console.warn(`gl/app: set ${k} was wanted before it was built; building it now (one long frame)`);
-    return buildSet(key, light);
+    return buildSet(key, light, use);
+  }
+  /** The director sent a script cue to a set: remember it for the place, and tell the place's other build. */
+  function onCue(set, id) {
+    if (!set.place) return;
+    let heard = cueLog.get(set.place);
+    if (!heard) cueLog.set(set.place, heard = []);
+    if (heard.length < 400) heard.push(id);
+    for (const tail of ['low', 'full']) { const twin = built.get(`${set.place}|${tail}`); if (twin && twin !== set && twin.cue) twin.cue(id); }
   }
 
   function tableNow(content, id) {
@@ -246,7 +267,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
 
   // ───────────────────────── the director ─────────────────────────
 
-  const director = createDirector(troupe, { getSet });
+  const director = createDirector(troupe, { getSet, onCue });
 
   // ───────────────────────── per-frame state ─────────────────────────
 
@@ -322,7 +343,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (!titleSet || titleSet.chapter !== game.chapter) {
       const chapter = content.chapters[game.chapter];
       const first = chapter && chapter.stage && chapter.stage.sets ? chapterPairs(chapter)[0] : null;
-      const k = first ? pairKey(first.set, first.light) : null;
+      const k = first ? pairKey(first.set, first.light, first.use) : null;
       const set = k ? built.get(k) : null;
       titleSet = set ? { chapter: game.chapter, set } : null;
     }

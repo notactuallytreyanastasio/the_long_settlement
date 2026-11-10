@@ -6,6 +6,9 @@
 //   const ren = createCharacter(CAST.ren, { faces });  // { faces, material, detail, lod: 'full' | 'stage' }
 //   CAST: ren ilse nan tobb corvane maravel thorne narrator | bailiff steward clerk proctor docker (= crowd) docker-lantern docker-hat
 //         townsman townswoman fishwife child child2 | sable hesper ansel wyn foss tamsin
+//         rank and file of chapters 2-8: miner cadet cadet-junior underwriter magistrate islander islander-lantern broker commons-steward marine escort rower fisher member
+//         the same people in other clothes (own ids; a figure cannot change costume): ren-volunteer ren-lantern ren-irons ren-storm ren-hooded ilse-tribune ilse-storm
+//         ilse-hooded ilse-old (the Ledger, hood down) tobb-storm tobb-hooded corvane-plain sable-plain maravel-plain thorne-irons
 //   castVariant(id, k): the k-th look of a rank-and-file member.   createCrowd({...}): 20 to 40 cheap background people in two draws.
 //   scene.root.add(ren.root); ren.root.setPos(x, 0, z);
 //   ren.update(dt, { emote: 'smile', speaking: true, pose: 'stand', look: 'camera' | [x, y, z] | other.headPos, face: [x, y, z] | yawDeg, camera });
@@ -2292,7 +2295,10 @@ const inStorm = (base, color = '#d9a83a') => reworn(base, base.id + '-storm', (d
 });
 /** A dark travelling hood and cape: the under-lane, and anyone who would rather not be counted. */
 const hooded = (base, color = '#4a4458') => reworn(base, base.id + '-hooded', (d) => {
-  d.hair.pieces = d.hair.pieces.filter((p) => !HATLESS[p.kind] && p.kind !== 'braid' && p.kind !== 'tail').concat([{ kind: 'hood', color, lining: '#221c30', front: 0.5, grow: [1.17, 1.2, 1.2], tipLength: 0.18 }]);
+  // nothing may stand prouder of the skull than the hood does: the crown is cut close and loose locks go
+  d.hair.pieces = d.hair.pieces.filter((p) => !HATLESS[p.kind] && p.kind !== 'braid' && p.kind !== 'tail' && p.kind !== 'locks')
+    .map((p) => (p.kind === 'cap' ? { ...p, grow: [1.05, 1.07, 1.07], shift: [0, 0.008, -0.012] } : p.kind === 'fringe' ? { ...p, r: Math.min(p.r ?? 1.115, 1.1) } : p))
+    .concat([{ kind: 'hood', color, lining: '#221c30', front: 0.5, grow: [1.17, 1.2, 1.2], tipLength: 0.18 }]);
   strip(d, 'shawl', 'cape', 'epaulettes', 'chain', 'earring', 'earpiece');
   d.costume.extras.push({ kind: 'cape', color, trim: mixc(color, '#0c0a1c', 0.3), length: 0.13 });
   d.face = { ...d.face, shade: 0.14, ears: 0 };

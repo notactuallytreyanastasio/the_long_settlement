@@ -37,11 +37,18 @@ import { SPRITE_FLOATS } from './sprites.js';
 
 const MAX_CAND = 32;
 
-/** The three tiers. `high` is what the slice was drawn with; `medium` is the phone default to start from. */
+/**
+ * The three tiers. `high` is what the slice was drawn with. Each step down shades about half the fragments of the one
+ * above, because fill is what a phone runs out of first: the drawing buffer is 2, 1.42 and 1 times the CSS size (on a
+ * 393x852 phone 786x1704, 558x1210, 393x852: 1.34M, 0.68M and 0.33M pixels), and the browser scales it to the glass.
+ * Below `high` the edges are smoothed by the nine-tap filter in the present pass instead of 4x multisampling; `low` keeps
+ * it, since at one buffer pixel to three of the glass bare stair-steps are the first thing seen. Lamps per fragment,
+ * shadow taps, shadow size and the water shader step down with it. Measured numbers: tools/gl-perf.html.
+ */
 export const QUALITY = {
   high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0, trim: true, autoTrim: true, batch: true },
-  medium: { name: 'medium', dprCap: 2, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4, trim: true, autoTrim: true, batch: true },
-  low: { name: 'low', dprCap: 1.5, aa: 'none', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7, trim: true, autoTrim: true, batch: true },
+  medium: { name: 'medium', dprCap: 1.42, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4, trim: true, autoTrim: true, batch: true },
+  low: { name: 'low', dprCap: 1, aa: 'fxaa', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7, trim: true, autoTrim: true, batch: true },
 };
 const WATER_Q = { full: 0, cheap: 1, flat: 2 };
 
@@ -442,27 +449,73 @@ export function createRenderer(canvas, opts = {}) {
     b.drawn = true;
   }
 
+  // ---- runs of the same thing, drawn as instances ----
+  // Nodes that stand next to each other in a draw list with the same mesh and material (the stage's unit pieces, a row
+  // of identical props nobody instanced) go out as one instanced draw: their world matrices and tints are written into
+  // a small buffer on a private copy of the mesh's geometry. Opaque lists are sorted by size, so identical things are
+  // neighbours there. Only for uniformly scaled nodes (the instanced shaders do not correct normals).
+  const RUN_MAX = 48, runData = new Float32Array(RUN_MAX * 20);
+  const same4 = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+  function evenScale(w) { const a = w[0] * w[0] + w[1] * w[1] + w[2] * w[2], b = w[4] * w[4] + w[5] * w[5] + w[6] * w[6], c = w[8] * w[8] + w[9] * w[9] + w[10] * w[10]; return Math.abs(a - b) < a * 0.02 && Math.abs(a - c) < a * 0.02; }
+  function runLen(list, i) {
+    const a = list[i];
+    if (!Q.batch || a.instances || a.bones || a._trim || i + 1 >= list.length || list[i + 1].mesh !== a.mesh || a.mesh.indices.length > 12000 || !evenScale(a.world)) return 1;
+    let j = i + 1;
+    while (j < list.length && j - i < RUN_MAX) {
+      const b = list[j];
+      if (b.mesh !== a.mesh || b.material !== a.material || b.instances || b.bones || b._trim || b.glow !== a.glow || b.tint[3] !== a.tint[3] || !same4(a.flash, b.flash) || !same4(a.uvRect, b.uvRect) || !evenScale(b.world)) break;
+      j++;
+    }
+    return j - i;
+  }
+  function drawRun(p, list, i, len, opacity, shadowPass) {
+    const u = p.u, a = list[i], mesh = a.mesh, geo = geoOf(mesh, mesh._auto || (mesh._auto = {}));
+    for (let k = 0; k < len; k++) { const n = list[i + k], o = k * 20; runData.set(n.world, o); runData[o + 16] = n.tint[0]; runData[o + 17] = n.tint[1]; runData[o + 18] = n.tint[2]; runData[o + 19] = 1; }
+    uploadInstances(gl, geo, runData, len);
+    gl.uniformMatrix4fv(u.uModel, false, IDENT4);
+    if (u.uTint) gl.uniform4f(u.uTint, 1, 1, 1, a.tint[3] * opacity);
+    if (u.uUvRect) gl.uniform4fv(u.uUvRect, a.uvRect);
+    if (u.uFlash) gl.uniform4fv(u.uFlash, a.flash);
+    if (u.uGlow) gl.uniform1f(u.uGlow, a.glow);
+    gl.bindVertexArray(geo.vao);
+    gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, len);
+    const tris = geo.triangles * len;
+    stats.triangles += tris; stats.drawCalls++; passNow.draws++; passNow.tris += tris; stats.batched += len;
+    if (shadowPass) { stats.shadowTriangles += tris; stats.shadowDraws++; }
+  }
+
   function drawToonList(list, part = 0) {
     let p = null, mat = null;
     for (let i = 0; i < list.length; i++) {
-      const n = list[i], want = prog('toon', variantOf(n));
+      const n = list[i], len = part < 0 ? 1 : runLen(list, i), want = prog('toon', len > 1 ? 'I' : variantOf(n));
       if (want !== p) { p = want; gl.useProgram(p.program); mat = null; }
       if (n.material !== mat) { mat = n.material; applyToonMaterial(p, mat); }
       if (part < 0 && n._b >= 0) { if (!batches[n._b].drawn) drawBatch(p, batches[n._b]); continue; }
-      drawNode(p, n, mat.opacity, false, part);
+      if (len > 1) { drawRun(p, list, i, len, mat.opacity, false); i += len - 1; } else drawNode(p, n, mat.opacity, false, part);
     }
   }
 
   /** Where the light looks from for this view: fills lightView, shadowVP and returns the texel size in world units. */
-  function fitShadow(env, cam, view, size) {
+  function fitShadow(env, cam, view, size, entry = null) {
     const sh = env.shadow;
     const c = (view && view.shadowCenter) || sh.center || cam.target;
-    const r = view && view.shadowRadius > 0 ? view.shadowRadius : sh.radius > 0 ? sh.radius : v3.dist(cam.position, cam.target) * 0.62;
+    let r = view && view.shadowRadius > 0 ? view.shadowRadius : sh.radius > 0 ? sh.radius : v3.dist(cam.position, cam.target) * 0.62;
+    if (Q.staticShadows) r *= 1.1;   // room for the coarse steps below: the map may sit a tenth of its radius off centre
     const L = env.key.dir;
     v3.addScaled(eye, c, L, r * 3);
     m4.lookAt(lightView, eye, c, Math.abs(L[1]) > 0.98 ? UPX : UP);
     const texel = (2 * r) / size;
-    lightView[12] = Math.round(lightView[12] / texel) * texel; lightView[13] = Math.round(lightView[13] / texel) * texel; // stop the edges crawling
+    // Stop the edges crawling: the map moves in whole texels. With kept static shadows it moves in steps of a sixteenth of
+    // its width instead, because every move redraws all of the set into the kept map (29k triangles on the lantern stalls,
+    // every tenth frame under a drifting camera, before this); what the map covers is then off centre by at most 1/32 of it.
+    const step = Q.staticShadows ? texel * Math.max(1, size >> 4) : texel;
+    // (and it stays where it is until the centre is most of a step away, so a centre that hovers on a boundary does not flip it)
+    for (let k = 12; k < 15; k++) {
+      const raw = lightView[k], st = k === 14 ? step * 4 : step, prev = entry && entry.snapStep === step ? entry.snap[k - 12] : NaN;
+      lightView[k] = Math.abs(raw - prev) <= st * 0.8 ? prev : Math.round(raw / st) * st;
+      if (entry) entry.snap[k - 12] = lightView[k];
+    }
+    if (entry) entry.snapStep = step;
     m4.ortho(lightProj, -r, r, -r, r, 0.1, r * 6);
     m4.multiply(shadowVP, lightProj, lightView);
     shadowR = r;
@@ -474,7 +527,7 @@ export function createRenderer(canvas, opts = {}) {
     let e = shadowOf.get(scene);
     if (!e || e.gen !== ctx.generation || e.size !== size) {
       if (e && e.gen === ctx.generation) { dropShadowTarget(e.target); dropShadowTarget(e.kept); }
-      e = { gen: ctx.generation, size, target: createShadowTarget(gl, size), kept: null, vp: m4.create(), keptVP: m4.create(), keptHash: 0, keptValid: false, texel: 0.01, tick: 0, slot: e ? e.slot : shadowSlots++, fresh: true };
+      e = { gen: ctx.generation, size, target: createShadowTarget(gl, size), kept: null, vp: m4.create(), keptVP: m4.create(), keptHash: 0, keptValid: false, snap: [NaN, NaN, NaN], snapStep: 0, texel: 0.01, tick: 0, slot: e ? e.slot : shadowSlots++, fresh: true };
       shadowOf.set(scene, e);
     }
     return e;
@@ -482,12 +535,12 @@ export function createRenderer(canvas, opts = {}) {
   function drawCasters(list) {
     let p = null, mat = null;
     for (let i = 0; i < list.length; i++) {
-      const n = list[i], m = n.material, cut = m.texMode === 'cutout';
-      const want = prog('depth', variantOf(n) + (cut ? 'C' : ''));
+      const n = list[i], m = n.material, cut = m.texMode === 'cutout', len = runLen(list, i);
+      const want = prog('depth', (len > 1 ? 'I' : variantOf(n)) + (cut ? 'C' : ''));
       if (want !== p) { p = want; gl.useProgram(p.program); gl.uniformMatrix4fv(p.u.uViewProj, false, shadowVP); mat = null; }
       if (cut && m !== mat) { mat = m; gl.uniform1i(p.u.uMap, 0); gl.uniform1f(p.u.uAlphaCut, m.alphaCut); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texOf(m.map)); }
       setCull(!m.doubleSided);
-      drawNode(p, n, 1, true);
+      if (len > 1) { drawRun(p, list, i, len, 1, true); i += len - 1; } else drawNode(p, n, 1, true);
     }
   }
 
@@ -517,7 +570,7 @@ export function createRenderer(canvas, opts = {}) {
     if (frame.shadowOn) {
       const size = Math.min((view && view.shadowSize) || env.shadow.size || 1024, Q.shadowSize);
       entry = shadowEntry(scene, size);
-      const texel = fitShadow(env, camera, view, size);
+      const texel = fitShadow(env, camera, view, size, entry);
       entry.tick++;
       redraw = entry.fresh || Q.shadowRate <= 1 || !sameMat(entry.vp, shadowVP) || (entry.tick + entry.slot) % Q.shadowRate === 0;
       if (redraw) entry.texel = texel; else shadowVP.set(entry.vp); // not this time: look the old map up with the matrix it was drawn with
@@ -606,7 +659,7 @@ export function createRenderer(canvas, opts = {}) {
         const n = opaque[i], m = n.material;
         if (!m.outline || m.outline.width <= 0) continue;
         if (n._px > 0 && n._px < Q.outlineMinPx) continue; // too small on screen for its line to read
-        const want = prog('outline', variantOf(n));
+        const len = runLen(opaque, i), want = prog('outline', len > 1 ? 'I' : variantOf(n));
         if (want !== p) { p = want; frameUniforms(p); mat = null; }
         if (m !== mat) {
           mat = m;
@@ -614,7 +667,7 @@ export function createRenderer(canvas, opts = {}) {
           gl.uniform4f(p.u.uOutline, m.outline.width * env.outline.width * ctx.dpr, frame.pxUnit, ref, 0);
           gl.uniform4f(p.u.uOutlineColor, oc[0], oc[1], oc[2], m.outline.self);
         }
-        drawNode(p, n, 1, false, 2);
+        if (len > 1) { drawRun(p, opaque, i, len, 1, false); i += len - 1; } else drawNode(p, n, 1, false, 2);
       }
     }
     gl.cullFace(gl.BACK);
@@ -747,7 +800,7 @@ export function createRenderer(canvas, opts = {}) {
     },
     resize: () => ctx.resize(),
     /** Call after editing a mesh's arrays in place, so it is uploaded (and measured) again. */
-    invalidate(mesh) { mesh.trim = null; mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
+    invalidate(mesh) { mesh.trim = null; mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; if (mesh._auto && mesh._auto._gpu) { if (mesh._auto._gpu.gen === ctx.generation) dropGeo(mesh._auto._gpu.geo); mesh._auto._gpu = null; } if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
     dispose() { const ext = gl.getExtension('WEBGL_lose_context'); if (ext) ext.loseContext(); },
   };
   return api;

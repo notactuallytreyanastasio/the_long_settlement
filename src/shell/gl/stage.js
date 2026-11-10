@@ -252,6 +252,17 @@ function makeStage(set, troupe) {
     a.glow = a.aura = a.shade = null;
     if (a.ch.skin) { a.ch.skin.tint[0] = a.ch.skin.tint[1] = a.ch.skin.tint[2] = 1; }
   };
+  /** Hand a figure to another stage of the same place (another build of the set): release here, adopt there. Nothing about it changes. */
+  S.release = (a) => {
+    const i = actors.indexOf(a); if (i < 0) return;
+    actors.splice(i, 1); set.actors.remove(a.ch.root);
+    if (a.glow) sprites.remove(a.glow); if (a.aura) sprites.remove(a.aura); if (a.shade) sprites.remove(a.shade);
+    a.glow = a.aura = a.shade = null;
+  };
+  S.adopt = (a) => {
+    set.actors.add(a.ch.root); actors.push(a);
+    a.glow = a.ch.lampPos && sprites ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.95, color: '#ffa63f', alpha: set.light === 'day' ? 0.25 : 0.85 }) : null;
+  };
   /** Send a figure off the nearer side (or the side asked for). cut: gone at once. */
   S.leave = (a, cut, side = 0) => {
     if (cut) { S.drop(a); return; }
@@ -656,6 +667,8 @@ function fightOn(S, opts = {}) {
   const F = {
     key: '', party, opposition: opp, extras, folk, cues, sparks, focus, goal, tab,
     get punch() { return punch; }, get power() { return power; }, get won() { return won; }, get mode() { return mode; },
+    /** The figures were carried here from another build of the place: the first update is not a cut. */
+    warm() { first = false; },
   };
   const at = (t, code, a, b, n) => { for (let i = 0; i < sched.length; i++) if (!sched[i].on) { const s = sched[i]; s.on = true; s.t = t; s.code = code; s.a = a; s.b = b; s.n = n || 0; return; } };   // pool full: the step is dropped, never grown
   const cue = (type) => { if (cues.length >= cuePool.length) return cuePool[0]; const c = cuePool[cues.length]; c.type = type; c.level = level; c.name = ''; c.team = false; c.big = false; c.x = NaN; c.y = NaN; c.who = null; cues.push(c); return c; };
@@ -1064,7 +1077,7 @@ function fightOn(S, opts = {}) {
     if (bi !== beat) { beat = bi; if (set.beat && st.beat) set.beat(st.beat.cue, bi, st.beat.of, done, total); }
     // a line spoken in play (briefing, bark) may be a cue for the set too
     const said = f.voice && f.voice.line ? f.voice.line.id : '';
-    if (said !== lastBark) { lastBark = said; if (said && set.cue) set.cue(said); }
+    if (said !== lastBark) { lastBark = said; if (said) { if (set.cue) set.cue(said); if (S.onCue) S.onCue(set, said); } }
     // scheduled steps
     for (let i = 0; i < sched.length; i++) if (sched[i].on && sched[i].t <= time) { sched[i].on = false; run(sched[i], time); }
     // places
@@ -1255,41 +1268,146 @@ function drawSpark(ctx, s) {
   ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
 }
 
+const TAU = Math.PI * 2;
+/**
+ * The objective drawn on the glass (CSS px; fight.frame placed it): a ring on the thing being worked on, one segment
+ * for each step when there are eight or fewer, or the steps of a route along the floor. A hit rings it; a step done pops it.
+ */
+function drawGoal(ctx, g, time) {
+  if (!g.on || g.fade <= 0.01) return;
+  ctx.lineCap = 'butt';
+  if (g.kind === 'ring') {
+    if (g.x !== g.x) return;
+    const r = g.r * (1 + 0.14 * g.pulse + 0.28 * g.pop), n = g.total, a0 = -Math.PI / 2;
+    ctx.globalAlpha = g.fade;
+    ctx.strokeStyle = 'rgba(29,33,70,0.9)'; ctx.lineWidth = 7.5; ctx.beginPath(); ctx.arc(g.x, g.y, r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,247,226,0.5)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(g.x, g.y, r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = g.pop > 0.5 ? '#ffffff' : '#ffd24a'; ctx.lineWidth = 4;
+    if (n <= 8) {
+      const gap = n > 1 ? 0.2 : 0;
+      for (let k = 0; k < g.done && k < n; k++) { ctx.beginPath(); ctx.arc(g.x, g.y, r, a0 + (k / n) * TAU + gap / 2, a0 + ((k + 1) / n) * TAU - gap / 2); ctx.stroke(); }
+      if (n > 1) { ctx.strokeStyle = 'rgba(29,33,70,0.9)'; ctx.lineWidth = 2.5; for (let k = 0; k < n; k++) { const an = a0 + (k / n) * TAU; ctx.beginPath(); ctx.moveTo(g.x + Math.cos(an) * (r - 3.4), g.y + Math.sin(an) * (r - 3.4)); ctx.lineTo(g.x + Math.cos(an) * (r + 3.4), g.y + Math.sin(an) * (r + 3.4)); ctx.stroke(); } }
+    } else if (g.done > 0) { ctx.beginPath(); ctx.arc(g.x, g.y, r, a0, a0 + (g.done / Math.max(1, n)) * TAU); ctx.stroke(); }
+    if (g.pulse > 0.02) { ctx.globalAlpha = g.fade * g.pulse * 0.85; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(g.x, g.y, r + (1 - g.pulse) * 13 + 5, 0, TAU); ctx.stroke(); }
+  } else {
+    let next = true;
+    for (let k = 0; k < g.n; k++) {
+      const q = g.pips[k]; if (!q.on) { if (!q.lit) next = false; continue; }
+      const last = k === g.n - 1, r = g.r * (last ? 1.5 : 1);
+      ctx.globalAlpha = g.fade;
+      if (q.lit) {
+        ctx.fillStyle = '#ffd24a'; ctx.strokeStyle = '#1d2146'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.ellipse(q.x, q.y, r * 1.5, r * 0.8, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      } else {
+        const hot = next ? 0.5 + 0.5 * Math.sin(time * 7) : 0;
+        ctx.fillStyle = next ? `rgba(255,247,226,${0.55 + 0.4 * hot})` : 'rgba(29,33,70,0.5)'; ctx.strokeStyle = next ? '#1d2146' : 'rgba(255,247,226,0.75)'; ctx.lineWidth = next ? 2.2 : 1.6;
+        ctx.beginPath(); ctx.ellipse(q.x, q.y, r * (1.5 + 0.3 * hot + (next ? 0.5 * g.pulse : 0)), r * (0.8 + 0.16 * hot), 0, 0, TAU); ctx.fill(); ctx.stroke();
+        if (last) { ctx.fillStyle = '#ffd24a'; ctx.strokeStyle = '#1d2146'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i < 10; i++) { const an = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.75 : r * 1.7; ctx.lineTo(q.x + Math.cos(an) * rr, q.y - r * 2.6 + Math.sin(an) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke(); }
+        next = false;
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// What everybody wears, by where the story is: chapter.stage.wear (the whole chapter), chapter.stage.wearAt (from a
+// line id on, in script order, so a loaded save is dressed right), encounter.wear (that scene's encounter and cutscene).
+const WEARS = new WeakMap();
+function wearPlan(chapter) {
+  let w = WEARS.get(chapter); if (w) return w;
+  const order = new Map(), scene = []; let n = 0;
+  const lines = (ls) => { if (ls) for (const l of ls) order.set(l.id, n++); };
+  lines(chapter.prologue);
+  for (const s of chapter.scenes) { scene.push(n++); lines(s.briefing); lines(s.cutscene); }
+  lines(chapter.epilogue);
+  const at = [], src = (chapter.stage && chapter.stage.wearAt) || null;
+  if (src) for (const id of Object.keys(src)) { if (!order.has(id)) throw new Error(`stage: ${chapter.id}.stage.wearAt names line "${id}", which is not a line of the chapter`); at.push({ n: order.get(id), map: src[id] }); }
+  at.sort((a, b) => a.n - b.n);
+  w = { order, scene, at, base: (chapter.stage && chapter.stage.wear) || null, cache: new Map(), any: at.length > 0 || !!(chapter.stage && chapter.stage.wear) || chapter.scenes.some((s) => s.encounter && s.encounter.wear) };
+  WEARS.set(chapter, w); return w;
+}
+/** { castId: figure id } for this moment, or null when nobody wears anything but themselves. One object per moment, cached. */
+function wearNow(content, game, st) {
+  const chapter = content && game ? content.chapters[game.chapter] : null;
+  if (!chapter) return null;
+  const w = wearPlan(chapter); if (!w.any) return null;
+  const sc = chapter.scenes[game.scene], inScene = st.phase === 'fight' || st.phase === 'resolve' || (game.cine && game.cine.kind === 'scene');
+  let pos = st.phase === 'dialogue' && st.line && w.order.has(st.line.id) ? w.order.get(st.line.id) : w.scene[game.scene] ?? 0;
+  if (st.phase === 'dialogue' && game.cine && game.cine.kind === 'epilogue' && !(st.line && w.order.has(st.line.id))) pos = 1e9;
+  const enc = inScene && sc && sc.encounter && sc.encounter.wear ? sc.encounter.wear : null;
+  let last = -1; for (let i = 0; i < w.at.length; i++) if (w.at[i].n <= pos) last = i;
+  const key = last + '|' + (enc ? game.scene : '');
+  let out = w.cache.get(key);
+  if (out === undefined) {
+    out = Object.assign({}, w.base); for (let i = 0; i <= last; i++) Object.assign(out, w.at[i].map); if (enc) Object.assign(out, enc);
+    for (const k of Object.keys(out)) if (!out[k] || out[k] === k) delete out[k];
+    if (!Object.keys(out).length) out = null;
+    w.cache.set(key, out);
+  }
+  return out;
+}
+
 /**
  * The whole of the stage for the game: which set, the encounter while the table is in play, its resolution, the
  * lines that follow on the same stage, and a dissolve through ink when the story goes somewhere else.
  *
- *   createDirector(troupe, { getSet(key, light) -> built set | null, lod = 'stage' (the figures of the live band) })
- *   update(dt, time, f)   f = { content, game, stage (core stageState), camera, rect { x, y, w, h } CSS px, voice { who, level } | null,
- *                               hit(ev, out) -> bool (CSS px on the table where recent event ev happened) }
+ *   createDirector(troupe, { getSet(key, light, use) -> built set | null, lod = 'stage' (the figures of the live band), onCue(set, lineId) })
+ *     use is 'band' (the live encounter under the HUD) or 'lines' (its resolution and every cinematic): the caller may
+ *     keep two builds of one place, a light one for the band and a full one for the lines. When the set it hands back
+ *     is another build of the SAME place (same id and light) the director carries everybody across, where they stand,
+ *     with no dissolve.
+ *   update(dt, time, f)   f = { content, game, stage (core stageState), camera, rect { x, y, w, h } CSS px, voice { who, level, line } | null,
+ *                               hit(ev, out) -> bool (CSS px on the table where recent event ev happened), pad { top, bottom }, cine 0..1, quality }
  * Reads: set (null: draw nothing), view (spread into the render rectangle), fade 0..1 and fadeColor, sparks, anchors,
- * sub, cues, punch, combo-level camera work is inside. headOf(castId, out). drawOverlay(ctx2d).
+ * sub, cues, punch, goal (the encounter's objective on the glass), inset ({ who, as } while a caller who is not on stage
+ * speaks over the Line in a cinematic, else null), headOf(castId, out), drawOverlay(ctx2d, time).
  */
-export function createDirector(troupe, { getSet, lod = 'stage' } = {}) {
-  if (typeof getSet !== 'function') throw new Error('createDirector: getSet(key, light) is required');
+export function createDirector(troupe, { getSet, lod = 'stage', onCue = null } = {}) {
+  if (typeof getSet !== 'function') throw new Error('createDirector: getSet(key, light, use) is required');
   let S = null, cur = null, fade = 1, was = '', cutNext = true;
   const NONE = [], HP = [0, 0, 0], XY = [0, 0], anchors = {}, anchorPool = {};
-  const lineIn = { line: null, on: NONE, cam: '', voice: null, camera: null, cut: false, emotes: null, radio: false, speaker: '', emote: '' };
-  const fightIn = { stage: null, recent: null, content: null, game: null, voice: null, hit: null, camera: null, cut: false, replay: false };
+  const lineIn = { line: null, on: NONE, cam: '', voice: null, camera: null, cut: false, emotes: null, radio: false, speaker: '', emote: '', wear: null };
+  const fightIn = { stage: null, recent: null, content: null, game: null, voice: null, hit: null, camera: null, cut: false, replay: false, wear: null };
+  const inset = { who: '', as: '' };
+  const prep = (set) => { const T = stageOn(set, troupe); T.lines = T.lines || linesOn(T); T.fight = T.fight || fightOn(T, { lod }); T.onCue = onCue; return T; };
+  /** The same place in another build: everybody and everything goes across as it stands. */
+  function adopt(next) {
+    const from = S, to = prep(next);
+    if (to === from) return;
+    while (to.actors.length) to.drop(to.actors[to.actors.length - 1]);
+    for (const a of from.actors.slice()) { from.release(a); to.adopt(a); }
+    const who = from.who, vs = from.units.map((u) => u.v);
+    from.clearUnits(); to.clearUnits();
+    if (who) { buildUnits(to, who); to.units.forEach((u, i) => { u.v = vs[i] >= 0 ? vs[i] : 1; u.shown = u.v; u.set(u.v, 0, 0); }); }
+    Object.assign(to.rig, from.rig); to.camera = from.camera;
+    from.fight.key = ''; from.lines.reset(); to.fight.key = ''; to.fight.warm(); to.lines.reset();
+    S = to; cur = next;
+  }
   const dir = {
-    set: null, view: null, fade: 1, fadeColor: '#131a3a', sparks: NONE, cues: NONE, anchors, punch: 0, phase: 'idle',
+    set: null, view: null, fade: 1, fadeColor: '#131a3a', sparks: NONE, cues: NONE, anchors, punch: 0, phase: 'idle', goal: null, inset: null, time: 0,
     sub: { who: '', onStage: false, x: NaN, y: NaN, radio: false },
     get stage() { return S; },
     headOf(id, out) { if (!S || !S.camera || !dir.rect) return false; const a = S.find(id); if (!a) return false; HP[0] = a.ch.headPos[0]; HP[1] = a.ch.headPos[1] + a.ch.headRadius * 1.2; HP[2] = a.ch.headPos[2]; return projectTo(S.camera, HP, dir.rect, out); },
     rect: null,
-    drawOverlay(ctx) { const sp = dir.sparks; for (let i = 0; i < sp.length; i++) drawSpark(ctx, sp[i]); },
+    drawOverlay(ctx) {
+      const r = dir.rect; if (!r) return;
+      ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+      if (dir.goal) drawGoal(ctx, dir.goal, dir.time);
+      ctx.restore();
+      const sp = dir.sparks; for (let i = 0; i < sp.length; i++) drawSpark(ctx, sp[i]);
+    },
     dispose() { if (S) S.clear(); S = null; cur = null; dir.set = null; },
     update(dt, time, f) {
       const st = f.stage, rect = f.rect, camera = f.camera, aspect = rect.w / Math.max(1, rect.h);
-      dir.rect = rect; dir.phase = st.phase;
-      const want = st.set ? getSet(st.set, st.light) : null;
+      dir.rect = rect; dir.phase = st.phase; dir.time = time;
+      const want = st.set ? getSet(st.set, st.light, st.phase === 'fight' ? 'band' : 'lines') : null;
+      if (want !== cur && want && cur && S && want.id === cur.id && want.light === cur.light && fade <= 0) adopt(want);
       // somewhere else: ink closes over the old set, the new one opens from it
       if (want !== cur) {
         fade = Math.min(1, fade + dt / 0.2);
-        if (fade >= 1 || !cur) { if (S) S.clear(); cur = want; S = cur ? stageOn(cur, troupe) : null; if (S) { S.clear(); S.lines = S.lines || linesOn(S); S.fight = S.fight || fightOn(S, { lod }); } cutNext = true; was = ''; fade = 1; }
+        if (fade >= 1 || !cur) { if (S) S.clear(); cur = want; S = cur ? prep(cur) : null; if (S) S.clear(); cutNext = true; was = ''; fade = 1; }
       } else if (fade > 0) fade = Math.max(0, fade - dt / 0.32);
       dir.fade = fade; dir.set = cur; dir.view = S ? S.view : null;
-      dir.sparks = NONE; dir.cues = NONE; dir.punch = 0; dir.sub.who = ''; dir.sub.onStage = false; dir.sub.x = NaN; dir.sub.y = NaN; dir.sub.radio = false;
+      dir.sparks = NONE; dir.cues = NONE; dir.punch = 0; dir.goal = null; dir.inset = null; dir.sub.who = ''; dir.sub.onStage = false; dir.sub.x = NaN; dir.sub.y = NaN; dir.sub.radio = false;
       for (const k in anchors) delete anchors[k];
       if (!S) return;
       const leaving = want !== cur;      // fading out: the old stage holds as it was
@@ -1297,23 +1415,31 @@ export function createDirector(troupe, { getSet, lod = 'stage' } = {}) {
       const cut = cutNext && !leaving;
       const fighting = st.phase === 'fight' || st.phase === 'resolve';
       const mode = leaving ? was : fighting ? 'fight' : st.phase === 'dialogue' ? 'lines' : 'idle';
+      const wear = leaving ? null : wearNow(f.content, f.game, st);
+      const grow = f.cine || 0;
+      S.blobs = f.quality === 'low' && mode === 'fight' && grow < 0.02;
       if (mode === 'fight') {
-        fightIn.stage = st; fightIn.content = f.content; fightIn.game = f.game; fightIn.recent = f.game ? f.game.recent : null; fightIn.voice = f.voice || null; fightIn.hit = f.hit || null; fightIn.camera = camera; fightIn.cut = cut;
+        fightIn.stage = st; fightIn.content = f.content; fightIn.game = f.game; fightIn.recent = f.game ? f.game.recent : null; fightIn.voice = f.voice || null; fightIn.hit = f.hit || null; fightIn.camera = camera; fightIn.cut = cut; fightIn.wear = wear;
         if (!leaving) { if (was === 'lines') S.lines.reset(); S.fight.update(dt, time, fightIn); }
         if (S.floorRoot) S.floorRoot.visible = true;
         S.tick(dt, time, camera);
-        S.fight.frame(camera, aspect, rect.h, time, rect, f.pad || null);
-        dir.sparks = S.fight.sparks; dir.cues = S.fight.cues; dir.punch = S.fight.punch;
+        S.fight.frame(camera, aspect, rect.h, time, rect, f.pad || null, grow);
+        dir.sparks = S.fight.sparks; dir.cues = S.fight.cues; dir.punch = S.fight.punch; dir.goal = S.fight.goal;
       } else if (mode === 'lines') {
-                lineIn.line = st.line || null; lineIn.on = st.party || NONE; lineIn.cam = st.cam || ''; lineIn.voice = f.voice || null; lineIn.camera = camera; lineIn.cut = cut; lineIn.radio = !!st.radio;
+        lineIn.line = st.line || null; lineIn.on = st.party || NONE; lineIn.cam = st.cam || ''; lineIn.voice = f.voice || null; lineIn.camera = camera; lineIn.cut = cut; lineIn.radio = !!st.radio; lineIn.wear = wear;
+        // what the encounter made stays made: said to the set once, and from then on the set's own cues own it
+        if (was !== 'lines' && !leaving) for (const u of S.units) { u.v = 1; u.set(1, time, dt); }
         if (!leaving) S.lines.update(dt, time, lineIn);
         S.tick(dt, time, camera);
         S.lines.frame(camera, aspect, rect.h, time, cut, false);
         // the lamps come back up for the lines, whatever the table was doing
         cur.setPower(1);
         for (const a of S.actors) if (a.ch.skin) { const tn = a.ch.skin.tint; tn[0] += (1 - tn[0]) * Math.min(1, dt * 4); tn[1] = tn[0]; tn[2] = Math.min(1, tn[0] + 0.06); }
-        for (const u of S.units) u.set(u.v < 0 ? 1 : u.v, time, dt);
+        for (const u of S.units) if (u.own) u.set(1, time, dt);      // the stage's own stand-ins are animated by set(): a reel keeps its rest, a lantern its sway
         if (S.floorRoot) S.floorRoot.visible = false;      // a stand-in prop on the strip would be walked through: it is struck for the lines
+        // a caller over the Line who is nowhere on this stage: the shell shows them in an inset
+        const who = st.line ? st.line.who : '';
+        if (st.radio && who && who !== 'narrator' && who !== 'crowd' && !S.find(who) && troupe.has((wear && wear[who]) || who)) { inset.who = who; inset.as = (wear && wear[who]) || who; dir.inset = inset; }
       } else {
         S.tick(dt, time, camera);
         cur.frame(PROBE, cur.cameras.wide ? 'wide' : Object.keys(cur.cameras)[0], time); rigTo(S.rig, camera, dt, cut, 3, time, 0);

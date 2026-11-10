@@ -89,10 +89,10 @@ export const chapter5 = {
         set: 'exchange-floor', light: 'day', mode: 'talk',
         party: ['ilse', 'ren', 'tobb'],
         opposition: { kind: 'force', who: ['price-board'], name: 'THE FLOOR' },
-        extras: ['clerk', 'clerk'],
+        extras: ['broker', 'broker'],
         setback: { cue: 'floor-roars', show: 'Both pits roar at once and the lapse bar jumps on the board; Ilse loses the room and the three are put back a step.' },
         beats: [
-          { at: 0, cue: 'bell-rung', name: 'The floor is open', show: 'The trading floor at full cry: both pits packed, clerks on the gallery, slips falling. Ilse stands between the pits with Ren and Tobb behind her; two floor clerks at the right take no notice. On the board the lapse bar is short and green.' },
+          { at: 0, cue: 'bell-rung', name: 'The floor is open', show: 'The trading floor at full cry: both pits packed, clerks on the gallery, slips falling. Ilse stands between the pits with Ren and Tobb behind her; two brokers face her, bidding past her. On the board the lapse bar is short and green.' },
           { at: 1, cue: 'between-the-pits', name: 'A hearing in a marketplace', show: 'Ilse is speaking, one hand up. The lapse bar has stepped along the board.' },
           { at: 2, cue: 'board-moves', name: 'Watch the board', show: 'The bar steps again as she speaks. The pits are a little quieter.' },
           { at: 3, cue: 'hearing-open', name: 'Open, and recorded', show: 'The floor has half turned to listen and has not stopped trading. The bar stands at thirty-one.' },

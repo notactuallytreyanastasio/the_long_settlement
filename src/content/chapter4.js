@@ -30,7 +30,7 @@ export const chapter4 = {
       'under-lane': { set: 'under-lane', light: 'night' },
     },
     clerk: 'clerk',
-    townsfolk: 'fishwife',
+    townsfolk: 'islander',
   },
 
   // ───────────────────────── prologue ─────────────────────────
@@ -90,13 +90,13 @@ export const chapter4 = {
         set: 'wreck-shore', light: 'predawn', mode: 'work',
         party: ['ren', 'ilse', 'tobb'],
         opposition: { kind: 'force', who: ['long-rope'], name: 'THE CHURN' },
-        extras: ['fishwife', 'townsman'],
+        extras: ['islander', 'islander'],
         setback: { cue: 'sea-comes-back', show: 'A sea comes in over the three of them and takes them a yard back down the shingle; spray stands over the breakwater.' },
         beats: [
-          { at: 0, cue: 'three-in-the-surf', name: 'Three in the surf', show: 'Ren, Ilse and Tobb at the water\'s edge, stage left, the sea running hard behind them. One hooded lantern on the breakwater; two islanders at the foot of it with a coil of rope.' },
-          { at: 1, cue: 'long-rope-out', name: 'The long rope', show: 'The rope is paid out a third of the way along the shingle. More of the island has come onto the breakwater. The three are a few yards up the beach.' },
-          { at: 2, cue: 'shingle-underfoot', name: 'Shingle underfoot', show: 'The rope runs most of the way to them. The breakwater is lined with people. The sea has eased.' },
-          { at: 3, cue: 'hauled-out', name: 'Out of the Churn', show: 'The rope reaches them and all eleven are down. The three stand mid-beach under the lantern, out of the water.' },
+          { at: 0, cue: 'three-in-the-surf', name: 'Three in the surf', show: 'Ren, Ilse and Tobb low on the shingle with the end of a rope, the sea washing round them. One hooded lantern on the breakwater; two islanders at the shore end of the rope.' },
+          { at: 1, cue: 'long-rope-out', name: 'The long rope', show: 'The rope has come in a third of the way and the three with it. More of the island is on the breakwater.' },
+          { at: 2, cue: 'shingle-underfoot', name: 'Shingle underfoot', show: 'Two thirds of the rope is in. The breakwater is lined with people. The sea has eased.' },
+          { at: 3, cue: 'hauled-out', name: 'Out of the Churn', show: 'The rope is short and taut and all eleven are down. The three stand under the lantern, out of the water.' },
         ],
       },
       briefing: [
@@ -409,10 +409,10 @@ export const chapter4 = {
         set: 'dark-village', light: 'interior', mode: 'talk',
         party: ['ilse', 'ren'],
         opposition: { kind: 'force', who: ['net-hall'], name: 'NO EIGHTH HEARING' },
-        extras: ['wyn', 'fishwife', 'townsman'],
+        extras: ['islander', 'islander', 'wyn'],
         setback: { cue: 'soup-and-sorry', show: 'Half a bench gets up to go: soup and sorry, and off she goes. Ilse and Ren are put back a step.' },
         beats: [
-          { at: 0, cue: 'a-question', name: 'A question for the Tribune', show: 'Night. The net hall\'s doors stand open on the stove and the accounts net; a handful of people on the benches. Ilse stands in the yard at the threshold with Ren behind her; the keeper and two islanders at the right.' },
+          { at: 0, cue: 'a-question', name: 'A question for the Tribune', show: 'Night. The net hall\'s doors stand open on the stove and the accounts net; a handful of people on the benches. Ilse stands in the yard at the threshold with Ren behind her; two islanders and the keeper face her.' },
           { at: 1, cue: 'benches-fill', name: 'The island comes in', show: 'A third of the benches are taken. Ilse is speaking, one hand up.' },
           { at: 2, cue: 'sixty-one', name: 'Sixty-one and a stove', show: 'The benches are nearly full and people stand along the walls.' },
           { at: 3, cue: 'floor-is-hers', name: 'What the statute does say', show: 'The whole island is in the hall and the yard, and quiet. The floor is hers.' },
@@ -495,8 +495,7 @@ export const chapter4 = {
         set: 'shore-dusk', light: 'day', mode: 'work',
         party: ['ren', 'ilse'],
         opposition: { kind: 'force', who: ['drift-net'], name: 'SIX FEET OF HOLE' },
-        extras: ['wyn'],
-        setback: { cue: 'join-pulls-out', show: 'A join pulls out and both of them step back from the net; the keeper, further along the wall, looks round.' },
+        setback: { cue: 'join-pulls-out', show: 'A join pulls out and both of them step back from the net; the net sags between them.' },
         beats: [
           { at: 0, cue: 'six-feet', name: 'Six feet of hole', show: 'Little Brand\'s sea wall with the drift net pegged along it, a hole in the middle. Ren works at the tear, Ilse a little behind him; they do not look at each other. No fire, no lamp.' },
           { at: 5, cue: 'four-feet', name: 'While you work, Surety', show: 'A quarter of the hole is closed.' },

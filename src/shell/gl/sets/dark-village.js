@@ -230,6 +230,14 @@ function build(engine = GL0, { light, low = false } = {}) {
   //   'net-hall'      ch4.s5: the hall itself: the island comes in to the benches as the hearing is opened
   // setback(): half a bench gets up to go (s5); the director calls it (as passLamp) on a drain no ball save covered
   let dip = 0;
+  // where an encounter's extras stand (the director reads marks.extras; a figure on a mark does not come at the party on a drain):
+  // day: the keeper by the hall door, watching the nets mended;  night: the keeper at the head of the cliff path by her lantern;
+  // hearing: two islanders and the keeper facing the Tribune across the threshold
+  const EXTRAS = {
+    day: [{ pos: [2.95, 0, 0.55], face: -50 }],
+    night: [{ pos: [2.72, 0, 0.62], face: -46 }],
+    hearing: [{ pos: [0.95, 0, 0.82], face: -58 }, { pos: [1.72, 0, 0.3], face: -52 }, { pos: [2.4, 0, 1.05], face: -62 }],
+  };
   const racks = [];
   function rack(i) {
     if (racks[i]) return racks[i];
@@ -252,14 +260,14 @@ function build(engine = GL0, { light, low = false } = {}) {
       scene.root.add(staff, lant);
       return (pathUnit = taskUnit(gp, [1.25, 0.78], (v, time) => { setCrowd(0); g.alpha = (0.3 + 0.5 * v) * (0.92 + 0.08 * Math.sin(time * 9)); g.size[0] = g.size[1] = 0.8 + 0.7 * v; lant.setRot(0, 0, Math.sin(time * 1.2) * 4); }));
     }
-    if (type === 'net-hall') return hallUnit || (hallUnit = taskUnit([0.3, 1.75, HALL_Z + 0.5], null, (v, time, dt) => { dip = Math.max(0, dip - (dt || 0) / 2.6); setCrowd(0.16 + 0.84 * v - 0.3 * dip); setMood(0.22 + 0.16 * v + 0.5 * dip); }));
+    if (type === 'net-hall') return hallUnit || (hallUnit = taskUnit([0.45, 1.05, HALL_Z + 0.55], null, (v, time, dt) => { dip = Math.max(0, dip - (dt || 0) / 2.6); setCrowd(0.16 + 0.84 * v - 0.3 * dip); setMood(0.22 + 0.16 * v + 0.5 * dip); }));
     return null;
   }
   const setback = () => { dip = 1; };
 
   return c4Shell({
     id: 'dark-village', light, low, scene, actors, foreground, cameras: CAMERAS, lamps, lampPower: L.power, update,
-    marks: { ...MARKS4, focus: FIRE, net: [NET[0], NET[1] - 1, NET[2]], door: { pos: [0, 0, HALL_Z + 0.5], face: 0 }, tower: anchorAt(tower, 'top', TOWER) },
+    marks: { ...MARKS4, extras: EXTRAS[light], focus: FIRE, net: [NET[0], NET[1] - 1, NET[2]], door: { pos: [0, 0, HALL_Z + 0.5], face: 0 }, tower: anchorAt(tower, 'top', TOWER) },
     extra: { setCrowd, setMood, cue, task, setback, passLamp: setback },
   });
 }

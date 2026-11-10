@@ -176,7 +176,12 @@ function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
   }
   const snuff = () => setDark(dark + 1);
   const CUES = { 'ch5.s2.c01': () => setDark(11, true), 'ch5.epi.02': () => setDark(11, true), 'ch5.epi.06': () => setDark(12) };
-  const cue = (id) => { const f = CUES[id]; if (f) f(); return !!f; };
+  // chapters 6 to 8 come back to this room after ch5.epi.06: twenty-eight burn and twelve do not
+  const LATER = /^(ch6\.epi\.|ch7\.epi\.|ch8\.s4\.|ch8\.mepi\.18)/;
+  const cue = (id) => { const f = CUES[id]; if (f) { f(); return true; } if (LATER.test(id)) { if (dark !== 12) setDark(12, true); return true; } return false; };
+  // the director calls this when an encounter is set up here. Chapter 5's is the model being lit ('brass-aurelle', below);
+  // anybody else's is after the twelfth was put out
+  const encounter = (st) => { const o = st && st.opposition; if (!(o && o.kind === 'force' && o.who.includes('brass-aurelle'))) setDark(12, true); };
   function tick(time, dt, pw, live) {
     const d = lampNode.instances.data, on = Math.min(1.2, pw); let lit = 0;
     for (let i = 0; i < 40; i++) {
@@ -215,7 +220,7 @@ function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
       ...MARKS, model: MODEL, focus: MODEL, lamps40: spots,
       window: { pos: [WIN.x + 0.1, 0, BACK + 1.0], face: 180 }, guest: { pos: GUEST, face: 62 }, seat: { pos: [WIN.x - 0.55, 0, BACK + 1.25], face: 150 },
     },
-    extra: { setDark, snuff, cue, task, setback, passLamp: setback, litCount: () => 40 - dark },
+    extra: { setDark, snuff, cue, encounter, task, setback, passLamp: setback, litCount: () => 40 - dark },
   });
 }
 

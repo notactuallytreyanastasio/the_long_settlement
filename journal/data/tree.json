@@ -12366,17 +12366,17 @@
  },
  {
   "path": "src/content/chapter4.js",
-  "bytes": 62438,
-  "lines": 774
+  "bytes": 62323,
+  "lines": 773
  },
  {
   "path": "src/content/chapter5.js",
-  "bytes": 62108,
+  "bytes": 62104,
   "lines": 778
  },
  {
   "path": "src/content/chapter6.js",
-  "bytes": 70042,
+  "bytes": 69945,
   "lines": 832
  },
  {
@@ -12386,8 +12386,8 @@
  },
  {
   "path": "src/content/chapter8.js",
-  "bytes": 96262,
-  "lines": 1047
+  "bytes": 96523,
+  "lines": 1049
  },
  {
   "path": "src/content/index.js",
@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 26935,
-  "lines": 500
+  "bytes": 28971,
+  "lines": 521
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 199969,
-  "lines": 2529
+  "bytes": 200744,
+  "lines": 2535
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 51301,
-  "lines": 758
+  "bytes": 55890,
+  "lines": 811
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12591,7 +12591,7 @@
  },
  {
   "path": "src/shell/gl/sets/clearing-house.js",
-  "bytes": 19436,
+  "bytes": 19435,
   "lines": 230
  },
  {
@@ -12611,8 +12611,8 @@
  },
  {
   "path": "src/shell/gl/sets/corvane-study.js",
-  "bytes": 18880,
-  "lines": 224
+  "bytes": 19476,
+  "lines": 229
  },
  {
   "path": "src/shell/gl/sets/counting-room.js",
@@ -12641,8 +12641,8 @@
  },
  {
   "path": "src/shell/gl/sets/dark-village.js",
-  "bytes": 27885,
-  "lines": 271
+  "bytes": 28501,
+  "lines": 279
  },
  {
   "path": "src/shell/gl/sets/dormitory.js",
@@ -12661,12 +12661,12 @@
  },
  {
   "path": "src/shell/gl/sets/exchange-floor.js",
-  "bytes": 19792,
-  "lines": 236
+  "bytes": 19927,
+  "lines": 237
  },
  {
   "path": "src/shell/gl/sets/exchange-steps.js",
-  "bytes": 26338,
+  "bytes": 26450,
   "lines": 311
  },
  {
@@ -12691,8 +12691,8 @@
  },
  {
   "path": "src/shell/gl/sets/full-bench.js",
-  "bytes": 18283,
-  "lines": 190
+  "bytes": 18693,
+  "lines": 198
  },
  {
   "path": "src/shell/gl/sets/hall-steps.js",
@@ -12711,7 +12711,7 @@
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
-  "bytes": 25241,
+  "bytes": 25280,
   "lines": 259
  },
  {
@@ -12741,8 +12741,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
-  "bytes": 37074,
-  "lines": 482
+  "bytes": 37363,
+  "lines": 484
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
@@ -12796,7 +12796,7 @@
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
-  "bytes": 20496,
+  "bytes": 20506,
   "lines": 237
  },
  {
@@ -12856,8 +12856,8 @@
  },
  {
   "path": "src/shell/gl/sets/under-lane.js",
-  "bytes": 21514,
-  "lines": 225
+  "bytes": 21754,
+  "lines": 227
  },
  {
   "path": "src/shell/gl/sets/underwriting-floor.js",
@@ -12866,8 +12866,8 @@
  },
  {
   "path": "src/shell/gl/sets/wreck-shore.js",
-  "bytes": 19604,
-  "lines": 202
+  "bytes": 20029,
+  "lines": 205
  },
  {
   "path": "src/shell/gl/shaders.js",
@@ -12881,8 +12881,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 97992,
-  "lines": 1338
+  "bytes": 107239,
+  "lines": 1464
  },
  {
   "path": "src/shell/gl/table3d.js",
