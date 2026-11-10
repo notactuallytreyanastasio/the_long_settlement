@@ -181,6 +181,10 @@ function plumbWeight(ctx, x, y, s, col) {
   poly(ctx, [[x - s * 0.15, y - s * 0.52], [x + s * 0.15, y - s * 0.52], [x + s * 0.15, y - s * 0.36], [x + s * 0.42, y - s * 0.2], [x + s * 0.42, y + s * 0.12], [x, y + s], [x - s * 0.42, y + s * 0.12], [x - s * 0.42, y - s * 0.2], [x - s * 0.15, y - s * 0.36]], col);
 }
 
+/** the id of the line being spoken, and its number within a scene: lineNo('ch6.s7.c04', 'ch6.s7.c') is 4, NaN for any other scene */
+const lineId = (info) => (info && info.lines && info.lines[info.index] && info.lines[info.index].id) || '';
+const lineNo = (id, prefix) => (id.startsWith(prefix) ? parseInt(id.slice(prefix.length), 10) : NaN);
+
 // ═════════════════════════ chapter 6: Kedge ═════════════════════════
 
 // ── kedge-roads: sixty hulls at anchor under a line of cranes, dawn. Key light: the low sun, behind the cranes ──
@@ -217,7 +221,7 @@ function anchoredHull(ctx, x, y, s, col, rimCol, seed) {
   if (s > 0.3) { stroke(ctx, X(12), y - 14 * s - mh * 0.7, X(54), y - 22 * s, Math.max(1, 1.8 * s), col); stroke(ctx, X(-10), y - 14 * s - mh * 0.74, X(34), y - 14 * s - mh * 0.74, Math.max(1.2, 2.6 * s), col); }
   if (rnd(seed * 7) < 0.6) rect(ctx, X(12) - 1.6, y - 14 * s - mh - 3.2, 3.2, 3.2, '#fff0c0');   // a riding light, not yet put out
 }
-def('kedge-roads', L_ROADS, (ctx, t, px) => {
+def('kedge-roads', L_ROADS, (ctx, t, px, info) => {
   const L = L_ROADS, hy = 326, sx = 668, sy = 178, DK = '#2a1850', RIM = '#ff9a5c';
   ctx = S(0.05);
   sky(ctx, hy, ['#3c3484', '#77479a', '#c9588a', '#f5825e', '#ffb45e', '#ffd88a'], [0.3, 0.5, 0.66, 0.8, 0.92, 1]);
@@ -226,7 +230,8 @@ def('kedge-roads', L_ROADS, (ctx, t, px) => {
   for (const [cx, cy, w, h, sd] of [[250, 120, 250, 40, 3], [1010, 86, 300, 46, 5], [470, 44, 180, 30, 7], [880, 226, 200, 28, 9], [-60, 210, 260, 36, 11]]) cloud(ctx, cx, cy, w, h, '#8a4a94', L, sd, 0);
   flat(ctx, (c) => { c.moveTo(X0, hy + 2); c.lineTo(X0, 270); c.quadraticCurveTo(-40, 250, 150, 286); c.lineTo(330, hy + 2); c.closePath(); }, '#6a3c8a');   // the far head of the roads
   flat(ctx, (c) => { c.moveTo(1540, hy + 2); c.lineTo(1540, 262); c.quadraticCurveTo(1330, 268, 1180, 300); c.lineTo(1060, hy + 2); c.closePath(); }, '#6a3c8a');
-  // the sea: the sun's road down the middle of it
+  // the sea: the sun's road down the middle of it (a still section of its own: no one section of this painting is long to build)
+  ctx = S(0.05);
   bands(ctx, X0, hy, XW, 700, ['#f08a5c', '#b8527e', '#7a3a82', '#4a2a6c', '#2c1c52'], [0.05, 0.14, 0.3, 0.52, 1]);
   lozenges(ctx, 3, sx - 150, sx + 150, hy + 4, hy + 60, 30, '#ffe2a0');
   lozenges(ctx, 4, sx - 240, sx + 240, hy + 50, hy + 260, 34, '#ffc27a');
@@ -240,6 +245,7 @@ def('kedge-roads', L_ROADS, (ctx, t, px) => {
   rimmed(ctx, rp(X0, hy - 12, XW, 22), DK, UP, 3, RIM);
   for (let i = 0; i < 28; i++) rect(ctx, X0 + 30 + i * 66, hy - 4, 6, 8, i % 3 ? RIM : '#fff0c0');                 // sheds along the mole, lamps still lit in them
   for (const [x, s, dir] of [[-110, 0.98, 1], [140, 0.84, -1], [352, 0.9, 1], [566, 0.8, 1], [806, 0.94, -1], [1010, 0.82, 1], [1222, 1, -1], [1420, 0.86, -1]]) quayCrane(ctx, x, hy - 10, s, dir, DK, RIM, L);
+  ctx = S(0.16);
   for (let i = 0; i < 14; i++) anchoredHull(ctx, -200 + i * 126 + rnd(i * 5.1) * 50, hy + 34 + rnd(i) * 8, 0.36, '#4a2a6c', RIM, i * 2.3 + 3);
   for (let i = 0; i < 11; i++) anchoredHull(ctx, -230 + i * 166 + rnd(i * 4.7) * 70, hy + 78 + rnd(i * 2) * 12, 0.56, '#3a2060', RIM, i * 3.1 + 11);
   ctx = S(0.4);
@@ -260,11 +266,22 @@ def('kedge-roads', L_ROADS, (ctx, t, px) => {
   spark(ctx, sx + o, sy, 72, t, 1);
   shimmer(ctx, 8, sx - 220, sx + 220, hy + 8, hy + 300, 22, '#fff0c0', t);
   gulls(ctx, [[430, 110, 15, 1], [860, 150, 12, 2], [760, 70, 10, 3], [250, 190, 12, 4], [1060, 200, 11, 5]], t, '#2a1850');
+  if (lineNo(lineId(info), 'ch6.s7.c') >= 16) {
+    // first light, the end of chapter 6: the open boat going out down the sun's road, eight oars, unhooded; the cutter lying across the mouth
+    const cxx = 860 + px * 0.16, bx = sx + px * 0.16 - 40 + Math.sin(t * 0.05) * 30, by = hy + 58, pull = Math.sin(t * 2.2);
+    rimmed(ctx, pp([[cxx - 70, hy - 6], [cxx + 64, hy - 6], [cxx + 84, hy - 16], [cxx + 70, hy + 4], [cxx - 60, hy + 4]]), '#1a1040', UP, 2.4, RIM);
+    stroke(ctx, cxx + 6, hy - 6, cxx + 6, hy - 84, 4, '#1a1040'); stroke(ctx, cxx + 6, hy - 70, cxx + 60, hy - 14, 2, '#1a1040'); rect(ctx, cxx + 6, hy - 84, 22, 9, '#080818');
+    glint(ctx, cxx + 16, hy - 46, 11 + 2 * Math.sin(t * 2.3), C.white, 1, 0);
+    rimmed(ctx, pp([[bx - 44, by - 9], [bx + 44, by - 9], [bx + 36, by + 3], [bx - 36, by + 3]]), '#1e1240', UP, 2, RIM);
+    ink(ctx, 2, '#1e1240'); ctx.beginPath(); for (let i = 0; i < 4; i++) { const ox = bx - 27 + i * 18; ctx.moveTo(ox, by - 8); ctx.lineTo(ox - 14 - pull * 8, by + 10); ctx.moveTo(ox, by - 8); ctx.lineTo(ox + 14 + pull * 8, by + 10); } ctx.stroke();
+    ctx.fillStyle = '#1e1240'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(bx - 30 + i * 15 + pull * 2, by - 15, 4.4, 0, TAU); ctx.fill(); }
+    stroke(ctx, bx + 40, by - 9, bx + 40, by - 30, 2, '#1e1240'); glint(ctx, bx + 40, by - 32, 9 + 2 * Math.sin(t * 3.1), '#d8c8ff', 1, 0);
+  }
 });
 
 // ── compact-hall: a ropewalk shed used as a meeting hall, night. Key light: one hurricane lamp over the table ──
 const L_ROPEWALK = keyLight('#ffc070', -Math.PI * 0.5, { depth: 0.9 });
-def('compact-hall', L_ROPEWALK, (ctx, t, px) => {
+def('compact-hall', L_ROPEWALK, (ctx, t, px, info) => {
   const L = L_ROPEWALK, lx = 640, ly = 132, vx = 640, vy = 236, WOOD = '#4a2838', DARK = '#150c24';
   const P = (x, y, k) => [vx + (x - vx) * k, vy + (y - vy) * k];   // a point of the near frame, carried back along the shed
   ctx = S(0.25);
@@ -320,6 +337,7 @@ def('compact-hall', L_ROPEWALK, (ctx, t, px) => {
       rope(ctx, (c) => { c.moveTo(x - hw * 0.5, l[1]); c.bezierCurveTo(x - hw * 0.8, l[1] + h * 0.8, x + hw * 0.8, l[1] + h * 0.8, x + hw * 0.5, l[1]); }, 6 * k, ROPE);
     }
   }
+  ctx = S(0.4);
   // the strands of the walk itself, laid along both walls from the near posts to the far end
   for (const sd of [-1, 1]) for (let j = 0; j < 3; j++) {
     const n0 = P(640 + sd * (660 - j * 36), 470 + j * 26, 1.3), f0 = P(640 + sd * (660 - j * 36), 470 + j * 26, k0);
@@ -351,6 +369,11 @@ def('compact-hall', L_ROPEWALK, (ctx, t, px) => {
   const o = px * 0.4;
   fire(ctx, lx + o, ly + 20, 8, t, 3);
   spark(ctx, lx + o, ly + 2, 27, t, 2);
+  if (lineNo(lineId(info), 'ch6.s5.c') >= 28) {
+    // the vote, taken by lanterns raised: from a coil of rope it looked like a harbour
+    for (let i = 0; i < 13; i++) { const x = 404 + i * 37 + rnd(i * 3) * 14 + o, y = b[1] - 124 - rnd(i * 7) * 22 + Math.sin(t * 1.3 + i * 2) * 2, c = LCOLS[i % 4]; bloom(ctx, x, y, 20, c, 0.8); rect(ctx, x - 3.4, y - 4.4, 6.8, 8.8, c); rect(ctx, x - 1.4, y - 2, 2.8, 4.4, C.white); }
+    for (let i = 0; i < 12; i++) { const x = -60 + i * 124 + rnd(i * 5) * 50 + px * 0.8, y = 556 - rnd(i * 9) * 30 + Math.sin(t * 1.1 + i * 3) * 3, c = LCOLS[(i + 1) % 4]; bloom(ctx, x, y, 50, c, 0.8); stroke(ctx, x, y + 12, x + 6, y + 70, 7, '#0e0818'); rect(ctx, x - 10, y - 13, 20, 26, INK); rect(ctx, x - 7.6, y - 10.6, 15.2, 21.2, c); rect(ctx, x - 3, y - 5, 6, 11, C.white); }
+  }
 });
 
 // ── counting-room: the Commons' books shelved between coils of real rope, after midnight. Key light: a green-shaded desk lamp ──
@@ -481,6 +504,7 @@ def('cutter-deck', L_CUTTER, (ctx, t, px) => {
   cel(ctx, (c) => { c.moveTo(mx + 26, 398); c.quadraticCurveTo(mx + 22, 366, mx + 60, 364); for (let i = 0; i < 8; i++) c.quadraticCurveTo(mx + 102 + i * 84, 352 + (i % 2) * 5, mx + 144 + i * 84, 364); c.lineTo(mx + 740, 398); c.closePath(); }, '#8f8cb8', L, { off: 0, ink: IW, shadow: rp(mx, 382, 800, 30) });
   for (let i = 0; i < 9; i++) stroke(ctx, mx + 60 + i * 84, 362, mx + 60 + i * 84, 412, 4, DK);
   // the search lamp, on its bracket at the hounds
+  ctx = S(0.5);
   stroke(ctx, mx + 22, ly + 30, lx + 10, ly + 30, 12); stroke(ctx, mx + 22, ly + 30, lx + 10, ly + 30, 6, STEEL);
   stroke(ctx, lx + 10, ly + 34, lx + 10, ly + 10, 10); stroke(ctx, lx + 10, ly + 34, lx + 10, ly + 10, 5, STEEL);
   bloom(ctx, lx - 14, ly + 4, 190, L.col, 0.9);
@@ -570,7 +594,7 @@ def('lantern-line', L_FILES, (ctx, t, px) => {
 // ── quarter-flame: Kedge's lamp-house, the great lamp cut with ash to a quarter, night. Key light: the grey-violet flame itself ──
 const L_QUARTER = keyLight('#bfa8f0', -Math.PI * 0.5, { depth: 0.9, tint: '#140c30' });
 const DIM_FIRE = ['#5a489c', '#bfa8f0', '#f6f0ff'];
-def('quarter-flame', L_QUARTER, (ctx, t, px) => {
+def('quarter-flame', L_QUARTER, (ctx, t, px, info) => {
   const L = L_QUARTER, fx = 640, fy = 186, DARK = '#0c0a20', BR = '#8a6a5c';   // brass, in this light, is the colour of pewter
   ctx = S(0.15);
   fillAll(ctx, DARK);
@@ -626,6 +650,12 @@ def('quarter-flame', L_QUARTER, (ctx, t, px) => {
   cel(ctx, pp([[1010, 300], [1070, 250], [1076, 262], [1016, 312]]), '#5a4660', L, { off: 0, shadow: false, ink: II });
   ctx = A();
   const o = px * 0.3;
+  if (lineNo(lineId(info), 'ch6.s7.c') <= 3) {   // before the first shovel of ash: Kedge's lamp stands white in its house
+    bloom(ctx, fx + o, fy - 70, 330, '#9fd8ff', 0.9);
+    fire(ctx, fx + o, fy + 8, 74, t * 0.5, 7, ['#2a66dc', '#86d0ff', '#f2fcff']);
+    spark(ctx, fx + o, fy - 60, 60, t * 0.7, 8);
+    return;
+  }
   fire(ctx, fx + o, fy + 4, 25, t * 0.55, 7, DIM_FIRE);
   spark(ctx, fx + o, fy - 14, 17, t * 0.6, 8);
   for (let i = 0; i < 3; i++) { const ph = mod(t * 0.07 + i / 3, 1); curl(ctx, fx + o + Math.sin(ph * 5 + i * 2) * 26, fy - 50 - ph * 150, 9 + ph * 13, 1.4, i % 2 ? 1 : -1, 6, blend('#b8b0cc', '#1a1228', ph * 0.85), II); }   // it smokes, and it stinks
@@ -710,6 +740,7 @@ def('fish-dock', L_FISH, (ctx, t, px) => {
 });
 
 // ── stall-day: Nan's stall with its lanterns unlit, afternoon. Key light: the sun, coming through the paper ──
+// (ch7.s1.c01: "a trestle, a paste pot, and forty frames with no paper on them": the third wire and the posts carry the frames)
 const L_STALLDAY = keyLight('#ffe2a0', -Math.PI * 0.3, { depth: 0.72, tint: '#44246a' });
 /** an unlit paper lantern hung from (x, y). glow 0..1: how much of the sun behind it comes through the paper */
 function dayLantern(ctx, x, y, s, col, L, glow = 0) {
@@ -727,7 +758,19 @@ function dayLantern(ctx, x, y, s, col, L, glow = 0) {
   rect(ctx, x - s * 0.28, cy + ry - s * 0.08, s * 0.56, s * 0.16, INK);
   taperPath(ctx, [[x, cy + ry], [x + s * 0.06, cy + ry + s * 0.3], [x - s * 0.04, cy + ry + s * 0.62]], Math.max(1.6, s * 0.12), 0, shade(col, 0.3));
 }
-/** the lanterns of the stall: [x, wire y, size, colour index]. The two marked are drawn swaying */
+/** a lantern frame with no paper on it yet, hung from (x, y): split cane hoops, the day showing through */
+function bareFrame(ctx, x, y, s) {
+  const cy = y + s * 1.3, rx = s * 0.74, ry = s * 0.92, w = Math.max(1.6, s * 0.09);
+  stroke(ctx, x, y, x, cy - ry, Math.max(1.4, s * 0.08));
+  for (const [c, lw] of [[INK, w + 2.2], ['#c98a4a', w]]) {
+    ink(ctx, lw, c); ctx.beginPath();
+    ctx.ellipse(x, cy, rx, ry, 0, 0, TAU); ctx.moveTo(x + rx * 0.42, cy); ctx.ellipse(x, cy, rx * 0.42, ry, 0, 0, TAU);
+    for (const k of [-0.45, 0.45]) { ctx.moveTo(x + rx * Math.sqrt(1 - k * k), cy + k * ry); ctx.ellipse(x, cy + k * ry, rx * Math.sqrt(1 - k * k), ry * 0.13, 0, 0, TAU); }
+    ctx.stroke();
+  }
+  rect(ctx, x - s * 0.3, cy - ry - s * 0.1, s * 0.6, s * 0.18, INK); rect(ctx, x - s * 0.26, cy + ry - s * 0.06, s * 0.52, s * 0.14, INK);
+}
+/** the wires of the stall: [wire y, size, x0, x1, how many]. The top two carry finished lanterns; the third, frames waiting for paper */
 const STALL_WIRES = [[100, 22, 250, 1030, 9], [172, 30, 280, 1000, 7], [262, 21, 262, 1018, 9]];
 def('stall-day', L_STALLDAY, (ctx, t, px) => {
   const L = L_STALLDAY, sx = 772, sy = 176, POST = '#5a2c3a';
@@ -750,9 +793,11 @@ def('stall-day', L_STALLDAY, (ctx, t, px) => {
     for (let i = 0; i < n; i++) {
       if ((w === 0 && i === 2) || (w === 2 && i === 6)) continue;   // these two move
       const x = lerp(x0, x1, (i + 0.5) / n) + (rnd(w * 9 + i) - 0.5) * 16, ss = s * (0.86 + rnd(w * 5 + i * 3) * 0.3);
-      dayLantern(ctx, x, wy - 4, ss, LCOLS[(i * 3 + w * 2) % LCOLS.length], L, glowAt(x, wy + ss * 1.3));
+      if (w === 2) bareFrame(ctx, x, wy - 4, ss);
+      else dayLantern(ctx, x, wy - 4, ss, LCOLS[(i * 3 + w * 2) % LCOLS.length], L, glowAt(x, wy + ss * 1.3));
     }
   }
+  for (const [x, y, ss] of [[204, 300, 20], [186, 352, 18], [214, 398, 19], [1076, 296, 20], [1094, 350, 18], [1066, 396, 19]]) bareFrame(ctx, x, y - ss * 2.2, ss);   // more of them, tied in bunches to the posts
   // awning: flat stripes and a scalloped hem
   for (let i = 0; i < 12; i++) {
     const x = 170 + i * 80, red = i % 2;
@@ -764,7 +809,7 @@ def('stall-day', L_STALLDAY, (ctx, t, px) => {
   rect(ctx, 170, 36, 960, 12, alpha(C.night, 0.3)); stroke(ctx, 170, 48, 1130, 48, II);
   // the back of the stall below the wires, and the counter where she paints
   box(ctx, 244, 330, 796, 150, '#6a3440', L, { off: 0, shadow: false, ink: II });
-  for (let i = 0; i < 9; i++) { const x = 270 + i * 86; for (let k = 0; k < 3; k++) { const c = LCOLS[(i + k * 2) % LCOLS.length]; cel(ctx, ep(x + 30, 440 - k * 20, 30, 9), c, L, { off: 3, ink: 1.6, shadow: shade(c, 0.3) }); } }   // lanterns not yet opened, stacked flat
+  for (let i = 0; i < 9; i++) { const x = 270 + i * 86; for (let k = 0; k < 3; k++) { const c = LCOLS[(i + k * 2) % LCOLS.length]; cel(ctx, ep(x + 30, 440 - k * 20, 30, 9), c, L, { off: 3, ink: 1.6, shadow: shade(c, 0.3) }); } }   // paper cut and folded, stacked flat
   rect(ctx, 244, 330, 796, 14, alpha(C.night, 0.35));
   box(ctx, 196, 474, 888, 14, '#e09a5a', L, { off: 0, shadow: false, ink: II });
   box(ctx, 206, 488, 868, 300, '#8a4434', L, { off: 0, ink: II, shadow: rp(206, 506, 868, 300) });
@@ -778,7 +823,7 @@ def('stall-day', L_STALLDAY, (ctx, t, px) => {
   ctx.fillStyle = C.indigo; ctx.font = `700 21px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.fillText('LITTLE', nx, ny - 4); ctx.textAlign = 'left'; ctx.fillText('BR', nx - 40, ny + 22);
   ctx.textAlign = 'left';
-  for (const [x, c] of [[690, C.indigo], [742, C.crimson], [794, C.sea]]) { cel(ctx, rp(x - 18, 440, 36, 34), '#c8ccd8', L, { off: 6, ink: II }); flat(ctx, ep(x, 440, 18, 5), c); outline(ctx, ep(x, 440, 18, 5), 1.8); }
+  for (const [x, c] of [[690, C.indigo], [742, C.crimson], [794, '#f6ecd0']]) { cel(ctx, rp(x - 18, 440, 36, 34), '#c8ccd8', L, { off: 6, ink: II }); flat(ctx, ep(x, 440, 18, 5), c); outline(ctx, ep(x, 440, 18, 5), 1.8); }
   stroke(ctx, 668, 428, 716, 446, 7); stroke(ctx, 668, 428, 716, 446, 3.4, '#c98a4a'); stroke(ctx, 660, 425, 670, 429, 6, C.indigo);
   // the wire she works by, strung from post to post at the height of a hand
   stroke(ctx, 236, 372, 1050, 366, 2.2, alpha(INK, 0.8));
@@ -786,7 +831,9 @@ def('stall-day', L_STALLDAY, (ctx, t, px) => {
   const o = px * 0.4;
   for (const [w, i, sd] of [[0, 2, 1], [2, 6, 2]]) {
     const [wy, s, x0, x1, n] = STALL_WIRES[w], x = lerp(x0, x1, (i + 0.5) / n) + o, a = Math.sin(t * 1.1 + sd * 7) * 0.09 + Math.sin(t * 0.37 + sd * 3) * 0.05;
-    ctx.save(); ctx.translate(x, wy - 4); ctx.rotate(a); dayLantern(ctx, 0, 0, s, LCOLS[(i * 3 + w * 2) % LCOLS.length], L, glowAt(x - o, wy + s * 1.3)); ctx.restore();
+    ctx.save(); ctx.translate(x, wy - 4); ctx.rotate(a);
+    if (w === 2) bareFrame(ctx, 0, 0, s); else dayLantern(ctx, 0, 0, s, LCOLS[(i * 3 + w * 2) % LCOLS.length], L, glowAt(x - o, wy + s * 1.3));
+    ctx.restore();
   }
   spark(ctx, sx + px * 0.08, sy, 60, t, 10);
   gulls(ctx, [[400, 300, 10, 2], [1130, 120, 12, 5]], t, '#44246a');
@@ -794,7 +841,7 @@ def('stall-day', L_STALLDAY, (ctx, t, px) => {
 
 // ── hall-steps: the Mint hall steps and the fourth step, late afternoon. Key light: low sun from the harbour, long shadows up the stair ──
 const L_HSTEPS = keyLight('#ffb866', -Math.PI * 0.9, { depth: 0.8, tint: '#2c1c60' });
-def('hall-steps', L_HSTEPS, (ctx, t, px) => {
+def('hall-steps', L_HSTEPS, (ctx, t, px, info) => {
   const L = L_HSTEPS, sx = 426, sy = 188, top = 262, SH = '#4a2c78', STONE = '#ffd9a0', RISE = '#e8a070';
   ctx = S(0.05);
   sky(ctx, 340, ['#2c3a88', '#5f55a6', '#b0689e', '#ee8a70', '#ffb866', '#ffe0a0'], [0.26, 0.46, 0.62, 0.78, 0.92, 1]);
@@ -816,8 +863,6 @@ def('hall-steps', L_HSTEPS, (ctx, t, px) => {
   box(ctx, 674, 34, 96, top - 34, '#3a2248', L, { off: 0, shadow: false, ink: IW });
   stroke(ctx, 722, 34, 722, top, II);
   for (const yy of [70, 130, 190]) for (const xx of [690, 706, 738, 754]) circ(ctx, xx, yy, 3.4, C.brass);
-  flat(ctx, pp([[708, 150], [736, 150], [742, 196], [730, 188], [722, 200], [714, 188], [702, 196]]), C.crimson); outline(ctx, pp([[708, 150], [736, 150], [742, 196], [730, 188], [722, 200], [714, 188], [702, 196]]), 1.8);
-  cel(ctx, cp(722, 148, 13), C.crimson, L, { off: 4, ink: II, hi: cp(718, 144, 4), hiCol: '#ff9aa0' });
   // the Mint's scale, in brass, on the wall
   cel(ctx, cp(873, 124, 38), '#3a2248', L, { off: 0, shadow: false, ink: IW }); ink(ctx, 3, C.brass); ctx.beginPath(); ctx.arc(873, 124, 31, 0, TAU); ctx.stroke(); sigilScale(ctx, 873, 124, 17, C.brass, 3);
   for (const bx of [1023, 1323]) cel(ctx, pp([[bx - 34, -200], [bx + 34, -200], [bx + 34, 190], [bx, 162], [bx - 34, 190]]), '#1c7a5c', L, { off: 9, ink: IW });
@@ -849,13 +894,18 @@ def('hall-steps', L_HSTEPS, (ctx, t, px) => {
   crowd(ctx, 99, X0, 1560, 650, 22, 30, '#2a1850', L, { hat: 0.45, rimCol: '#ffb866' });
   ctx = A();
   spark(ctx, sx + px * 0.05, sy, 70, t, 11);
+  if (!lineId(info).startsWith('ch7.s7.')) {   // the Audit's seal on the doors: there until the warrant opens them (it is gone by ch7.s7)
+    const o = px * 0.3, sp = pp([[708 + o, 150], [736 + o, 150], [742 + o, 196], [730 + o, 188], [722 + o, 200], [714 + o, 188], [702 + o, 196]]);
+    flat(ctx, sp, C.crimson); outline(ctx, sp, 1.8);
+    flat(ctx, cp(722 + o, 148, 13), C.crimson); outline(ctx, cp(722 + o, 148, 13), II); circ(ctx, 718 + o, 144, 4, '#ff9aa0');
+  }
   shimmer(ctx, 33, 220, 600, 304, 326, 9, '#fff6e0', t);
   gulls(ctx, [[300, 120, 12, 3], [560, 90, 10, 5], [200, 210, 9, 7]], t, '#2c1c60');
 });
 
 // ── drum-open: the drum hall by day, the drum unsealed and the back-plate off the Reels. Key light: one shaft from the opened doors ──
 const L_DOPEN = keyLight('#fff0c8', -Math.PI * 0.86, { depth: 0.86, tint: '#2a1450' });
-def('drum-open', L_DOPEN, (ctx, t, px) => {
+def('drum-open', L_DOPEN, (ctx, t, px, info) => {
   const L = L_DOPEN, DARK = '#22143a', STONE = '#6a3a5c', gx = 412, cx = 780;
   ctx = S(0.2);
   fillAll(ctx, DARK);
@@ -903,19 +953,39 @@ def('drum-open', L_DOPEN, (ctx, t, px) => {
   { const wx = cx + 86 + 30, wy = 286;
     ink(ctx, 2, '#c8ccd8'); ctx.beginPath(); ctx.moveTo(cx + 86 + 22, 214); ctx.quadraticCurveTo(wx + 12, 230, wx, wy - 36); ctx.stroke();
     plumbWeight(ctx, wx, wy, 21, INK); plumbWeight(ctx, wx, wy, 17, '#7a86a8'); poly(ctx, [[wx - 4, wy - 4], [wx + 1, wy - 4], [wx - 1, wy + 9]], '#c8d4ec'); circ(ctx, wx, wy - 36, 3.6, '#c8ccd8'); }
-  // the back-plate itself, stood against the cabinet's foot, and the tools on a cloth
-  cel(ctx, pp([[cx - 300, 616], [cx - 182, 608], [cx - 164, 372], [cx - 276, 384]]), '#e8b850', L, { off: 0, shadow: false, ink: IW, hi: pp([[cx - 290, 600], [cx - 250, 598], [cx - 232, 388], [cx - 270, 390]]), hiCol: '#fff0c0' });
-  for (const [u, v] of [[-284, 596], [-198, 590], [-262, 398], [-180, 390]]) circ(ctx, cx + u, v, 4.4, INK);
-  // the drum of names, unsealed: its hatch hanging open, and what was in it
+  // What changes with the scene is drawn moving, though it stands still. ch7.s4: the plate is still screwed on and the drum is in its
+  // cradle. ch7.s5: the plate is off and the drum has been carried down to the dock. Any other line: plate off, drum here, unsealed.
+  ctx = A();
+  const id = lineId(info), plateOn = id.startsWith('ch7.s4.'), drumGone = id.startsWith('ch7.s5.');
+  ctx.save(); ctx.translate(px * 0.35, 0);
+  if (plateOn) {
+    cel(ctx, rp(cx - 140, 68, 280, 274), '#e8b850', L, { off: 0, ink: IW, shadow: pp([[cx + 30, 60], [cx + 150, 60], [cx + 150, 350], [cx - 40, 350]]) });
+    for (const [u, v] of [[-126, 82], [126, 82], [-126, 328], [126, 328]]) circ(ctx, cx + u, v, 4.4, INK);
+    stroke(ctx, cx - 110, 205, cx + 110, 205, II, alpha(INK, 0.5));
+    flat(ctx, cp(cx, 205, 15), C.crimson); outline(ctx, cp(cx, 205, 15), II); circ(ctx, cx - 4, 201, 4, '#ff9aa0');   // the Audit's seal on the plate
+  } else {
+    // the back-plate itself, stood against the cabinet's foot
+    const plate = pp([[cx - 300, 616], [cx - 182, 608], [cx - 164, 372], [cx - 276, 384]]);
+    flat(ctx, plate, '#e8b850'); flat(ctx, pp([[cx - 290, 600], [cx - 250, 598], [cx - 232, 388], [cx - 270, 390]]), '#fff0c0'); outline(ctx, plate, IW);
+    for (const [u, v] of [[-284, 596], [-198, 590], [-262, 398], [-180, 390]]) circ(ctx, cx + u, v, 4.4, INK);
+  }
+  // the drum of names in its cradle, unsealed: its hatch hanging open, and what was in it
   const dx = cx + 346, dy = 404;
   stroke(ctx, dx - 74, 610, dx - 30, dy, 14); stroke(ctx, dx + 74, 610, dx + 30, dy, 14);
   stroke(ctx, dx - 74, 610, dx - 30, dy, 8, '#8a4a34'); stroke(ctx, dx + 74, 610, dx + 30, dy, 8, '#8a4a34');
-  cel(ctx, cp(dx, dy, 84), '#4a2a58', L, { off: 20, ink: IW, shadow: '#22143a' });
-  ink(ctx, 5, C.brass); for (const k of [0.38, 0.8]) { ctx.beginPath(); ctx.ellipse(dx, dy, 84 * k, 84, 0, 0, TAU); ctx.stroke(); }
-  cel(ctx, ep(dx - 22, dy - 8, 38, 46), '#0e0818', L, { off: 0, shadow: false, ink: IW });
-  for (let i = 0; i < 9; i++) { const a = rnd(i * 3) * 3, x = dx - 42 + rnd(i * 5) * 38, y = dy - 28 + rnd(i * 7) * 50; ctx.save(); ctx.translate(x, y); ctx.rotate(a); rect(ctx, -9, -3, 18, 6, i % 3 ? C.cream : '#d8c08e'); ctx.restore(); }
-  cel(ctx, pp([[dx - 58, dy + 6], [dx - 112, dy + 44], [dx - 92, dy + 80], [dx - 52, dy + 36]]), C.brass, L, { off: 5, ink: II });                 // the hatch
-  taperPath(ctx, [[dx + 10, dy - 82], [dx + 28, dy - 44], [dx + 16, dy - 8], [dx + 32, dy + 26]], 9, 3, C.crimson);
+  if (drumGone) { stroke(ctx, dx - 34, dy, dx + 34, dy, 12); stroke(ctx, dx - 34, dy, dx + 34, dy, 6, C.brass); }   // the empty trunnions
+  else {
+    cel(ctx, cp(dx, dy, 84), '#4a2a58', L, { off: 20, ink: IW, shadow: '#22143a' });
+    ink(ctx, 5, C.brass); for (const k of [0.38, 0.8]) { ctx.beginPath(); ctx.ellipse(dx, dy, 84 * k, 84, 0, 0, TAU); ctx.stroke(); }
+    if (plateOn) { flat(ctx, cp(dx - 22, dy - 8, 13), C.crimson); outline(ctx, cp(dx - 22, dy - 8, 13), II); }      // still under seal
+    else {
+      flat(ctx, ep(dx - 22, dy - 8, 38, 46), '#0e0818'); outline(ctx, ep(dx - 22, dy - 8, 38, 46), IW);
+      ctx.fillStyle = C.cream; for (let i = 0; i < 9; i++) { const x = dx - 42 + rnd(i * 5) * 38, y = dy - 28 + rnd(i * 7) * 50, w = 6 + rnd(i * 3) * 12; ctx.fillRect(x - w / 2, y - 3, w, 6); }
+      flat(ctx, pp([[dx - 58, dy + 6], [dx - 112, dy + 44], [dx - 92, dy + 80], [dx - 52, dy + 36]]), C.brass); outline(ctx, pp([[dx - 58, dy + 6], [dx - 112, dy + 44], [dx - 92, dy + 80], [dx - 52, dy + 36]]), II);   // the hatch
+      taperPath(ctx, [[dx + 10, dy - 82], [dx + 28, dy - 44], [dx + 16, dy - 8], [dx + 32, dy + 26]], 9, 3, C.crimson);
+    }
+  }
+  ctx.restore();
   // columns, the floor, and the daylight laid across it as far as the Reels
   ctx = S(0.5);
   rect(ctx, X0, 608, XW, 400, '#2a1840');
@@ -929,10 +999,10 @@ def('drum-open', L_DOPEN, (ctx, t, px) => {
     box(ctx, x, -180, 54, 790, STONE, L, { off: 20, ink: II, rim: 6 });
     box(ctx, x - 10, 596, 74, 24, STONE, L, { off: 8, ink: II, rim: 3 });
   }
-  for (let i = 0; i < 12; i++) { const x = dx - 190 + rnd(i * 3.1) * 240, y = 620 + rnd(i * 5.3) * 60; ctx.save(); ctx.translate(x, y); ctx.rotate(rnd(i) * 3); rect(ctx, -10, -3.5, 20, 7, C.cream); ink(ctx, 1.2); ctx.strokeRect(-10, -3.5, 20, 7); ctx.restore(); }   // slips, counted and let fall
+  for (let i = 0; i < 7; i++) { const x = dx - 190 + rnd(i * 3.1) * 240, y = 620 + rnd(i * 5.3) * 60; ctx.save(); ctx.translate(x, y); ctx.rotate(rnd(i) * 3); rect(ctx, -10, -3.5, 20, 7, C.cream); ink(ctx, 1.2); ctx.strokeRect(-10, -3.5, 20, 7); ctx.restore(); }   // slips, counted and let fall
   ctx = A();
   dust(ctx, 5, 12, t, 500 + px * 0.3, 150, 560, 400, '#fff6e0', 7, 5, 9);
-  glint(ctx, cx + 86 + 28 + px * 0.35, 282, 13 + 4 * Math.sin(t * 2.9), C.white, 0.95, 0);
+  if (!plateOn) glint(ctx, cx + 86 + 28 + px * 0.35, 282, 13 + 4 * Math.sin(t * 2.9), C.white, 0.95, 0);
   gulls(ctx, [[gx + px * 0.2, 120, 7, 3]], t * 0.5, '#5a6a9c');
 });
 
@@ -942,7 +1012,7 @@ const MOLE = { ex: 366, ey: 280 };                                   // where th
 const moleD = (i) => 1 / (1 + 0.42 * i);
 const moleBase = (d) => [MOLE.ex + 900 * d, MOLE.ey + 400 * d];      // the foot of a post, d = 1 nearest
 const moleTop = (d) => [MOLE.ex + 900 * d, MOLE.ey + 400 * d - 700 * d];
-def('mole-lanterns', L_MOLE, (ctx, t, px) => {
+def('mole-lanterns', L_MOLE, (ctx, t, px, info) => {
   const L = L_MOLE, { ex, ey } = MOLE, hy = 284;
   ctx = S(0.05);
   sky(ctx, hy, ['#05071c', '#0a0f32', '#111a4c', '#182664'], [0.42, 0.68, 0.88, 1]);
@@ -989,8 +1059,10 @@ def('mole-lanterns', L_MOLE, (ctx, t, px) => {
     swayLantern(ctx, p[0] + o, p[1], 34 * lerp(d0, d1, u), LCOLS[(i * 3 + j * 2 + (k ? 1 : 0)) % LCOLS.length], L, t, sd, 0);
   }
   shimmer(ctx, 35, 400 + o, 860 + o, hy + 30, hy + 300, 16, '#ffd27a', t);
-  // far out, low, something keeps time
-  { const on = Math.sin(t * 1.9) > 0.2, x = 150 + px * 0.05; if (on) { bloom(ctx, x, hy - 3, 24, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 3, 12, C.white, 1, 0); } else circ(ctx, x, hy - 3, 2, '#7fd8ff'); }
+  // the dark says it back (ch7.s7.c17): far out, low, a point of blue that keeps time; then a nearer one that flickers on purpose (c18)
+  const n = lineNo(lineId(info), 'ch7.s7.c');
+  if (!(n < 17)) { const on = Math.sin(t * 1.9) > 0.2, x = 150 + px * 0.05; if (on) { bloom(ctx, x, hy - 3, 24, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 3, 12, C.white, 1, 0); } else circ(ctx, x, hy - 3, 2, '#7fd8ff'); }
+  if (!(n < 18)) { const on = Math.sin(t * 9.1) + Math.sin(t * 5.3) > -0.4, x = 262 + px * 0.05; if (on) { bloom(ctx, x, hy - 5, 30, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 5, 15, C.white, 1, 0); } else circ(ctx, x, hy - 5, 2.4, '#7fd8ff'); }
 }, (ctx, t, px) => {
   swayLantern(ctx, 84 + px * 1.6, -120, 70, C.crimson, L_MOLE, t, 71, 0);
 });

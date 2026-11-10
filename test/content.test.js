@@ -8,13 +8,17 @@ import { content } from '../src/content/index.js';
 import { BACKDROPS } from '../src/shell/cinema.js';
 import { SFX_NAMES, MOODS } from '../src/shell/audio.js';
 import { SYMBOLS, payoutFor } from '../src/core/slot.js';
-import { metSpeakers, eligibleBarks } from '../src/core/story.js';
+import { metSpeakers, eligibleBarks, spokenLines, readsLeaning, LEANINGS } from '../src/core/story.js';
+import { collectLines, totals } from '../tools/render-voices.mjs';
 
 const EMOTES = ['smile', 'grim', 'shock', 'tears', 'anger', 'soft'];
 const CAMS = ['wide', 'close', 'two', 'low'];
 const THREADS = ['duty', 'covert', 'commons'];
 const BARK_KEYS = ['launch', 'drain', 'bumper', 'ramp', 'save', 'loan', 'aid', 'jackpot', 'bust', 'idle'];
-const LINE_KEYS = new Set(['id', 'who', 'text', 'fx', 'bg', 'on', 'cam', 'music', 'sfx', 'emote', 'minScene']);
+const LINE_KEYS = new Set(['id', 'who', 'text', 'fx', 'bg', 'on', 'cam', 'music', 'sfx', 'emote', 'minScene', 'lean']);
+// The game is five chapters until 6 to 8 are wired into src/content/index.js, and eight after. Nothing between.
+const TABLES = ['vessery', 'saltmere', 'halcyon', 'brand', 'tallis', 'kedge', 'fishdock', 'cresset'];
+const N = content.chapters.length;
 
 /** Every line with where it sits. */
 function allLines() {
@@ -42,7 +46,7 @@ test('line ids are unique across the whole game and belong to their chapter', ()
     seen.set(line.id, where);
     assert.ok(line.id.startsWith(`${ch.id}.`), `${where}: id ${line.id} does not start with ${ch.id}.`);
   }
-  assert.ok(seen.size > 400, `only ${seen.size} lines`);
+  assert.ok(seen.size > 80 * N, `only ${seen.size} lines in ${N} chapters`);
 });
 
 test('every line is spoken by a cast member, says something, and uses only contract fields', () => {
@@ -154,9 +158,14 @@ test('every music mood and sound effect a line or chapter names is one audio.js 
 test('every cinematic opens on a backdrop, and Thorne is heard over the Line unless she is in the room', () => {
   for (const ch of content.chapters) {
     const cines = [[`${ch.id}.prologue`, ch.prologue], [`${ch.id}.epilogue`, ch.epilogue], ...ch.scenes.map((s) => [s.id, s.cutscene])];
-    for (const [where, lines] of cines) {
-      assert.ok(lines.length >= 12 && lines.length <= 30, `${where} has ${lines.length} lines`);
-      assert.ok(lines[0].bg !== undefined, `${where} does not set a backdrop on its first line`);
+    for (const [where, all] of cines) {
+      // each ending's version of a cinematic is held to what a cinematic is held to
+      for (const lean of LEANINGS) {
+        const lines = spokenLines(all, lean);
+        const which = lines === all ? where : `${where} (${lean})`;
+        assert.ok(lines.length >= 12 && lines.length <= 30, `${which} has ${lines.length} lines`);
+        assert.ok(lines[0].bg !== undefined, `${which} does not set a backdrop on its first line`);
+      }
     }
   }
   // The bible: Thorne is "always fx:'radio' unless physically present". In a cinematic, present
@@ -164,29 +173,35 @@ test('every cinematic opens on a backdrop, and Thorne is heard over the Line unl
   let inPerson = 0;
   for (const ch of content.chapters) {
     const cines = [ch.prologue, ch.epilogue, ...ch.scenes.map((s) => s.cutscene)];
-    for (const lines of cines) {
-      let on = [];
-      for (const line of lines) {
-        if (line.on !== undefined) on = line.on;
-        if (line.who !== 'thorne') continue;
-        const present = on.includes('thorne');
-        if (present) inPerson++;
-        assert.equal(line.fx === 'radio', !present,
-          `${line.id}: Thorne is ${present ? 'on stage but speaks over the radio' : 'not on stage but speaks without the radio'}`);
+    for (const all of cines) {
+      // the stage is carried forward over the lines actually played, so each ending is walked on its own
+      const versions = all.some((l) => l.lean !== undefined) ? LEANINGS.map((lean) => spokenLines(all, lean)) : [all];
+      for (const lines of versions) {
+        let on = [];
+        for (const line of lines) {
+          if (line.on !== undefined) on = line.on;
+          if (line.who !== 'thorne') continue;
+          const present = on.includes('thorne');
+          if (present) inPerson++;
+          assert.equal(line.fx === 'radio', !present,
+            `${line.id}: Thorne is ${present ? 'on stage but speaks over the radio' : 'not on stage but speaks without the radio'}`);
+        }
       }
     }
     // Over live play there is no stage. She is in the room only at Halcyon Reach (chapter 3).
     const loose = [...ch.scenes.flatMap((s) => s.briefing), ...Object.values(ch.barks).flat()];
     for (const line of loose) {
-      if (line.who === 'thorne' && line.fx !== 'radio') assert.equal(ch.id, 'ch3', `${line.id}: Thorne without the radio outside Halcyon Reach`);
+      // (and aboard the cutter at Vessery, chapter 7, where the bible puts her in person)
+      if (line.who === 'thorne' && line.fx !== 'radio') assert.ok(['ch3', 'ch7'].includes(ch.id), `${line.id}: Thorne without the radio outside Halcyon Reach and Vessery`);
     }
   }
   assert.ok(inPerson > 0, 'Thorne is never met in person');
 });
 
 test('chapters name a real table and every objective id is an element of it', () => {
-  assert.equal(content.chapters.length, 5);
-  assert.deepEqual(content.chapters.map((ch) => ch.tableId), ['vessery', 'saltmere', 'halcyon', 'brand', 'tallis']);
+  assert.ok(N === 5 || N === 8, `${N} chapters: the game is five, or all eight`);
+  assert.deepEqual(content.chapters.map((ch) => ch.tableId), TABLES.slice(0, N));
+  assert.deepEqual(content.chapters.map((ch) => ch.id), TABLES.slice(0, N).map((_, i) => `ch${i + 1}`));
   content.chapters.forEach((ch, i) => {
     assert.equal(ch.number, i + 1);
     const table = content.tables[ch.tableId];
@@ -233,4 +248,96 @@ test('every cast member has a voice, a look and a colour', () => {
     assert.ok(/^#[0-9a-f]{6}$/i.test(m.color), `${id}: color ${m.color}`);
     assert.ok(m.look && typeof m.look.hairStyle === 'string', `${id}: look`);
   }
+});
+
+// ───────────────────────── the leaning branch, as authored ─────────────────────────
+
+test('lean is commons or mint, never on a bark, and each ending of a branching passage has lines of its own', () => {
+  let marked = 0;
+  for (const { line, where } of allLines()) {
+    if (line.lean === undefined) continue;
+    marked++;
+    assert.ok(LEANINGS.includes(line.lean), `${where} (${line.id}): lean ${JSON.stringify(line.lean)} is not one of ${LEANINGS.join(', ')}`);
+    assert.ok(!where.includes('.barks.'), `${where} (${line.id}): a bark cannot carry lean; barks do not branch`);
+  }
+  for (const ch of content.chapters) {
+    const passages = [[`${ch.id}.prologue`, ch.prologue], [`${ch.id}.epilogue`, ch.epilogue],
+      ...ch.scenes.flatMap((s) => [[`${s.id}.briefing`, s.briefing], [`${s.id}.cutscene`, s.cutscene]])];
+    for (const [where, lines] of passages) {
+      const sides = LEANINGS.map((lean) => lines.filter((l) => l.lean === lean).length);
+      // one-sided is allowed (a line only one ending has), but a briefing must still say something either way
+      if (where.endsWith('.briefing')) for (const lean of LEANINGS) {
+        const n = spokenLines(lines, lean).length;
+        assert.ok(n >= 1 && n <= 3, `${where}: ${n} briefing lines when the ledger leans ${lean}`);
+      }
+      if (sides[0] + sides[1] > 0) console.log(`${where}: ${lines.length - sides[0] - sides[1]} shared lines, ${sides[0]} commons, ${sides[1]} mint`);
+    }
+  }
+  console.log(`${marked} lines carry lean`);
+});
+
+test('the ending cannot change sides: in the last chapter no scene line that leans is heard before the ledger is read', () => {
+  const last = content.chapters[N - 1];
+  const reads = last.scenes.findIndex((_, j) => readsLeaning(content, N - 1, j));
+  assert.ok(reads >= 0, 'the ledger is read somewhere in the last chapter');
+  last.scenes.forEach((sc, j) => {
+    // scene j's briefing is spoken while scene j is played, its cutscene when scene j clears
+    const before = [...(j <= reads && j > 0 ? sc.briefing : []), ...(j < reads ? sc.cutscene : [])].filter((l) => l.lean !== undefined);
+    assert.deepEqual(before.map((l) => l.id), [], `${sc.id}: lean lines before the ledger is read (when ${last.scenes[reads].id} clears)`);
+  });
+  // Allowed by the contract, and worth knowing about: lean lines chosen by books that can still change.
+  const live = allLines().filter(({ line, where, ch }) => line.lean !== undefined
+    && (ch !== last || where.includes('.prologue') || where.startsWith(`${last.scenes[0].id}.briefing`)));
+  console.log(`the ledger is read when ${last.scenes[reads].id} clears; ${live.length} lean lines are chosen by the live books before that`
+    + `${live.length ? `: ${live.map((x) => x.line.id).join(', ')}` : ''}`);
+});
+
+test('the end screen text: both endings or neither, on the last chapter only', () => {
+  content.chapters.forEach((ch, i) => {
+    if (ch.endings === undefined) return;
+    assert.equal(i, N - 1, `${ch.id} has endings but is not the last chapter`);
+    assert.deepEqual(Object.keys(ch.endings).sort(), [...LEANINGS].sort(), `${ch.id}.endings keys`);
+    for (const lean of LEANINGS) {
+      const e = ch.endings[lean];
+      assert.deepEqual(Object.keys(e).sort(), ['text', 'title'], `${ch.id}.endings.${lean} keys`);
+      assert.ok(typeof e.title === 'string' && e.title.trim().length > 0 && e.title.length <= 40, `${ch.id}.endings.${lean}.title`);
+      assert.ok(typeof e.text === 'string' && e.text.trim().length > 0 && e.text.length <= 400, `${ch.id}.endings.${lean}.text is ${e.text.length} chars`);
+    }
+  });
+  if (N === 8) assert.ok(content.chapters[7].endings, 'chapter 8 says what each ending is called');
+});
+
+test('the two new speakers are cast, and no voice name is in two lists', () => {
+  for (const id of ['foss', 'tamsin']) assert.ok(content.cast[id], `${id} is not in the cast`);
+  assert.match(content.cast.foss.role, /418/);
+  assert.match(content.cast.tamsin.role, /Carrow/);
+  const names = Object.values(content.cast).flatMap((m) => m.say.map((n) => [n, m.id]));
+  const seen = new Map();
+  for (const [n, id] of names) {
+    assert.ok(!seen.has(n), `voice ${n} is in the lists of both ${seen.get(n)} and ${id}`);
+    seen.set(n, id);
+  }
+});
+
+test('render-voices takes every line of both endings, and its totals keep them apart', () => {
+  const lines = collectLines(content);
+  assert.equal(lines.length, allLines().length, 'every line, whatever its lean');
+  const L = (id, who, text, lean) => ({ id, who, text, ...(lean ? { lean } : {}) });
+  const fixture = { cast: content.cast, chapters: [{
+    id: 'fx', prologue: [L('fx.pro.01', 'narrator', 'Before.')],
+    scenes: [{ id: 'fx.s1', briefing: [L('fx.s1.b1', 'ren', 'Go.')], cutscene: [L('fx.s1.c01', 'ilse', 'Held.', 'commons'), L('fx.m1.c01', 'ilse', 'Broke.', 'mint')] }],
+    epilogue: [L('fx.epi.01', 'tamsin', 'Renny.', 'commons'), L('fx.epi.02', 'tamsin', 'Sit down.', 'commons'), L('fx.mepi.01', 'tamsin', 'Renny.', 'mint')],
+    barks: { launch: [L('fx.bark.launch.1', 'foss', 'Noted.')] },
+  }] };
+  const got = collectLines(fixture);
+  assert.deepEqual(got.map((l) => l.id), ['fx.pro.01', 'fx.s1.b1', 'fx.s1.c01', 'fx.m1.c01', 'fx.epi.01', 'fx.epi.02', 'fx.mepi.01', 'fx.bark.launch.1']);
+  const manifest = Object.fromEntries(got.filter((l) => l.id !== 'fx.mepi.01').map((l) => [l.id, { seconds: 2 }]));
+  const sum = totals(got, manifest, { tamsin: 'Tara' });
+  assert.deepEqual([sum.all, sum.shared, sum.commons, sum.mint], [
+    { lines: 8, seconds: 14 }, { lines: 3, seconds: 6 }, { lines: 3, seconds: 6 }, { lines: 2, seconds: 2 },
+  ]);
+  assert.deepEqual(sum.missing, ['fx.mepi.01'], 'a line with no rendered file is counted and named');
+  assert.deepEqual(sum.speakers.tamsin, { lines: 3, seconds: 4, voice: 'Tara' });
+  const bad = { ...fixture, chapters: [{ ...fixture.chapters[0], epilogue: [L('fx.epi.01', 'tamsin', 'Renny.', 'both')] }] };
+  assert.throws(() => collectLines(bad), /fx\.epilogue\[0\]: line "fx\.epi\.01" has lean "both"; it must be one of commons, mint or absent/);
 });
