@@ -6,11 +6,15 @@
 // Shape: every transition is a small function returning a Step
 // ({ game, effects }). Each mode has a table of handlers keyed by message
 // type; update() only dispatches. A message a mode has no handler for is a
-// no-op (confirm during play, toSlot on the title screen); a message type or
+// no-op (confirm during play, skip on the title screen); a message type or
 // mode nobody knows throws.
+//
+// There is no slot screen. The Reels of Assay are part of the table (game.reels) and are
+// worked from play in three ways: the top lanes fill one reel each, a lit shot spins all
+// three, and with no ball and no writ the plunger button is the lever.
 
 import { initPhys, addBall, addLiveBall, releaseHeld, stepPhysics } from './physics.js';
-import { spin } from './slot.js';
+import { spin, drawSym, payoutFor } from './slot.js';
 import {
   initEcon, awardPoints, canSpin, paySpin, applyPayout, needsLoan, takeLoan,
   spendWrit, addTrust, aidAvailable, takeAid,
@@ -22,8 +26,21 @@ import {
 
 // ───────────────────────── tuning ─────────────────────────
 
-/** Seconds at which each reel stops after a spin starts. */
-export const REEL_STOPS = [0.9, 1.5, 2.1];
+/** Seconds after a full spin starts at which each reel locks. */
+export const REEL_STOPS = [0.7, 1.1, 1.5];
+/** Seconds a single reel turns after its lane is rolled. */
+export const FILL_SECONDS = 0.5;
+/** Seconds a paid line stays on the reels before they clear. */
+export const PAY_SECONDS = 1.2;
+/**
+ * Bumper, sling and target hits needed to light the spin shots again after a spin.
+ * Tuned with LOAN and the lean paytable by test/playthrough.test.js; the numbers are there.
+ */
+export const REELS_NEED = 30;
+/** Seconds the Commons takes to pass the hat. A lever pull inside them goes to the Mint instead. */
+export const AID_WAIT = 2;
+/** Seconds after the table empties before the button is the lever: a press meant for a ball that just drained is not a pull. */
+export const LEVER_DELAY = 0.35;
 
 const POINTS = {
   bumper: 100, sling: 50, target: 250, rollover: 150, shot: 500, saucer: 750,
@@ -31,6 +48,10 @@ const POINTS = {
 };
 /** Event types that count as hitting an element for objectives ('eject' repeats the saucer's id). */
 const HIT_TYPES = new Set(['bumper', 'sling', 'target', 'rollover', 'shot', 'saucer']);
+/** Event types that charge the reels toward the next lit shot. */
+const CHARGE_TYPES = new Set(['bumper', 'sling', 'target']);
+/** Outlane rollover -> the inlane a kickback returns the ball to, by the ids every table's lower third gives them. */
+const KICK_TO = { outL: 'inL', outR: 'inR' };
 
 const SAVE_AFTER_CUTSCENE = 5;   // seconds of ball save when play resumes after a cutscene
 const BOON_SAVE_SECONDS = 20;
@@ -38,6 +59,10 @@ const BOON_MULT = 2;
 const BOON_MULT_SECONDS = 30;
 const MULTIBALL_EXTRA = 2;
 const MULTIBALL_GAP = 0.7;       // seconds between extra balls leaving the plunger lane
+const KICKBACK_MAX = 2;          // kickbacks that can be held at once
+const KICKBACK_LIFT = 12;         // units above the inlane rollover a kicked ball is set down
+const KICKBACK_SPEED = 120;      // units/s, downward, as a ramp delivers a ball to an inlane
+const SAUCER_HOLD_EXTRA = 0.25;  // seconds a saucer keeps the ball after the last reel locks
 const BARK_COOLDOWN = 8;
 const BUMPER_BARK_CHANCE = 0.25;
 const IDLE_BARK_SECONDS = 20;
@@ -78,8 +103,14 @@ function tableOf(content, game) {
   return table;
 }
 
-const IDLE_SLOT = { phase: 'idle', t: 0, result: null, stopAt: REEL_STOPS };
-const NO_BOONS = { ballSave: 0, mult: 1, multT: 0 };
+const NO_BOONS = { ballSave: 0, mult: 1, multT: 0, kickback: 0 };
+const EMPTY_CELL = { sym: null, spin: 0 };
+/** The reels as a fresh table has them: empty, and lit, so the first good shot of a chapter spins. */
+const freshReels = () => ({
+  cells: [EMPTY_CELL, EMPTY_CELL, EMPTY_CELL],
+  phase: 'open', t: 0, result: null, source: null,
+  armed: true, charge: REELS_NEED, need: REELS_NEED,
+});
 
 // ───────────────────────── init / save / load ─────────────────────────
 
@@ -87,20 +118,22 @@ const NO_BOONS = { ballSave: 0, mult: 1, multT: 0 };
  * Fields beyond the contract's Game typedef (the shell does not need them):
  *   briefed     the current scene's briefing has been spoken
  *   freeBalls   balls waiting at the plunger whose launch costs no writ (ball save)
+ *   paid        ids of balls on the table whose launch is already paid for
  *   multiQueue  multiball balls still to be fed onto the table
  *   multiT      seconds since the last multiball feed
  *   idleT       seconds of play since anything scored
+ *   emptyT      seconds the table has stood empty with no writ to refill it
+ *   plungeWas   input.plunge on the previous play tick (the lever acts on the press, not the hold)
  */
 export function init(seedN) {
   return {
     mode: 'title',
-    after: 'slot',
     chapter: 0,
     scene: 0,
     hits: {},
     seq: 0,
     cine: null,
-    slot: IDLE_SLOT,
+    reels: freshReels(),
     econ: initEcon(),
     phys: null,
     rng: seed(seedN),
@@ -112,21 +145,32 @@ export function init(seedN) {
     toasts: [],
     briefed: false,
     freeBalls: 0,
+    paid: [],
     multiQueue: 0,
     multiT: 0,
     idleT: 0,
+    emptyT: 0,
+    plungeWas: false,
   };
 }
 
+export const SAVE_VERSION = 2;
+
 export function toSave(game) {
-  return { v: 1, chapter: game.chapter, scene: game.scene, econ: { ...game.econ }, seed: game.rng.s };
+  return { v: SAVE_VERSION, chapter: game.chapter, scene: game.scene, econ: { ...game.econ }, seed: game.rng.s };
 }
 
 const saveEffect = (game) => ({ type: 'save', save: toSave(game) });
 
-/** Restore a save: the start of that scene, at the reels, with a fresh table. */
+/**
+ * Restore a save: the start of that scene, at the table, with a fresh table and fresh reels.
+ * A v:1 save was written at the slot screen, which no longer exists; it holds the same
+ * fields and loads the same way.
+ */
 function load(content, save) {
-  if (!save || save.v !== 1) throw new Error(`game: cannot load save version ${JSON.stringify(save && save.v)}`);
+  if (!save || (save.v !== 1 && save.v !== SAVE_VERSION)) {
+    throw new Error(`game: cannot load save version ${JSON.stringify(save && save.v)}`);
+  }
   const chapter = content.chapters[save.chapter];
   if (!chapter) throw new Error(`game: save names chapter index ${save.chapter}, which does not exist`);
   if (!chapter.scenes[save.scene]) {
@@ -139,24 +183,23 @@ function load(content, save) {
   const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ };
   const game = {
     ...base,
-    mode: 'slot',
     phys: initPhys(tableOf(content, base)),
     // The rigged spin belongs to the very start of a chapter; later scenes are past it.
     spunThisChapter: save.scene > 0,
   };
-  return ok(game, [HUSH, music(chapter.music.slot)]);
+  return then(ok(game, [HUSH]), (g) => enterPlay(content, g));
 }
 
 // ───────────────────────── barks ─────────────────────────
 
 /**
  * One short line over live play, chosen by rng, at most one per BARK_COOLDOWN unless forced.
- * Lines whose speaker has not been met yet (minScene) are not in the draw; if that leaves
+ * Lines whose speaker has not been met yet (story.eligibleBarks) are not in the draw; if that leaves
  * none, nothing is said and neither the rng nor the cooldown is touched.
  */
 function bark(content, game, key, force = false) {
   if (!force && game.barkCool > 0) return ok(game);
-  const lines = eligibleBarks(currentChapter(content, game), key, game.scene);
+  const lines = eligibleBarks(content, game, key);
   if (lines.length === 0) return ok(game);
   const [line, rng] = pick(game.rng, lines);
   return ok({ ...game, rng, barkCool: BARK_COOLDOWN }, sayEffects(line, false));
@@ -165,7 +208,7 @@ function bark(content, game, key, force = false) {
 // ───────────────────────── chapters ─────────────────────────
 
 /**
- * Chapter card: fresh table, trust and aid reset, nothing spun yet. Trust is standing with
+ * Chapter card: fresh table and reels, trust and aid reset, nothing spun yet. Trust is standing with
  * one town and stays there; econ.trustEarned and econ.loansTaken are carried on untouched.
  */
 function startChapter(content, game, index) {
@@ -175,33 +218,35 @@ function startChapter(content, game, index) {
     hits: {},
     seq: 0,
     cine: null,
-    slot: IDLE_SLOT,
+    reels: freshReels(),
     econ: { ...game.econ, trust: 0, aidUsed: 0 },
     phys: initPhys(tableOf(content, at)),
     boons: NO_BOONS,
     spunThisChapter: false,
     briefed: false,
     freeBalls: 0,
+    paid: [],
     multiQueue: 0,
     multiT: 0,
     idleT: 0,
+    emptyT: 0,
   };
   return ok(next_, [HUSH, music('silence'), sfx('card')]);
 }
 
 // ───────────────────────── cinematics ─────────────────────────
 
-function startCine(content, game, kind, lines, after) {
+function startCine(content, game, kind, lines) {
   const chapter = currentChapter(content, game);
   if (lines.length === 0) {
     // Nothing to show: fall straight through to whatever follows this kind.
-    return endCine(content, { ...game, after, cine: { kind, lines, index: 0, lineT: 0, bg: 'black', on: [], t: 0 } });
+    return endCine(content, { ...game, cine: { kind, lines, index: 0, lineT: 0, bg: 'black', on: [], t: 0 } });
   }
   const first = lines[0];
   const cine = { kind, lines, index: 0, lineT: 0, ...resolveStage(lines, 0), t: 0 };
   // A cutscene that names no music keeps the table's mood; a prologue or epilogue takes the quieter one.
   const fallback = kind === 'scene' ? chapter.music.play : chapter.music.slot;
-  return ok({ ...enterMode(game, 'cine'), after, cine }, [
+  return ok({ ...enterMode(game, 'cine'), cine }, [
     HUSH,
     ...(first.music ? [] : [music(fallback)]),
     ...sayEffects(first, true),
@@ -217,7 +262,8 @@ function advanceCine(content, game) {
 }
 
 const CINE_END = {
-  prologue: (content, game) => then(enterSlot(content, { ...game, cine: null }), (g) => ok(g, [saveEffect(g)])),
+  // Straight to the table. In chapter one there is no writ yet, so what waits there is the lever.
+  prologue: (content, game) => then(enterPlay(content, { ...game, cine: null }), (g) => ok(g, [saveEffect(g)])),
   scene: endSceneCine,
   epilogue: endEpilogue,
 };
@@ -233,7 +279,7 @@ function endSceneCine(content, game) {
   const chapter = currentChapter(content, game);
   const advanced = { ...game, cine: null, scene: game.scene + 1, hits: {}, seq: 0, briefed: false };
   if (advanced.scene >= chapter.scenes.length) {
-    return startCine(content, advanced, 'epilogue', chapter.epilogue, 'slot');
+    return startCine(content, advanced, 'epilogue', chapter.epilogue);
   }
   const released = releaseHeld(tableOf(content, advanced), advanced.phys);
   const resumed = {
@@ -280,40 +326,64 @@ const titleHandlers = {
 
 const cardHandlers = {
   confirm: (content, game) => then(ok(game, [sfx('confirm')]), (g) =>
-    startCine(content, g, 'prologue', currentChapter(content, g).prologue, 'slot')),
+    startCine(content, g, 'prologue', currentChapter(content, g).prologue)),
 };
 
 const endHandlers = {};
 
-// ───────────────────────── slot (the Reels of Assay) ─────────────────────────
+// ───────────────────────── the Reels of Assay ─────────────────────────
+// game.reels. A cell is { sym, spin }: sym null is empty, spin > 0 is seconds left turning
+// before it locks on sym. The symbol is drawn when the reel starts, not when it stops, so
+// what a reel will show is already decided while it turns.
 
-function enterSlot(content, game) {
-  const slot = { ...game.slot, phase: 'idle', t: 0 };
-  return ok({ ...enterMode(game, 'slot'), slot }, [music(currentChapter(content, game).music.slot)]);
+const turning = (reels) => reels.cells.some((c) => c.spin > 0);
+/** All three reels are turning together (a lit shot or the lever): the lanes cannot touch them. */
+const fullSpin = (reels) => turning(reels) && (reels.source === 'shot' || reels.source === 'lever');
+const clearCells = (reels) => ({
+  ...reels, cells: [EMPTY_CELL, EMPTY_CELL, EMPTY_CELL], phase: 'open', t: 0, result: null, source: null,
+});
+/** A line still being shown gives way at once to whatever the player does next. */
+const opened = (reels) => (reels.phase === 'paying' ? clearCells(reels) : reels);
+
+/** Lane i was rolled: reel i turns briefly and locks on a fresh draw, whatever it showed before. */
+function fillReel(game, i) {
+  if (fullSpin(game.reels)) return ok(game);
+  const reels = opened(game.reels);
+  const drawn = drawSym(game.rng, i);
+  const cells = reels.cells.map((c, k) => (k === i ? { sym: drawn.sym, spin: FILL_SECONDS } : c));
+  return ok({ ...game, rng: drawn.rng, reels: { ...reels, cells, source: 'lanes', t: 0 } });
 }
 
-function startSpin(game, result) {
-  const slot = { phase: 'spinning', t: 0, result, stopAt: REEL_STOPS };
-  return ok({ ...game, slot, spunThisChapter: true }, [sfx('reelStart')]);
+/** Set all three reels turning toward `syms`. A spin earned by a shot spends the light. */
+function spinReels(game, source, syms) {
+  const reels = opened(game.reels);
+  const cells = syms.map((sym, i) => ({ sym, spin: REEL_STOPS[i] }));
+  const lit = source === 'shot' ? { armed: false, charge: 0 } : {};
+  return ok({ ...game, reels: { ...reels, ...lit, cells, phase: 'open', t: 0, result: null, source } }, [sfx('reelStart')]);
 }
 
-function slotConfirm(content, game) {
-  if (game.slot.phase === 'spinning') return ok(game);
-  const chapter = currentChapter(content, game);
-  const { econ } = game;
-  if (!game.spunThisChapter && chapter.riggedSpin) {
-    // The scripted spin is on the house: it must land whatever the player can afford.
-    return startSpin({ ...game, econ: { ...econ, spins: econ.spins + 1 } }, chapter.riggedSpin);
-  }
-  if (canSpin(econ)) {
-    const { rng, result } = spin(game.rng);
-    return startSpin({ ...game, rng, econ: paySpin(econ) }, result);
-  }
-  if (needsLoan(econ)) {
-    const lent = toast({ ...game, econ: takeLoan(econ) }, 'loan', 'The Mint advances you marks, at interest.');
-    return then(ok(lent, [sfx('loan')]), (g) => bark(content, g, 'loan', true));
-  }
-  return ok(toast(game, 'hint', 'Not enough marks to spin. Take your writs to the table.'));
+/** A lit spin shot was made. The saucer keeps the ball until the last reel is down. */
+function spinShot(game, ev) {
+  if (!game.reels.armed || fullSpin(game.reels)) return ok(game);
+  const { rng, result } = spin(game.rng, 'shot');
+  const holdMs = (REEL_STOPS[2] + SAUCER_HOLD_EXTRA) * 1000;
+  const phys = ev.type !== 'saucer' ? game.phys : {
+    ...game.phys,
+    balls: game.phys.balls.map((b) => (b.id === ev.ballId && b.state === 'held'
+      ? { ...b, heldMs: Math.max(b.heldMs || 0, holdMs) } : b)),
+  };
+  return spinReels({ ...game, rng, phys }, 'shot', result.reels);
+}
+
+/** A bumper, sling or target: one more toward lighting the spin shots. */
+function chargeReels(game) {
+  const { reels } = game;
+  if (reels.armed) return ok(game);
+  const charge = reels.charge + 1;
+  if (charge < reels.need) return ok({ ...game, reels: { ...reels, charge } });
+  const lit = toast({ ...game, reels: { ...reels, charge: reels.need, armed: true } },
+    'hint', 'The Reels are lit. Shoot the ramp, the orbit or the saucer.');
+  return ok(lit, [sfx('confirm')]);
 }
 
 function applyBoon(game, boon) {
@@ -323,68 +393,138 @@ function applyBoon(game, boon) {
   }
   if (boon === 'multiball') return { ...game, multiQueue: game.multiQueue + MULTIBALL_EXTRA };
   if (boon === 'doubleMarks') return { ...game, boons: { ...game.boons, mult: BOON_MULT, multT: BOON_MULT_SECONDS } };
+  if (boon === 'kickback') {
+    return { ...game, boons: { ...game.boons, kickback: Math.min(KICKBACK_MAX, game.boons.kickback + 1) } };
+  }
   throw new Error(`game: unknown boon ${JSON.stringify(boon)}`);
 }
 
 function payoutKind({ reels, payout }) {
-  if (payout.writs === 0 && payout.marks === 0 && payout.boon === null) return 'bust';
+  if (payout.writs === 0 && payout.marks === 0 && !payout.points && payout.boon === null) return 'bust';
   if (reels[0] === reels[1] && reels[1] === reels[2]) return 'jackpot';
   return 'payout';
 }
 
-/** All three reels are down: pay out. */
-function settleSpin(content, game) {
-  const { result } = game.slot;
+/**
+ * All three reels are locked: the line pays, by the table its source reads from. The one
+ * exception is the chapter's scripted first pull of the lever, which pays what the chapter says.
+ */
+function settleReels(content, game) {
+  const { reels } = game;
+  const chapter = currentChapter(content, game);
+  const syms = reels.cells.map((c) => c.sym);
+  const rigged = reels.source === 'lever' && !game.spunThisChapter && chapter.riggedSpin;
+  const result = rigged ? chapter.riggedSpin : { reels: syms, payout: payoutFor(syms, reels.source) };
   const kind = payoutKind(result);
-  const paid = applyBoon({ ...game, econ: applyPayout(game.econ, result.payout) }, result.payout.boon);
-  const settled = toast({ ...paid, slot: { ...game.slot, phase: 'settled', t: 0 } }, kind, result.payout.name);
+  const paid = applyBoon(
+    { ...game, econ: applyPayout(game.econ, result.payout, game.boons.mult) },
+    result.payout.boon === undefined ? null : result.payout.boon,
+  );
+  const settled = toast({
+    ...paid,
+    reels: { ...reels, phase: 'paying', t: 0, result },
+    spunThisChapter: game.spunThisChapter || reels.source === 'lever',
+    idleT: 0,
+  }, kind, result.payout.name);
   const effects = [sfx(kind), ...(kind === 'jackpot' ? [{ type: 'flash', color: '#ffd76a' }] : [])];
   if (kind === 'payout') return ok(settled, effects);
   return then(ok(settled, effects), (g) => bark(content, g, kind));
 }
 
-function slotTick(content, game, msg) {
-  const { slot } = game;
-  const t = slot.t + msg.dt;
-  const ticked = { ...game, slot: { ...slot, t } };
-  if (slot.phase !== 'spinning') return ok(ticked);
-  const stops = slot.stopAt.filter((at) => slot.t < at && t >= at).map(() => sfx('reelStop'));
-  if (t < slot.stopAt[2]) return ok(ticked, stops);
-  return then(ok(ticked, stops), (g) => settleSpin(content, g));
-}
-
-function slotToTable(content, game) {
-  if (game.slot.phase === 'spinning') return ok(game);
-  if (game.econ.writs <= 0 && game.phys.balls.length === 0) {
-    return ok(toast(game, 'hint', 'No writ, no Plumb. Spin the Reels.'));
+/** Reel time: turning reels run down and lock; a full line pays; a paid line clears. */
+function tickReels(content, game, dt) {
+  const { reels } = game;
+  if (reels.phase === 'paying') {
+    const t = reels.t + dt;
+    return ok({ ...game, reels: t >= PAY_SECONDS ? clearCells(reels) : { ...reels, t } });
   }
-  return enterPlay(content, game);
+  if (reels.phase !== 'open') throw new Error(`game: unknown reels phase ${JSON.stringify(reels.phase)}`);
+  if (!turning(reels)) return ok(game);
+  const cells = reels.cells.map((c) => (c.spin > 0 ? { sym: c.sym, spin: c.spin - dt > 1e-9 ? c.spin - dt : 0 } : c));
+  const stops = cells.filter((c, i) => c.spin === 0 && reels.cells[i].spin > 0).map(() => sfx('reelStop'));
+  const ticked = { ...game, reels: { ...reels, cells, t: reels.t + dt } };
+  if (cells.some((c) => c.sym === null || c.spin > 0)) return ok(ticked, stops);
+  return then(ok(ticked, stops), (g) => settleReels(content, g));
 }
 
-const slotHandlers = { tick: slotTick, confirm: slotConfirm, toTable: slotToTable };
+// ───────────────────────── the lever ─────────────────────────
+
+/**
+ * What a press of the plunger button would do as the lever, or null when it is not the lever
+ * (a ball is on the table or a writ will bring one).
+ *   'wait'  the reels are still turning, or the table emptied a moment ago
+ *   'free'  the chapter's scripted first pull
+ *   'pull'  pays SPIN_COST and spins
+ *   'loan'  cannot pay: the press borrows, and the next press pulls
+ */
+export function leverStatus(content, game) {
+  if (game.mode !== 'play' || game.phys.balls.length > 0 || game.econ.writs > 0) return null;
+  if (turning(game.reels) || game.emptyT < LEVER_DELAY) return 'wait';
+  if (!game.spunThisChapter && currentChapter(content, game).riggedSpin) return 'free';
+  if (canSpin(game.econ)) return 'pull';
+  if (needsLoan(game.econ)) return 'loan';
+  throw new Error(`game: an empty table that can neither pay for a spin nor borrow: ${JSON.stringify(game.econ)}`);
+}
+
+const LEVER = {
+  wait: (content, game) => ok(game),
+  // The scripted spin is on the house: it must land whatever the player can afford.
+  free: (content, game) => spinReels(
+    { ...game, econ: { ...game.econ, spins: game.econ.spins + 1 }, emptyT: 0 },
+    'lever', currentChapter(content, game).riggedSpin.reels,
+  ),
+  pull: (content, game) => {
+    const { rng, result } = spin(game.rng, 'lever');
+    return spinReels({ ...game, rng, econ: paySpin(game.econ), emptyT: 0 }, 'lever', result.reels);
+  },
+  loan: (content, game) => {
+    const lent = toast({ ...game, econ: takeLoan(game.econ) }, 'loan', 'The Mint advances you marks, at interest. Pull again.');
+    return then(ok(lent, [sfx('loan')]), (g) => bark(content, g, 'loan', true));
+  },
+};
+
+/** The plunger button was pressed this tick. */
+function pullLever(content, game) {
+  const status = leverStatus(content, game);
+  if (status === null) return ok(game);
+  const act = LEVER[status];
+  if (!act) throw new Error(`game: unknown lever status ${JSON.stringify(status)}`);
+  return act(content, game);
+}
 
 // ───────────────────────── play (the Orrery) ─────────────────────────
 
-/** Go to the table; speak the scene's briefing over play the first time. */
+/** Go to the table. The press that is already down when play begins is not a lever pull. */
 function enterPlay(content, game) {
-  const chapter = currentChapter(content, game);
-  const playing = { ...enterMode(game, 'play'), idleT: 0 };
-  const scene = currentScene(content, playing);
-  if (playing.briefed || !scene) return ok(playing, [music(chapter.music.play)]);
+  const playing = { ...enterMode(game, 'play'), idleT: 0, emptyT: 0, plungeWas: true };
+  return ok(playing, [music(currentChapter(content, game).music.play)]);
+}
+
+/**
+ * Speak the scene's briefing over play, once, when a ball is first in motion in the scene:
+ * straight away after a cutscene, and not until the launch when the scene opens on an empty
+ * table (the lever and its payout come first, and have their own voices).
+ */
+function brief(content, game) {
+  if (game.briefed || !game.phys.balls.some((b) => b.state !== 'plunger')) return ok(game);
+  const scene = currentScene(content, game);
+  if (!scene) return ok(game);
   const spoken = scene.briefing.reduce((s, line) => s + lineSeconds(line), 0);
   return ok(
-    { ...playing, briefed: true, barkCool: Math.max(playing.barkCool, spoken + 2) },
-    [music(chapter.music.play), ...scene.briefing.flatMap((line) => sayEffects(line, false))],
+    { ...game, briefed: true, barkCool: Math.max(game.barkCool, spoken + 2) },
+    scene.briefing.flatMap((line) => sayEffects(line, false)),
   );
 }
 
+/** Boon clocks run only while a ball is in play: a save won at the lever is not spent waiting at the plunger. */
 function tickBoons(game, dt) {
+  const idle = { ...game, idleT: game.idleT + dt };
+  if (!game.phys.balls.some((b) => b.state !== 'plunger')) return idle;
   const { boons } = game;
   const multT = Math.max(0, boons.multT - dt);
   return {
-    ...game,
-    idleT: game.idleT + dt,
-    boons: { ballSave: Math.max(0, boons.ballSave - dt), mult: multT > 0 ? boons.mult : 1, multT },
+    ...idle,
+    boons: { ...boons, ballSave: Math.max(0, boons.ballSave - dt), mult: multT > 0 ? boons.mult : 1, multT },
   };
 }
 
@@ -392,12 +532,18 @@ function eventSfx(ev) {
   return sfx(ev.type, Math.min(1, Math.max(0.15, ev.speed / 1200)));
 }
 
-/** A ball left the plunger: this is the moment its writ is spent. */
-function onLaunch(content, game) {
-  const paid = game.freeBalls > 0
+/**
+ * A ball left the plunger: this is the moment its writ is spent. Once per ball: a weak
+ * plunge that rolls back down the lane and is plunged again has already paid.
+ */
+function onLaunch(content, game, ev) {
+  const onTable = new Set(game.phys.balls.map((b) => b.id));
+  const paid = game.paid.filter((id) => onTable.has(id));
+  if (paid.includes(ev.ballId)) return ok({ ...game, paid });
+  const charged = game.freeBalls > 0
     ? { ...game, freeBalls: game.freeBalls - 1 }
     : { ...game, econ: spendWrit(game.econ) };
-  return bark(content, { ...paid, multiT: 0 }, 'launch');
+  return bark(content, { ...charged, paid: [...paid, ev.ballId], multiT: 0 }, 'launch');
 }
 
 function onDrain(content, table, game) {
@@ -417,14 +563,44 @@ function onBumper(content, game) {
   return roll < BUMPER_BARK_CHANCE ? bark(content, rolled, 'bumper') : ok(rolled);
 }
 
+/**
+ * A ball is in an outlane with a kickback held: it is lifted over the post into the inlane
+ * beside it, once. Not fired back up the outlane, which is the obvious kickback: every
+ * table has a rubber guard above the outlane mouth that a ball going straight up meets
+ * from underneath and comes straight back down from.
+ */
+function kickBack(content, table, game, ev) {
+  if (game.boons.kickback <= 0) return ok(game);
+  const inlane = table.rollovers.find((r) => r.id === KICK_TO[ev.id]);
+  if (!inlane) throw new Error(`game: table ${JSON.stringify(table.id)} has outlane ${ev.id} but no inlane ${KICK_TO[ev.id]} to kick back to`);
+  const balls = game.phys.balls.map((b) => (b.id === ev.ballId && b.state === 'live'
+    ? { ...b, pos: [inlane.pos[0], inlane.pos[1] - KICKBACK_LIFT], vel: [0, KICKBACK_SPEED], inside: [] } : b));
+  const kicked = toast(
+    { ...game, phys: { ...game.phys, balls }, boons: { ...game.boons, kickback: game.boons.kickback - 1 } },
+    'save', 'Kicked back.',
+  );
+  return then(ok(kicked, [sfx('eject'), { type: 'shake', power: 0.3 }]), (g) => bark(content, g, 'save'));
+}
+
 const EVENT_EXTRAS = {
-  launch: (content, table, game) => onLaunch(content, game),
+  launch: (content, table, game, ev) => onLaunch(content, game, ev),
   drain: onDrain,
   bumper: (content, table, game) => onBumper(content, game),
   shot: (content, table, game) => bark(content, game, 'ramp'),
 };
 
-/** One physics event: sound, points, objective progress, and whatever else its type means. */
+/** What an element means to the reels, by the table's own lists. An element in neither list means nothing. */
+function reelsEvent(content, table, game, ev) {
+  if (!HIT_TYPES.has(ev.type) || ev.id === undefined) return ok(game);
+  if (!table.reels) throw new Error(`game: table ${JSON.stringify(table.id)} has no reels: { fill, spin }`);
+  const lane = table.reels.fill.indexOf(ev.id);
+  if (lane >= 0) return fillReel(game, lane);
+  if (table.reels.spin.includes(ev.id)) return spinShot(game, ev);
+  if (Object.hasOwn(KICK_TO, ev.id)) return kickBack(content, table, game, ev);
+  return CHARGE_TYPES.has(ev.type) ? chargeReels(game) : ok(game);
+}
+
+/** One physics event: sound, points, objective progress, the reels, and whatever else its type means. */
 function onEvent(content, table, game, ev) {
   if (!(ev.type in POINTS)) throw new Error(`game: unknown physics event type ${JSON.stringify(ev.type)}`);
   const points = POINTS[ev.type];
@@ -440,8 +616,9 @@ function onEvent(content, table, game, ev) {
       effects.push(sfx('objective'));
     }
   }
+  const step = then(ok(g, effects), (h) => reelsEvent(content, table, h, ev));
   const extra = EVENT_EXTRAS[ev.type];
-  return extra ? then(ok(g, effects), (h) => extra(content, table, h)) : ok(g, effects);
+  return extra ? then(step, (h) => extra(content, table, h, ev)) : step;
 }
 
 /** Objective met: pay the reward, earn the town's trust, and cut to the scene. */
@@ -452,25 +629,30 @@ function completeScene(content, game, scene) {
   );
   const cleared = toast({ ...game, econ: rewarded }, 'scene', scene.title);
   const effects = [sfx('sceneClear'), { type: 'flash', color: '#ffffff' }];
-  return then(ok(cleared, effects), (g) => startCine(content, g, 'scene', scene.cutscene, 'play'));
+  return then(ok(cleared, effects), (g) => startCine(content, g, 'scene', scene.cutscene));
 }
 
 /**
- * Keep a ball on the table. None left: a writ puts a new one at the plunger
- * (spent at launch); with no writs the Commons covers one if the town trusts
- * you; otherwise it is back to the Reels.
+ * Keep a ball on the table. None left: a writ puts a new one at the plunger (spent at
+ * launch). No writ either: wait for any reel still turning, since the line may pay one.
+ * Then the Commons, if the town trusts you, passes the hat, which takes AID_WAIT seconds;
+ * and all the while the plunger button is the lever (pullLever). The Mint is quicker than
+ * the Commons and that is the choice: whoever will not wait for the hat pays, or borrows.
  */
-function supplyBall(content, table, game) {
-  if (game.phys.balls.length > 0) return ok(game);
-  if (game.econ.writs > 0) return ok({ ...game, phys: addBall(table, game.phys) });
-  if (aidAvailable(game.econ)) {
-    const aided = toast(
-      { ...game, econ: takeAid(game.econ), phys: addBall(table, game.phys) },
-      'aid', 'The Commons covers your ball. Nothing is owed.',
-    );
-    return then(ok(aided, [sfx('aid')]), (g) => bark(content, g, 'aid', true));
-  }
-  return then(ok(toast(game, 'bust', 'Out of writs. Back to the Reels.')), (g) => enterSlot(content, g));
+function supplyBall(content, table, game, dt) {
+  if (game.phys.balls.length > 0) return ok(game.emptyT === 0 ? game : { ...game, emptyT: 0 });
+  if (game.econ.writs > 0) return ok({ ...game, emptyT: 0, phys: addBall(table, game.phys) });
+  if (turning(game.reels)) return ok(game);
+  const emptyT = game.emptyT + dt;
+  const waiting = { ...game, emptyT };
+  if (!aidAvailable(game.econ)) return ok(waiting);
+  if (game.emptyT === 0) return ok(toast(waiting, 'aid', 'The Commons is passing the hat for you.'));
+  if (emptyT < AID_WAIT) return ok(waiting);
+  const aided = toast(
+    { ...waiting, emptyT: 0, econ: takeAid(game.econ), phys: addBall(table, game.phys) },
+    'aid', 'The Commons covers your ball. Nothing is owed.',
+  );
+  return then(ok(aided, [sfx('aid')]), (g) => bark(content, g, 'aid', true));
 }
 
 /** Multiball: feed queued balls up the plunger lane, one at a time, while a ball is live. */
@@ -488,31 +670,30 @@ function idleBark(content, game) {
   return bark(content, { ...game, idleT: 0 }, 'idle');
 }
 
-/** One fixed step of the table: physics, its events, the objective, then ball supply. */
+/** One fixed step of the table: physics, its events, the objective, the reels, ball supply, the lever. */
 function playTick(content, game, msg) {
   if (!msg.input) throw new Error('game: a tick in play needs msg.input');
   const table = tableOf(content, game);
+  const pressed = !!msg.input.plunge && !game.plungeWas;
   const stepped = stepPhysics(table, game.phys, msg.input, msg.dt);
+  const moved = { ...tickBoons(game, msg.dt), phys: stepped.phys, plungeWas: !!msg.input.plunge };
+  // The briefing goes first so that it, not a launch bark, is what is heard as the scene opens.
   let step = stepped.events.reduce(
     (s, ev) => then(s, (g) => onEvent(content, table, g, ev)),
-    ok({ ...tickBoons(game, msg.dt), phys: stepped.phys }),
+    brief(content, moved),
   );
   const scene = currentScene(content, step.game);
   if (scene && objectiveProgress(scene, step.game.hits, step.game.seq).complete) {
     return then(step, (g) => completeScene(content, g, scene));
   }
-  step = then(step, (g) => supplyBall(content, table, g));
-  if (step.game.mode !== 'play') return step;
+  step = then(step, (g) => tickReels(content, g, msg.dt));
+  step = then(step, (g) => supplyBall(content, table, g, msg.dt));
+  if (pressed) step = then(step, (g) => pullLever(content, g));
   step = then(step, (g) => feedMultiball(table, g, msg.dt));
   return then(step, (g) => idleBark(content, g));
 }
 
-function playToSlot(content, game) {
-  if (game.phys.balls.some((b) => b.state === 'live')) return ok(toast(game, 'hint', 'The Plumb is still turning.'));
-  return enterSlot(content, game);
-}
-
-const playHandlers = { tick: playTick, toSlot: playToSlot };
+const playHandlers = { tick: playTick };
 
 // ───────────────────────── update ─────────────────────────
 
@@ -520,12 +701,11 @@ const MODES = {
   title: titleHandlers,
   card: cardHandlers,
   cine: cineHandlers,
-  slot: slotHandlers,
   play: playHandlers,
   end: endHandlers,
 };
 
-const MSG_TYPES = new Set(['tick', 'confirm', 'toTable', 'toSlot', 'skip', 'lineDone', 'load']);
+const MSG_TYPES = new Set(['tick', 'confirm', 'skip', 'lineDone', 'load']);
 
 /** Time that passes in every mode: clocks, toast ageing, the bark cooldown. */
 function commonTick(game, dt) {

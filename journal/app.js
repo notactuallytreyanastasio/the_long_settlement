@@ -76,6 +76,11 @@ function renderLive(snaps, build) {
   $('.dot').className = 'dot ' + (age < 20 ? 'fresh' : 'stale');
   const bits = [`last change synced ${ago(last.at)}`];
   if (build?.built) bits.push(`site built ${ago(build.built)}`);
+  if (build?.playSha) {
+    bits.push(build.playIsThisPush
+      ? `play is the latest build`
+      : `play held at ${build.playSha.slice(0, 7)}, the last build that passed (latest: tests ${build.testsPassed ? 'pass' : 'fail'}, modules ${build.importsOk ? 'ok' : 'missing'})`);
+  }
   $('#live-text').textContent = bits.join(' · ');
 }
 

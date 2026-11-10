@@ -7246,8 +7246,8 @@
  },
  {
   "path": "src/core/game.js",
-  "bytes": 23073,
-  "lines": 552
+  "bytes": 33406,
+  "lines": 732
  },
  {
   "path": "src/core/physics.js",

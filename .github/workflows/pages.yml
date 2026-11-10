@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write     # to move the play-good tag; nothing else is written
   pages: write
   id-token: write
 
@@ -15,15 +15,24 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# The journal at / is rebuilt from every push. The game at /play/ is not: it is the
+# newest snapshot that passed the game's tests AND whose browser modules all resolve.
+# That snapshot is marked by the tag play-good, so a half-finished push (a module
+# imported before it is written, a suite mid-rewrite) never replaces a working game
+# at the URL people are sharing.
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # The game's own `npm test` is `node --test test/`, which needs a Node that accepts
+      # a directory there; Node 22 reads it as a module path and fails before running
+      # anything. 26 is what the game is developed and tested with.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
 
       - name: Test the game core
         id: tests
@@ -31,7 +40,13 @@ jobs:
         # pipefail: without it the step's status is tee's, and every run reads as passing.
         run: |
           set -o pipefail
+          node --version
           if [ -d test ]; then node --test test/ 2>&1 | tee test-output.txt; fi
+
+      - name: Check that every browser module the game imports exists
+        id: imports
+        continue-on-error: true
+        run: node journal/check-imports.mjs index.html
 
       - name: Build the game (if it has a build step)
         run: |
@@ -42,25 +57,43 @@ jobs:
             echo "No build script: the game is zero-build ES modules, served as-is."
           fi
 
+      - name: Choose the game snapshot for /play/
+        id: pick
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.tests.outcome }}" = success ] && [ "${{ steps.imports.outcome }}" = success ]; then
+            echo "this push is green: /play/ serves $GITHUB_SHA"
+            echo "dir=." >> "$GITHUB_OUTPUT"; echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"; echo "green=true" >> "$GITHUB_OUTPUT"
+          elif git fetch -q --depth=1 origin "refs/tags/play-good:refs/tags/play-good" 2>/dev/null; then
+            good=$(git rev-parse play-good^{commit})
+            mkdir -p /tmp/play-good && git archive play-good | tar -x -C /tmp/play-good
+            echo "this push is not green (tests: ${{ steps.tests.outcome }}, imports: ${{ steps.imports.outcome }}): /play/ keeps $good"
+            echo "dir=/tmp/play-good" >> "$GITHUB_OUTPUT"; echo "sha=$good" >> "$GITHUB_OUTPUT"; echo "green=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "not green and no play-good tag yet: /play/ serves this push anyway"
+            echo "dir=." >> "$GITHUB_OUTPUT"; echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"; echo "green=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Assemble site
         run: |
           set -euo pipefail
           mkdir -p _site/play
           cp -R journal/. _site/
-          rm -f _site/sync.mjs
+          rm -f _site/sync.mjs _site/check-imports.mjs
+          G="${{ steps.pick.outputs.dir }}"
 
           # Pick the game's entry point. Order: a build output, a root index.html,
           # then any index.html the game ships elsewhere.
-          if [ -f dist/index.html ]; then
-            cp -R dist/. _site/play/
+          if [ -f "$G/dist/index.html" ]; then
+            cp -R "$G/dist/." _site/play/
             echo "game entry: dist/index.html"
-          elif [ -f index.html ]; then
-            rsync -a --exclude journal --exclude .github --exclude .git --exclude _site --exclude node_modules ./ _site/play/
+          elif [ -f "$G/index.html" ]; then
+            rsync -a --exclude journal --exclude .github --exclude .git --exclude _site --exclude node_modules "$G/" _site/play/
             echo "game entry: index.html"
           else
-            entry=$(find . -name index.html -not -path './journal/*' -not -path './_site/*' -not -path './node_modules/*' -not -path './.git/*' | sort | head -1)
+            entry=$(cd "$G" && find . -name index.html -not -path './journal/*' -not -path './_site/*' -not -path './node_modules/*' -not -path './.git/*' | sort | head -1)
             if [ -n "$entry" ]; then
-              rsync -a --exclude journal --exclude .github --exclude .git --exclude _site --exclude node_modules ./ _site/play/
+              rsync -a --exclude journal --exclude .github --exclude .git --exclude _site --exclude node_modules "$G/" _site/play/
               target="${entry#./}"
               printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=%s"><a href="%s">%s</a>\n' "$target" "$target" "$target" > _site/play/index.html
               echo "game entry: $target"
@@ -105,9 +138,15 @@ jobs:
           fi
 
           # Build stamp the journal reads to show what Pages is serving.
-          tests_ok=${{ steps.tests.outcome == 'success' }}
-          printf '{"sha":"%s","built":"%s","testsPassed":%s}\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" "$tests_ok" > _site/data/build.json
+          printf '{"sha":"%s","built":"%s","testsPassed":%s,"importsOk":%s,"playSha":"%s","playIsThisPush":%s}\n' \
+            "$GITHUB_SHA" "$(date -u +%FT%TZ)" \
+            "${{ steps.tests.outcome == 'success' }}" "${{ steps.imports.outcome == 'success' }}" \
+            "${{ steps.pick.outputs.sha }}" "${{ steps.pick.outputs.green }}" > _site/data/build.json
           touch _site/.nojekyll
+
+      - name: Mark this push as the newest playable game
+        if: steps.pick.outputs.green == 'true'
+        run: git push -f origin "$GITHUB_SHA:refs/tags/play-good"
 
       - uses: actions/upload-pages-artifact@v3
         with:
