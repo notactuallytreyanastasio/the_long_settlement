@@ -7,7 +7,7 @@ import { content } from '../src/content/index.js';
 import { init, update, leverStatus, AID_WAIT, LEVER_DELAY } from '../src/core/game.js';
 import { STEP } from '../src/core/physics.js';
 import { SPIN_COST } from '../src/core/economy.js';
-import { computeLayout, toLogical } from '../src/shell/layout.js';
+import { computeLayout, toLogical, wantsRotate, ROTATE_BELOW } from '../src/shell/layout.js';
 import { launchState } from '../src/shell/render.js';
 
 const inside = (L, r) => r.x >= 0 && r.y >= 0 && r.x + r.w <= L.W && r.y + r.h <= L.H;
@@ -54,6 +54,36 @@ test('layout: toLogical maps the canvas rect onto the logical canvas', () => {
   assert.ok(Math.abs(x - 430) < 1e-9 && Math.abs(y - 932) < 1e-9);
   assert.throws(() => toLogical(L, { left: 0, top: 0, width: 0, height: 10 }, 1, 1), /no area/);
   assert.throws(() => toLogical(null, rect, 1, 1), /not a layout/);
+});
+
+test('layout: a cinematic has its own mute button, on the canvas, clear of the skip button and of the home bar', () => {
+  // what input.js does with a disc and a rect: hit radius max(26, r * 1.3), rect padded by 8
+  const hitR = (d) => Math.max(26, d.r * 1.3);
+  for (const L of [computeLayout(393, 852), computeLayout(1440, 900)]) {
+    const m = L.cine.mute, s = L.skip;
+    assert.ok(discIn(L, m), `${L.kind}.cine.mute is on the canvas`);
+    const nx = Math.max(s.x - 8, Math.min(m.x, s.x + s.w + 8)), ny = Math.max(s.y - 8, Math.min(m.y, s.y + s.h + 8));
+    assert.ok(Math.hypot(m.x - nx, m.y - ny) > hitR(m), `${L.kind}: a thumb on mute is not on skip (${Math.hypot(m.x - nx, m.y - ny).toFixed(1)} px apart, reach ${hitR(m)})`);
+    assert.ok(Math.abs(m.y - (s.y + s.h / 2)) <= 2, `${L.kind}: it sits on the skip button's row`);
+  }
+  const P = computeLayout(393, 852);
+  assert.ok(P.cine.mute.y + P.cine.mute.r <= P.H - 38, 'portrait: above the home indicator (38 logical px)');
+  assert.ok(P.cine.mute.y - P.cine.mute.r >= P.cine.art.y + P.cine.art.h, 'portrait: under the painting, with the words');
+  // the play-mode mute button is where the wide skip button is: that is why a cinematic needs its own
+  const Wd = computeLayout(1440, 900);
+  assert.ok(Wd.mute.x > Wd.skip.x && Wd.mute.x < Wd.skip.x + Wd.skip.w && Wd.mute.y > Wd.skip.y && Wd.mute.y < Wd.skip.y + Wd.skip.h);
+});
+
+test('layout: only a phone on its side is asked to turn upright', () => {
+  assert.equal(wantsRotate(852, 393, true), true, 'an iPhone on its side');
+  assert.equal(wantsRotate(932, 430, true), true, 'the largest iPhone on its side');
+  assert.equal(wantsRotate(393, 852, true), false, 'upright');
+  assert.equal(wantsRotate(852, 393, false), false, 'a short desktop window has a keyboard');
+  assert.equal(wantsRotate(1180, 820, true), false, 'a tablet on its side is tall enough for the wide cabinet');
+  assert.equal(wantsRotate(1000, ROTATE_BELOW, true), false, 'the limit itself is tall enough');
+  assert.equal(wantsRotate(1000, ROTATE_BELOW - 1, true), true);
+  assert.equal(wantsRotate(852, 393, undefined), false, 'not knowing is not touch');
+  assert.throws(() => wantsRotate(0, 393, true), /positive finite size, got 0 x 393/);
 });
 
 // ── the button says what the core will do ──

@@ -49,7 +49,7 @@
     background: radial-gradient(ellipse at 50% 40%, #17110a, #050403);
     text-align: center; touch-action: manipulation;
   }
-  #gate[hidden], #fatal[hidden], #resume[hidden] { display: none; }
+  #gate[hidden], #fatal[hidden], #resume[hidden], #rotate[hidden] { display: none; }
   #gate .card { max-width: 34rem; padding: 1.5rem; }
   #gate .over { letter-spacing: clamp(0.18em, 1.6vw, 0.5em); font-size: 0.75rem; color: #c9a25a; text-transform: uppercase; margin: 0 0 1rem 0.5em; }
   #gate h1 { font-weight: 600; font-size: clamp(2rem, 6vw, 3.4rem); margin: 0; color: #fff3d6; text-shadow: 0 0 28px rgba(255, 170, 70, 0.45); }
@@ -68,13 +68,27 @@
   #gate dd { margin: 0; }
   #gate dl.touch { display: none; }
   #gate dl.touch dt { font-family: inherit; font-style: italic; }
+  #gate .quiet { display: none; margin: 1.2rem 0 0; font-size: 0.85rem; font-style: normal; color: #c9a25a; }
   @media (hover: none) and (pointer: coarse) {
     #gate dl.keys { display: none; }
     #gate dl.touch { display: grid; }
+    #gate .quiet { display: block; }
   }
 
+  /* A phone on its side: the wide cabinet would be a few centimetres tall. main.js shows this instead
+     (layout.js wantsRotate) and stops the game behind it until the phone is upright again. */
+  #rotate {
+    position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    background: #0e0b2a; color: #f3e3bb; text-align: center; touch-action: none;
+  }
+  #rotate .turn { display: flex; align-items: center; gap: 1.4rem; }
+  #rotate svg { width: 4.2rem; height: 4.2rem; flex: none; }
+  #rotate h2 { margin: 0 0 0.3rem; font-size: 1.25rem; font-weight: 600; color: #fff6e0; }
+  #rotate p { margin: 0; font-size: 0.95rem; font-style: italic; color: rgba(243, 227, 187, 0.75); }
+
   #fatal {
-    position: fixed; inset: 0; margin: 0; padding: 2rem; overflow: auto; white-space: pre-wrap;
+    position: fixed; inset: 0; z-index: 9; margin: 0; padding: 2rem; overflow: auto; white-space: pre-wrap;
     background: rgba(20, 4, 2, 0.96); color: #ffb9a8; font: 13px/1.5 "SF Mono", Menlo, Consolas, monospace;
     -webkit-user-select: text; user-select: text;
   }
@@ -101,6 +115,23 @@
       <dt>the round button</dt><dd>hold and release to launch; with no ball, the lever</dd>
       <dt>tap</dt><dd>next line</dd>
     </dl>
+    <p class="quiet">No sound? Check the ring/silent switch on the side of the phone, and the volume.</p>
+  </div>
+</div>
+
+<div id="rotate" hidden role="alert">
+  <div class="turn">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="21" y="8" width="22" height="40" rx="4" fill="#2c2670" stroke="#e0a83a" stroke-width="3"/>
+      <rect x="26" y="14" width="12" height="22" fill="#18a79c"/>
+      <circle cx="32" cy="42" r="2.2" fill="#f3e3bb"/>
+      <path d="M8 40 A26 26 0 0 0 30 60" fill="none" stroke="#ff9326" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M30 60 l-8 -1 l5 -7 z" fill="#ff9326"/>
+    </svg>
+    <div>
+      <h2>Turn your phone upright</h2>
+      <p>The table is built to be held like a pinball machine: tall.</p>
+    </div>
   </div>
 </div>
 

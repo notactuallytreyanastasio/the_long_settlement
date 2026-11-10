@@ -12,12 +12,13 @@
 //         launch/lever   Space (hold, release)           confirm        Enter
 //         skip a scene   S                               mute           M
 //
-// Touch, outside a cinematic: the mute button mutes (a cinematic does not draw one; M still works).
+// Touch, any mode:     the mute button mutes. Outside a cinematic it is layout.mute; in one it is layout.cine.mute,
+//                       beside the skip button (layout.mute lies under the skip button there).
 // Touch, in play:       the launch button is the plunger and the lever (hold, release) and never flips;
 //                       any other touch holds the left flipper on the left half of the SCREEN and the
 //                       right flipper on the right half. The letterbox beside the canvas counts, so a
 //                       thumb resting off the edge of the table still flips. Any number of fingers.
-// Touch, in a cinematic: the skip button skips; a tap anywhere else is the next line.
+// Touch, in a cinematic: the mute button mutes, the skip button skips; a tap anywhere else is the next line.
 // Touch, title/card/end: a tap confirms.
 //
 // A zone belongs to the finger that started in it until that finger lifts: sliding across the
@@ -103,6 +104,7 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
       return;
     }
     if (m === 'cine') {
+      if (L.cine && L.cine.mute && inCircle(L.cine.mute, x, y)) { onMute(); return; }
       if (inRect(L.skip, x, y)) { onMsg({ type: 'skip' }); return; }
       if (win.performance.now() - leftPlayAt < TAP_GUARD_MS) return;
       onMsg({ type: 'confirm' });

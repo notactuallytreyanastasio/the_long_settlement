@@ -25,7 +25,7 @@ import { cinemaCache, warmCinema } from './cinema.js';
 import { createAudio } from './audio.js';
 import { createVoice } from './voice.js';
 import { createInput } from './input.js';
-import { computeLayout } from './layout.js';
+import { computeLayout, wantsRotate } from './layout.js';
 
 // The key was named before saves had versions. It is kept, so a v:1 save is still found;
 // the version that matters is the `v` inside (the core's SAVE_VERSION; its load takes v:1 and v:2 as well).
@@ -115,10 +115,19 @@ async function boot() {
   const safeProbe = $('safe');                    // padded with env(safe-area-inset-*) by the stylesheet
   let layout = null;
 
+  // A phone on its side gets a card asking to be turned upright, not a wide cabinet four centimetres tall;
+  // the game behind the card is stopped (see sleep and wake) until it is.
+  const rotateCard = $('rotate');
+  const touchPrimary = window.matchMedia('(hover: none) and (pointer: coarse)');
+  let sideways = false;
+  let onSideways = () => {};                        // set once the loop exists
+
   function fit() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     if (!(vw > 0) || !(vh > 0)) return;             // minimised, or not laid out yet: keep what we have
+    const turn = wantsRotate(vw, vh, touchPrimary.matches);
+    if (turn !== sideways) { sideways = turn; rotateCard.hidden = !turn; onSideways(); }
     layout = computeLayout(vw, vh);
     if (!layout || !(layout.W > 0) || !(layout.H > 0)) throw new Error(`main: computeLayout(${vw}, ${vh}) gave ${JSON.stringify(layout)}`);
     const s = Math.min(vw / layout.W, vh / layout.H);
@@ -303,11 +312,13 @@ async function boot() {
   }
   function wake() {
     if (dead || document.hidden) return;
+    fit();
+    if (sideways) return;         // still on its side: stay stopped behind the card
     audio.resume();
     voice.resume();
-    fit();
     if (raf === null) raf = requestAnimationFrame(frame);
   }
+  onSideways = () => (sideways ? sleep() : wake());
   document.addEventListener('visibilitychange', () => (document.hidden ? sleep() : wake()));
   window.addEventListener('pagehide', sleep);
   window.addEventListener('pageshow', wake);

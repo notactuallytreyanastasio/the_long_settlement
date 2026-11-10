@@ -42,6 +42,7 @@ import {
 import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures, spriteBounds } from './cinema/figures.js';
 import { BACKDROPS_A } from './cinema/backdrops-a.js';
 import { BACKDROPS_B } from './cinema/backdrops-b.js';
+import { INK, PALETTE, rgbOf, blend, shade, tint, alpha, ink, outline, taper, bloom, glint, bands } from './style.js';
 export { cinemaCache } from './cinema/kit.js';
 export { drawPortrait } from './cinema/figures.js';
 
@@ -76,7 +77,13 @@ function viewOf(lines) {
 // ── the frame: where on the canvas the film goes ──
 // The paintings are composed in a 1280x800 stage space. 'wide' shows all of it. 'portrait' shows a window of it
 // as tall as the art rectangle and only as wide as that rectangle allows (a cover crop): about the middle half.
-const WIDE_FRAME = { kind: 'wide', W, H, art: { x: 0, y: 0, w: W, h: H }, s0: 1, vw: W, vh: H, text: null, skip: null };
+const WIDE_FRAME = { kind: 'wide', W, H, art: { x: 0, y: 0, w: W, h: H }, s0: 1, vw: W, vh: H, text: null, skip: null, mute: null };
+/** layout.cine.mute is optional (a layout from before it existed has none): a disc { x, y, r } */
+function discOf(d) {
+  if (d === undefined || d === null) return null;
+  if (![d.x, d.y, d.r].every(Number.isFinite) || d.r <= 0) throw new Error(`cinema: layout.cine.mute must be { x, y, r } with a positive radius, got ${JSON.stringify(d)}`);
+  return d;
+}
 function needRect(r, name) {
   if (!r || ![r.x, r.y, r.w, r.h].every(Number.isFinite) || r.w <= 0 || r.h <= 0) throw new Error(`cinema: layout.${name} must be { x, y, w, h } with a positive size, got ${JSON.stringify(r)}`);
   return r;
@@ -85,14 +92,14 @@ function frameOf(layout) {
   if (layout === undefined || layout === null) return WIDE_FRAME;
   if (layout.kind === 'wide') {
     if (layout.W !== W || layout.H !== H) throw new Error(`cinema: a wide layout must be ${W}x${H}, got ${layout.W}x${layout.H}`);
-    return { ...WIDE_FRAME, skip: needRect(layout.skip, 'skip') };   // the film as it always was, plus the button a finger needs
+    return { ...WIDE_FRAME, skip: needRect(layout.skip, 'skip'), mute: discOf(layout.cine && layout.cine.mute) };   // the film as it always was, plus the button a finger needs
   }
   if (layout.kind !== 'portrait') throw new Error(`cinema: unknown layout.kind '${layout.kind}' (portrait, wide)`);
   if (!(layout.W > 0) || !(layout.H > 0)) throw new Error(`cinema: layout.W and layout.H must be positive, got ${layout.W}x${layout.H}`);
   if (!layout.cine) throw new Error('cinema: a portrait layout needs layout.cine { art, text }');
   const art = needRect(layout.cine.art, 'cine.art'), text = needRect(layout.cine.text, 'cine.text'), skip = needRect(layout.skip, 'skip');
   const s0 = Math.max(art.w / W, art.h / H);
-  return { kind: 'portrait', W: layout.W, H: layout.H, art, s0, vw: art.w / s0, vh: art.h / s0, text, skip };
+  return { kind: 'portrait', W: layout.W, H: layout.H, art, s0, vw: art.w / s0, vh: art.h / s0, text, skip, mute: discOf(layout.cine.mute) };
 }
 // Where the middle of the portrait window sits on each painting, when the middle of the painting is not the picture.
 const PORTRAIT_PAN = {
@@ -250,10 +257,57 @@ function fitText(ctx, s, maxW) {
   return t.replace(/[\s·]+$/, '') + '…';
 }
 
+// ───────────────────────── the chrome: what the engine draws over and under the painting ─────────────────────────
+// Flat colour, ink, hard edges (style.js): no gradient anywhere here. The ground under the words is two flat
+// tones; the band behind a wide subtitle is three hard steps; a button is one flat form with one hard highlight.
+// The measure of how far through a scene we are is a brass rule with a lit lamp at its head.
+const C_GROUND = PALETTE.night;
+const C_HEAD = blend(PALETTE.indigo, PALETTE.night, 0.62);     // the strip the place label sits on
+const C_WORDS = PALETTE.white;
+const C_NARR = PALETTE.cream;
+const C_RADIO = tint(PALETTE.sea, 0.78);
+const C_QUIET = alpha(PALETTE.cream, 0.62);
+const C_BTN = PALETTE.indigo;
+const C_BTN_HI = blend(PALETTE.indigo, PALETTE.sea, 0.3);
+const lum = (c) => { const v = rgbOf(c); return (0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]) / 255; };
+
+/** a nameplate: a flat slanted tab in the speaker's colour, one shadow tone along its foot, an ink line. Returns its width. */
+function namePlate(ctx, name, col, x, y, h, size, maxW) {
+  let ns = size;
+  ctx.font = `700 ${ns}px ${FONT_UI}`;
+  while (ns > 14 && ctx.measureText(name).width > maxW - 34) { ns--; ctx.font = `700 ${ns}px ${FONT_UI}`; }
+  const w = Math.min(maxW, ctx.measureText(name).width + 34), sk = h * 0.3;
+  const path = (g) => { g.moveTo(x, y); g.lineTo(x + w, y); g.lineTo(x + w - sk, y + h); g.lineTo(x, y + h); g.closePath(); };
+  ctx.beginPath(); path(ctx); ctx.fillStyle = col; ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = blend(shade(col, 0.34), PALETTE.indigo, 0.18); ctx.fillRect(x, y + h * 0.8, w, h * 0.2 + 1);
+  ctx.fillStyle = tint(col, 0.55); ctx.fillRect(x, y, w, Math.max(1.5, h * 0.09));
+  ctx.restore();
+  outline(ctx, path, 2.5, INK);
+  ctx.fillStyle = lum(col) > 0.42 ? INK : PALETTE.white;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(name, x + 12, y + h * 0.4 + 0.5, w - 22);   // in the lit part of the plate, above its shadow tone
+  ctx.textBaseline = 'alphabetic';
+  return w;
+}
+/** the narrator has no plate: spaced capitals between two strokes that taper away, each begun with a glint */
+function narratorMark(ctx, who, mx, y, size, reach) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `600 ${size}px ${FONT_UI}`;
+  const nm = spaced(who.name.toUpperCase()), nw = ctx.measureText(nm).width;
+  ctx.fillStyle = who.color; ctx.fillText(nm, mx, y);
+  const yy = y - size * 0.35;
+  for (const d of [-1, 1]) {
+    const x0 = mx + d * (nw / 2 + 14);
+    taper(ctx, x0, yy, x0 + d * reach, yy, 2.6, 0, PALETTE.brass);
+    glint(ctx, x0, yy, 5, PALETTE.white, 0.9, 0);
+  }
+}
+
 function drawSubtitle(ctx, who, line, lineT) {
   baked(ctx, 'subtitle-band', { x: 0, y: 548, w: W, h: H - 548 }, 1, (g) => {
-    g.fillStyle = vgrad(g, 548, H, [[0, 'rgba(0,0,0,0)'], [0.45, 'rgba(0,0,0,.66)'], [1, 'rgba(0,0,0,.93)']]);
-    g.fillRect(0, 548, W, H - 548);
+    bands(g, 0, 548, W, H - 548, [alpha(PALETTE.night, 0.3), alpha(PALETTE.night, 0.62), alpha(PALETTE.night, 0.9)], [0.13, 0.3, 1]);
+    g.fillStyle = alpha(INK, 0.9); g.fillRect(0, 548 + (H - 548) * 0.3 - 1.5, W, 3);
   });
   const narr = line.who === 'narrator';
   let size = 30, lh = 39;
@@ -261,30 +315,17 @@ function drawSubtitle(ctx, who, line, lineT) {
   const style = narr ? 'italic ' : '';
   let rows = rowsOf(ctx, line, `${style}${size}px ${FONT_SERIF}`, maxW);
   if (rows.length > 3) { size = 25; lh = 32; rows = rowsOf(ctx, line, `${style}${size}px ${FONT_SERIF}`, maxW); }
-  const x0 = 170, nameY = 618, textY = 662;
+  const x0 = 170, nameY = 618, textY = 664;
   ctx.textBaseline = 'alphabetic';
   ctx.save();
-  // nameplate
-  if (narr) {
-    ctx.textAlign = 'center';
-    ctx.font = `600 14px ${FONT_UI}`;
-    ctx.fillStyle = who.color;
-    ctx.fillText(spaced(who.name.toUpperCase()), W / 2, nameY);
-    const nw = ctx.measureText(spaced(who.name.toUpperCase())).width;
-    seg(ctx, W / 2 - nw / 2 - 70, nameY - 5, W / 2 - nw / 2 - 14, nameY - 5, 'rgba(255,255,255,.3)', 1);
-    seg(ctx, W / 2 + nw / 2 + 14, nameY - 5, W / 2 + nw / 2 + 70, nameY - 5, 'rgba(255,255,255,.3)', 1);
-  } else {
-    ctx.textAlign = 'left';
-    ctx.fillStyle = who.color;
-    ctx.fillRect(x0 - 20, nameY - 23, 6, 30);
-    ctx.font = `700 23px ${FONT_UI}`;
-    ctx.fillText(who.name, x0, nameY);
-    const nw = ctx.measureText(who.name).width;
-    ctx.font = `italic 17px ${FONT_SERIF}`;
-    ctx.fillStyle = 'rgba(236,228,214,.66)';
-    ctx.fillText(who.role, x0 + nw + 16, nameY - 1);
+  if (narr) narratorMark(ctx, who, W / 2, nameY, 14, 64);
+  else {
+    const pw = namePlate(ctx, who.name, who.color, x0 - 14, nameY - 26, 34, 22, 420);
+    ctx.font = `italic 17px ${FONT_SERIF}`; ctx.textAlign = 'left';
+    ctx.fillStyle = C_QUIET;
+    ctx.fillText(who.role, x0 - 14 + pw + 8, nameY - 1);
   }
-  // the words: a dark outline keeps them off the picture (no shadowBlur: it costs a blur pass per row per frame)
+  // the words: an ink outline keeps them off the picture (no shadowBlur: it costs a blur pass per row per frame)
   ctx.font = `${style}${size}px ${FONT_SERIF}`;
   ctx.lineJoin = 'round';
   let left = revealCount(line, lineT);
@@ -294,9 +335,9 @@ function drawSubtitle(ctx, who, line, lineT) {
     const x = narr ? W / 2 - ctx.measureText(row).width / 2 : x0;
     const y = textY + i * lh;
     ctx.textAlign = 'left';
-    ctx.strokeStyle = 'rgba(0,0,0,.82)'; ctx.lineWidth = 5.5;
+    ctx.strokeStyle = alpha(PALETTE.night, 0.88); ctx.lineWidth = 5.5;
     ctx.strokeText(part, x, y + 1);
-    ctx.fillStyle = line.fx === 'radio' ? '#dff5ee' : narr ? '#f0e6d0' : '#fbf6ea';
+    ctx.fillStyle = line.fx === 'radio' ? C_RADIO : narr ? C_NARR : C_WORDS;
     ctx.fillText(part, x, y);
     left -= row.length + 1;
   }
@@ -307,8 +348,9 @@ function keycap(ctx, label, xRight, y) {
   ctx.font = `600 11px ${FONT_UI}`;
   const w = ctx.measureText(label).width + 12;
   rr(ctx, xRight - w, y - 13, w, 18, 4);
-  ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.textAlign = 'center';
+  ctx.fillStyle = alpha(C_BTN, 0.9); ctx.fill();
+  ctx.strokeStyle = alpha(PALETTE.brass, 0.8); ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.fillStyle = PALETTE.cream; ctx.textAlign = 'center';
   ctx.fillText(label, xRight - w / 2, y);
   return xRight - w;
 }
@@ -318,9 +360,10 @@ function drawHints(ctx) {
   let x = W - 28;
   const y = H - 17;
   const word = (s) => {
-    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.textAlign = 'right';
+    ctx.font = `12px ${FONT_UI}`; ctx.fillStyle = C_QUIET; ctx.textAlign = 'right';
     ctx.fillText(s, x, y); x -= ctx.measureText(s).width + 7;
   };
+  word('mute'); x = keycap(ctx, 'M', x, y) - 18;
   word('skip scene'); x = keycap(ctx, 'S', x, y) - 18;
   word('next'); keycap(ctx, 'Enter', x, y);
   ctx.restore();
@@ -329,44 +372,53 @@ function drawHints(ctx) {
 /** a voice in the ear: the small inset that stands in for a body on stage. (x, y) is its top-left corner. */
 function drawRadioInset(ctx, who, line, level, tms, t, x, y) {
   const w = INSET_W, h = INSET_H;
+  const body = blend(PALETTE.seaDeep, PALETTE.night, 0.72), sea = PALETTE.sea, seaHi = tint(PALETTE.sea, 0.55);
   ctx.save();
+  // the case: one flat form, a hard lighter step along its top, ink outside a teal line
   rr(ctx, x, y, w, h, 12);
-  ctx.fillStyle = 'rgba(3,16,18,.86)'; ctx.fill();
-  ctx.strokeStyle = 'rgba(110,245,220,.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = body; ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = blend(body, PALETTE.sea, 0.16); ctx.fillRect(x, y, w, 30);
+  ctx.restore();
+  rr(ctx, x, y, w, h, 12);
+  ink(ctx, 5, INK); ctx.stroke();
+  ink(ctx, 2, sea); ctx.stroke();
   // portrait roundel
   const cx = x + 50, cy = y + h / 2;
   ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, 36, 0, TAU); ctx.fillStyle = '#04171a'; ctx.fill(); ctx.clip();
+  ctx.beginPath(); ctx.arc(cx, cy, 36, 0, TAU); ctx.fillStyle = blend(PALETTE.seaDeep, PALETTE.night, 0.5); ctx.fill(); ctx.clip();
   if (who.look && who.id !== 'crowd' && who.id !== 'narrator') {
     ctx.translate(cx, cy + 33); ctx.scale(0.345, 0.345);
     drawFigure(ctx, who, { emote: line.emote, talk: level, focus: 0.8, light: LINE_LIGHT, facing: 1, gaze: 0.2, t });
   } else {
-    ctx.strokeStyle = 'rgba(110,245,220,.7)'; ctx.lineWidth = 3;
+    ink(ctx, 3, seaHi);
     ctx.beginPath(); ctx.arc(cx, cy - 2, 14, Math.PI * 0.9, Math.PI * 2.1); ctx.stroke();
-    circ(ctx, cx + 11, cy + 9, 5, 'rgba(110,245,220,.7)');
+    circ(ctx, cx + 11, cy + 9, 5, seaHi);
   }
   ctx.restore();
-  ctx.strokeStyle = '#b08a3e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 37, 0, TAU); ctx.stroke();
+  ink(ctx, 6, INK); ctx.beginPath(); ctx.arc(cx, cy, 37, 0, TAU); ctx.stroke();
+  ink(ctx, 3, PALETTE.brass); ctx.beginPath(); ctx.arc(cx, cy, 37, 0, TAU); ctx.stroke();
+  ink(ctx, 1.5, tint(PALETTE.brass, 0.6)); ctx.beginPath(); ctx.arc(cx, cy, 37, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();   // the lit side of the ring
   // wave
   ctx.save();
   ctx.beginPath(); ctx.rect(x + 98, y + 28, w - 112, h - 36); ctx.clip();
-  seg(ctx, x + 98, y + 60, x + w - 14, y + 60, 'rgba(70,220,196,.2)', 1);
-  waveform(ctx, x + 98, x + w - 14, y + 60, 46, level * 0.8, tms * 1.3 + 700, 'rgba(70,220,196,.35)', 1.5);
-  waveform(ctx, x + 98, x + w - 14, y + 60, 60, level, tms, 'rgba(110,245,220,.95)', 2);
+  seg(ctx, x + 98, y + 60, x + w - 14, y + 60, alpha(sea, 0.3), 1);
+  waveform(ctx, x + 98, x + w - 14, y + 60, 46, level * 0.8, tms * 1.3 + 700, alpha(sea, 0.55), 2);
+  waveform(ctx, x + 98, x + w - 14, y + 60, 60, level, tms, seaHi, 2.5);
   ctx.restore();
   ctx.font = `600 11px ${FONT_MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = 'rgba(110,245,220,.8)';
+  ctx.fillStyle = seaHi;
   if (who.id === LINE_ID) {
     ctx.fillText('THE LINE', x + 98, y + 21);
-    if (mod(t, 1.2) < 0.7) circ(ctx, x + w - 22, y + 17, 4, '#ff5a4a');
+    if (mod(t, 1.2) < 0.7) { circ(ctx, x + w - 22, y + 17, 4.5, PALETTE.crimson); glint(ctx, x + w - 23.5, y + 15.5, 3, PALETTE.white, 0.9, 0); }
   } else {
     // not live: a recording, with the name of whoever was recorded and a reel turning
     ctx.fillText('RECORDING', x + 98, y + 21);
-    ctx.fillStyle = 'rgba(110,245,220,.5)';
+    ctx.fillStyle = alpha(seaHi, 0.7);
     ctx.fillText(String(who.name).toUpperCase(), x + 176, y + 21, w - 176 - 40);
-    ctx.strokeStyle = 'rgba(110,245,220,.8)'; ctx.lineWidth = 1.5;
+    ink(ctx, 1.5, seaHi);
     ctx.beginPath(); ctx.arc(x + w - 22, y + 17, 6, 0, TAU); ctx.stroke();
-    for (let i = 0; i < 3; i++) { const a = t * 2.2 + i * (TAU / 3); seg(ctx, x + w - 22, y + 17, x + w - 22 + Math.cos(a) * 5, y + 17 + Math.sin(a) * 5, 'rgba(110,245,220,.8)', 1.5); }
+    for (let i = 0; i < 3; i++) { const a = t * 2.2 + i * (TAU / 3); seg(ctx, x + w - 22, y + 17, x + w - 22 + Math.cos(a) * 5, y + 17 + Math.sin(a) * 5, seaHi, 1.5); }
   }
   ctx.restore();
 }
@@ -384,18 +436,53 @@ function placeLabel(content, game, cine, short) {
   return tail ? `${head}  ·  ${tail}` : short ? `${head}  ·  ${String(chapter.title).toUpperCase()}` : head;
 }
 
+/** the body every button here shares: a flat form, one hard highlight across its upper part, ink under a brass line */
+function buttonBody(ctx, path, top, h, onArt) {
+  ctx.beginPath(); path(ctx);
+  ctx.fillStyle = onArt ? C_BTN : alpha(C_BTN, 0.92); ctx.fill();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = C_BTN_HI; ctx.fillRect(-1e4, top, 2e4, h * 0.42);
+  ctx.restore();
+  ctx.beginPath(); path(ctx); ink(ctx, 5, INK); ctx.stroke();
+  ctx.beginPath(); path(ctx); ink(ctx, 2, PALETTE.brass); ctx.stroke();
+}
 /** the skip button, at the rectangle the layout gives it */
 function drawSkip(ctx, s, onArt) {
-  rr(ctx, s.x, s.y, s.w, s.h, s.h / 2);
-  ctx.fillStyle = onArt ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.07)'; ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,.36)'; ctx.lineWidth = 1.2; ctx.stroke();
+  buttonBody(ctx, (g) => { const r = s.h / 2; g.moveTo(s.x + r, s.y); g.arcTo(s.x + s.w, s.y, s.x + s.w, s.y + s.h, r); g.arcTo(s.x + s.w, s.y + s.h, s.x, s.y + s.h, r); g.arcTo(s.x, s.y + s.h, s.x, s.y, r); g.arcTo(s.x, s.y, s.x + s.w, s.y, r); g.closePath(); }, s.y, s.h, onArt);
   const cy = s.y + s.h / 2, fs = clamp(s.h * 0.34, 11, 15);
-  ctx.font = `600 ${fs}px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(255,255,255,.8)';
+  ctx.font = `700 ${fs}px ${FONT_UI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = PALETTE.cream;
   ctx.fillText('SKIP', s.x + s.w / 2 - fs * 0.7, cy + 0.5);
   const tw = ctx.measureText('SKIP').width, ax = s.x + s.w / 2 - fs * 0.7 + tw / 2 + 7, a = fs * 0.36;
-  for (let i = 0; i < 2; i++) poly(ctx, [[ax + i * a * 1.5, cy - a], [ax + i * a * 1.5 + a * 1.3, cy], [ax + i * a * 1.5, cy + a]], 'rgba(255,255,255,.8)');
+  for (let i = 0; i < 2; i++) poly(ctx, [[ax + i * a * 1.5, cy - a], [ax + i * a * 1.5 + a * 1.3, cy], [ax + i * a * 1.5, cy + a]], PALETTE.brass);
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+}
+/** the mute button of a cinematic, at the disc the layout gives it: a horn, sounding or struck through */
+function drawMute(ctx, d, muted, onArt) {
+  buttonBody(ctx, (g) => { g.moveTo(d.x + d.r, d.y); g.arc(d.x, d.y, d.r, 0, TAU); g.closePath(); }, d.y - d.r, d.r * 2, onArt);
+  const u = d.r / 18, x = d.x - 2 * u, y = d.y;
+  const horn = muted ? alpha(PALETTE.cream, 0.6) : PALETTE.cream;
+  poly(ctx, [[x - 7.5 * u, y - 3 * u], [x - 3.5 * u, y - 3 * u], [x + 1.5 * u, y - 7.5 * u], [x + 1.5 * u, y + 7.5 * u], [x - 3.5 * u, y + 3 * u], [x - 7.5 * u, y + 3 * u]], horn);
+  if (muted) {
+    ink(ctx, 5 * u, INK); ctx.beginPath(); ctx.moveTo(d.x - 8 * u, d.y + 8 * u); ctx.lineTo(d.x + 8.5 * u, d.y - 8 * u); ctx.stroke();
+    ink(ctx, 2.6 * u, PALETTE.crimson); ctx.beginPath(); ctx.moveTo(d.x - 8 * u, d.y + 8 * u); ctx.lineTo(d.x + 8.5 * u, d.y - 8 * u); ctx.stroke();
+  } else {
+    ink(ctx, 2 * u, PALETTE.brass);
+    ctx.beginPath(); ctx.arc(x + 1.5 * u, y, 5 * u, -0.9, 0.9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 1.5 * u, y, 9 * u, -0.8, 0.8); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+
+/** how far through the scene: a brass rule along y, a lit lamp at its head. Lamps are what this story counts. */
+function progressRule(ctx, x, y, w, k, T) {
+  ctx.fillStyle = INK; ctx.fillRect(x, y - 2.5, w, 6);
+  ctx.fillStyle = blend(PALETTE.brass, PALETTE.night, 0.72); ctx.fillRect(x, y - 1, w, 3);
+  const hx = clamp(x + w * k, x + 7, x + w - 7);
+  ctx.fillStyle = PALETTE.brass; ctx.fillRect(x, y - 1, hx - x, 3);
+  ctx.fillStyle = tint(PALETTE.brass, 0.6); ctx.fillRect(x, y - 1, hx - x, 1);
+  bloom(ctx, hx, y + 0.5, 11 + 1.2 * Math.sin(T * 2.3), PALETTE.lantern, 0.95, PALETTE.white);
+  glint(ctx, hx, y + 0.5, 6 + 0.8 * Math.sin(T * 3.1 + 1), PALETTE.white, 1, 0);
 }
 
 /**
@@ -411,40 +498,29 @@ function drawTextPanel(ctx, F, who, line, lineT, label, index, total, T) {
   const top = Math.max(r.y, gy + 10);                            // never hard against the painting
   ctx.save();
   if (F.H > gy) baked(ctx, 'text-ground', { x: 0, y: gy, w: F.W, h: F.H - gy }, 1, (g) => {
-    g.fillStyle = vgrad(g, gy, F.H, [[0, '#15121a'], [0.5, '#0c0a0f'], [1, '#070608']]);
-    g.fillRect(0, gy, F.W, F.H - gy);
+    g.fillStyle = C_GROUND; g.fillRect(0, gy, F.W, F.H - gy);
+    g.fillStyle = C_HEAD; g.fillRect(0, gy, F.W, top + 24 - gy);
+    g.fillStyle = INK; g.fillRect(0, top + 24, F.W, 2);
   });
   // the edge under the painting is also the measure of how far through the scene we are
-  ctx.fillStyle = 'rgba(176,138,62,.3)'; ctx.fillRect(0, gy, F.W, 2);
-  ctx.fillStyle = '#d8b25a'; ctx.fillRect(0, gy, F.W * clamp((index + 1) / total), 2);
+  progressRule(ctx, 0, gy, F.W, (index + 1) / total, T);
   ctx.textBaseline = 'alphabetic';
   // where we are, and the line counter
   ctx.font = `600 11px ${FONT_UI}`;
   const count = `${index + 1} / ${total}`, cw = ctx.measureText(count).width;
-  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.textAlign = 'right'; ctx.fillText(count, x1, top + 15);
-  ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.textAlign = 'left'; ctx.fillText(fitText(ctx, label, maxW - cw - 14), x0, top + 15);
+  ctx.fillStyle = alpha(PALETTE.brass, 0.95); ctx.textAlign = 'right'; ctx.fillText(count, x1, top + 15);
+  ctx.fillStyle = C_QUIET; ctx.textAlign = 'left'; ctx.fillText(fitText(ctx, label, maxW - cw - 14), x0, top + 15);
   // nameplate
   let textTop;
   if (narr) {
-    ctx.textAlign = 'center';
-    ctx.font = `600 13px ${FONT_UI}`;
-    const nm = spaced(who.name.toUpperCase()), nw = ctx.measureText(nm).width, mx = r.x + r.w / 2, ny = top + 48;
-    ctx.fillStyle = who.color; ctx.fillText(nm, mx, ny);
-    seg(ctx, mx - nw / 2 - 54, ny - 4.5, mx - nw / 2 - 12, ny - 4.5, 'rgba(255,255,255,.3)', 1);
-    seg(ctx, mx + nw / 2 + 12, ny - 4.5, mx + nw / 2 + 54, ny - 4.5, 'rgba(255,255,255,.3)', 1);
-    textTop = top + 88;
+    narratorMark(ctx, who, r.x + r.w / 2, top + 52, 13, 46);
+    textTop = top + 90;
   } else {
-    ctx.textAlign = 'left';
-    ctx.fillStyle = who.color;
-    ctx.fillRect(x0, top + 30, 5, 42);
-    let ns = 23;
-    ctx.font = `700 ${ns}px ${FONT_UI}`;
-    while (ns > 15 && ctx.measureText(who.name).width > maxW - 16) { ns--; ctx.font = `700 ${ns}px ${FONT_UI}`; }
-    ctx.fillText(who.name, x0 + 16, top + 49);
-    ctx.font = `italic 15px ${FONT_SERIF}`;
-    ctx.fillStyle = 'rgba(236,228,214,.62)';
-    ctx.fillText(fitText(ctx, String(who.role), maxW - 16), x0 + 16, top + 69);
-    textTop = top + 106;
+    namePlate(ctx, who.name, who.color, x0, top + 38, 30, 19, maxW);
+    ctx.font = `italic 15px ${FONT_SERIF}`; ctx.textAlign = 'left';
+    ctx.fillStyle = C_QUIET;
+    ctx.fillText(fitText(ctx, String(who.role), maxW - 4), x0 + 2, top + 87);
+    textTop = top + 118;
   }
   // The cue shares a row with the skip button when that is down here with the words, on whichever side it is not.
   const skipLow = s.y + s.h / 2 >= gy;
@@ -458,7 +534,7 @@ function drawTextPanel(ctx, F, who, line, lineT, label, index, total, T) {
     if (textTop + (rows.length - 1) * lh + fs * 0.3 <= textEnd) break;
   }
   ctx.font = `${style}${size}px ${FONT_SERIF}`;
-  ctx.fillStyle = line.fx === 'radio' ? '#dff5ee' : narr ? '#f0e6d0' : '#fbf6ea';
+  ctx.fillStyle = line.fx === 'radio' ? C_RADIO : narr ? C_NARR : C_WORDS;
   const shown = revealCount(line, lineT);
   let left = shown;
   for (let i = 0; i < rows.length && left > 0; i++) {
@@ -470,12 +546,12 @@ function drawTextPanel(ctx, F, who, line, lineT, label, index, total, T) {
   }
   // tap to continue: quiet while the line is still arriving, breathing once it is all there
   const done = shown >= line.text.length;
-  const ca = done ? 0.5 + 0.28 * Math.sin(T * 3.4) : 0.26;
+  const ca = done ? 0.62 + 0.3 * Math.sin(T * 3.4) : 0.3;
   const cx = skipLow && s.x + s.w / 2 < F.W / 2 ? x1 - 112 : x0;
   ctx.font = `600 12.5px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = `rgba(255,255,255,${ca})`;
   const nudge = done ? Math.max(0, Math.sin(T * 3.4)) * 2.5 : 0;
-  poly(ctx, [[cx + nudge, cueY - 5], [cx + nudge + 7.5, cueY], [cx + nudge, cueY + 5]], `rgba(255,255,255,${ca})`);
+  poly(ctx, [[cx + nudge, cueY - 5.5], [cx + nudge + 8.5, cueY], [cx + nudge, cueY + 5.5]], alpha(PALETTE.brass, Math.min(1, ca + 0.2)));
+  ctx.fillStyle = alpha(PALETTE.cream, ca);
   ctx.fillText('Tap to continue', cx + 15, cueY + 0.5);
   ctx.restore();
 }
@@ -528,7 +604,7 @@ export function warmCinema(content, game, layout, dev, timeMs) {
 
 /**
  * Draw the whole frame for the running cinematic.
- * fx: { timeMs, voiceLevel 0..1, flash, shake }
+ * fx: { timeMs, voiceLevel 0..1, flash, shake, muted }      muted: what the cinematic's own mute button shows
  *   flash: falsy, a number 0..1 (white), or { color, a }
  *   shake: falsy or a number 0..1 (as render.js clamps it)
  * layout: what layout.js computeLayout() returns. 'wide' (or no layout at all) is the 1280x800 letterboxed film.
@@ -728,12 +804,7 @@ export function drawCinema(ctx, content, game, fx, layout) {
   // ── over and under the picture ──
   const radio = line.fx === 'radio' && cine.bg !== 'line';
   if (tall) {
-    // the painting sinks into the panel instead of ending at a hard edge
-    const fh = Math.min(70, art.h * 0.2);
-    baked(ctx, 'art-foot', { x: art.x, y: art.y + art.h - fh, w: art.w, h: fh }, 1, (g) => {
-      g.fillStyle = vgrad(g, art.y + art.h - fh, art.y + art.h, [[0, 'rgba(21,18,26,0)'], [1, 'rgba(21,18,26,.9)']]);
-      g.fillRect(art.x, art.y + art.h - fh, art.w, fh);
-    });
+    // the painting ends at a hard edge, like a panel on a page: the rule drawn along it is the text panel's
     if (radio) {
       const k = Math.min(1, (art.w - 24) / INSET_W);
       ctx.save();
@@ -744,6 +815,7 @@ export function drawCinema(ctx, content, game, fx, layout) {
     drawTextPanel(ctx, F, who, line, lt, placeLabel(content, game, cine, true), cine.index, lines.length, T);
     const sk = F.skip;
     drawSkip(ctx, sk, sk.y + sk.h / 2 < art.y + art.h);
+    if (F.mute) drawMute(ctx, F.mute, !!fx.muted, F.mute.y < art.y + art.h);
   } else {
     if (radio) fade(ctx, ease(lt / 0.25), () => drawRadioInset(ctx, who, line, level, fx.timeMs, T, 926, BAR + 26));
     drawSubtitle(ctx, who, line, lt);
@@ -751,14 +823,16 @@ export function drawCinema(ctx, content, game, fx, layout) {
     const label = placeLabel(content, game, cine, false);
     ctx.textBaseline = 'alphabetic';
     if (label && bar > 30) {
-      ctx.font = `600 12px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,.42)';
+      ctx.font = `600 12px ${FONT_UI}`; ctx.textAlign = 'left'; ctx.fillStyle = C_QUIET;
       ctx.fillText(spaced(label), 30, 33);
       ctx.textAlign = 'right';
       const sk = F.skip;   // the counter stands clear of the skip button when that is up in the bar with it
-      ctx.fillText(`${cine.index + 1} / ${lines.length}`, sk && sk.y < BAR && sk.x > W / 2 ? sk.x - 18 : W - 30, 33);
+      const mu = F.mute, edge = Math.min(sk && sk.y < BAR && sk.x > W / 2 ? sk.x : W, mu && mu.y < BAR && mu.x > W / 2 ? mu.x - mu.r : W);
+      ctx.fillText(`${cine.index + 1} / ${lines.length}`, edge < W ? edge - 18 : W - 30, 33);
     }
     drawHints(ctx);
     if (F.skip) drawSkip(ctx, F.skip, true);
+    if (F.mute) drawMute(ctx, F.mute, !!fx.muted, true);
   }
 
   // flash

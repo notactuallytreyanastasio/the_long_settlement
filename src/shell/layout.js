@@ -2,6 +2,7 @@
 //
 //   computeLayout(vw, vh) -> Layout       'portrait' whenever vh > vw, otherwise 'wide'
 //   toLogical(layout, canvasRect, clientX, clientY) -> [x, y]
+//   wantsRotate(vw, vh, touchPrimary) -> boolean       a phone on its side: show "turn me upright" instead of a tiny wide cabinet
 //
 // The canvas has one logical size per kind (430 x 932 upright, 1280 x 800 on its side) and
 // the shell scales that to the glass, so every rectangle here is in logical pixels and is
@@ -34,7 +35,7 @@
  * @property {Disc} launch
  * @property {Disc} mute
  * @property {Rect} skip
- * @property {{art:Rect, text:Rect}} cine
+ * @property {{art:Rect, text:Rect, mute:Disc}} cine   mute: the mute button while a cinematic runs (layout.mute is under the skip button then)
  */
 
 const rect = (x, y, w, h) => Object.freeze({ x, y, w, h });
@@ -50,7 +51,7 @@ const PORTRAIT = Object.freeze({
   launch: disc(382, 856, 38),
   mute: disc(408, 97, 16),
   skip: rect(310, 840, 104, 44),
-  cine: Object.freeze({ art: rect(0, 0, 430, 540), text: rect(20, 560, 390, 260) }),
+  cine: Object.freeze({ art: rect(0, 0, 430, 540), text: rect(20, 560, 390, 260), mute: disc(268, 862, 18) }),
 });
 
 const WIDE = Object.freeze({
@@ -63,7 +64,7 @@ const WIDE = Object.freeze({
   launch: disc(1196, 412, 46),
   mute: disc(1242, 38, 14),
   skip: rect(1146, 22, 112, 40),
-  cine: Object.freeze({ art: rect(0, 0, 1280, 800), text: rect(160, 600, 960, 170) }),
+  cine: Object.freeze({ art: rect(0, 0, 1280, 800), text: rect(160, 600, 960, 170), mute: disc(1106, 42, 15) }),
 });
 
 /**
@@ -96,4 +97,22 @@ export function toLogical(layout, canvasRect, clientX, clientY) {
     ((clientX - canvasRect.left) / canvasRect.width) * layout.W,
     ((clientY - canvasRect.top) / canvasRect.height) * layout.H,
   ];
+}
+
+/** Below this many css px of height a touch screen held on its side is a phone, and the wide cabinet on it is too small to play. */
+export const ROTATE_BELOW = 500;
+
+/**
+ * Should the page ask to be turned upright instead of showing the game? Only a phone on its side: wider than
+ * tall, short, and played with a finger. A small desktop window is left alone (it has a keyboard), and so is a
+ * tablet on its side (tall enough for the wide cabinet).
+ * @param {number} vw viewport width, css px
+ * @param {number} vh viewport height, css px
+ * @param {boolean} touchPrimary the main pointer is a finger: matchMedia('(hover: none) and (pointer: coarse)')
+ */
+export function wantsRotate(vw, vh, touchPrimary) {
+  if (!(vw > 0) || !(vh > 0) || !Number.isFinite(vw) || !Number.isFinite(vh)) {
+    throw new Error(`layout.wantsRotate: the viewport must have a positive finite size, got ${String(vw)} x ${String(vh)}`);
+  }
+  return touchPrimary === true && vw > vh && vh < ROTATE_BELOW;
 }

@@ -7186,8 +7186,8 @@
  },
  {
   "path": "index.html",
-  "bytes": 5795,
-  "lines": 113
+  "bytes": 7603,
+  "lines": 144
  },
  {
   "path": "package.json",
@@ -7281,8 +7281,8 @@
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 43946,
-  "lines": 796
+  "bytes": 49095,
+  "lines": 870
  },
  {
   "path": "src/shell/cinema/backdrops-a.js",
@@ -7301,23 +7301,23 @@
  },
  {
   "path": "src/shell/cinema/kit.js",
-  "bytes": 38166,
-  "lines": 720
+  "bytes": 38549,
+  "lines": 729
  },
  {
   "path": "src/shell/input.js",
-  "bytes": 7241,
-  "lines": 159
+  "bytes": 7462,
+  "lines": 161
  },
  {
   "path": "src/shell/layout.js",
-  "bytes": 4067,
-  "lines": 100
+  "bytes": 5339,
+  "lines": 119
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 16134,
-  "lines": 365
+  "bytes": 16836,
+  "lines": 376
  },
  {
   "path": "src/shell/render.js",
@@ -7371,8 +7371,8 @@
  },
  {
   "path": "test/shell.test.js",
-  "bytes": 5432,
-  "lines": 99
+  "bytes": 7696,
+  "lines": 129
  },
  {
   "path": "test/slot.test.js",

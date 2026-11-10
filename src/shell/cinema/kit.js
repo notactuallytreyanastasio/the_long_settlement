@@ -485,14 +485,23 @@ export function baked(ctx, name, r, alpha, paint) {
   ctx.setTransform(M.a, M.b, M.c, M.d, M.e, M.f);
   ctx.globalAlpha = ga;
 }
-/** darkened corners over the rectangle r, with the proportions the gradient had on the 1280x800 stage */
+/**
+ * darkened corners over the rectangle r, with the proportions it had on the 1280x800 stage. Three flat steps with
+ * hard edges, in the ink's indigo, not a gradient and not black: the frame closes in like an iris.
+ */
+const VIGNETTE_STEPS = [[560, 0.2], [680, 0.46], [780, 0.8]];   // [radius where the step begins, its darkness] in stage units
 export function vignette(ctx, r, a) {
   baked(ctx, 'vignette', r, a, (g) => {
     g.save();
     g.translate(r.x + r.w / 2, r.y + r.h / 2); g.scale(r.w / W, r.h / H);
-    const gr = g.createRadialGradient(0, 0, 300, 0, 0, 820);
-    gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');
-    g.fillStyle = gr; g.fillRect(-W / 2, -H / 2, W, H);
+    for (let i = 0; i < VIGNETTE_STEPS.length; i++) {
+      const [r0, al] = VIGNETTE_STEPS[i], next = VIGNETTE_STEPS[i + 1];
+      g.fillStyle = `rgba(14,11,42,${al})`;
+      g.beginPath();
+      g.arc(0, 0, r0, 0, TAU);
+      if (next) g.arc(0, 0, next[0], 0, TAU); else g.rect(-W, -H, W * 2, H * 2);
+      g.fill('evenodd');
+    }
     g.restore();
   });
 }
