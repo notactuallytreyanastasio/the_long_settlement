@@ -124,6 +124,9 @@ details[open] > summary .more { display: none; }
 .entry .body p { margin: 0 0 12px; max-width: 68ch; }
 .entry .body code { font: 14px var(--mono); background: var(--paper); padding: 1px 4px; border-radius: 2px; }
 .entry .body pre { font: 13px/1.5 var(--mono); background: var(--paper); padding: 12px; overflow-x: auto; border: 1px solid var(--rule); max-width: 100%; }
+.entry .body figure { margin: 0 0 14px; }
+.entry .body img { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule); }
+.entry .body figcaption { font: 12px/1.4 var(--mono); color: var(--ink-3); margin-top: 6px; }
 .entry .body blockquote { margin: 0 0 12px; padding-left: 14px; border-left: 2px solid var(--gold); color: var(--ink-2); font-style: italic; }
 
 .side { position: sticky; top: 16px; }

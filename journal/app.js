@@ -35,7 +35,10 @@ function md(src) {
   const out = [];
   for (const block of String(src).split(/\n{2,}/)) {
     if (block.startsWith('```')) out.push(`<pre>${esc(block.replace(/^```\w*\n?|```$/g, ''))}</pre>`);
-    else if (block.startsWith('>')) out.push(`<blockquote>${inline(block.replace(/^>\s?/gm, ''))}</blockquote>`);
+    else if (/^!\[[^\]]*\]\([\w./-]+\)$/.test(block.trim())) {
+      const [, alt, src] = block.trim().match(/^!\[([^\]]*)\]\(([\w./-]+)\)$/);
+      out.push(`<figure><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy"><figcaption>${esc(alt)}</figcaption></figure>`);
+    } else if (block.startsWith('>')) out.push(`<blockquote>${inline(block.replace(/^>\s?/gm, ''))}</blockquote>`);
     else out.push(`<p>${inline(block).replace(/\n/g, '<br>')}</p>`);
   }
   return out.join('');
