@@ -913,6 +913,13 @@ export function createRenderer(canvas) {
     g.textBaseline = 'alphabetic';
   }
 
+  // Three lanes that share one name are named once, under the middle lane.
+  function labelText(table, e) {
+    const fill = table.reels.fill;
+    if (fill.includes(e.id) && e.id !== fill[1] && fill.every((id) => table.labels[id] === table.labels[fill[0]])) return '';
+    return table.labels[e.id];
+  }
+
   function eachLabelled(table, fn) {
     for (const e of table.shots) fn('shot', e);
     for (const e of table.rollovers) fn('rollover', e);
@@ -1130,7 +1137,7 @@ export function createRenderer(canvas) {
       g.stroke();
     }
 
-    eachLabelled(table, (kind, e) => label(g, tf, table.labels[e.id], labelSpot(table, kind, e), A(PAPER, 0.45)));
+    eachLabelled(table, (kind, e) => label(g, tf, labelText(table, e), labelSpot(table, kind, e), A(PAPER, 0.45)));
   }
 
   // The frame round the glass: inner shadow, then the two brass side rails.
@@ -1217,7 +1224,7 @@ export function createRenderer(canvas) {
     const armed = reels.armed === true;
     const chargeFrac = armed ? 1 : reels.need > 0 ? clamp(reels.charge / reels.need, 0, 1) : 0;
     const kickback = Boolean(game.boons && game.boons.kickback);
-    const relabel = (kind, e, color) => label(g, tf, table.labels[e.id], labelSpot(table, kind, e), color);
+    const relabel = (kind, e, color) => label(g, tf, labelText(table, e), labelSpot(table, kind, e), color);
 
     // contacts seen this frame feed the retained flashes
     for (const b of balls) {
@@ -1556,9 +1563,8 @@ export function createRenderer(canvas) {
     }
   }
 
-  // The table inside its frame, at layout.table, shifted by `dy` and shaken on impact.
-  function drawTableAt(g, L, dy, content, game, fx, table, scene, lit, threadCol, dt) {
-    const T = L.table;
+  // The table inside its frame at T = {x, y, scale}, shaken on impact.
+  function drawTableAt(g, L, T, content, game, fx, table, scene, lit, threadCol, dt) {
     const s = T.scale;
     const now = fx.timeMs;
     const res = view.ds * s;
@@ -1566,14 +1572,14 @@ export function createRenderer(canvas) {
     const sh = clamp(fx.shake || 0, 0, 1);
     g.save();
     g.beginPath();
-    g.rect(T.x, T.y + dy, TW * s, Math.max(0, L.H - T.y - dy));
+    g.rect(T.x, T.y, TW * s, Math.max(0, L.H - T.y));
     g.clip();
-    g.translate(T.x + Math.sin(now / 17) * 7 * sh * s, T.y + dy + Math.cos(now / 13) * 5 * sh * s);
+    g.translate(T.x + Math.sin(now / 17) * 7 * sh * s, T.y + Math.cos(now / 13) * 5 * sh * s);
     g.scale(s, s);
     drawTable(g, table, game, scene, lit, threadCol, now, dt, res, tf);
     g.restore();
     g.save();
-    g.translate(T.x, T.y + dy);
+    g.translate(T.x, T.y);
     g.scale(s, s);
     g.drawImage(layer('bezel', TW + 16, TH, res, (c) => { c.translate(8, 0); paintBezel(c); }), -8, 0, TW + 16, TH);
     g.restore();
@@ -2397,21 +2403,25 @@ export function createRenderer(canvas) {
     const now = fx.timeMs;
     const safe = safeOf(fx);
     // The top line of the hud (32 px) is the only thing a notch may cover. A deeper inset
-    // pushes the head and the table down by the difference; the controls stay where input has them.
+    // pushes the head down by the difference and the table shrinks to fit under it, its
+    // foot where it was: the flippers and the outlanes do not move against the button,
+    // and the controls stay where input has them.
     const marquee = safe.top <= 6;
     const dy = Math.max(0, safe.top - 32);
+    const full = TH * L.table.scale;
+    const ts = (L.table.scale * (full - dy)) / full;
+    const T = { x: L.table.x + (TW * (L.table.scale - ts)) / 2, y: L.table.y + dy, scale: ts };
 
     g.drawImage(layer('woodP', L.W, L.H, view.ds, (c) => paintWood(c, L.W, L.H)), 0, 0, L.W, L.H);
-    drawTableAt(g, L, dy, content, game, fx, table, scene, lit, threadCol, dt);
+    drawTableAt(g, L, T, content, game, fx, table, scene, lit, threadCol, dt);
 
     const state = launchState(chapter, game);
     const prompt = promptFor(state, true);
     if (prompt) {
-      const s = L.table.scale;
       g.save();
-      g.translate(L.table.x, L.table.y + dy);
-      g.scale(s, s);
-      tableBanner(g, prompt[0], 540, prompt[1], 0.75 + 0.25 * Math.sin(now / 260), Math.ceil(MIN_TYPE / s));
+      g.translate(T.x, T.y);
+      g.scale(ts, ts);
+      tableBanner(g, prompt[0], 540, prompt[1], 0.75 + 0.25 * Math.sin(now / 260), Math.ceil(MIN_TYPE / ts));
       g.restore();
     }
 
@@ -3162,7 +3172,7 @@ export function createRenderer(canvas) {
     g.font = `15px ${SERIF}`;
     g.fillStyle = prompt ? prompt[1] : A(PAPER, 0.55);
     const words = prompt ? prompt[0] : game.econ.writs > 0 ? `${Math.floor(game.econ.writs)} writ${Math.floor(game.econ.writs) === 1 ? '' : 's'} in hand. One writ, one ball.` : 'The last writ is on the table.';
-    wrap(g, words + '.', 210).slice(0, 3).forEach((l, i) => g.fillText(l, X + 16, by + 90 + i * 20));
+    wrap(g, /[.!?]$/.test(words) ? words : words + '.', 210).slice(0, 3).forEach((l, i) => g.fillText(l, X + 16, by + 90 + i * 20));
     g.font = `italic 12px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.45);
     g.fillText(`A pull is ${fmtInt(SPIN_COST)} marks. The Mint lends ${fmtInt(LOAN.marks)} for ${fmtInt(LOAN.owed)}.`, X + 16, by + 164);
@@ -3182,7 +3192,7 @@ export function createRenderer(canvas) {
     const state = launchState(chapter, game);
 
     g.drawImage(layer('chromeW', L.W, L.H, view.ds, (c) => paintChrome(c, L)), 0, 0, L.W, L.H);
-    drawTableAt(g, L, 0, content, game, fx, table, scene, lit, threadCol, dt);
+    drawTableAt(g, L, L.table, content, game, fx, table, scene, lit, threadCol, dt);
     const prompt = promptFor(state, view.touch);
     if (prompt) {
       g.save();
