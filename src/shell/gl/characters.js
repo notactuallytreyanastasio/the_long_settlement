@@ -3,13 +3,17 @@
 // Pure apart from the face atlas: without `faces` a character is built faceless (node, tests).
 //
 //   const faces = createFaces();                       // once, shell only (needs a canvas)
-//   const ren = createCharacter(CAST.ren, { faces });  // CAST: ren, ilse, nan, bailiff
+//   const ren = createCharacter(CAST.ren, { faces });  // { faces, material, detail, lod: 'full' | 'stage' }
+//   CAST: ren ilse nan tobb corvane maravel thorne narrator | bailiff steward clerk proctor docker (= crowd) docker-lantern docker-hat
+//         townsman townswoman fishwife child child2 | sable hesper ansel wyn foss tamsin
+//   castVariant(id, k): the k-th look of a rank-and-file member.   createCrowd({...}): 20 to 40 cheap background people in two draws.
 //   scene.root.add(ren.root); ren.root.setPos(x, 0, z);
 //   ren.update(dt, { emote: 'smile', speaking: true, pose: 'stand', look: 'camera' | [x, y, z] | other.headPos, face: [x, y, z] | yawDeg, camera });
 //   ren.act('strike');                                 // one-shot clips, see CLIPS
 //
 // A character is ONE batched draw (+ outline + shadow) and four face decals (five while an emote
-// shows an overlay). Everything a def can ask for is listed above CAST at the bottom of this file.
+// shows an overlay); at lod 'stage' three decals, 2.2k to 3.8k triangles instead of 7k to 11k.
+// Everything a def can ask for is listed above CAST near the bottom of this file.
 
 import { v3, m4, quat, DEG, rgb, rng } from './math.js';
 import {
@@ -464,12 +468,24 @@ export const EXTRAS = {
     b.parts.head.push(setOutline(tint(place(sphere(0.017, 8, 6), sx * R[0] * 1.1, y - R[1] * 0.14, 0.012), s.color || '#c9d2de'), 0.6));
     b.parts.head.push(setOutline(tint(strand(curve([[sx * R[0] * 1.1, y - R[1] * 0.16, 0.0], [sx * R[0] * 1.06, y - R[1] * 0.5, -0.05], [sx * R[0] * 0.7, y - R[1] * 0.92, -0.09]], 6), () => 0.0035, () => 0.0035, 5), s.color || '#c9d2de'), 0));
   },
-  /** Round spectacles: { color, size, half: true for half-moons worn low }. */
+  /** Round spectacles: { color, size }, or with half: true, half-moons: a bar under each pupil and the lens hanging below it, to be looked over. */
   glasses(b, s) {
-    const hd = b.hd, y = b.dim.headC, col = s.color || '#3a3050', ep = (b.face.eyePitch ?? FACE.eyePitch) + (s.half ? -15.5 : 1), ey = b.face.eyeYaw ?? FACE.eyeYaw, rr = hd.R[0] * 0.25 * (s.size ?? 1);
+    const hd = b.hd, y = b.dim.headC, col = s.color || '#3a3050', ep0 = b.face.eyePitch ?? FACE.eyePitch, ey = b.face.eyeYaw ?? FACE.eyeYaw, k = s.size ?? 1;
+    if (s.half) {
+      const w = 12.5 * k, drop = 12 * k, top = ep0 - 3.5, parts = [];
+      for (const sx of [-1, 1]) {
+        const pts = []; for (let i = 0; i <= 10; i++) { const a = Math.PI * (i / 10); pts.push(hd.at(sx * ey + Math.cos(a) * w, top - Math.sin(a) * drop, 1.065)); }
+        pts.push(hd.at(sx * ey + w, top, 1.065));
+        parts.push(strand(pts, () => 0.0052, () => 0.0052, b.lo ? 3 : 5));
+      }
+      parts.push(strand([hd.at(-ey + w, top, 1.07), hd.at(0, top + 1.5, 1.085), hd.at(ey - w, top, 1.07)], () => 0.0052, () => 0.0052, b.lo ? 3 : 5));
+      b.parts.head.push(setOutline(tint(place(merge(parts), 0, y, 0), col), 0.5));
+      return;
+    }
+    const ep = ep0 + 1, rr = hd.R[0] * 0.25 * k;
     for (const sx of [-1, 1]) {
       const c = hd.at(sx * ey, ep, 1.07), q = quat.fromTo(quat.create(), [0, 1, 0], norm(c));
-      const ring = xform(scaleMesh(torus(rr, s.half ? 0.0055 : 0.007, b.lo ? 9 : 16, b.lo ? 3 : 5), 1, 1, s.half ? 0.5 : 1), c, q); place(ring, 0, y, 0); b.parts.head.push(tint(ring, col));
+      const ring = xform(torus(rr, 0.007, b.lo ? 9 : 16, b.lo ? 3 : 5), c, q); place(ring, 0, y, 0); b.parts.head.push(tint(ring, col));
     }
     const a = hd.at(-8, ep + 3, 1.09), c = hd.at(8, ep + 3, 1.09);
     b.parts.head.push(tint(place(strand([a, hd.at(0, ep + 5, 1.1), c], () => 0.006, () => 0.006, 5), 0, y, 0), col));
@@ -479,7 +495,7 @@ export const EXTRAS = {
     const hd = b.hd, R = hd.R, y = b.dim.headC, k = s.size ?? 1, col = s.color || '#9a9aa0', sq = s.shape === 'square';
     let m = sq ? superellipsoid(R[0] * 0.54 * k, R[1] * 0.36 * k, R[2] * 0.3 * k, 0.5, 0.5, b.S(14), b.S(9))
       : blob({ rx: R[0] * 0.56 * k, ry: R[1] * 0.36 * k, rz: R[2] * 0.32 * k, chin: s.shape === 'point' ? 1 : 0.3, pear: -0.3, seg: b.S(14), rings: b.S(9) });
-    b.parts.head.push(tint(place(m, 0, y - R[1] * (sq ? 1.045 : 1.04), R[2] * 0.56), col));
+    b.parts.head.push(tint(place(m, 0, y - R[1] * (sq ? 0.985 : 1.04), R[2] * 0.52), col));
     if (s.whiskers !== false) for (const sx of [-1, 1]) b.parts.head.push(tint(place(lockOn(hd, [[sx * 82, -4, 1.03], [sx * 72, -34, 1.05], [sx * 46, -58, 1.05]], 0.05 * k, { n: b.N(8), seg: b.S(7), thick: 0.5 }), 0, y, 0), col));
   },
   /** The two white bands a magistrate wears at the throat. */
@@ -1038,7 +1054,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       let walkUp = 0;
       if (walkW > 0.01) {
         walkPh += dt * (s.walk ?? 2.1) * Math.PI; const sw = Math.sin(walkPh), a = Math.abs(sw) ** 0.8;
-        rig.apply(sw > 0 ? walkA : walkB, a * walkW); walkUp = (1 - Math.abs(Math.cos(walkPh))) * 0.028 * walkW;
+        rig.apply(sw > 0 ? walkA : walkB, a * walkW); walkUp = Math.abs(Math.cos(walkPh)) * 0.026 * walkW; // highest as the feet pass, lowest at the footfall
       }
       // one-shot clip
       let fwd = 0, up = walkUp, sq = 0;
@@ -1159,11 +1175,14 @@ function defaultMaterial() { return sharedMat || (sharedMat = figureMaterial());
 //   id, skin '#rrggbb', seed (blink and idle phase)
 //   build    { height, head, legs, torso, arms, width, hands, feet, belly }   multipliers, 1 = the standard chibi
 //   hair     { color, brow (colour), pieces: [{ kind, ...spec }] }            kinds: see HAIR
-//   face     { set 'round' | 'lash' | 'old', iris, eyeScale, eyeYaw, eyePitch, mouthScale, mouthPitch,
-//              brow { w, len, at: [yaw, pitch], color, nick 'L'|'R' (a scar's gap) }, marks { blush, freckles, laugh, scar 'L'|'R', beauty, stubble }, nose 0 }
+//   face     { set 'round' | 'lash' | 'old' | 'heavy' | 'sharp', iris, eyeScale, eyeYaw, eyePitch, mouthScale, mouthPitch,
+//              brow { w, len, at: [yaw, pitch], color, nick 'L'|'R' (a scar's gap), raiseL, raiseR, tilt },
+//              marks { blush, blushColor, freckles, laugh, scar 'L'|'R', beauty, stubble, dust }, nose (0 none, or a size), ears 0,
+//              mouths { emote: closed mouth name } (the mouth this face rests in: flat smirk wry pursed grin down ...), shade 0..1 (a hooded face) }
 //   costume  { top { color, hem (y of the hem below the hip joint: -0.03 a jacket, -0.16 a long coat), flare, trim, placket, lining },
 //              sleeves { color, cuff, flare, ink 'L'|'R' }, legs { color }, shoes { color, sole, cuff, tall },
-//              collar { kind 'stand' | 'flat' | 'scarf', color }, belt { color, buckle }, buttons { color, rows, count, size },
+//              collar { kind 'stand' | 'flat' | 'scarf' | 'high' | 'turned', color }, belt { color, buckle }, buttons { color, rows, count, size },
+//              sleeves.rolled (bare forearms), gloves { L, R } (a hand's colour),
 //              extras [{ kind, ...spec }] }                                    kinds: see EXTRAS
 //   props    [{ kind, hand 'L' | 'R', ...spec }]                               kinds: see PROPS
 //   handed   'L' plays every clip mirrored (strike with the left arm): for figures that face the other way on a stage
@@ -1444,7 +1463,7 @@ export const CAST = {
       legs: { color: '#1a2628' }, shoes: { color: '#1a2628', sole: '#9fb4a8', tall: true },
       collar: { kind: 'high', color: '#1c3033' }, belt: { color: '#1a2628', buckle: '#c9d2de' }, buttons: { color: '#c9d2de', count: 3 },
       gloves: { L: '#8d949e' },
-      extras: [{ kind: 'glasses', half: true, color: '#3a4a6a', size: 0.9 }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }, { kind: 'earring', side: 'L', color: '#e6ebf5', size: 0.55 }, { kind: 'earring', side: 'R', color: '#e6ebf5', size: 0.55 }],
+      extras: [{ kind: 'glasses', half: true, color: '#e6ebf5' }, { kind: 'brooch', color: '#c9d2de', x: -0.052, size: 0.017 }, { kind: 'earring', side: 'L', color: '#e6ebf5', size: 0.55 }, { kind: 'earring', side: 'R', color: '#e6ebf5', size: 0.55 }],
     },
     poses: {
       // hands behind her back, weight even, chin a degree too high

@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 151028,
-  "lines": 2019
+  "bytes": 152573,
+  "lines": 2038
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12550,9 +12550,14 @@
   "lines": 472
  },
  {
+  "path": "src/shell/gl/sets/abstract.js",
+  "bytes": 9562,
+  "lines": 130
+ },
+ {
   "path": "src/shell/gl/sets/bench.js",
-  "bytes": 17602,
-  "lines": 225
+  "bytes": 18222,
+  "lines": 229
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
@@ -12571,8 +12576,8 @@
  },
  {
   "path": "src/shell/gl/sets/index.js",
-  "bytes": 1177,
-  "lines": 27
+  "bytes": 1281,
+  "lines": 29
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
@@ -12588,6 +12593,11 @@
   "path": "src/shell/gl/sets/lantern-stalls.js",
   "bytes": 31007,
   "lines": 390
+ },
+ {
+  "path": "src/shell/gl/sets/ledger.js",
+  "bytes": 18938,
+  "lines": 236
  },
  {
   "path": "src/shell/gl/sets/mint-office.js",
@@ -12683,6 +12693,11 @@
   "path": "test/gl-layout.test.js",
   "bytes": 7230,
   "lines": 105
+ },
+ {
+  "path": "test/gl-pure.test.js",
+  "bytes": 20187,
+  "lines": 307
  },
  {
   "path": "test/physics.test.js",

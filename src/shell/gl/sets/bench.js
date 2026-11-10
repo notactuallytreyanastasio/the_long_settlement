@@ -12,7 +12,7 @@
 // them faces the camera.
 //
 // What this set can do for its story:
-//   task('chamber-door') -> { pos, stand, set(v) }     v 0 shut .. 1 open a hand, the corridor's light spilling in (the door is in the back wall, stage left)
+//   task('chamber-door') -> { pos, stand, set(v) }     v 0 shut .. 1 ajar, the corridor's light spilling across the floor (the door is in the back wall, stage left)
 //   task('magistrate-desk') -> { pos, stand, set(v) }  v >= 1: the shell is planted under the lip and pulses red
 //   openDoor(0..1), plant(on, live 0..1)               the same two things, directly
 //   passLamp()                                         the setback: a clerk's lamp crosses the door glass (1.8 s)
@@ -22,7 +22,7 @@
 //   door { pos, face }: just inside the door   focus: the desk lamp
 
 import { rng, DEG } from '../math.js';
-import { merge, tint, place, box, sphere, setGlow } from '../mesh.js';
+import { merge, tint, place, box, sphere, setGlow, setOutline, fromArrays } from '../mesh.js';
 import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { anchorAt } from './kit.js';
@@ -149,6 +149,9 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   const doorPivot = group('door-pivot', { pos: [DOOR.x - DW / 2, 0, BACK + 0.03] });
   const leaf = node('door-leaf', doorLeaf({ w: DW, h: DH, color: KB.wine, glass: '#ffc878', glow: night ? 0.85 : 0.4 }), M.prop); leaf.castShadow = false;
   doorPivot.add(leaf); scene.root.add(doorPivot);
+  // the corridor's light on the chamber floor: a wedge from the latch side that widens as the door opens
+  const spill = node('door-spill', setOutline(setGlow(tint(fromArrays([0, 0, 0, 0.5, 0, 0, 0, 0, 2.6, 1.9, 0, 2.3], [0, 2, 3, 0, 3, 1], null, 180), night ? '#ffc070' : '#ffe6b8'), 0.75), 0), M.flat, { pos: [DOOR.x + DW / 2 - 0.5, 0.008, BACK + 0.05], visible: false });
+  scene.root.add(spill);
 
   // ---- the listening shell under the lip of the desk
   const LIP = on('lip');
@@ -184,8 +187,8 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: deskLampPos, size: 1.5, color: '#c8ff8a', alpha: 0 }), base: 0.55 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: sconcePos, size: 1.3, color: '#ffb450', alpha: 0 }), base: 0.5 });
   const doorGlow = sprites.add({ kind: 'glow', pos: glassAt, size: 1.6, color: '#ff9a40', alpha: 0 });
-  const clerkGlow = sprites.add({ kind: 'glow', pos: [glassAt[0], glassAt[1], glassAt[2]], size: 1.5, color: '#ffe08a', alpha: 0 });
-  const shellGlow = sprites.add({ kind: 'glow', pos: [LIP[0], LIP[1], LIP[2] + 0.05], size: 0.5, color: '#ff5a48', alpha: 0 });
+  const clerkGlow = sprites.add({ kind: 'glow', pos: [glassAt[0], glassAt[1], glassAt[2]], size: 2.3, color: '#ffe08a', alpha: 0 });
+  const shellGlow = sprites.add({ kind: 'glow', pos: [LIP[0], LIP[1], LIP[2] + 0.05], size: 0.9, color: '#ff5a48', alpha: 0 });
 
   let shellOn = false, shellLive = 0, doorGoal = 0, doorNow = 0, passT = -1;
   function plant(onNow, live = 0) { shellOn = !!onNow; shell.visible = shellOn; shellLive = Math.max(0, Math.min(1, live)); }
@@ -198,14 +201,15 @@ function build(engine = null, { light: lightName = 'interior', low = false } = {
   const task = (type) => TASKS[type] || null;
   function tick(time, dt) {
     doorNow += (doorGoal - doorNow) * Math.min(1, dt * 5);
-    leaf.setRot(0, -34 * doorNow, 0);
+    leaf.setRot(0, -50 * doorNow, 0); spill.visible = doorNow > 0.02; spill.setScale(0.25 + 0.75 * doorNow, 1, 1);
+    leaf.flash[0] = 1; leaf.flash[1] = 0.86; leaf.flash[2] = 0.5; leaf.flash[3] = 0;
     let pass = 0;
     if (passT >= 0) { passT += dt; const u = passT / 1.8; pass = Math.sin(Math.min(1, u) * Math.PI); clerkGlow.pos[0] = DOOR.x - 0.75 + 1.5 * u; clerkGlow.pos[1] = 1.85; clerkGlow.pos[2] = BACK + 0.14; if (u >= 1) passT = -1; }
-    clerkGlow.alpha = pass * 0.95;
+    clerkGlow.alpha = pass * 0.95; leaf.flash[3] = pass * 0.3;
     env.points[2].intensity = 0.3 + 0.75 * doorNow + pass * 0.8;
     doorGlow.alpha = 0.3 + 0.3 * doorNow;
     const pulse = 0.5 + 0.5 * Math.sin(time * 5.2);
-    shellGlow.alpha = shellOn ? shellLive * (0.45 + 0.4 * pulse) : 0; shellGlow.size[0] = shellGlow.size[1] = 0.35 + 0.25 * shellLive * pulse;
+    shellGlow.alpha = shellOn ? shellLive * (0.45 + 0.4 * pulse) : 0; shellGlow.size[0] = shellGlow.size[1] = 0.6 + 0.4 * shellLive * pulse;
   }
 
   return setShell({
