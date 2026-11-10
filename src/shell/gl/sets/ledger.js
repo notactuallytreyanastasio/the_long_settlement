@@ -63,6 +63,9 @@ const MARKS = {
   seat: { pos: [0, 0, DESK[2] - 0.86], face: 0 },
 };
 
+/** The lines on which the narrator's own figure takes the chair (chapter8.js: stage.wearAt dresses her as ilse-old). */
+const REVEAL = new Set(['ch8.epi.28', 'ch8.epi.29', 'ch8.mepi.29', 'ch8.end.01']);
+
 /** The hooded writer, seated, facing +Z, origin on the floor under the chair. Returns the static body; the pen arm is separate. */
 function writerBody(robe, mantle, trim) {
   const parts = [];
@@ -135,10 +138,12 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
 
   // ---- the writer
   const SEAT = MARKS.seat.pos, K = 1.12;
-  if (writer) set.add(node('writer', GL0.scale(writerBody(ROBE, MANTLE, TRIM), K), M.prop, { pos: SEAT }));
+  // his own node (not merged into the room): the last lines of the book put a face in his chair instead (cue)
+  const writerNode = writer ? node('writer', GL0.scale(writerBody(ROBE, MANTLE, TRIM), K), M.prop, { pos: SEAT }) : null;
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   scene.root.add(mergeStatic(room, 'room'), mergeStatic(set, 'set'));
+  if (writerNode) scene.root.add(writerNode);
   const foreground = group('foreground'); scene.root.add(foreground);
 
   // ---- ink: one instanced draw of flat strokes. The left-hand page (his left, +X) is already full; the other is being written
@@ -225,13 +230,23 @@ function build(engine = GL0, { light, low = false, writer = true } = {}) {
     lastT = time;
   }
 
+  // The account's last lines (both endings): the Ledger is a person. The director seats her figure at marks.cast[1],
+  // which is the writer's place, so the hooded writer and his pen arm leave the chair for exactly those lines.
+  function cue(id) {
+    if (typeof id !== 'string' || id.includes('.bark.') || id.includes('.brief')) return false;
+    const reveal = REVEAL.has(id);
+    if (writerNode) writerNode.visible = !reveal;
+    pen.visible = !reveal;
+    return reveal;
+  }
+
   const rig = setRig('ledger', CAMERAS, env);
   update(0, 0);
   return {
     id: 'ledger', light, low, scene, env, actors, foreground,
     cameras: CAMERAS, frame: rig.frame, view: rig.view,
-    marks: { ...MARKS, page: onPage(-1, 0, 0), focus: FL },
-    lamps, setPower, setWritten, cue: () => false, task: () => null,
+    marks: { ...MARKS, cast: { 1: [{ pos: [SEAT[0], 0, SEAT[2] - 0.12], face: 0 }] }, page: onPage(-1, 0, 0), focus: FL },
+    lamps, setPower, setWritten, cue, task: () => null,
     update,
   };
 }

@@ -12791,8 +12791,8 @@
  },
  {
   "path": "src/shell/gl/sets/ledger.js",
-  "bytes": 19644,
-  "lines": 241
+  "bytes": 20553,
+  "lines": 256
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
@@ -12881,7 +12881,7 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 109759,
+  "bytes": 109770,
   "lines": 1480
  },
  {

@@ -179,8 +179,8 @@ const STEP = 0.24;            // seconds a stride is held
 function cineSlot(set, n, i, out) {
   const m = set.marks && set.marks.b ? set.marks : DEFAULT_MARKS;
   let s = null;
-  if (n === 1) s = m.b; else if (n === 2 && m.two) s = m.two[i]; else if (n === 3) s = i === 0 ? m.a : i === 1 ? m.b : m.c;
-  else if (m.cast && m.cast[n] && m.cast[n][i]) s = m.cast[n][i];       // a set's own places for a bigger company
+  if (m.cast && m.cast[n] && m.cast[n][i]) s = m.cast[n][i];            // a set's own places for a company of that size
+  else if (n === 1) s = m.b; else if (n === 2 && m.two) s = m.two[i]; else if (n === 3) s = i === 0 ? m.a : i === 1 ? m.b : m.c;
   if (s) { out[0] = s.pos[0]; out[1] = s.pos[2]; out[2] = s.face; return out; }
   // four and more: two shallow rows, alternating, so every head has clear air and nobody is hidden
   const span = n === 4 ? 1.45 : n === 5 ? 1.75 : n === 6 ? 1.95 : 2.3, x = lerp(-span, span, i / (n - 1));
