@@ -41,6 +41,8 @@ export const chapter6 = {
     },
     clerk: 'clerk',
     townsfolk: 'docker',
+    // He defaulted at Tallis: the cadet's brass and the earpiece's collar are gone (characters.js 'ren-volunteer').
+    wear: { ren: 'ren-volunteer' },
   },
 
   // ───────────────────────── prologue ─────────────────────────
@@ -97,8 +99,8 @@ export const chapter6 = {
       hint: 'Go down and meet her: shoot the GANGWAY 3 times',
       objective: { kind: 'count', ids: ['gangwayRamp'], n: 3 },
       reward: { points: 20000 },
-      // Not a fight, and nobody may refuse anybody. The work is the walk down to be replaced; it ends in the order of procession
-      // the Tribune will give in the cutscene: herself, a volunteer beside her, a lawful shadow behind.
+      // Not a fight, and nobody may refuse anybody. The work is the walk down the quay to be replaced, politely.
+      // Foss waits at the set's marks.extras[0] and is never moved by anything the table does.
       encounter: {
         set: 'kedge-roads', light: 'dawn', mode: 'walk',
         party: ['ilse', 'ren'],
@@ -108,8 +110,8 @@ export const chapter6 = {
         beats: [
           { at: 0, cue: 'grey-on-the-quay', name: "Halcyon grey on the quay", show: "Dawn on the salt quay. A young woman in Halcyon grey stands at ease by the casks. Ilse and Ren come off the gangway at the left. A cask hangs slung from the quay crane." },
           { at: 1, cue: 'replaced-politely', name: "Replaced politely", show: "They are down on the stones and walking. The crane has begun to lower its cask. Foss has not moved her feet." },
-          { at: 2, cue: 'level-with-her', name: "Level with her", show: "They draw level with the grey coat. The cask is half way down." },
-          { at: 3, cue: 'six-paces-behind', name: "Six paces behind", show: "They have walked on past her. The cask is on the stones. Ilse in front, Ren beside, and the grey coat behind them, at ease." },
+          { at: 2, cue: 'three-brass-tags', name: "Three brass tags", show: "They are near enough to count the tags at her collar. The cask is half way down." },
+          { at: 3, cue: 'six-paces', name: "Six paces", show: "They have stopped six paces short of her. The cask is on the stones. She has still not moved her feet." },
         ],
       },
       briefing: [
@@ -450,10 +452,10 @@ export const chapter6 = {
         set: 'compact-hall', light: 'night', mode: 'talk',
         party: ['tobb', 'hesper', 'ilse'],
         opposition: { kind: 'force', who: ['hatch', 'hatch', 'hatch'], name: "THE FOURTH HEARING" },
-        extras: ['foss'],
+        extras: ['docker', 'docker'],
         setback: { cue: 'point-of-order', show: "The hall roars for its strike and four hundred lanterns are shaken at the table; the speakers give back a pace." },
         beats: [
-          { at: 0, cue: 'she-may-always-sit', name: "She may always sit", show: "The same hall, the next night. Yesterday's three bars are still on the easel. Tobb stands forward to speak, Hesper and the Tribune behind him; a grey coat waits at the edge. The roof is shut." },
+          { at: 0, cue: 'she-may-always-sit', name: "She may always sit", show: "The same hall, the next night. Yesterday's three bars are still on the easel. Tobb stands forward to speak, Hesper and the Tribune behind him; two dockers of the Compact face him. The roof is shut." },
           { at: 1, cue: 'first-hatch-off', name: "First hatch off", show: "A roof hatch is thrown back and the moon comes down in a shaft on the left of the floor." },
           { at: 2, cue: 'second-hatch-off', name: "Second hatch off", show: "A second shaft, in the middle." },
           { at: 3, cue: 'hearing-open', name: "The hearing is open", show: "Three shafts of moonlight stand in the head-house. The hall has gone quiet to hear." },
@@ -627,10 +629,9 @@ export const chapter6 = {
         set: 'quarter-flame', light: 'interior', mode: 'work',
         party: ['hesper', 'ilse', 'ren'],
         opposition: { kind: 'force', who: ['great-lamp'], name: "KEDGE'S LAMP" },
-        extras: ['tobb'],
         setback: { cue: 'too-much-ash', show: "Too much ash at once: a grey roll of smoke comes off the bowl and the flame gutters; all three step back from it." },
         beats: [
-          { at: 0, cue: 'the-lamp-stands-white', name: "The lamp stands white", show: "The lamp room full of gold light: a white fire the height of a man in the great bowl, the rings of the engine turning round it. Hesper nearest the bowl, the Tribune and Ren behind her; Tobb at the edge with his watch." },
+          { at: 0, cue: 'the-lamp-stands-white', name: "The lamp stands white", show: "The lamp room full of gold light: a white fire the height of a man in the great bowl, the rings of the engine turning round it. Hesper nearest the bowl, the Tribune and Ren with her." },
           { at: 1, cue: 'ash-first', name: "Ash first, then salt", show: "A shovel of kelp-ash goes in; a grey puff over the bowl. The fire is shorter, and yellower." },
           { at: 2, cue: 'its-dropping', name: "It's dropping", show: "A second shovel. The flame has sunk into yellow and the rings are slowing; the room is dimmer by half." },
         ],

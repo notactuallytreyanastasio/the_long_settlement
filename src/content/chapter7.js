@@ -40,7 +40,10 @@ export const chapter7 = {
       black: { set: 'black', light: 'night' },
     },
     clerk: 'clerk',
-    townsfolk: 'docker',
+    townsfolk: 'fisher',
+    // Ren as in chapter 6, and in Audit irons from the moment he holds out his wrists; Thorne is the Assessor's prisoner throughout.
+    wear: { ren: 'ren-volunteer', thorne: 'thorne-irons' },
+    wearAt: { 'ch7.s3.c20': { ren: 'ren-irons' } },
   },
 
   // ───────────────────────── prologue ─────────────────────────
@@ -191,10 +194,10 @@ export const chapter7 = {
         set: 'fish-dock', light: 'day', mode: 'talk',
         party: ['ilse', 'tobb', 'ren'],
         opposition: { kind: 'force', who: ['struck-roll'], name: "THE STRUCK NAMES" },
-        extras: ['fishwife'],
+        extras: ['fisher', 'fishwife'],
         setback: { cue: 'dock-presses-in', show: "The dock presses in to hear and a name is lost in the noise; a third of the crowd is waved back and the speaker begins again." },
         beats: [
-          { at: 0, cue: 'dock-before-hill', name: "Dock before Hill", show: "The fish dock in the morning, the Mint hall and its dome across the water. The trestles are laid as a table; a few dozen of the quarter stand about. The Tribune, Tobb with his chalk, Ren. A woman of the quarter waits at the edge to say her name." },
+          { at: 0, cue: 'dock-before-hill', name: "Dock before Hill", show: "The fish dock in the morning, the Mint hall and its dome across the water. The trestles are laid as a table; a few dozen of the quarter stand about. The Tribune, Tobb with his chalk, Ren. Two of the quarter stand before the table to say their names." },
           { at: 1, cue: 'salters-lane', name: "Salters' Lane", show: "More of the quarter has come down. There are marks on the slate." },
           { at: 2, cue: 'rope-lane', name: "Rope Lane", show: "The dock is two thirds full. The slate is filling." },
           { at: 3, cue: 'the-shambles', name: "The Shambles", show: "The whole Dock Quarter stands on the quay, and the slate is chalked to the foot." },
