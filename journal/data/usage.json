@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T13:53:03.396Z",
+ "generated": "2026-11-10T14:23:16.576Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -51,24 +51,24 @@
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T13:34:09.931Z",
+ "last": "2026-11-10T14:05:08.913Z",
  "total": {
-  "responses": 1857,
-  "input": 3960,
+  "responses": 1858,
+  "input": 3964,
   "write5m": 13603449,
-  "write1h": 1072883,
-  "read": 433491190,
-  "output": 4173734,
+  "write1h": 1073577,
+  "read": 434114390,
+  "output": 4173794,
   "thinking": 1621048,
   "cost": {
    "input": 0.0275,
    "write5m": 136.0345,
-   "write1h": 12.4247,
-   "read": 86.6982,
-   "output": 161.6004,
-   "total": 396.7853
+   "write1h": 12.4302,
+   "read": 86.8229,
+   "output": 161.6016,
+   "total": 396.9167
   },
-  "uncachedCost": 3134.4354,
+  "uncachedCost": 3136.9322,
   "unpriced": 0
  },
  "byGroup": {
@@ -111,22 +111,22 @@
    "unpriced": 0
   },
   "journal": {
-   "responses": 440,
-   "input": 1052,
+   "responses": 441,
+   "input": 1056,
    "write5m": 0,
-   "write1h": 611057,
-   "read": 152571590,
-   "output": 267956,
+   "write1h": 611751,
+   "read": 153194790,
+   "output": 268016,
    "thinking": 49224,
    "cost": {
     "input": 0.0042,
     "write5m": 0,
-    "write1h": 5.0355,
-    "read": 30.5143,
-    "output": 5.3693,
-    "total": 40.9233
+    "write1h": 5.041,
+    "read": 30.639,
+    "output": 5.3705,
+    "total": 41.0547
    },
-   "uncachedCost": 618.302,
+   "uncachedCost": 620.7988,
    "unpriced": 0
   }
  },
@@ -151,22 +151,22 @@
    "unpriced": 0
   },
   "claude-opus-5-5": {
-   "responses": 439,
-   "input": 1050,
+   "responses": 440,
+   "input": 1054,
    "write5m": 0,
-   "write1h": 592680,
-   "read": 152540502,
-   "output": 267446,
+   "write1h": 593374,
+   "read": 153163702,
+   "output": 267506,
    "thinking": 49118,
    "cost": {
     "input": 0.0042,
     "write5m": 0,
-    "write1h": 4.7414,
-    "read": 30.5081,
-    "output": 5.3489,
-    "total": 40.6027
+    "write1h": 4.747,
+    "read": 30.6327,
+    "output": 5.3501,
+    "total": 40.7341
    },
-   "uncachedCost": 617.8858,
+   "uncachedCost": 620.3826,
    "unpriced": 0
   }
  },
@@ -890,6 +890,48 @@
    "lead": 14.6588,
    "helpers": 341.2032,
    "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T13:40:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T13:45:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T13:50:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T13:55:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T14:00:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T14:05:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 40.9233
+  },
+  {
+   "at": "2026-11-10T14:10:00.000Z",
+   "lead": 14.6588,
+   "helpers": 341.2032,
+   "journal": 41.0547
   }
  ],
  "tools": {
