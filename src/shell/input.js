@@ -1,21 +1,29 @@
 // Keyboard and touch. Imperative shell.
 //
-//   createInput(canvas, { mode, onMsg, onMute }) -> { state(), release(), destroy() }
+//   createInput(canvas, { mode, layout, onMsg, onMute }) -> { state(), release(), touched(), destroy() }
 //
 // state() is the Input the core's tick wants: which flippers are held and whether the
-// plunger is being pulled. Everything that is a single press (confirm, skip, go to the
-// table, go to the reels) is handed to onMsg as a ready-made Msg. mode() tells touch
-// what the screen is showing, because a finger has no keys: outside play a tap means
-// "go on"; in play the screen is the cabinet's buttons.
+// launch button (plunger and lever in one) is down. Everything that is a single press
+// (confirm, skip) is handed to onMsg as a ready-made Msg. mode() tells touch what the
+// screen is showing and layout() where the on-screen buttons are, in logical pixels
+// (see layout.js); a pointer is brought into that space with toLogical.
 //
 // Keys:   left flipper   ArrowLeft, Z, left Shift        right flipper  ArrowRight, /, right Shift
-//         plunge         Space (hold, release)           confirm        Enter
-//         to the table   P        to the reels   R       skip a scene   S        mute   M
+//         launch/lever   Space (hold, release)           confirm        Enter
+//         skip a scene   S                               mute           M
 //
-// Touch, in play:   left half = left flipper, right half = right flipper,
-//                   bottom-right corner = plunger (hold, release),
-//                   top strip = confirm on its left three quarters, back to the reels on its right quarter.
-// Touch, elsewhere: a tap is confirm; in the slot a tap on the table (the middle third) goes to play.
+// Touch, anywhere:      the mute button mutes.
+// Touch, in play:       the launch button is the plunger and the lever (hold, release) and never flips;
+//                       any other touch holds the left flipper on the left half of the SCREEN and the
+//                       right flipper on the right half. The letterbox beside the canvas counts, so a
+//                       thumb resting off the edge of the table still flips. Any number of fingers.
+// Touch, in a cinematic: the skip button skips; a tap anywhere else is the next line.
+// Touch, title/card/end: a tap confirms.
+//
+// A zone belongs to the finger that started in it until that finger lifts: sliding across the
+// middle does not swap flippers, and sliding off the launch button does not fire it early.
+
+import { toLogical } from './layout.js';
 
 const HOLD = {
   ArrowLeft: 'left', KeyZ: 'left', ShiftLeft: 'left',
@@ -24,22 +32,39 @@ const HOLD = {
 };
 const PRESS = {
   Enter: { type: 'confirm' }, NumpadEnter: { type: 'confirm' },
-  KeyP: { type: 'toTable' }, KeyR: { type: 'toSlot' }, KeyS: { type: 'skip' },
+  KeyS: { type: 'skip' },
 };
 
-export function createInput(canvas, { mode, onMsg, onMute }) {
-  if (typeof mode !== 'function' || typeof onMsg !== 'function' || typeof onMute !== 'function') {
-    throw new Error('createInput: mode, onMsg and onMute must be functions');
+const BUTTON_SLOP = 1.3;        // a thumb is wider than the drawn button: hit radius = r * this
+const MIN_BUTTON_R = 26;        // logical px; never ask for a smaller target than this
+const TAP_GUARD_MS = 350;       // a flipper press that lands just as a cinematic opens is not "next line"
+
+export function createInput(canvas, { mode, layout, onMsg, onMute }) {
+  if (typeof mode !== 'function' || typeof layout !== 'function' || typeof onMsg !== 'function' || typeof onMute !== 'function') {
+    throw new Error('createInput: mode, layout, onMsg and onMute must be functions');
   }
-  const win = canvas.ownerDocument.defaultView;
+  const doc = canvas.ownerDocument;
+  const win = doc.defaultView;
   const keys = new Set();          // key codes held
   const touches = new Map();       // pointer id -> 'left' | 'right' | 'plunge'
+  let sawTouch = false;
+  let lastMode = mode();
+  let leftPlayAt = -Infinity;      // performance.now() when play last gave way to another mode
 
   const held = (what) => {
     for (const code of keys) if (HOLD[code] === what) return true;
     for (const zone of touches.values()) if (zone === what) return true;
     return false;
   };
+
+  function watchMode() {
+    const m = mode();
+    if (m !== lastMode) {
+      if (lastMode === 'play') leftPlayAt = win.performance.now();
+      lastMode = m;
+    }
+    return m;
+  }
 
   function onKeyDown(e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -52,26 +77,39 @@ export function createInput(canvas, { mode, onMsg, onMute }) {
     if (keys.delete(e.code)) e.preventDefault();
   }
 
-  // where on the canvas, 0..1 each way
-  function at(e) {
-    const r = canvas.getBoundingClientRect();
-    return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
-  }
+  const inCircle = (c, x, y) => {
+    const r = Math.max(MIN_BUTTON_R, c.r * BUTTON_SLOP);
+    return (x - c.x) * (x - c.x) + (y - c.y) * (y - c.y) <= r * r;
+  };
+  const inRect = (b, x, y, pad = 8) => x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad;
 
   function onPointerDown(e) {
-    const [x, y] = at(e);
-    if (x < 0 || x > 1 || y < 0 || y > 1) return;
+    // The gate, the fatal panel: anything that is not the page behind them keeps its own clicks.
+    if (e.target !== canvas && e.target !== doc.body && e.target !== doc.documentElement) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const touch = e.pointerType !== 'mouse';
+    if (touch) sawTouch = true;
     e.preventDefault();
-    const m = mode();
-    if (m !== 'play') {
-      onMsg(m === 'slot' && x > 1 / 3 && x < 2 / 3 ? { type: 'toTable' } : { type: 'confirm' });
+    const L = layout();
+    const [x, y] = toLogical(L, canvas.getBoundingClientRect(), e.clientX, e.clientY);
+    const m = watchMode();
+
+    if (inCircle(L.mute, x, y)) { onMute(); return; }
+
+    if (m === 'play') {
+      if (inCircle(L.launch, x, y)) { touches.set(e.pointerId, 'plunge'); return; }
+      if (!touch) return;                         // in play a mouse has a keyboard beside it
+      touches.set(e.pointerId, e.clientX < win.innerWidth / 2 ? 'left' : 'right');
       return;
     }
-    if (e.pointerType === 'mouse') return;      // in play a mouse has a keyboard beside it
-    if (y < 0.12) { onMsg(x > 0.75 ? { type: 'toSlot' } : { type: 'confirm' }); return; }
-    const zone = x > 0.78 && y > 0.72 ? 'plunge' : x < 0.5 ? 'left' : 'right';
-    touches.set(e.pointerId, zone);
-    if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ } }
+    if (m === 'cine') {
+      if (inRect(L.skip, x, y)) { onMsg({ type: 'skip' }); return; }
+      if (win.performance.now() - leftPlayAt < TAP_GUARD_MS) return;
+      onMsg({ type: 'confirm' });
+      return;
+    }
+    if (m === 'title' || m === 'card' || m === 'end') { onMsg({ type: 'confirm' }); return; }
+    throw new Error(`input: a pointer went down in a mode this shell does not know: ${JSON.stringify(m)}`);
   }
   function onPointerUp(e) {
     touches.delete(e.pointerId);
@@ -80,28 +118,41 @@ export function createInput(canvas, { mode, onMsg, onMute }) {
     keys.clear();
     touches.clear();
   }
-  const noMenu = (e) => e.preventDefault();
+  const stop = (e) => e.preventDefault();
+  // iOS: a second finger must not become a pinch, a drag must not scroll or rubber-band the page.
+  const stopOnPage = (e) => { if (e.target === canvas || e.target === doc.body || e.target === doc.documentElement) e.preventDefault(); };
 
   win.addEventListener('keydown', onKeyDown);
   win.addEventListener('keyup', onKeyUp);
   win.addEventListener('blur', release);        // a key released in another window never sends keyup
-  canvas.addEventListener('pointerdown', onPointerDown);
-  canvas.addEventListener('pointerup', onPointerUp);
-  canvas.addEventListener('pointercancel', onPointerUp);
-  canvas.addEventListener('contextmenu', noMenu);
+  win.addEventListener('pointerdown', onPointerDown);
+  win.addEventListener('pointerup', onPointerUp);
+  win.addEventListener('pointercancel', onPointerUp);
+  doc.addEventListener('touchmove', stopOnPage, { passive: false });
+  doc.addEventListener('gesturestart', stop);   // Safari's own pinch event
+  doc.addEventListener('dblclick', stop);
+  canvas.addEventListener('contextmenu', stop);
 
   return {
     /** @returns {import('../core/types.js').Input} */
-    state: () => ({ left: held('left'), right: held('right'), plunge: held('plunge'), nudge: null }),
+    state() {
+      watchMode();
+      return { left: held('left'), right: held('right'), plunge: held('plunge'), nudge: null };
+    },
     release,
+    /** true once a finger (not a mouse) has been seen: the renderer may then show the touch controls */
+    touched: () => sawTouch,
     destroy() {
       win.removeEventListener('keydown', onKeyDown);
       win.removeEventListener('keyup', onKeyUp);
       win.removeEventListener('blur', release);
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointerup', onPointerUp);
-      canvas.removeEventListener('pointercancel', onPointerUp);
-      canvas.removeEventListener('contextmenu', noMenu);
+      win.removeEventListener('pointerdown', onPointerDown);
+      win.removeEventListener('pointerup', onPointerUp);
+      win.removeEventListener('pointercancel', onPointerUp);
+      doc.removeEventListener('touchmove', stopOnPage);
+      doc.removeEventListener('gesturestart', stop);
+      doc.removeEventListener('dblclick', stop);
+      canvas.removeEventListener('contextmenu', stop);
     },
   };
 }

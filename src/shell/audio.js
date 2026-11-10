@@ -1,8 +1,11 @@
 // All of the game's sound, synthesised with WebAudio. No asset files.
 //
-//   createAudio() -> { unlock, sfx, music, setMuted, level, ctx, voiceBus,
+//   createAudio() -> { unlock, pause, resume, unlocked, ringer, sfx, music, setMuted, level, ctx, voiceBus,
 //                      duck, isMuted, musicOut }   (duck/isMuted are extras for voice.js;
 //                                                   musicOut is the ducked music, for metering)
+//
+// unlock() goes inside every user gesture (see "running, paused, interrupted" below);
+// pause()/resume() are for the page being hidden and shown.
 //
 // Graph:
 //   mood buses ─► musicBus ──────────┐
@@ -1040,14 +1043,106 @@ export function createAudio() {
     if (ctx.state === 'running') begin(mood);                        // otherwise unlock() starts it
   }
 
+  // ───────────── the ring switch (iOS) ─────────────
+  // On an iPhone a page's WebAudio is in the "ambient" audio session: the ring/silent
+  // switch mutes it. Two ways out, the first where it exists:
+  //   1. navigator.audioSession.type = 'playback'   (Safari 16.4 and later)
+  //   2. a looping, silent <audio> element. Media elements play in the "playback" session,
+  //      and while one is playing the page's WebAudio rides along with it. The silence is
+  //      16-bit at the context's own rate: iOS mixes WebAudio down to the element's quality.
+  // Neither can be heard from a desktop; ringer() reports which one was taken.
+  const nav = globalThis.navigator;
+  const IOS = !!nav && (/iPad|iPhone|iPod/.test(nav.userAgent || '')
+    || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1));      // an iPad calling itself a Mac
+  let silentEl = null;
+  let ringerVia = 'none';      // 'none' | 'audioSession' | 'element'
+
+  function silenceUrl() {
+    const rate = ctx.sampleRate;
+    const n = Math.floor(rate * 0.25);
+    const wav = new DataView(new ArrayBuffer(44 + n * 2));            // samples are already zero
+    const put = (at, text) => { for (let i = 0; i < text.length; i++) wav.setUint8(at + i, text.charCodeAt(i)); };
+    put(0, 'RIFF'); wav.setUint32(4, 36 + n * 2, true); put(8, 'WAVE');
+    put(12, 'fmt '); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 1, true);
+    wav.setUint32(24, rate, true); wav.setUint32(28, rate * 2, true); wav.setUint16(32, 2, true); wav.setUint16(34, 16, true);
+    put(36, 'data'); wav.setUint32(40, n * 2, true);
+    return URL.createObjectURL(new Blob([wav.buffer], { type: 'audio/wav' }));
+  }
+
+  // Must be called from inside a user gesture the first time (play() is refused otherwise).
+  function ringOn() {
+    if (nav && nav.audioSession) {
+      if (nav.audioSession.type !== 'playback') nav.audioSession.type = 'playback';
+      ringerVia = 'audioSession';
+      return;
+    }
+    if (!IOS || typeof Audio !== 'function') return;
+    if (!silentEl) {
+      silentEl = new Audio();
+      silentEl.src = silenceUrl();
+      silentEl.loop = true;
+      silentEl.preload = 'auto';
+      silentEl.setAttribute('playsinline', '');
+      silentEl.setAttribute('x-webkit-airplay', 'deny');
+      silentEl.disableRemotePlayback = true;
+    }
+    ringerVia = 'element';
+    // refused outside a gesture, or after an interruption: unlock() is called again on the next touch
+    if (silentEl.paused) silentEl.play().catch(() => {});
+  }
+
+  // ───────────── running, paused, interrupted ─────────────
+  // The context starts 'suspended' and runs only after resume() is called inside a user
+  // gesture (on iOS that means touchend or later, not touchstart). iOS also moves it to
+  // 'interrupted' for a phone call, Siri, or the app going to the background, and it does
+  // not always come back by itself. So unlock() is cheap and main.js calls it on every
+  // gesture; pause()/resume() are for the page being hidden and shown.
+  let paused = false;
+  let everRan = false;
+
+  function onRunning() {
+    everRan = true;
+    if (timer === null) timer = setInterval(tick, TICK_MS);
+    if (wanted !== (playing ? playing.mood : 'silence')) begin(wanted);
+    tick();
+  }
+  function stopTimer() {
+    if (timer !== null) { clearInterval(timer); timer = null; }
+  }
+  ctx.addEventListener('statechange', () => {
+    if (ctx.state !== 'running') stopTimer();
+    else if (!paused) onRunning();
+  });
+
+  // Never rejects and may never settle (a Linux box with no output device leaves resume()
+  // pending for ever): nothing may wait on it before letting the player in.
   function unlock() {
-    const started = () => {
-      if (timer === null) timer = setInterval(tick, TICK_MS);
-      if (wanted !== (playing ? playing.mood : 'silence')) begin(wanted);
-      tick();
-    };
-    if (ctx.state === 'running') { started(); return Promise.resolve(); }
-    return ctx.resume().then(started);
+    if (paused) return Promise.resolve();
+    ringOn();
+    if (ctx.state === 'running') {
+      if (timer === null) onRunning();
+      return Promise.resolve();
+    }
+    return ctx.resume().then(
+      () => { if (ctx.state === 'running' && timer === null && !paused) onRunning(); },
+      () => {},      // refused (not in a gesture, or still interrupted): the next gesture asks again
+    );
+  }
+
+  /** The page is hidden: stop the clock, so nothing plays to a locked phone or piles up to fire later. */
+  function pause() {
+    if (paused) return;
+    paused = true;
+    stopTimer();
+    if (silentEl) silentEl.pause();
+    if (ctx.state === 'running') ctx.suspend().catch(() => {});
+  }
+
+  /** The page is back. Outside a gesture iOS may refuse; the next touch calls unlock(). */
+  function resume() {
+    if (!paused) return;
+    paused = false;
+    if (everRan) unlock();
   }
 
   function setMuted(m) {
@@ -1060,7 +1155,11 @@ export function createAudio() {
   }
 
   return {
-    unlock, sfx, music, setMuted, level, ctx, voiceBus,
+    unlock, pause, resume, sfx, music, setMuted, level, ctx, voiceBus,
+    /** true once the context has run: after that, a context that is not running is interrupted, not locked */
+    unlocked: () => everRan,
+    /** how sound is kept audible with the iPhone's ring switch on silent: 'none' | 'audioSession' | 'element' */
+    ringer: () => ringerVia,
     /** voice.js: hold the music down while a line is spoken (also covers speechSynthesis, which WebAudio cannot hear) */
     duck(on) {
       duckAsked = !!on;

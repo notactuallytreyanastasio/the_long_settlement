@@ -6,8 +6,15 @@
 //
 // Time enters the core as fixed ticks of physics.STEP. The frame loop banks real time in
 // an accumulator and pays it out one STEP at a time, so the table plays the same on a
-// 60 Hz laptop and a 144 Hz monitor; a long frame (a tab coming back from sleep) is
-// clamped, not replayed.
+// 60 Hz phone and a 144 Hz monitor; a long frame is clamped, not replayed.
+//
+// The page is laid out by layout.js: computeLayout(viewport) says whether this is the
+// portrait cabinet (a phone held upright) or the wide one, how big the logical canvas is
+// and where everything on it goes. The shell sizes the canvas to that, hands the layout to
+// the renderer and to input, and recomputes it when the viewport changes.
+//
+// When the page is hidden (the phone locked, another app in front) everything stops: the
+// frame loop, the audio clock, and the timers that would otherwise end a spoken line.
 
 import { content } from '../content/index.js';
 import { init, update } from '../core/game.js';
@@ -17,14 +24,19 @@ import { createRenderer } from './render.js';
 import { createAudio } from './audio.js';
 import { createVoice } from './voice.js';
 import { createInput } from './input.js';
+import { computeLayout } from './layout.js';
 
+// The key was named before saves had versions. It is kept, so a v:1 save is still found;
+// the version that matters is the `v` inside (now 2; the core's load migrates a v:1).
 const SAVE_KEY = 'the-long-settlement.save.v1';
+const SAVE_V = 2;
 const MANIFEST_URL = 'assets/voice/manifest.json';
-const W = 1280;
-const H = 800;
+const MAX_DPR = 2;              // an iPhone reports 3; nine backing pixels per point is fill-rate for nothing
 const MAX_FRAME = 0.1;          // seconds of real time one frame may bank
 const CHATTER_MAX = 3;          // non-blocking lines allowed to wait their turn
 const PRELOAD_AHEAD = 3;        // lines of a cinematic to have ready beyond the one being spoken
+const PRELOAD_MAX = 8;          // voice files asked for at one time; the rest load when they are spoken
+const LOAD_WAIT_MS = 1500;      // how long Continue waits for sound before going on without it
 
 const $ = (id) => {
   const el = document.getElementById(id);
@@ -55,7 +67,7 @@ function readSave() {
   try {
     const save = JSON.parse(raw);
     const chapter = content.chapters[save.chapter];
-    if (save.v !== 1 || !chapter || !chapter.scenes[save.scene]) throw new Error('not a save this build can load');
+    if ((save.v !== 1 && save.v !== SAVE_V) || !chapter || !chapter.scenes[save.scene]) throw new Error('not a save this build can load');
     return save;
   } catch (e) {
     console.warn(`main: discarding the stored save (${e.message}): ${raw.slice(0, 200)}`);
@@ -65,6 +77,7 @@ function readSave() {
 }
 
 function writeSave(save) {
+  if (!save || save.v !== SAVE_V) throw new Error(`main: the core asked to store a save that is not v:${SAVE_V}: ${JSON.stringify(save)}`);
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {
     console.warn(`main: could not save (${e.message})`);
   }
@@ -87,19 +100,51 @@ async function boot() {
   const canvas = $('stage');
   const gate = $('gate');
 
+  // view-only: what the renderer needs that is not game state
+  //   safe: the part of each canvas edge that lies under the notch, the home indicator or a
+  //         rounded corner, in logical px (0 where the canvas does not reach that far)
+  //   muted, touch: what the mute button shows, and whether a finger is how this is played
+  const fx = {
+    timeMs: performance.now(), voiceLevel: 0, speaking: null, flash: null, shake: 0,
+    safe: { top: 0, right: 0, bottom: 0, left: 0 }, muted: false, touch: window.matchMedia('(pointer: coarse)').matches,
+  };
+
+  // ── layout ──
+  const safeProbe = $('safe');                    // padded with env(safe-area-inset-*) by the stylesheet
+  let layout = null;
+
   function fit() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const s = Math.min(window.innerWidth / W, window.innerHeight / H);
-    const w = Math.max(320, Math.floor(W * s));
-    const h = Math.round(w * H / W);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    if (!(vw > 0) || !(vh > 0)) return;             // minimised, or not laid out yet: keep what we have
+    layout = computeLayout(vw, vh);
+    if (!layout || !(layout.W > 0) || !(layout.H > 0)) throw new Error(`main: computeLayout(${vw}, ${vh}) gave ${JSON.stringify(layout)}`);
+    const s = Math.min(vw / layout.W, vh / layout.H);
+    const w = Math.max(1, Math.floor(layout.W * s));
+    const h = Math.max(1, Math.floor(layout.H * s));
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     const bw = Math.round(w * dpr);
     const bh = Math.round(h * dpr);
     if (canvas.width !== bw || canvas.height !== bh) { canvas.width = bw; canvas.height = bh; }
+
+    const inset = getComputedStyle(safeProbe);
+    const rect = canvas.getBoundingClientRect();
+    const px = (v) => parseFloat(v) || 0;
+    const over = (insetPx, gapPx) => Math.max(0, insetPx - Math.max(0, gapPx)) / s;
+    fx.safe = {
+      top: over(px(inset.paddingTop), rect.top),
+      right: over(px(inset.paddingRight), vw - rect.right),
+      bottom: over(px(inset.paddingBottom), vh - rect.bottom),
+      left: over(px(inset.paddingLeft), rect.left),
+    };
   }
   fit();
   window.addEventListener('resize', fit);
+  // iOS fires orientationchange before the viewport has its new size, and sometimes no resize after
+  window.addEventListener('orientationchange', () => { fit(); setTimeout(fit, 300); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
 
   const renderer = createRenderer(canvas);
   const audio = createAudio();
@@ -110,8 +155,6 @@ async function boot() {
   // ── the state ──
   let game = init(newSeed());
 
-  // view-only: what the renderer needs that is not game state
-  const fx = { timeMs: performance.now(), voiceLevel: 0, speaking: null, flash: null, shake: 0 };
   const chatter = [];           // non-blocking lines waiting for the voice to be free
 
   // ── effects ──
@@ -174,7 +217,9 @@ async function boot() {
     const key = `${game.mode}|${game.chapter}|${game.scene}|${game.cine ? `${game.cine.kind}:${game.cine.index}` : ''}`;
     if (key === preloadKey) return;
     preloadKey = key;
-    const ids = preloadIds(content, game, PRELOAD_AHEAD);
+    // In play the list is the briefing, the head of the cutscene, then every bark of the
+    // chapter. The barks are cut off here: one that is not ready loads when it is called.
+    const ids = preloadIds(content, game, PRELOAD_AHEAD).slice(0, PRELOAD_MAX);
     if (ids.length > 0) voice.preload(ids);
   }
 
@@ -212,8 +257,10 @@ async function boot() {
   const NO_INPUT = { left: false, right: false, plunge: false, nudge: null };
   let last = null;
   let bank = 0;
+  let raf = null;
 
   function frame(now) {
+    raf = null;
     if (dead) return;
     try {
       const real = last === null ? 0 : Math.min(MAX_FRAME, Math.max(0, (now - last) / 1000));
@@ -231,14 +278,44 @@ async function boot() {
         fx.flash.a -= real * 1.8;
         if (fx.flash.a <= 0) fx.flash = null;
       }
-      renderer.draw(content, game, fx);
+      fx.touch = fx.touch || (controls !== null && controls.touched());
+      renderer.draw(content, game, fx, layout);
     } catch (err) {
       fatal(err);
       return;
     }
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+
+  // ── hidden and shown ──
+  function sleep() {
+    if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+    last = null;                  // the time away is not banked
+    bank = 0;
+    if (controls) controls.release();     // a finger lifted while we were away sends no pointerup
+    voice.pause();
+    audio.pause();
+  }
+  function wake() {
+    if (dead || document.hidden) return;
+    audio.resume();
+    voice.resume();
+    fit();
+    if (raf === null) raf = requestAnimationFrame(frame);
+  }
+  document.addEventListener('visibilitychange', () => (document.hidden ? sleep() : wake()));
+  window.addEventListener('pagehide', sleep);
+  window.addEventListener('pageshow', wake);
+  wake();
+
+  // ── sound needs a gesture ── iOS runs an AudioContext only once resume() has been called
+  // from inside touchend (touchstart does not count) or a later event of the same tap, and
+  // can take it away again for a phone call. unlock() is cheap when there is nothing to do,
+  // so every gesture asks. Capture phase: it runs before any handler that might want sound.
+  const unlock = () => { audio.unlock(); };
+  for (const type of ['touchend', 'pointerup', 'click', 'keydown']) {
+    document.addEventListener(type, unlock, { capture: true, passive: true });
+  }
 
   // ── the gate: a browser gives no sound until the page has been clicked ──
   const save = readSave();
@@ -249,26 +326,33 @@ async function boot() {
     resume.hidden = false;
   }
 
-  let muted = false;
-  async function open(loadSave) {
+  // Nothing here waits on the audio context without a time limit. On a machine with no
+  // output device resume() never settles, and a gate that awaited it never opened.
+  function open(loadSave) {
     if (controls) return;
-    await audio.unlock();
+    const sound = audio.unlock();
     gate.hidden = true;
     controls = createInput(canvas, {
       mode: () => game.mode,
+      layout: () => layout,
       onMsg: dispatch,
-      onMute() { muted = !muted; audio.setMuted(muted); $('muted').hidden = !muted; },
+      onMute() { fx.muted = !fx.muted; audio.setMuted(fx.muted); $('muted').hidden = !fx.muted; },
     });
-    if (loadSave) dispatch({ type: 'load', save: loadSave });
     canvas.focus();
+    if (!loadSave) return;
+    // A loaded game speaks its briefing at once. Give the context a moment to be running so
+    // that line is the recorded voice and not the synthesiser; then go on regardless.
+    Promise.race([sound, new Promise((r) => setTimeout(r, LOAD_WAIT_MS))])
+      .then(() => dispatch({ type: 'load', save: loadSave }))
+      .catch(fatal);
   }
-  $('begin').addEventListener('click', () => { open(null).catch(fatal); });
-  resume.addEventListener('click', () => { open(save).catch(fatal); });
+  $('begin').addEventListener('click', () => { try { open(null); } catch (e) { fatal(e); } });
+  resume.addEventListener('click', () => { try { open(save); } catch (e) { fatal(e); } });
   $('begin').disabled = false;
   $('begin').focus();
 
   // for the console and for driving the game from a test script
-  window.tls = { game: () => game, send: dispatch, content, audio, voice };
+  window.tls = { game: () => game, send: dispatch, content, audio, voice, layout: () => layout, fx, input: () => (controls ? controls.state() : NO_INPUT) };
 }
 
 boot().catch(fatal);

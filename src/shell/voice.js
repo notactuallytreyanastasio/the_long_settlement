@@ -3,7 +3,15 @@
 // there is none of that either, to silence of the right length.
 //
 //   createVoice(audio, cast, manifest) -> { say(line, {blocking, onDone}), hush(), level(), speaking(),
-//                                           preload(ids), cached(id) }
+//                                           preload(ids), cached(id), pause(), resume() }
+//
+// Nothing is fetched until it is asked for: the files are 39 MB together, and a
+// phone on a mobile connection gets the line being spoken and the few after it.
+//
+// pause()/resume() are for the page being hidden. The audio context is suspended
+// then, which freezes a file mid-word, but the timers that end a line are not
+// frozen with it: left alone they would call onDone('ended') to a page nobody is
+// looking at and the story would walk on in the dark.
 //
 // preload(ids) fetches and decodes those lines ahead of time and resolves when
 // they are all settled; say() starts a decoded line in the same task, with no
@@ -23,7 +31,7 @@
 //     dispatches from onDone is never re-entered from inside say() or hush().
 
 const WPM_BASE = 175;          // the rate at which speechSynthesis rate === 1
-const CACHE_SECONDS = 240;     // decoded speech kept: about 46 MB at 48 kHz mono
+const CACHE_SECONDS = 120;     // decoded speech kept: about 23 MB at 48 kHz mono, which a phone can spare
 const AHEAD = 3;               // lines warmed after the one being spoken
 
 export function estimateSeconds(line, member) {
@@ -260,9 +268,36 @@ export function createVoice(audio, cast, manifest) {
     else setTimeout(() => u.onDone(reason), 0);
   }
 
+  let paused = false;
   function watchdog(u, seconds) {
     clearTimeout(u.timer);
+    u.timer = null;
+    u.left = seconds;
+    if (paused) return;                         // resume() arms it
+    u.due = performance.now() + seconds * 1000;
     u.timer = setTimeout(() => finish(u, 'ended'), seconds * 1000);
+  }
+
+  function pause() {
+    if (paused) return;
+    paused = true;
+    const u = current;
+    if (!u) return;
+    if (u.timer !== null) {
+      clearTimeout(u.timer);
+      u.timer = null;
+      u.left = Math.max(0.05, (u.due - performance.now()) / 1000);
+    }
+    if (u.mode === 'synth' && globalThis.speechSynthesis) globalThis.speechSynthesis.pause();
+  }
+
+  function resume() {
+    if (!paused) return;
+    paused = false;
+    const u = current;
+    if (!u) return;
+    if (u.mode === 'synth' && globalThis.speechSynthesis) globalThis.speechSynthesis.resume();
+    if (u.left !== null) watchdog(u, u.left);
   }
 
   function playBuffer(u, buf) {
@@ -340,12 +375,16 @@ export function createVoice(audio, cast, manifest) {
       finish(current, 'interrupted');
     }
 
-    const u = { line, onDone, done: false, stop: null, timer: null, mode: 'loading', t0: performance.now() };
+    const u = { line, onDone, done: false, stop: null, timer: null, due: 0, left: null, mode: 'loading', t0: performance.now() };
     current = u;
     if (audio.duck) audio.duck(true);
 
     const url = urlFor(line.id);
-    if (url && ctx.state === 'running') {
+    // A context that has run and is not running now is interrupted (a call, the lock
+    // screen), not locked: the file is still the right voice, and it sounds when the
+    // context comes back. Only a context that never started sends a line to the synth.
+    const live = ctx.state === 'running' || (typeof audio.unlocked === 'function' && audio.unlocked());
+    if (url && live) {
       const ready = touch(url);
       if (ready) {
         playBuffer(u, ready);                                 // already decoded: starts in this task
@@ -391,5 +430,5 @@ export function createVoice(audio, cast, manifest) {
     return current !== null;
   }
 
-  return { say, hush, level, speaking, preload, cached };
+  return { say, hush, level, speaking, preload, cached, pause, resume };
 }

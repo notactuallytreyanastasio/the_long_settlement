@@ -7276,8 +7276,8 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 51760,
-  "lines": 1076
+  "bytes": 56582,
+  "lines": 1175
  },
  {
   "path": "src/shell/cinema.js",
@@ -7286,13 +7286,13 @@
  },
  {
   "path": "src/shell/input.js",
-  "bytes": 4633,
-  "lines": 108
+  "bytes": 7172,
+  "lines": 159
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 10508,
-  "lines": 275
+  "bytes": 15537,
+  "lines": 359
  },
  {
   "path": "src/shell/render.js",
@@ -7301,8 +7301,8 @@
  },
  {
   "path": "src/shell/voice.js",
-  "bytes": 15589,
-  "lines": 396
+  "bytes": 17273,
+  "lines": 435
  },
  {
   "path": "story/BIBLE.md",
