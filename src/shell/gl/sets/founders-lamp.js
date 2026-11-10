@@ -85,7 +85,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const st = arcStair({ r: RR - 0.1, a0: -128, a1: -96, n: 6, rise: 0.2, w: 1.2, y: -1.2 });
   props.add(deco(node('stair', st, M.prop, { pos: [0, 0, CZ] })));
   const dA = -110, dS = Math.sin(dA * DEG), dC = Math.cos(dA * DEG), DP = [dS * (RR - 0.12), 0, CZ - dC * (RR - 0.12)];
-  props.add(deco(node('door', merge(tint(place(box(1.5, 2.7, 0.16), 0, 1.35, 0), '#fff0d4'), setGlow(tint(place(box(1.2, 2.45, 0.1), 0, 1.25, 0.07), '#ffc070'), 0.95), tint(place(box(0.46, 0.6, 0.03), 1.05, 1.6, 0.1, 0, 0, -4), C8.parchment), tint(place(sphere(0.045, 6, 4), 1.05, 1.86, 0.13), C8.oxblood)), M.prop, { pos: DP, rot: [0, -dA, 0] })));
+  props.add(deco(node('door', merge(tint(place(box(1.5, 2.7, 0.16), 0, 1.35, 0), '#fff0d4'), setOutline(setGlow(tint(place(box(1.2, 2.45, 0.1), 0, 1.25, 0.07), '#ff9438'), 1), 0), tint(place(box(0.46, 0.6, 0.03), 1.05, 1.6, 0.1, 0, 0, -4), C8.parchment), tint(place(sphere(0.045, 6, 4), 1.05, 1.86, 0.13), C8.oxblood)), M.prop, { pos: DP, rot: [0, -dA, 0] })));
   const ORDER = [DP[0] + Math.cos(-dA * DEG) * 1.05, 1.6, DP[2] - Math.sin(-dA * DEG) * 1.05];
   props.add(node('crate', crate({ s: 0.6, seed: 4 }), M.prop, { pos: [-4.6, 0, -1.0], rot: [0, 24, 0] }), deco(node('sack', sack({ seed: 3, s: 0.36 }), M.prop, { pos: [-5.2, 0, -0.2], rot: [0, 60, 0] })));
   const hand = shipLantern({ s: 1.25 }), HAND = [-4.6, 0.62 + 0.78, -1.0];

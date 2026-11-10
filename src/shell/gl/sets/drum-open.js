@@ -26,7 +26,7 @@ import { node, group, makeEnv, createScene, mergeStatic, makeInstances, material
 import { createSprites } from '../sprites.js';
 import { PAL, kitMaterials, pickLight, ledgerBook } from './kit.js';
 import {
-  C7, STD_MARKS, STD_CAMERAS, shell7, rows, folk7, dirFrom, norm7, stairs7, column7, doorLeaf7, banner7, wall7, tallWindow, lightCards, floorPatch, tiles,
+  C7, STD_MARKS, STD_CAMERAS, shell7, rows, folk7, dirFrom, norm7, stairs7, column7, doorLeaf7, banner7, wall7, tallWindow, fanRays, floorPatch, tiles,
   chandelier7, lotDrum7, reelWorks, plumb, trestle, shipLantern, mintSeal7, paperStack,
 } from './kit-ch7.js';
 
@@ -139,8 +139,8 @@ function build(engine = null, { light, low = false } = {}) {
   const outNode = node('outside', setOutline(setGlow(merge(out), 1), 0), K.speck); outNode.castShadow = false; scene.root.add(outNode);
 
   // ---- the shaft: cards from the doorway to the drum, and the light it lays on the floor
-  const aim = [DRUM[0] + 0.2, 0.9, DRUM[2]], src = [0, FLOOR + 2.6, DOOR_Z + 0.3], dirS = [aim[0] - src[0], aim[1] - src[1] - 1.0, aim[2] - src[2]], lenS = Math.hypot(dirS[0], dirS[1], dirS[2]);
-  if (!low) scene.root.add(node('shaft', merge(place(lightCards({ w: 2.6, h: 3.6, dir: dirS, len: lenS, cards: 3, color: L.shaft, spread: 0.1, across: 'x' }), src[0], src[1], src[2]), place(lightCards({ w: 2.8, h: 3.0, dir: dirS, len: lenS, cards: 2, color: L.shaft, spread: 0.1 }), src[0], src[1], src[2])), M.shaft));
+  const aim = [DRUM[0] + 0.2, 0.9, DRUM[2]], src = [0, FLOOR + 2.6, DOOR_Z + 0.3], dirS = [aim[0] - src[0], aim[1] - src[1] - 1.0, aim[2] - src[2]];
+  if (!low) scene.root.add(node('shaft', fanRays([-1.5, 1.5, FLOOR + 3.9, DOOR_Z + 0.4], [[-6.2, -5.0, FLOOR, -9.5], [DRUM[0] - 1.1, DRUM[0] + 0.9, 0.9, DRUM[2] - 0.2], [-0.7, 0.5, FLOOR, -5.2], [1.6, 2.8, FLOOR, -7.5], [4.6, 5.9, FLOOR, -10.5]], L.shaft), M.shaft));
   const patch = merge(floorPatch([[-1.55, DOOR_Z + 0.3], [1.55, DOOR_Z + 0.3], [DRUM[0] + 1.9, EDGE - 1.1], [DRUM[0] - 1.3, EDGE - 1.1]], { color: L.patch, glow: 0.8, y: FLOOR + 0.018 }), floorPatch([[DRUM[0] - 1.35, EDGE], [DRUM[0] + 1.95, EDGE], [DRUM[0] + 2.0, -0.6], [DRUM[0] - 1.5, -0.6]], { color: L.patch, glow: 0.8, y: 0.012 }));
   // the five windows of chapter 1 are behind us now: their coloured heads lie on the dais at our feet
   const stain = []; ['#ff9a6c', '#ffd86a', '#ffa0c0', '#ffd86a', '#ff9a6c'].forEach((c, i) => { const x = -3.6 + i * 1.8; for (let k = 0; k < 3; k++) { const a = x - 0.42 + k * 0.3, sh = 0.5; stain.push(floorPatch([[a, 2.25], [a + 0.24, 2.25], [a + 0.24 - sh, 3.3 - Math.abs(k - 1) * 0.16], [a - sh, 3.3 - Math.abs(k - 1) * 0.16]], { color: c, glow: evening ? 0.35 : 0.85, y: 0.014 })); } });

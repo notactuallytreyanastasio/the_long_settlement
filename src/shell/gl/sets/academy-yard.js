@@ -105,7 +105,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   const tower = gateTower({ w: 3.0, h: 7.4, d: 3.2, seed: 2, lit: true });
   set.add(node('tower', tower, M.prop, { pos: TOWER }));
   const ck = clock({ r: tower.anchors.clockR, thick: 0.14 }), CLOCK = anchorAt(tower, 'clock', TOWER);
-  set.add(node('clock', ck.face, M.prop, { pos: CLOCK }));
+  set.add(node('clock', merge(ck.face, place(ck.hour, 0, 0, 0, 0, 0, 62)), M.prop, { pos: CLOCK })); // the hour hand is part of the face: nobody watches it move
   // a lower wing behind the tower so the gap beside it is not a hole in the world
   if (!low) set.add(node('wing', academyBlock({ w: 5.2, h: 3.6, d: 3.4, floors: 2, bays: 3, roofH: 1.1, seed: 9, roof: H3.slateDark }), M.prop, { pos: [-23.3, 0, -14.4], rot: [0, 8, 0] }));
   // the sea wall: square merlons on a low parapet, from the tower out to the right
@@ -143,9 +143,9 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   { const a = [7.2, WATER + 1.1, -44], b = [12.5, WATER + 1.1, -74], dx = b[0] - a[0], dz = b[2] - a[2], len = Math.hypot(dx, dz), yaw = Math.atan2(dx, dz) / DEG;
     moleParts.push(tint(place(box(2.6, 2.6, len), (a[0] + b[0]) / 2, WATER + 0.1, (a[2] + b[2]) / 2, 0, yaw, 0), H3.stone2), tint(place(box(2.9, 0.3, len + 0.4), (a[0] + b[0]) / 2, WATER + 1.4, (a[2] + b[2]) / 2, 0, yaw, 0), H3.stone));
     moleParts.push(tint(place(box(6, 3.4, 9), 8.2, WATER + 0.3, -40.5, 0, 12, 0), H3.stone3)); }
-  far.add(node('mole', merge(moleParts), M.far));
+  far.add(node('mole', merge(moleParts), M.farFlat));
   const lh = lighthouse({ h: 5.2, r: 0.95, bands: 4, colors: [H3.stone, H3.teal], cap: H3.tealDark, lit: L.power > 0.8 }), LH = [12.5, WATER + 1.5, -74];
-  far.add(node('mole-light', lh, M.far, { pos: LH }));
+  far.add(node('mole-light', lh, M.farFlat, { pos: LH }));
   far.add(node('headland', headland({ w: 80, d: 30, h: 12, seed: 6, grass: PAL.leaf, seg: 20, rings: 8 }), M.farFlat, { pos: [-64, WATER - 0.6, -150] }));
   far.add(node('island', headland({ w: 30, d: 16, h: 5, seed: 11, grass: PAL.leafDark, seg: 16, rings: 6 }), M.farFlat, { pos: [44, WATER - 0.6, -190] }));
   scene.root.add(mergeStatic(far, 'far'));
@@ -174,7 +174,9 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   // the escort of twelve, in the Proctor's teal: two files of six, close behind where the Tribune is received
   const escSpots = []; for (let k = 0; k < 4; k++) for (let i = 0; i < 3; i++) escSpots.push({ pos: [2.3 + i * 0.62, 0, -0.95 - k * 0.72], yaw: -10, s: 1.0 });
   const escort = people({ spots: escSpots, material: M.prop, uniform: { coat: '#2f8f8a', cap: H3.tealDeep, band: H3.gold }, seed: 8 });
-  for (const g of [nearRanks, farRanks, escort]) { for (const k of g.node.children) k.castShadow = g === nearRanks; scene.root.add(g.node); }
+  for (const g of [nearRanks, farRanks]) for (const p of g.list) p.here = L.ranks;
+  for (const p of escort.list) p.here = L.escort ? 1 : 0;
+  for (const g of [nearRanks, farRanks, escort]) { g.writeAll(); for (const k of g.node.children) k.castShadow = g === nearRanks; scene.root.add(g.node); }
 
   // ---- the banner: cloth and bob swing on the yard
   const YARD = [MAST[0], MAST_H - 0.5, MAST[2] + 0.16];
@@ -184,11 +186,11 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   bob.castShadow = false; scene.root.add(bob);
   const footLocal = bannerMesh.anchors.foot, BOB = [YARD[0], YARD[1] + footLocal[1] - BOB_LEN + 0.2, YARD[2]];
   // clock hands
-  const hourHand = node('hour', ck.hour, M.speck, { pos: CLOCK }), minHand = node('minute', ck.minute, M.speck, { pos: CLOCK });
-  hourHand.castShadow = minHand.castShadow = false; scene.root.add(hourHand, minHand);
+  const minHand = node('minute', ck.minute, M.speck, { pos: CLOCK });
+  minHand.castShadow = false; scene.root.add(minHand);
   // pennants: five links each, laid out along the wind every frame
   const PENS = [{ at: anchorAt(tower, 'top', TOWER), col: H3.coral, s: 1.5 }, { at: [BLOCK[0] - 5.0, 8.2, BLOCK[2] - 2.1], col: H3.gold, s: 1.1 }, { at: [BLOCK[0] + 4.6, 8.2, BLOCK[2] - 2.1], col: H3.gold, s: 1.1 }, { at: [POSTS[1][0] + 4, 2.3, WALL_Z], col: H3.teal, s: 0.9 }];
-  const LINKS = 5, pen = node('pennants', setOutline(place(box(0.34, 0.4, 0.02), 0.17, 0, 0), 0.6), M.lantern);
+  const LINKS = 5, pen = node('pennants', setOutline(place(box(0.34, 0.4, 0.02), 0.17, 0, 0), 0), M.speck);
   pen.instances = makeInstances(PENS.length * LINKS); pen.instances.count = PENS.length * LINKS; scene.root.add(pen);
 
   // ---- sky
@@ -237,7 +239,8 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   function setPower(p) { power = Math.max(0, Math.min(1.5, p)); }
   function setRanks(a) { ranks = Math.max(0, Math.min(1, a)); }
   function setEscort(on) { escortOn = !!on; }
-  const settle = (g, goal, k) => { const n = Math.round(goal * g.count); for (let i = 0; i < g.count; i++) { const p = g.list[i], d = (i < n ? 1 : 0) - p.here; if (d > 0.004 || d < -0.004) { p.here += d * k; g.write(i); } } };
+  // (a rank that has wholly fallen out is not drawn at all)
+  const settle = (g, goal, k) => { const n = Math.round(goal * g.count); let any = n > 0; for (let i = 0; i < g.count; i++) { const p = g.list[i], d = (i < n ? 1 : 0) - p.here; if (d > 0.004 || d < -0.004) { p.here += d * k; g.write(i); any = true; } } g.node.visible = any; };
   const task = () => null;
 
   function update(time, dt = 0) {
@@ -264,7 +267,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
     BOB[0] = bob.position[0] + Math.sin(ba * DEG) * (BOB_LEN - 0.3); BOB[1] = bob.position[1] - Math.cos(ba * DEG) * (BOB_LEN - 0.3); BOB[2] = bob.position[2];
     bobGlow.pos[0] = BOB[0]; bobGlow.pos[1] = BOB[1] + 0.15; bobGlow.pos[2] = BOB[2] + 0.2; bobGlow.alpha = Math.max(0, Math.sin(time * 1.15 + 0.4)) * 0.9 * Math.min(1.2, 0.4 + power * 0.6); bobGlow.rot = time * 0.6;
     // the clock keeps the Company's time: the minute hand goes round once a minute of ours
-    minHand.setRot(0, 0, -time * 6); hourHand.setRot(0, 0, -60 - time * 0.5);
+    minHand.setRot(0, 0, -time * 6);
     // pennants
     const pd = pen.instances.data;
     for (let j = 0; j < PENS.length; j++) {

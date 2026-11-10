@@ -79,7 +79,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- the hall: floor, walls, gable with its big window, open roof
   const room = group('room');
-  room.add(node('floor', place(boardFloor({ w: 20, d: 17, n: 26, colors: ['#f6b878', '#eea866', '#ffc68a'], seed: 4 }), 0, 0, 2.0), M.flat));
+  room.add(node('floor', place(boardFloor({ w: 20, d: 17, n: 26, colors: ['#f6b878', '#eea866', '#ffc68a'], seed: 4 }), 0, 0, 2.0), M.ground));
   const GW = { w: 2.6, sill: -1.0, top: 2.05 }; // in gable space (y = 0 at the eaves): the window drops a metre into the wall
   room.add(node('back', roomWall({ w: BW * 2 + 0.6, h: H, t: 0.4, color: L.wall, openings: [{ x: 0, w: GW.w, sill: H + GW.sill, top: H }] }), M.wall, { pos: [0, 0, BACK] }));
   room.add(node('gable', gableWall({ w: BW * 2 + 0.6, rise: RISE + 0.12, t: 0.4, color: L.gable, window: GW }), M.wall, { pos: [0, H, BACK] }));

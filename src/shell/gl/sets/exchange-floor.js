@@ -44,7 +44,7 @@ const LIGHTS = {
       water: null,
     },
     shaft: '#fff0a8', shaftNear: 0.15, patch: '#fff2b0', fan: ['#ffd65a', '#7fe6d2', '#ff9ab8', '#ffd65a', '#7fe6d2', '#ff9ab8', '#ffd65a'], side: '#bfe6ff', mote: '#fff6d0',
-    wall: ['#b6beff', '#a8b0f8'], floor: ['#ffdcae', '#ffb690', '#ffd0a0'], grout: '#e09078',
+    wall: ['#b6beff', '#a8b0f8'], floor: ['#ffd29c', '#ffa986', '#ffc590'], grout: '#d8846c',
   },
   evening: {
     preset: 'night', power: 1.3, crowd: 0, mood: 0.05, glass: 0.95, arch: 0.7,

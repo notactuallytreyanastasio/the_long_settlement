@@ -192,7 +192,6 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
   }
   for (const [x, z] of [[-0.55, -9.4], [0.5, -10.0], [-0.1, -8.3]]) spots.push({ pos: [x, 0, z], yaw: (r() - 0.5) * 20, s: 0.68, row: 6 });
   const cadets = people({ spots, material: M.prop, uniform: { coat: H3.cadet, cap: H3.tealDark, band: H3.silver }, paper: true, arms: true, seed: 5 });
-  for (let i = 0; i < cadets.count; i++) cadets.list[i].pos[1] -= 0.0; // (hems sit on the mattress)
   scene.root.add(cadets.node);
 
   const fg = group('fg');
@@ -236,7 +235,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
       if (dh > 0.004 || dh < -0.004 || du > 0.004 || du < -0.004) { p.here += dh * k; p.hand += du * k; cadets.write(i); }
     }
     if (dt > 0) for (let j = 0; j < 4; j++) { const i = cursor = (cursor + 1) % N, p = cadets.list[i]; if (p.here < 0.05) continue; p.lean = Math.sin(time * 0.9 + p.ph) * 2.4; cadets.write(i); }
-    cone.visible = pw > 0.05;
+    cone.visible = pw > 0.05; cadets.node.visible = n > 0 || cadets.list[0].here > 0.02;
     stoveGlow.alpha = (0.42 + 0.1 * Math.sin(time * 9.1) * Math.sin(time * 5.3)) * Math.min(1.2, 0.4 + pw);
     tallyGlow.alpha = tallyOn * (0.5 + 0.2 * Math.sin(time * 3));
     if (!live || low) return;

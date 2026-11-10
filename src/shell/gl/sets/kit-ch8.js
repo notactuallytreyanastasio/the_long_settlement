@@ -74,7 +74,7 @@ export function materials8() {
     ...kitMaterials(),
     wall: material({ name: 'ch8-wall', rim: 0, bandEdge: -0.2, outline: { width: 1.9, self: 0.65 }, castShadow: false }),
     shaft: material({ kind: 'beam', name: 'ch8-shaft', beam: { power: 0.7, near: 0.34, far: 0.03, steps: 0 }, outline: false }),
-    sea: material({ name: 'ch8-sea', rim: 0, emissive: 0.9, bandEdge: -0.3, outline: { width: 2.2, self: 0.8 }, castShadow: false, receiveShadow: false, fog: 0.35 }),
+    sea: material({ name: 'ch8-sea', rim: 0, emissive: 0.9, bandEdge: -0.3, outline: false, castShadow: false, receiveShadow: false, fog: 0.35 }),
     glass: material({ name: 'ch8-glass', rim: 0, outline: false, castShadow: false, receiveShadow: false, fog: 0.3 }),
   };
 }

@@ -18,14 +18,14 @@
 //   seat { pos, face }: his chair at the table   sheet (world point: the one sheet)   door { pos, face }   focus = the lamp
 
 import { m4, quat, rng, DEG } from '../math.js';
-import { merge, tint, place, box, cylinder, sphere, lathe, setGlow, setOutline } from '../mesh.js';
+import { merge, tint, place, box, cylinder, lathe, extrude, setGlow } from '../mesh.js';
 import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh, rayMaterial } from '../fx.js';
 import { pickLight } from './kit.js';
 import { TL, MARKS, ch5Materials, shell, norm, shaft, paving, cot, washstand, coatPeg, barredWindow, cellDoor } from './kit-ch5.js';
 
-const BW = 3.5, BACK = -3.5, FW = 5.6, WING_Z = 2.4, H = 4.4;
+const BW = 3.5, BACK = -3.5, FW = 5.6, WING_Z = 2.4, H = 4.1;
 
 const LIGHTS = {
   lamp: {
@@ -75,28 +75,32 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
 
   // ---- the cell: dressed stone, flagged floor, a low dark vault
   const room = group('room');
-  const STONE = ['#8590ec', '#7882e2', '#929cf2', '#7078da'];
-  room.add(node('floor', paving({ w: 14, d: 10, nx: 8, nz: 6, colors: ['#8a84e0', '#7a74d2', '#9a92e8'], grout: '#4c48a8', seed: 3 }), M.flat, { pos: [0, 0, BACK + 5] }));
+  const STONE = ['#8590ec', '#7882e2', '#929cf2', '#7078da', '#9a8ee8'];
+  room.add(node('floor', paving({ w: 14, d: 10, nx: 8, nz: 6, colors: ['#7870cc', '#6a62be', '#847cd6'], grout: '#443e9c', seed: 3 }), M.flat, { pos: [0, 0, BACK + 5] }));
   room.add(node('back', paving({ w: BW * 2 + 0.3, d: H, nx: 6, nz: 6, colors: STONE, grout: '#4a52b6', seed: 5, gap: 0.05 }), M.flat, { pos: [0, H / 2, BACK], rot: [90, 0, 0] }));
   for (const W of [WL, WR]) room.add(node('wing', paving({ w: W.len + 0.3, d: H, nx: 6, nz: 6, colors: STONE, grout: '#4a52b6', seed: W === WL ? 7 : 9, gap: 0.05 }), M.flat, { pos: W.pos.map((v, i) => (i === 1 ? H / 2 : v)), rot: [90, W.yaw, 0] }));
   room.add(node('ceiling', merge(bx(13, 0.2, 7.5, 0, H + 0.1, BACK + 3.6, '#262e78'), ...[-3.4, -1.1, 1.1, 3.4].map((x) => bx(0.34, 0.36, 7.4, x, H - 0.18, BACK + 3.6, '#1a2260'))), M.wall));
+  // a rib of darker stone springing across the back wall, so the vault has a shape
+  { const o = [], inn = [], n = 12; for (let i = 0; i <= n; i++) { const a = Math.PI * (1 - i / n), c = Math.cos(a), sn = Math.sin(a); o.push([c * 3.45, 1.5 + sn * 2.5]); inn.push([c * 3.05, 1.5 + sn * 2.12]); }
+    room.add(node('rib', merge(tint(place(extrude([...o, ...inn.reverse()], 0.2, { crease: 30 }), 0, 0, BACK + 0.1), '#5a62c8'), bx(0.42, 1.5, 0.2, -3.25, 0.75, BACK + 0.1, '#5a62c8'), bx(0.42, 1.5, 0.2, 3.25, 0.75, BACK + 0.1, '#5a62c8'), bx(0.5, 0.2, 0.26, -3.25, 1.5, BACK + 0.12, '#6e76d8'), bx(0.5, 0.2, 0.26, 3.25, 1.5, BACK + 0.12, '#6e76d8'), bx(0.44, 0.5, 0.26, 0, 3.82, BACK + 0.12, '#6e76d8')), M.wall)); }
   room.add(node('skirting', bx(BW * 2, 0.26, 0.1, 0, 0.13, BACK + 0.05, '#4a52b6'), M.wall));
   scene.root.add(mergeStatic(room, 'room'));
 
   // ---- what he is allowed
   const props = group('props'), deco = group('deco');
-  const WIN = [-0.55, 3.2, BACK + 0.14];
-  deco.add(node('window', barredWindow({ w: 1.15, h: 0.86, bars: 4, sky: '#5f80f0', glow: 0.8 }), M.deco, { pos: WIN }));
+  const WIN = [-0.45, 3.0, BACK + 0.14];
+  deco.add(node('window', barredWindow({ w: 1.3, h: 0.95, bars: 4, sky: '#5f80f0', glow: 0.8 }), M.deco, { pos: WIN }));
   const DOOR = [2.05, 0, BACK + 0.12], cd = cellDoor({ w: 1.2, h: 2.3 });
   props.add(node('door', cd, M.prop, { pos: DOOR }));
   const GRILLE = [DOOR[0] + cd.anchors.grille[0], cd.anchors.grille[1], DOOR[2] + cd.anchors.grille[2]];
-  props.add(node('cot', cot({ len: 1.95, w: 0.85, blanket: TL.royal }), M.prop, { pos: wingAt(WL, 0.5, 0.62), rot: [0, WL.yaw, 0] }));
-  props.add(node('washstand', washstand({}), M.prop, { pos: [-2.75, 0, BACK + 0.5] }));
+  props.add(node('cot', cot({ len: 1.95, w: 0.85, blanket: TL.royal }), M.prop, { pos: [-1.95, 0, BACK + 0.6] }));
+  props.add(node('washstand', washstand({}), M.prop, { pos: wingAt(WL, 0.9, 0.5) }));
+  deco.add(node('ring', merge(tint(place(cylinder(0.07, 0.07, 0.05, 6), 0, 0, 0.03, 90, 0, 0), TL.navy), bx(0.03, 0.5, 0.03, 0, -0.28, 0.06, TL.navy), bx(0.03, 0.4, 0.03, 0.06, -0.72, 0.06, TL.navy, 0, 0, 12)), M.deco, { pos: wingAt(WR, 0.2, 0.03, 2.5), rot: [0, WR.yaw, 0] }));
   deco.add(node('peg', coatPeg({ len: 1.2 }), M.deco, { pos: [0.75, 2.2, BACK + 0.03] }));
   // the shelf: a few books, a folded cloth, the spectacle case
   deco.add(node('shelf', merge(bx(1.3, 0.07, 0.3, 0, 0, 0.15, TL.woodDark), bx(0.07, 0.24, 0.24, -0.5, -0.14, 0.12, TL.woodDark), bx(0.07, 0.24, 0.24, 0.5, -0.14, 0.12, TL.woodDark),
-    ...[['#f4573f', 0.36, -0.45], ['#35c9b5', 0.3, -0.33], ['#ffd24a', 0.34, -0.22], ['#8a6be0', 0.28, -0.1]].map(([c, h, x], i) => bx(0.1, h, 0.22, x, 0.035 + h / 2, 0.15, c, 0, 0, i === 3 ? -14 : 0)), bx(0.3, 0.08, 0.2, 0.3, 0.075, 0.15, TL.paper), bx(0.22, 0.06, 0.1, 0.32, 0.145, 0.16, TL.wine)), M.deco, { pos: [-1.95, 2.25, BACK + 0.02] }));
-  props.add(node('rug', merge(bx(3.4, 0.012, 2.1, 0, 0.006, 0, TL.wine), bx(3.0, 0.014, 1.7, 0, 0.008, 0, '#d8527a'), bx(2.6, 0.016, 1.3, 0, 0.01, 0, TL.wine)), M.flat, { pos: [0, 0, 0.55], rot: [0, 3, 0] }));
+    ...[['#f4573f', 0.36, -0.45], ['#35c9b5', 0.3, -0.33], ['#ffd24a', 0.34, -0.22], ['#8a6be0', 0.28, -0.1]].map(([c, h, x], i) => bx(0.1, h, 0.22, x, 0.035 + h / 2, 0.15, c, 0, 0, i === 3 ? -14 : 0)), bx(0.3, 0.08, 0.2, 0.3, 0.075, 0.15, TL.paper), bx(0.22, 0.06, 0.1, 0.32, 0.145, 0.16, TL.wine)), M.deco, { pos: [-1.85, 1.95, BACK + 0.02] }));
+  props.add(node('rug', merge(bx(2.5, 0.012, 1.4, 0, 0.006, 0, TL.brass), bx(2.36, 0.014, 1.26, 0, 0.008, 0, TL.wine), bx(1.9, 0.016, 0.8, 0, 0.01, 0, '#a83058')), M.flat, { pos: [0, 0, 0.55], rot: [0, 3, 0] }));
   // the table and the chair, a little right of the middle: the lamp, and one sheet
   const TABLE = [1.0, 0, -1.3], TOP = 0.8;
   props.add(node('table', merge(bx(1.3, 0.08, 0.8, 0, TOP - 0.04, 0, TL.woodPale), bx(1.14, 0.12, 0.64, 0, TOP - 0.14, 0, TL.wood), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => tint(place(cylinder(0.05, 0.04, TOP - 0.1, 6), sx * 0.54, 0, sz * 0.3), TL.woodDark))), M.prop, { pos: TABLE, rot: [0, -6, 0] }));
@@ -129,7 +133,8 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
 
   // ---- lamps
   const lamps = [
-    { name: 'lamp', pos: [FLAME[0] - 0.2, FLAME[1] + 0.4, FLAME[2] + 0.7], color: '#ffc060', radius: 7.0, base: 1.6, flicker: 0.1, gain: L.lamp },
+    { name: 'lamp', pos: [FLAME[0] - 0.1, FLAME[1] + 0.3, FLAME[2] + 0.4], color: '#ffc060', radius: 5.6, base: 1.6, flicker: 0.1, gain: L.lamp },
+    { name: 'lamp-reach', pos: [0.5, 1.5, 1.5], color: '#ffc880', radius: 5.6, base: 1.0, flicker: 0.1, gain: L.lamp },   // the same lamp, reaching the faces turned away from it
     { name: 'window', pos: [WIN[0] + 0.5, 2.2, BACK + 1.5], color: '#7f98ff', radius: 4.8, base: 1.0, flicker: 0 },
     { name: 'grille', pos: [GRILLE[0] - 0.15, GRILLE[1] - 0.2, GRILLE[2] + 0.7], color: '#ffb060', radius: 3.4, base: 0.9, flicker: 0.12 },
   ];
@@ -147,7 +152,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   function tick(time, dt, pw) {
     if (takeT >= 0) { takeT += dt; if (takeT > 5) lamp = Math.max(0.05, 1 - (takeT - 5) / 4); }
     shown += (lamp - shown) * Math.min(1, dt * 4 + (dt === 0 ? 1 : 0));
-    lamps[0].gain = shown; lampGlow.gain = shown; cone.visible = shown * pw > 0.3;
+    lamps[0].gain = shown; lamps[1].gain = shown; lampGlow.gain = shown; cone.visible = shown * pw > 0.3;
     lampGlass.glow = 0.12 + 0.88 * Math.min(1, shown * pw); const t = 0.3 + 0.7 * Math.min(1, shown * pw); lampGlass.tint[0] = t; lampGlass.tint[1] = t; lampGlass.tint[2] = 0.5 + 0.5 * t;
     // a moth, round the glass
     const a = time * 1.7, rad = 0.3 + Math.sin(time * 0.9) * 0.1;

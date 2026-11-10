@@ -65,7 +65,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
 
   // ---- the hall
   const room = group('room');
-  room.add(node('floor', place(boardFloor({ w: 21, d: 18, n: 24, colors: ['#f2cf9c', '#eac48c', '#f8d8aa'], seed: 7, gapColor: '#c79a6a' }), 0, 0, 2.0), M.flat));
+  room.add(node('floor', place(boardFloor({ w: 21, d: 18, n: 24, colors: ['#f2cf9c', '#eac48c', '#f8d8aa'], seed: 7, gapColor: '#c79a6a' }), 0, 0, 2.0), M.ground));
   const BWIN = [-4.5, 4.5].map((x) => ({ x, w: 1.5, sill: 2.5, top: 5.0, arch: true }));
   room.add(node('back', roomWall({ w: BW * 2 + 0.6, h: H, t: 0.4, color: WALL, openings: BWIN }), M.wall, { pos: [0, 0, BACK] }));
   room.add(node('gable', gableWall({ w: BW * 2 + 0.6, rise: RISE + 0.12, t: 0.4, color: WALL2 }), M.wall, { pos: [0, H, BACK] }));
@@ -157,7 +157,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [ROLL[0], ROLL[1] + 3.3, ROLL[2] + 0.2], size: 1.6, color: '#ffd24a', alpha: 0 }), base: 0.6, fixed: true });
 
   let mood = 0.25, moodNow = 0.25, nextCheer = 0;
-  const rnd = rng(47), P = [0, 0, 0], FOLK = { lit: 0, lively: 0.25 };
+  const rnd = rng(47), P = [0, 0, 0], V = [0, 0, 0.4], FOLK = { lit: 0, lively: 0.25 };
   function setMood(v) { mood = Math.max(0, Math.min(1, v)); }
   function setCrowd(a) { folk.setAmount(Math.max(0, Math.min(1, a))); }
   function cue(id) {
@@ -176,7 +176,8 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
     FOLK.lively = moodNow; folk.update(time, dt, FOLK);
     if (live && moodNow > 0.7 && time > nextCheer) { // caps and scraps of paper go up
       nextCheer = time + 0.12; const sx = rnd() < 0.5 ? -1 : 1; P[0] = sx * (3.2 + rnd() * 3.4); P[1] = 1.8 + rnd() * 1.2; P[2] = -2 - rnd() * 2;
-      sprites.spawn({ kind: 'dot', pos: P, vel: [(rnd() - 0.5) * 1.2, 2.2 + rnd() * 1.4, 0.4], size: 0.09 + rnd() * 0.06, life: 1.5, gravity: -4.2, color: SM.cloth[Math.floor(rnd() * SM.cloth.length)], alpha: 1 });
+      V[0] = (rnd() - 0.5) * 1.2; V[1] = 2.2 + rnd() * 1.4;
+      sprites.spawn({ kind: 'dot', pos: P, vel: V, size: 0.09 + rnd() * 0.06, life: 1.5, gravity: -4.2, color: SM.cloth[Math.floor(rnd() * SM.cloth.length)], alpha: 1 });
     }
   }
 

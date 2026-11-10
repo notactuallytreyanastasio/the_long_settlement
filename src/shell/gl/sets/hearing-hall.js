@@ -189,8 +189,8 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     if (low && k >= 5 && (i + k) % 2) continue;
     (k < NEAR ? spotsN : spotsF).push({ pos: [b.x - (b.n * PITCH) / 2 + PITCH * (i + 0.5) + (r() - 0.5) * 0.06, PIT + RISE * k + 0.28, ROW0 - RUN * k - 0.02], yaw: (r() - 0.5) * 16 + (b.x ? -Math.sign(b.x) * 8 : 0), s: 0.84 + r() * 0.18, row: k });
   }
-  const near = people({ spots: spotsN, material: M.prop, heads: HEADS.slice(0, 3), seed: 7, coats: HOUSE_COATS });
-  const far = people({ spots: spotsF, material: M.deco, heads: [HEADS[0], HEADS[4], HEADS[3]].slice(0, low ? 2 : 3), lod: 1, seed: 9, coats: HOUSE_COATS });
+  const near = people({ spots: spotsN, material: M.prop, heads: [HEADS[0], HEADS[1]], seed: 7, coats: HOUSE_COATS });
+  const far = people({ spots: spotsF, material: M.deco, heads: [HEADS[2], HEADS[4], HEADS[3]].slice(0, low ? 2 : 3), lod: 1, seed: 9, coats: HOUSE_COATS });
   scene.root.add(near.node, far.node);
   // everyone in the house as one list: { grp, i }
   const who = []; spotsN.forEach((sp, i) => { who.push({ grp: near, i }); rowOf.push(sp.row); }); spotsF.forEach((sp, i) => { who.push({ grp: far, i }); rowOf.push(sp.row); });
@@ -256,6 +256,7 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
     }
     if (dt > 0) for (let j = 0; j < 16; j++) { const i = cursor = (cursor + 1) % N, p = person(i); if (p.here < 0.05) continue; p.lean = Math.sin(time * 0.8 + p.ph) * 1.6; p.lift = upNow[i] * 0.3 + Math.sin(time * 1.3 + p.ph * 2) * 0.008; writeP(i); }
     for (let i = 0; i < cadets.count; i++) { const p = cadets.list[i], d = gallery - p.here; if (d > 0.004 || d < -0.004) { p.here += d * k; cadets.write(i); } }
+    cadets.node.visible = gallery > 0.01 || cadets.list[0].here > 0.02; near.node.visible = far.node.visible = crowd > 0 || person(order[0]).here > 0.02;
     cone.visible = pw > 0.05;
     shellGlow.alpha = shellOn ? 0.45 + 0.35 * Math.sin(time * 5.2) : 0;
     if (!live || low) return;

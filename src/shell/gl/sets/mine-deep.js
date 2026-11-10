@@ -132,7 +132,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
   SHARDS.forEach(([x, y, z, rx, ry, rz, s, n, seed], i) => { if (low && i > 3) return; still.add(node('shard' + i, crystals({ n, s, seed }), M.prop, { pos: [x, y, z], rot: [rx, ry, rz] })); });
   // the seam of gallery twelve, as far as the eye goes: a thin crooked bright line and a few points on it
   { const parts = []; let x = 1.1, y = 0.5; for (let i = 0; i < 7; i++) { const nx = x + 0.12 + r() * 0.2, ny = y + 0.3 + r() * 0.25; parts.push(place(box(0.07, Math.hypot(nx - x, ny - y) + 0.04, 0.05), (x + nx) / 2, (y + ny) / 2, 0, 0, 0, -Math.atan2(nx - x, ny - y) * 180 / Math.PI)); x = nx; y = ny; } still.add(node('seam', setGlow(tint(merge(parts), SM.still), 1), M.flat, { pos: [0.3, 0, FRONT - LEN + 0.16] })); }
-  const stillNode = mergeStatic(still, 'still'); stillNode.traverse((n) => { n.castShadow = false; });
+  const stillNode = mergeStatic(still, 'still'), stillParts = []; stillNode.traverse((n) => { n.castShadow = false; stillParts.push(n); });
   scene.root.add(stillNode);
 
   // ---- the cage (it moves) and the light down the shaft
@@ -200,7 +200,7 @@ function build(engine = null, { light: lightName = 'lamp', low = false } = {}) {
     cageNow += (cageUp - cageNow) * Math.min(1, dt * 2.2);
     cageNode.position[1] = cageNow * 6.2 + (cageNow > 0.02 && cageNow < 0.98 ? Math.sin(time * 30) * 0.01 : 0); cageNode.visible = cageNow < 0.97;
     const tw = 0.82 + 0.18 * Math.sin(time * 1.7);
-    stillNode.traverse((n) => { n.tint[0] = n.tint[1] = n.tint[2] = 0.25 + 0.75 * seam; });
+    for (let i = 0; i < stillParts.length; i++) { const n = stillParts[i]; n.tint[0] = n.tint[1] = n.tint[2] = 0.25 + 0.75 * seam; }
     for (let i = 0; i < shardGlows.length; i++) shardGlows[i].alpha = (low && i > 3 ? 0 : 0.5) * seam * (0.8 + 0.2 * Math.sin(time * 2.3 + i * 1.9));
     seamGlow.alpha = 0.42 * seam * tw; env.points[5].intensity = 1.0 * seam * tw;
     if (!live) return;

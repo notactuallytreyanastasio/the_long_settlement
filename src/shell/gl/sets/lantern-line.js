@@ -56,7 +56,7 @@ function build(engine = null, { light, low = false } = {}) {
   env.sky.sunDir = norm3(env.sky.sunDir);
 
   // ---- the quay: pale salt-stained stone, a line of flags down the middle of the lane
-  const set = group('set'), far = group('far');
+  const set = group('set'), mid = group('mid'), far = group('far'), FAR = low ? M.farFlat : M.far;
   set.add(node('ground', tint(place(plane(60, 110, 1, 1), 0, 0, -25), '#f0dcc0'), M.ground));
   // ---- warehouses down both sides, gables to the lane
   const houses = [
@@ -74,7 +74,8 @@ function build(engine = null, { light, low = false } = {}) {
   const doorGlows = [], winGlows = [], hoists = [];
   houses.forEach((h, i) => {
     const m = warehouse({ lit: 0.7, ...h.o }), pos = [h.side * (FACE_X + h.o.d / 2), 0, h.z], yaw = -h.side * 90;
-    (i < 6 ? set : far).add(node('wh' + i, m, i < 6 ? M.prop : M.far, { pos, rot: [0, yaw, 0] }));
+    const g = i < 2 ? set : i < (low ? 4 : 6) ? mid : far;
+    g.add(node('wh' + i, m, g === far ? FAR : M.prop, { pos, rot: [0, yaw, 0] }));
     if (h.o.door === 'open') doorGlows.push(anchorAt(m, 'door', pos, yaw));
     for (const p of anchorAt(m, 'windows', pos, yaw)) winGlows.push(p);
     hoists.push(anchorAt(m, 'hoist', pos, yaw));
@@ -92,11 +93,12 @@ function build(engine = null, { light, low = false } = {}) {
   // ---- the lamp-house at the end of it, the great lamp still whole
   const LH = [0, 0, LH_Z];
   const lh = lampHouse({ h: 18, r: 4.4, flame: 'white', seg: 16 });
-  far.add(node('lamp-house', lh, M.far, { pos: LH }));
-  far.add(node('lh-steps', merge(tint(place(box(9, 0.5, 4), 0, 0.25, LH_Z + 5.2), K6.stone2), tint(place(box(7, 0.5, 3), 0, 0.75, LH_Z + 5), K6.stone)), M.far));
-  for (const sx of [-1, 1]) far.add(node('sea-wall', tint(place(box(40, 1.4, 1.2), sx * 26, 0.7, LH_Z + 4), K6.stone2), M.far));
+  far.add(node('lamp-house', lh, FAR, { pos: LH }));
+  far.add(node('lh-steps', merge(tint(place(box(9, 0.5, 4), 0, 0.25, LH_Z + 5.2), K6.stone2), tint(place(box(7, 0.5, 3), 0, 0.75, LH_Z + 5), K6.stone)), FAR));
+  for (const sx of [-1, 1]) far.add(node('sea-wall', tint(place(box(40, 1.4, 1.2), sx * 26, 0.7, LH_Z + 4), K6.stone2), FAR));
   const LAMP = anchorAt(lh, 'lamp', LH);
-  scene.root.add(mergeStatic(set, 'set'), mergeStatic(far, 'far'));
+  mid.traverse((n) => { n.castShadow = false; });                 // beyond the stage's shadow map: they would only be drawn into it for nothing
+  scene.root.add(mergeStatic(set, 'set'), mergeStatic(mid, 'mid'), mergeStatic(far, 'far'));
 
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
   const cobCols = ['#f4e6c8', '#dccfb4', '#ece0c8', '#d4cce0', '#e8d4b0'];
@@ -132,7 +134,7 @@ function build(engine = null, { light, low = false } = {}) {
 
   const lamps = [
     { name: 'file-front', pos: [0, 1.1, -1.6], color: '#ffac48', radius: 7.5, base: 2.1 },
-    { name: 'file-near', pos: [0.3, 1.3, 2.6], color: '#ffb858', radius: 6.4, base: 1.3 },
+    { name: 'file-near', pos: [0.3, 1.5, 3.0], color: '#ffa848', radius: 9.5, base: 1.6 },
     { name: 'file-2', pos: [0, 1.0, -6.4], color: '#ffac48', radius: 8, base: 1.9 },
     { name: 'file-3', pos: [0, 1.0, -13.5], color: '#ffac48', radius: 9, base: 1.8 },
     { name: 'file-4', pos: [0, 1.2, -23], color: '#ffac48', radius: 12, base: 1.7 },

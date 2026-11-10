@@ -24,7 +24,7 @@
 // Below decks
 //   hullSide, deckHead, cellFront, bunk, shipLantern, ladder7, seaChest
 // Rooms
-//   wall7 (a wall with openings), tallWindow, lightCards, floorPatch, tiles, chandelier7
+//   wall7 (a wall with openings), tallWindow, lightCards, fanRays, floorPatch, tiles, chandelier7
 
 import { m4, quat, rng, DEG, rgb } from '../math.js';
 import {
@@ -748,6 +748,21 @@ export function lightCards({ w = 1.4, h = 2.4, dir = [0.3, -1, 1], len = 5, card
     else { const x = (t - 0.5) * w * 0.8; pos = [x, h / 2, 0, x, -h / 2, 0, x * k + dv[0], h / 2 * k + dv[1], dv[2], x * k + dv[0], -h / 2 + dv[1], dv[2]]; }
     parts.push(fromArrays(pos, [0, 2, 3, 0, 3, 1, 0, 3, 2, 0, 1, 3], [0, 0, 1, 0, 0, 1, 1, 1], 180));
   }
+  return noInk(tint(merge(parts), color));
+}
+
+/**
+ * Hard-edged rays fanning out of an opening toward the viewer, for a 'beam' material. lightCards cannot do this: a beam
+ * fades by how squarely its surface faces the eye, and a sheet of light aimed at the camera is seen edge-on.
+ *   apex [x0, x1, y, z]: the strip of the opening the rays leave from;  rays [[x0, x1, y, z], ...]: where each one lands
+ * Brightest at the opening (uv v = 0), gone where it lands (v = 1).
+ */
+export function fanRays(apex, rays, color = '#fff6d8') {
+  const parts = [], n = rays.length;
+  rays.forEach(([b0, b1, by, bz], i) => {
+    const t0 = i / n, t1 = (i + 0.7) / n, a0 = apex[0] + (apex[1] - apex[0]) * t0, a1 = apex[0] + (apex[1] - apex[0]) * t1;
+    parts.push(fromArrays([a0, apex[2], apex[3], a1, apex[2], apex[3], b0, by, bz, b1, by, bz], [0, 2, 3, 0, 3, 1], [0, 0, 1, 0, 0, 1, 1, 1], 180));
+  });
   return noInk(tint(merge(parts), color));
 }
 

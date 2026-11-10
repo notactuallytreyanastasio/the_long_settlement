@@ -90,9 +90,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   for (const [x0, x1] of [[-WR.len / 2, DOOR.x - DOOR.w / 2 - 0.14], [DOOR.x + DOOR.w / 2 + 0.14, WR.len / 2]]) room.add(node('dado-r', merge(bx(x1 - x0, 1.2, 0.08, 0, 0.6, 0.04, TL.navy), bx(x1 - x0, 0.1, 0.12, 0, 1.25, 0.05, TL.brass)), M.wall, { pos: WR.at((x0 + x1) / 2), rot: [0, WR.yaw, 0] }));
   room.add(node('ceiling', ceiling({ w: 16, d: 8, color: '#27307a', beams: 5, beam: '#1a2260', bw: 0.32, bh: 0.34 }), M.wall, { pos: [0, H, BACK + 4] }));
   for (const c of CLER) room.add(node('pane', merge(setOutline(setGlow(bx(c.w, c.top - c.sill, 0.03, c.x, (c.sill + c.top) / 2, BACK - 0.3, '#5a7ae8'), 0.7), 0), bx(0.06, c.top - c.sill, 0.06, c.x, (c.sill + c.top) / 2, BACK - 0.2, TL.navy), bx(c.w, 0.06, 0.06, c.x, c.sill + 0.45, BACK - 0.2, TL.navy)), M.wall));
-  // the warm pool the lamp lays on the tiles
   const TABLE = [1.6, 0.26, -1.95];
-  room.add(node('pool', setOutline(setGlow(tint(place(cylinder(2.5, 2.5, 0.004, 18), 0.4, 0.012, -0.4), '#e8a0b8'), 0.2), 0), M.flat));
   scene.root.add(mergeStatic(room, 'room'));
 
   // ---- the tube wall, the strongroom door, the pigeonholes
@@ -139,7 +137,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   scene.root.add(open, shut);
 
   // ---- light: the lamp's cone, pale shafts from the high windows
-  const cone = node('lamp-cone', tint(place(rayMesh(3.0, 0.3, 2.2, 18), LAMP[0], LAMP[1] + 0.1, LAMP[2]), '#ffc060'), rayMaterial({ power: 1.4, near: 0.42, far: 0 }));
+  const cone = node('lamp-cone', tint(place(rayMesh(3.0, 0.3, 2.2, 18), LAMP[0], LAMP[1] + 0.1, LAMP[2]), '#ffc060'), rayMaterial({ power: 1.4, near: 0.3, far: 0 }));
   scene.root.add(cone);
   if (!low) scene.root.add(node('shafts', merge(...CLER.map((c) => place(shaft({ w: 1.0, h: 0.8, dir: [0.25, -1, 0.8], len: 4.6, cards: 2, color: '#8fa8ff' }), c.x, (c.sill + c.top) / 2, BACK + 0.05))), M.shaft));
 

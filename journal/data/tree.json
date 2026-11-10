@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/sets/academy-yard.js",
-  "bytes": 26856,
-  "lines": 318
+  "bytes": 27098,
+  "lines": 321
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
@@ -12586,17 +12586,17 @@
  },
  {
   "path": "src/shell/gl/sets/cell.js",
-  "bytes": 14146,
-  "lines": 172
+  "bytes": 15321,
+  "lines": 177
  },
  {
   "path": "src/shell/gl/sets/clearing-house.js",
-  "bytes": 16945,
-  "lines": 202
+  "bytes": 16762,
+  "lines": 200
  },
  {
   "path": "src/shell/gl/sets/commons-hall.js",
-  "bytes": 19952,
+  "bytes": 19954,
   "lines": 237
  },
  {
@@ -12606,12 +12606,12 @@
  },
  {
   "path": "src/shell/gl/sets/compact-hall.js",
-  "bytes": 22018,
-  "lines": 236
+  "bytes": 22149,
+  "lines": 237
  },
  {
   "path": "src/shell/gl/sets/corvane-study.js",
-  "bytes": 17616,
+  "bytes": 17683,
   "lines": 209
  },
  {
@@ -12621,8 +12621,8 @@
  },
  {
   "path": "src/shell/gl/sets/court.js",
-  "bytes": 15162,
-  "lines": 197
+  "bytes": 15197,
+  "lines": 198
  },
  {
   "path": "src/shell/gl/sets/cresset-harbour.js",
@@ -12641,8 +12641,8 @@
  },
  {
   "path": "src/shell/gl/sets/dormitory.js",
-  "bytes": 23345,
-  "lines": 259
+  "bytes": 23303,
+  "lines": 258
  },
  {
   "path": "src/shell/gl/sets/drum-hall.js",
@@ -12651,7 +12651,7 @@
  },
  {
   "path": "src/shell/gl/sets/drum-open.js",
-  "bytes": 22054,
+  "bytes": 21953,
   "lines": 241
  },
  {
@@ -12681,7 +12681,7 @@
  },
  {
   "path": "src/shell/gl/sets/founders-lamp.js",
-  "bytes": 16498,
+  "bytes": 16510,
   "lines": 182
  },
  {
@@ -12701,8 +12701,8 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 27089,
-  "lines": 281
+  "bytes": 27246,
+  "lines": 282
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
@@ -12716,7 +12716,7 @@
  },
  {
   "path": "src/shell/gl/sets/kedge-roads.js",
-  "bytes": 24870,
+  "bytes": 24992,
   "lines": 302
  },
  {
@@ -12751,12 +12751,12 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch7.js",
-  "bytes": 68787,
-  "lines": 860
+  "bytes": 69687,
+  "lines": 875
  },
  {
   "path": "src/shell/gl/sets/kit-ch8.js",
-  "bytes": 57880,
+  "bytes": 57860,
   "lines": 645
  },
  {
@@ -12771,8 +12771,8 @@
  },
  {
   "path": "src/shell/gl/sets/lantern-line.js",
-  "bytes": 15732,
-  "lines": 193
+  "bytes": 15990,
+  "lines": 195
  },
  {
   "path": "src/shell/gl/sets/lantern-stalls.js",
@@ -12781,7 +12781,7 @@
  },
  {
   "path": "src/shell/gl/sets/ledger-room.js",
-  "bytes": 18041,
+  "bytes": 18050,
   "lines": 208
  },
  {
@@ -12791,7 +12791,7 @@
  },
  {
   "path": "src/shell/gl/sets/mine-deep.js",
-  "bytes": 19063,
+  "bytes": 19141,
   "lines": 224
  },
  {
@@ -12803,6 +12803,11 @@
   "path": "src/shell/gl/sets/mole-dark.js",
   "bytes": 13047,
   "lines": 151
+ },
+ {
+  "path": "src/shell/gl/sets/mole-lanterns.js",
+  "bytes": 18712,
+  "lines": 228
  },
  {
   "path": "src/shell/gl/sets/orrery.js",
@@ -12818,6 +12823,11 @@
   "path": "src/shell/gl/sets/pier-riot.js",
   "bytes": 26145,
   "lines": 318
+ },
+ {
+  "path": "src/shell/gl/sets/proctor-office.js",
+  "bytes": 20323,
+  "lines": 226
  },
  {
   "path": "src/shell/gl/sets/quarter-flame.js",
@@ -12841,7 +12851,7 @@
  },
  {
   "path": "src/shell/gl/sets/underwriting-floor.js",
-  "bytes": 24045,
+  "bytes": 24084,
   "lines": 253
  },
  {

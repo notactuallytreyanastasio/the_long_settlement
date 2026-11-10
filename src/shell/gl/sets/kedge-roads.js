@@ -115,7 +115,7 @@ function build(engine = null, { light, low = false } = {}) {
   if (!low) set.add(node('flags', bunting([POST[0] - 0.2, 3.1, POST[2]], [-9, 6.6, -11], { sag: 0.9, count: 13, size: 0.3, seed: 4, colors: [K6.coral, K6.cream, K6.teal, K6.yellow] }), M.prop, { castShadow: false }));
 
   // ---- the roads: the mole in two arms with the mouth between them, cranes along it, the lamp-house on the right arm's end
-  const far = group('far'), MOLE_Z = -62, MOUTH = 5.5;
+  const far = group('far'), back = group('back'), MOLE_Z = -62, MOUTH = 5.5;
   for (const sx of [-1, 1]) far.add(node('mole', mole({ len: 60, h: 2.6, d: 6 }), FAR, { pos: [sx * (MOUTH + 30), WATER, MOLE_Z] }));
   const cranes = [[-33, 15, K6.coral, 20], [-20, 17, K6.teal, -12], [-10.5, 14, K6.yellow, 24], [15.5, 16, K6.coral, 190], [26, 14, K6.royal, 168], [36, 17, K6.teal, 200]];
   const cabWins = [];
@@ -129,8 +129,8 @@ function build(engine = null, { light, low = false } = {}) {
   far.add(node('lamp-house', lh, FAR, { pos: LH, rot: [0, -10, 0] }));
   const LAMP = anchorAt(lh, 'lamp', LH, -10);
   // a low shore and the salt sheds behind the left arm
-  far.add(node('shore', gradientY(place(box(120, 5, 20), -70, WATER + 1.5, MOLE_Z - 46), '#c8a8d8', '#f0d8b8'), FAR));
-  for (let i = 0; i < 6; i++) { const s = 4 + r() * 2.4; far.add(node('shed' + i, merge(tint(place(box(s * 1.5, s, s), 0, s / 2, 0), i % 2 ? K6.cream : K6.salt), tint(place(cylinder(s * 1.12, 0, s * 0.6, 4), 0, s, 0, 0, 45, 0, 1.3, 1, 1), [K6.teal, K6.coral, K6.royal][i % 3])), FAR, { pos: [-74 + i * 9 + r() * 3, WATER + 3.6, MOLE_Z - 40 + r() * 4], rot: [0, r() * 20 - 10, 0] })); }
+  back.add(node('shore', gradientY(place(box(120, 5, 20), -70, WATER + 1.5, MOLE_Z - 46), '#c8a8d8', '#f0d8b8'), M.farFlat));
+  for (let i = 0; i < 6; i++) { const s = 4 + r() * 2.4; back.add(node('shed' + i, merge(tint(place(box(s * 1.5, s, s), 0, s / 2, 0), i % 2 ? K6.cream : K6.salt), tint(place(cylinder(s * 1.12, 0, s * 0.6, 4), 0, s, 0, 0, 45, 0, 1.3, 1, 1), [K6.teal, K6.coral, K6.royal][i % 3])), M.farFlat, { pos: [-74 + i * 9 + r() * 3, WATER + 3.6, MOLE_Z - 40 + r() * 4], rot: [0, r() * 20 - 10, 0] })); }
   // hulls: three rows this side of the mole, a scatter beyond it
   const hullCols = [[K6.cream, K6.coral, K6.teal], [K6.salt, K6.teal, K6.coral], ['#ffd9c0', K6.royal, K6.yellow], [K6.tar, K6.coral, K6.cream], ['#cfe6ff', K6.coral, K6.royal], [K6.yellow, K6.tar, K6.coral]];
   const hullSpots = [], ridingLights = [];
@@ -145,16 +145,16 @@ function build(engine = null, { light, low = false } = {}) {
   }
   for (let i = 0; i < 16; i++) hullSpots.push([-80 + i * 10.4 + r() * 4, MOLE_Z - 12 - r() * 26, 8 + r() * 4, 160 + r() * 40]);
   hullSpots.forEach(([x, z, len, yaw], i) => {
-    if (low && i % 2) return;
+    if (low && i % 3) return;
     const c = hullCols[i % hullCols.length], h = hulk({ len, hull: c[0], boot: c[1], roof: c[2], seed: i + 1, seg: z < MOLE_Z ? 6 : 8, rings: z < MOLE_Z ? 4 : 5, lit: true });
-    far.add(node('hull' + i, h, FAR, { pos: [x, WATER, z], rot: [0, yaw, 0] }));
+    (z < MOLE_Z ? back : far).add(node('hull' + i, h, z < MOLE_Z ? M.farFlat : FAR, { pos: [x, WATER, z], rot: [0, yaw, 0] }));
     if (z > MOLE_Z) ridingLights.push(anchorAt(h, 'lamp', [x, WATER, z], yaw));
   });
   // the sea beyond the half-mile, stood up: a long grey-violet wall with a pale crest
   if (L.wall) {
     const wave = deform(box(420, 1, 30), (p) => { const u = p[0] / 210; if (p[1] > 0) { p[1] = 16 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6; p[2] *= 0.25; } else p[1] = -1; }, 60);
-    far.add(node('sea-wall', gradientY(wave, dark ? '#20389c' : '#4a58c0', dark ? '#5f7ce8' : '#8f9cf0', 0, 16), FAR, { pos: [0, WATER, -170] }));
-    far.add(node('sea-crest', tint(place(tube(curve(Array.from({ length: 15 }, (_, i) => { const u = (i - 7) / 7; return [u * 210, 16.2 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6, -166]; }), 60), 0.8, 4, { crease: 180 }), 0, WATER, 0), '#ffffff'), FAR));
+    back.add(node('sea-wall', gradientY(wave, dark ? '#20389c' : '#4a58c0', dark ? '#5f7ce8' : '#8f9cf0', 0, 16), M.farFlat, { pos: [0, WATER, -170] }));
+    back.add(node('sea-crest', tint(place(tube(curve(Array.from({ length: 15 }, (_, i) => { const u = (i - 7) / 7; return [u * 210, 16.2 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6, -166]; }), 60), 0.8, 4, { crease: 180 }), 0, WATER, 0), '#ffffff'), M.farFlat));
   }
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
@@ -162,7 +162,7 @@ function build(engine = null, { light, low = false } = {}) {
   env.water.level = WATER;
   env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], [COLLIER[0], COLLIER[2], 3.2, 0.7], [COLLIER[0] - 1.2, COLLIER[2] - 4.6, 3.0, 0.7], [COLLIER[0] + 1.2, COLLIER[2] + 4.6, 2.6, 0.7], [PACKET[0], PACKET[2], 2.6, 0.6], [PACKET[0] + 0.9, PACKET[2] - 3.4, 2.2, 0.6], [PACKET[0] - 0.9, PACKET[2] + 3.4, 2.0, 0.6], [-37, MOLE_Z, 6, 1], [37, MOLE_Z, 6, 1]];
   const setNode = mergeStatic(set, 'set'), farNode = mergeStatic(far, 'far');
-  scene.root.add(setNode, farNode);
+  scene.root.add(setNode, farNode, mergeStatic(back, 'back'));
 
   // ---- cobbles
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
@@ -206,7 +206,7 @@ function build(engine = null, { light, low = false } = {}) {
   const postLamp = anchorAt(post, 'lamp', POST, 180);
   const lamps = [
     { name: 'quay-post', pos: postLamp, color: '#ffc870', radius: 8.5, base: 1.6 },
-    { name: 'casks', pos: [-1.7, 2.3, -1.0], color: '#ffb458', radius: 7.2, base: 1.5 },
+    { name: 'casks', pos: [-1.5, 2.4, 0.2], color: '#ffa444', radius: 11, base: 1.7 },
     { name: 'collier', pos: [-6.6, 2.3, -7.4], color: '#ffb860', radius: 5, base: 0.8 },
     { name: 'crane-cab', pos: anchorAt(quayCrane, 'lamp', QC, QC_YAW), color: '#ffc060', radius: 4.6, base: 0.9 },
   ];

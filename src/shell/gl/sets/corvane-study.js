@@ -48,7 +48,7 @@ const LIGHTS = {
   night: {
     preset: 'night', power: 1.1,
     env: {
-      key: { dir: norm([-0.38, 0.7, 0.6]), color: '#8f9cf4' },
+      key: { dir: norm([-0.38, 0.7, 0.6]), color: '#7684ea' },
       shadow: { tint: '#2f34a0', lift: 0.11, saturate: 1.35 },
       ambient: { sky: '#5a6ee0', ground: '#30308e', amount: 0.16 },
       rim: { color: '#ffd98a', amount: 0.7, edge: 0.75 },
@@ -73,7 +73,7 @@ const bx = (w, h, d, x, y, z, c, rx = 0, ry = 0, rz = 0) => tint(place(box(w, h,
 
 function build(engine = null, { light: lightName = 'rain', low = false } = {}) {
   const { name: light, L } = pickLight('corvane-study', LIGHTS, lightName);
-  const M = ch5Materials();
+  const M = ch5Materials(); M.shaft.beam.near = 0.15;   // rain light: a haze, not a spotlight
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   const WL = wing(-1, BW, BACK, FW, WING_Z), WR = wing(1, BW, BACK, FW, WING_Z);
 

@@ -206,7 +206,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   const rnd = rng(41), P = [0, 0, 0], V = [0, 0, 0];
   function openDrawer(v) { open = Math.max(0, Math.min(1, v)); }
   function setClerk(on) { clerkOn = !!on; }
-  function send(n = 1) { for (let k = 0; k < n; k++) { const free = runs.filter((q) => q.t < 0); if (!free.length) return; const q = free[Math.floor(rnd() * free.length)]; q.t = 0; q.dir = rnd() < 0.5 ? 1 : -1; } }
+  function send(n = 1) { for (let k = 0; k < n; k++) { const start = Math.floor(rnd() * runs.length); for (let j = 0; j < runs.length; j++) { const q = runs[(start + j) % runs.length]; if (q.t < 0) { q.t = 0; q.dir = rnd() < 0.5 ? 1 : -1; break; } } } }
   const DRAWER_TASK = { pos: [LONG[0], LONG[1], LONG[2] + 0.4], stand: [LONG[0] + 0.5, LONG[2] + 1.2], set(v) { openDrawer(v); } };
   const RET_TASK = { pos: [RET[0], 1.5, RET[2]], stand: [RET[0] + 0.9, RET[2] + 0.4], set(v) { retOn = Math.max(0, Math.min(1, v)); } };
   const task = (type) => (type === 'drawer' || type === 'island-book' ? DRAWER_TASK : type === 'returns' || type === 'schedule' ? RET_TASK : null);

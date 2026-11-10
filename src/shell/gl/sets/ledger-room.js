@@ -71,7 +71,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   room.add(node('end', roomWall({ w: W + 1, h: HGT + 0.4, t: 0.5, color: '#8a86e2', openings: [DOOR, GR] }), M.wall, { pos: [0, 0, BACK] }));
   // a course of bigger stones along the foot of the end wall
   { const parts = []; let x = -W / 2; while (x < W / 2) { const bw = 0.7 + r() * 0.6; if (Math.abs(x + bw / 2 - DOOR.x) > DOOR.w / 2 + bw / 2) parts.push(tint(place(box(bw - 0.05, 0.5, 0.08), x + bw / 2, 0.27, 0.04), r() < 0.5 ? '#7470d4' : '#9a96ec')); x += bw; } room.add(node('course', merge(parts), M.wall, { pos: [0, 0, BACK] })); }
-  room.add(node('floor', place(flagFloor({ w: 15, d: 12, nx: 9, nz: 8, colors: ['#7a76d8', '#6c68cc', '#8884e2'], seed: 4, gapColor: '#4a46b0' }), 0, 0, -0.4), M.flat));
+  room.add(node('floor', place(flagFloor({ w: 15, d: 12, nx: 9, nz: 8, colors: ['#7a76d8', '#6c68cc', '#8884e2'], seed: 4, gapColor: '#4a46b0' }), 0, 0, -0.4), M.ground));
   // the night outside the grille and the passage beyond the door
   room.add(node('sky', setGlow(tint(place(box(2.6, 2.2, 0.05), GR.x, 4.0, BACK - 0.6), '#5a7cff'), 0.95), M.flat));
   room.add(node('moon', setGlow(tint(place(cylinder(0.42, 0.42, 0.04, 14), GR.x + 0.3, 4.2, BACK - 0.55, 90, 0, 0), '#f4f8ff'), 1), M.flat));
@@ -150,7 +150,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   // ---- lamps
   const candleAt = fire.spots[0].pos;
   const lamps = [
-    { name: 'storm', pos: [lampPos[0], lampPos[1] + 0.3, lampPos[2] + 0.3], color: '#ffc468', radius: 7.5, base: 2.0 },
+    { name: 'storm', pos: [lampPos[0] - 0.3, lampPos[1] + 0.75, lampPos[2] + 0.7], color: '#ffc468', radius: 7.5, base: 1.9 },
     { name: 'moon', pos: [0.2, 2.2, BACK + 2.2], color: '#8fa8ff', radius: 5.6, base: 1.3, flicker: 0, fixed: true },
     { name: 'candle', pos: [candleAt[0], candleAt[1] + 0.2, candleAt[2] + 0.2], color: '#ffb860', radius: 3.4, base: 1.0, flicker: 0, fire: 0, fixed: true },
     { name: 'door', pos: [DOOR.x + 0.4, 1.3, BACK + 0.7], color: '#ff9a50', radius: 3.6, base: 0.7, flicker: 0, fixed: true },

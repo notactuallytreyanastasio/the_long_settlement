@@ -19,11 +19,11 @@
 // low: true drops the far crowd to half, the roof shafts in the walk, the bunting and the motes.
 
 import { m4, quat, rng, DEG, rgb } from '../math.js';
-import { merge, tint, place, plane, box, tube, curve, cylinder, setGlow, setOutline, torus, sphere } from '../mesh.js';
+import { merge, tint, place, plane, box, tube, curve, cylinder, lathe, setGlow, setOutline, torus, sphere } from '../mesh.js';
 import { node, group, makeEnv, createScene, mergeStatic, makeInstances } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { rayMesh } from '../fx.js';
-import { PAL, pickLight, planks, ropeCoil, bunting, crowd, paperLantern, sack, COATS } from './kit.js';
+import { PAL, pickLight, planks, ropeCoil, bunting, crowd, sack } from './kit.js';
 import { K6, ch6Materials, shell, STD_MARKS, STD_CAMERAS, norm3, cask, plankWall, truss, shaft, patch, hurricaneLamp, ropeJack, tallyBoard, trestle, hank, openBook, bar } from './kit-ch6.js';
 
 const HW = 6.5, BACK = -4.6, FRONT = 4, EAVE = 4.5, RISE = 2.6, WALK_HW = 2.8, WALK_END = -40, WALK_EAVE = 4.1;
@@ -130,7 +130,7 @@ function build(engine = null, { light, low = false } = {}) {
   if (!low) for (let i = 1; i < WT.length - 1; i += 2) { const z = WT[i] - 2.1; sh.push(place(shaft({ w: 1.2, h: 0.3, dir: [0.45, 0.1, 1], len: 4.6, cards: 1, color: '#3440b0', spread: 0.5 }), -1.2, WALK_EAVE + 0.6, z, 90, 0, 0)); pt.add(node('wp', patch({ w: 1.3, d: 1.5, panes: 2, shear: 0.1, color: '#93a8ff', glow: 0.45 }), M.flat, { pos: [0.8, 0.02, z + 0.4] })); }
   scene.root.add(node('shafts', merge(sh), M.shaft), mergeStatic(pt, 'patches'));
   // the lamp's own cone
-  const cone = node('lamp-cone', tint(place(rayMesh(3.0, 0.2, 2.4, 18), LAMP[0], LAMP[1] - 0.1, LAMP[2]), '#ffc468'), M.cone);
+  const cone = node('lamp-cone', tint(place(rayMesh(3.0, 0.2, 2.4, 18), LAMP[0], LAMP[1] - 0.1, LAMP[2]), '#b88a40'), M.cone);
   scene.root.add(cone);
   const lampNode = node('hurricane', lampMesh, M.lantern, { pos: LAMP_HOOK }); lampNode.castShadow = false;
   scene.root.add(lampNode);
@@ -149,7 +149,8 @@ function build(engine = null, { light, low = false } = {}) {
   scene.root.add(nearCrowd.node, farCrowd.node);
   // the lanterns that go up for the vote: one above every docker, on a stick
   const all = [...nearSpots, ...farSpots];
-  const upMesh = merge(place(paperLantern({ r: 0.13, seg: 7, cord: 0.02, tassel: false }), 0, 0.4, 0), tint(place(cylinder(0.012, 0.012, 0.5, 3, { caps: false }), 0, -0.45, 0), [0.25, 0.25, 0.4]));
+  const upPaper = setGlow(lathe([[0, 0.14], [0.07, 0.17], [0.13, 0.3], [0.13, 0.42], [0.07, 0.55], [0, 0.58]], 6, { crease: 180 }), 0.92);
+  const upMesh = merge(upPaper, tint(place(cylinder(0.05, 0.065, 0.05, 5), 0, 0.56, 0), [0.22, 0.24, 0.42]), tint(place(cylinder(0.012, 0.012, 0.6, 3, { caps: false }), 0, -0.45, 0), [0.25, 0.25, 0.4]));
   const upNode = node('raised', upMesh, M.speck); upNode.castShadow = false; upNode.instances = makeInstances(all.length); upNode.instances.count = all.length;
   scene.root.add(upNode);
   const ups = all.map((sp, i) => ({ x: sp.pos[0] + (i % 2 ? 0.22 : -0.22), z: sp.pos[2], y: 1.02 * (sp.s || 1) + 0.5 + r() * 0.3, col: rgb(PAL.lanterns[Math.floor(r() * PAL.lanterns.length)]), ph: r() * 6.283, at: i / all.length, glow: sprites.add({ kind: 'glow', pos: [0, 0, 0], size: i < nearSpots.length ? 0.95 : 1.25, color: '#ffc060', alpha: 0 }) }));
@@ -216,7 +217,7 @@ function build(engine = null, { light, low = false } = {}) {
       m4.fromTRS(Mx, P, Q, S3); d.set(Mx, i * 20);
       const fl = 0.92 + 0.08 * Math.sin(time * 8 + u.ph * 3);
       d[i * 20 + 16] = u.col[0] * fl; d[i * 20 + 17] = u.col[1] * fl; d[i * 20 + 18] = u.col[2] * fl;
-      u.glow.pos[0] = P[0]; u.glow.pos[1] = P[1] + 0.26; u.glow.pos[2] = P[2]; u.glow.alpha = 0.62 * e * fl * Math.min(1.2, 0.5 + pw * 0.6);
+      u.glow.pos[0] = P[0]; u.glow.pos[1] = P[1] + 0.36; u.glow.pos[2] = P[2]; u.glow.alpha = 0.62 * e * fl * Math.min(1.2, 0.5 + pw * 0.6);
     }
     upNode.instances.dirty = true; upNode.visible = voteNow > 0.01;
     keyGlint.alpha = keyOn ? 0.5 + 0.5 * Math.sin(time * 2.4) : 0;

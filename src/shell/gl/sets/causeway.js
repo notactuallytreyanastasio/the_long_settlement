@@ -31,7 +31,7 @@ const LIGHTS = {
   day: {
     preset: 'day', power: 0.25, night: false,
     env: {
-      key: { dir: dirFrom(-24, 30), color: '#fff8e4' },
+      key: { dir: dirFrom(-24, 30), color: '#f4ead2' },
       shadow: { tint: '#8a9af0', lift: 0.07, saturate: 1.35 },
       ambient: { sky: '#c4e6ff', ground: '#ffeec8', amount: 0.11 },
       rim: { color: '#ffffff', amount: 0.75, edge: 0.74 },
@@ -39,7 +39,7 @@ const LIGHTS = {
       sky: { zenith: '#1a62d4', mid: '#4aa8f0', midAt: 0.4, horizon: '#d4f2f8', below: '#9fe0ec', glow: '#fffbe0', glowAmount: 0.5, sunDir: dirFrom(-7.2, 17.5), sun: { color: '#fffef4', size: 3.0, halo: '#fff4c0', haloAmount: 0.55 } },
       water: { deep: '#1d86d8', mid: '#3cb8e4', shallow: '#8cece0', foam: '#ffffff', glint: '#ffffff', glintDensity: 0.3 },
     },
-    road: '#fffdf6', edge: '#e6e2ff', foot: '#b8b0ea', flat: '#f2deb4', cloud: { color: '#ffffff', shadowTint: '#b4c6f8' }, still: 0.5,
+    road: '#fff2dc', edge: '#e0d8fa', foot: '#b0a6e6', flat: '#f2deb4', cloud: { color: '#ffffff', shadowTint: '#b4c6f8' }, still: 0.5,
   },
   night: {
     preset: 'night', power: 1.1, night: true,
@@ -80,7 +80,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   set.add(node('flats', tint(place(plane(400, 300, 1, 1), 0, LOW_TIDE - 0.02, -110), L.flat), M.ground));
   set.add(node('road', saltRoad({ path: PATH, w: 10, w1: 2.4, drop: 0.75, n: low ? 22 : 34, top: L.road, edge: L.edge, foot: L.foot }), M.ground));
   // ruts: two long faint lines worn by the salt carts, and the crown of the road
-  { const parts = []; for (const off of [-0.8, 0.8]) for (let i = 0; i < 16; i++) { const z = 5 - i * 3.2, k = 1 - Math.min(1, (7 - z) / 111) * 0.76; parts.push(place(box(0.16 * k, 0.012, 2.6), roadX(z) + off * k, 0.016, z, 0, Math.atan2(roadX(z - 1.6) - roadX(z + 1.6), -3.2) / DEG + 180, 0)); } set.add(deco(node('ruts', setOutline(tint(merge(parts), night ? '#b8bcf8' : '#dcd6f8'), 0), M.flat))); }
+  { const parts = []; for (const off of [-0.8, 0.8]) for (let i = 0; i < 16; i++) { const z = 5 - i * 3.2, k = 1 - Math.min(1, (7 - z) / 111) * 0.76; parts.push(place(box(0.16 * k, 0.012, 2.6), roadX(z) + off * k, 0.016, z, 0, Math.atan2(roadX(z - 1.6) - roadX(z + 1.6), -3.2) / DEG + 180, 0)); } set.add(deco(node('ruts', setOutline(tint(merge(parts), night ? '#b8bcf8' : '#d2c6f2'), 0), M.flat))); }
 
   // ---- markers down both edges, getting smaller with distance
   const MARKS_Z = [2.4, -2.6, -7.5, -13, -19, -26, -34, -43, -54, -66];
@@ -108,7 +108,7 @@ function build(engine = null, { light: lightName = 'day', low = false } = {}) {
   // salt glinting on the road: one instanced draw
   if (!low) {
     const glint = node('glints', cobble(), M.flat); glint.castShadow = false;
-    scatter(glint, 150, () => { const z = 5 - r() * 30, x = roadX(z) + (r() - 0.5) * 2 * (halfAt(z) - 0.5); return { m: m4.trs(x, 0.018, z, 0, r() * 360, 0, 0.1 + r() * 0.14), color: r() < 0.4 ? (night ? '#d8dcff' : '#e4dcff') : '#ffffff' }; });
+    scatter(glint, 150, () => { const z = 5 - r() * 30, x = roadX(z) + (r() - 0.5) * 2 * (halfAt(z) - 0.5); return { m: m4.trs(x, 0.018, z, 0, r() * 360, 0, 0.1 + r() * 0.14), color: r() < 0.5 ? (night ? '#d8dcff' : '#dccff6') : '#ffffff' }; });
     scene.root.add(glint);
   }
 
