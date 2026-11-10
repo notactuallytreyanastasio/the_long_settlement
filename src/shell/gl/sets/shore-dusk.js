@@ -64,8 +64,8 @@ const LIGHTS = {
     preset: 'sunset', power: 0, fire: 0, lamp: 0, night: false, brand: true,
     env: {
       key: { dir: dirFrom(14, 13), color: '#ffc8a8' },
-      shadow: { tint: '#6c66d8', lift: 0.1, saturate: 1.4 },
-      ambient: { sky: '#f09aa0', ground: '#6c5ecc', amount: 0.17 },
+      shadow: { tint: '#8c7ce8', lift: 0.24, saturate: 1.4 }, // the whole strip stands in the sea wall's shadow: lifted, or it goes to mud
+      ambient: { sky: '#f09aa0', ground: '#8a6cd0', amount: 0.24 },
       rim: { color: '#ffc890', amount: 1.0, edge: 0.7 },
       fog: { density: 0.004, start: 18, max: 0.9 },
       sky: { zenith: '#2c3cb8', mid: '#9070e0', midAt: 0.44, horizon: '#ffa868', below: '#e88c78', glow: '#ffd890', glowAmount: 0.5, sunDir: dirFrom(4.5, 2.2), sun: { color: '#fff0d0', size: 3.2, halo: '#ffb060', haloAmount: 0.46 } },

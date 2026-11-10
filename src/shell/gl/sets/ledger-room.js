@@ -20,7 +20,7 @@
 //   door { pos, face }: just inside the door   clerk: world point of the sleeper's head   page: world point of the open register   focus: the storm lamp
 
 import { rng } from '../math.js';
-import { merge, tint, place, box, cylinder, torus, tube, setGlow, setOutline } from '../mesh.js';
+import { merge, tint, place, box, quad, cylinder, torus, tube, setGlow, setOutline } from '../mesh.js';
 import { node, group, makeEnv, createScene, mergeStatic } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { anchorAt, bookshelf, ledgerBook, candle, crate } from './kit.js';
@@ -130,9 +130,11 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   // ---- the four drawers: L I E N
   const sprites = scene.sprites = createSprites(low ? 96 : 256);
   const dw = (3.3 - 0.14) / 4, dh = (2.25 - 0.14) / 4, DY = 0.17 + dh * 2.5;
+  // a 3x5 block N reads as a D on its own (it has no room for the diagonal), and this one letter must not: two posts and a real diagonal
+  const bigN = (s) => { const px = s / 5, w = px * 3, len = Math.hypot(w - px, s) * 0.96; return setOutline(setGlow(tint(merge(place(quad(px, s), -w / 2 + px / 2, 0, 0), place(quad(px, s), w / 2 - px / 2, 0, 0), place(quad(px, len), 0, 0, 0, 0, 0, Math.atan2(w - px, s) * 180 / Math.PI)), SM.wine), 0.15), 0); };
   const drawers = [0, 1, 2, 3].map((i) => {
     const x = CAB[0] - 3.3 / 2 + 0.07 + dw * (i + 0.5), z = CAB[2] + 0.3;
-    const mesh = merge(tint(place(box(dw - 0.07, dh - 0.07, 0.5), 0, 0, -0.2), '#ffd9a0'), tint(place(torus(0.05, 0.014, 6, 4), 0, -dh * 0.26, 0.09), SM.brass), place(pixelText('LIEN'[i], { s: dh * 0.44, color: SM.wine, glow: 0.15 }), 0, dh * 0.07, 0.056));
+    const mesh = merge(tint(place(box(dw - 0.07, dh - 0.07, 0.5), 0, 0, -0.2), '#ffd9a0'), tint(place(torus(0.05, 0.014, 6, 4), 0, -dh * 0.26, 0.09), SM.brass), place(i === 3 ? bigN(dh * 0.44) : pixelText('LIEN'[i], { s: dh * 0.44, color: SM.wine, glow: 0.15 }), 0, dh * 0.07, 0.056));
     const n = node('drawer' + i, mesh, M.prop, { pos: [x, DY, z] }); n.castShadow = false; scene.root.add(n);
     return { n, x, z, v: 0, now: 0, glow: sprites.add({ kind: 'glow', pos: [x, DY, z + 0.3], size: 1.0, color: '#ffd880', alpha: 0 }) };
   });

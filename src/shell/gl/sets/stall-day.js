@@ -160,8 +160,8 @@ function build(engine = null, { light, low = false } = {}) {
   const addFrames = (a, b, opts) => { const s = lanternString(a, b, opts); wires.push(s.wire); s.hooks.forEach((h) => frameHooks.push(h)); return s; };
   const backWire = addFrames(topBL, topBR, { sag: 0.5, count: 11, ends: 0.06 });
   addFrames([topBL[0], topBL[1] - 0.95, topBL[2] + 0.05], [topBR[0], topBR[1] - 0.9, topBR[2] + 0.05], { sag: 0.3, count: 10, ends: 0.08 });
-  addFrames(topBR, topR, { sag: 0.9, count: 9, ends: 0.1 });
   addFrames(anchorAt(nanStall, 'top', NAN.pos, NAN.yaw), topBL, { sag: 0.25, count: 6, ends: 0.16 });
+  if (!low) addFrames(topBR, topR, { sag: 0.9, count: 9, ends: 0.1 });   // low: 27 of the forty are modelled
   const names = lanternString(topNL, topNR, { sag: 0.22, count: 2, ends: 0.33 }); wires.push(names.wire);
   set.add(node('wires', setOutline(merge(wires), 0), M.flat));
   if (!low) {
@@ -182,13 +182,15 @@ function build(engine = null, { light, low = false } = {}) {
   if (!low) far.add(node('shore2', headland({ w: 80, d: 30, h: 15, seed: 8, grass: PAL.leafDark, seg: 24, rings: 10 }), FAR, { pos: [78, -0.6, -150], rot: [0, 172, 0] }));
   for (const [x, z, s, seed] of [[-7.5, -19, 1.5, 3], [9.5, -24, 1.9, 8]]) far.add(node('rock', rock({ seed, s }), FAR, { pos: [x, WATER - 0.05, z] }));
 
+  const SAILS0 = [[-5.5, -27, 115, 1.6], [8, -38, 60, 2.0]];
+  SAILS0.forEach(([x, z, yaw, sc], i) => far.add(node('sail' + i, skiff({ len: 2.8 * sc, seed: 3 + i, hull: i ? '#ffe2c8' : '#d8f4ff', keel: i ? PAL.teal : PAL.red }), FAR, { pos: [x, WATER + 0.02, z], rot: [0, yaw, 0] })));
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm7(env.sky.sunDir); env.water.level = WATER;
-  const BOATS = [{ pos: [0.75, WATER + 0.02, QUAY_Z - 1.75], yaw: 78, s: 1.15, col: '#ffffff' }, { pos: [-5.5, WATER + 0.02, -27], yaw: 115, s: 1.6, col: '#d8f4ff' }, { pos: [8, WATER + 0.02, -38], yaw: 60, s: 2.0, col: '#ffe2c8' }];
-  env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], ...BOATS.map((b) => [b.pos[0], b.pos[2], 0.9 * b.s, 0.45]), [-7.5, -19, 1.25, 0.6], [9.5, -24, 1.6, 0.7], [-52, -135, 46, 1.6], [78, -150, 39, 1.6]];
+  const BOATS = [{ pos: [0.75, WATER + 0.02, QUAY_Z - 1.75], yaw: 78, s: 1.15, col: '#ffffff' }], SAILS = [[-5.5, -27, 115, 1.6], [8, -38, 60, 2.0]];
+  env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], ...BOATS.map((b) => [b.pos[0], b.pos[2], 0.9 * b.s, 0.45]), ...SAILS.map((b) => [b[0], b[1], 0.9 * b[3], 0.45]), [-7.5, -19, 1.25, 0.6], [9.5, -24, 1.6, 0.7], [-52, -135, 46, 1.6], [78, -150, 39, 1.6]];
   set.traverse((n) => { if (n.name === 'on-table' || n.name === 'cane') n.castShadow = false; });
-  const wings = [mergeStatic(sideL, 'set-left'), mergeStatic(sideR, 'set-right')];
-  scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(set, 'set'), wings[0], wings[1], mergeStatic(far, 'far'));
+  sideL.add(sideR); const wings = [mergeStatic(sideL, 'set-wings')];   // out of the live band's frame: one node the director can hide
+  scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(set, 'set'), wings[0], mergeStatic(far, 'far'));
 
   // ---- paving
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
@@ -221,8 +223,8 @@ function build(engine = null, { light, low = false } = {}) {
   for (const l of lines.list) { l.lit = through(l.hook); if (l.lit > hot.lit) hot = l; }
 
   // ---- the bare frames: two shapes, instanced, swinging
-  const frameMesh = [lanternFrame({ r: 0.2, thick: 2.3 }), lanternFrame({ r: 0.18, shape: 'tall', thick: 2.3 })];
-  const frames = frameHooks.map((h, i) => ({ hook: h, shape: i % 3 === 1 ? 1 : 0, s: 0.85 + r() * 0.3, ph: r() * 6.283, yaw: r() * 3 }));
+  const frameMesh = [lanternFrame({ r: 0.2, thick: 2.3 }), lanternFrame({ r: 0.18, shape: 'tall', thick: 2.3 })].slice(0, low ? 1 : 2);
+  const frames = frameHooks.map((h, i) => ({ hook: h, shape: !low && i % 3 === 1 ? 1 : 0, s: 0.85 + r() * 0.3, ph: r() * 6.283, yaw: r() * 3 }));
   const frameNodes = frameMesh.map((m, k) => { const n = node('frames' + k, m, M.flat); n.castShadow = false; n.instances = makeInstances(frames.filter((f) => f.shape === k).length); scene.root.add(n); return n; });
   { const count = [0, 0]; for (const f of frames) { f.inst = frameNodes[f.shape].instances; f.idx = count[f.shape]++; } frameNodes.forEach((n, k) => { n.instances.count = count[k]; }); }
   const cane0 = rgb('#ffffff');
@@ -240,7 +242,7 @@ function build(engine = null, { light, low = false } = {}) {
   const FOCUS = NAMES[0].centre;
 
   // ---- light: the sun's own flare behind the hottest lantern, slants of it down through the wires, one warm pool under the names
-  const flare = sprites.add({ kind: 'sparkle', pos: [hot.hook[0], hot.hook[1] - 0.35, hot.hook[2] - 0.3], size: 2.0, color: '#fffbe6', alpha: 0, rot: 0.3 });
+  const flare = sprites.add({ kind: 'sparkle', pos: [hot.hook[0], hot.hook[1] - 0.35, hot.hook[2] - 0.3], size: 1.2, color: '#fffbe6', alpha: 0, rot: 0.3 });
   const halo = sprites.add({ kind: 'glow', pos: [hot.hook[0], hot.hook[1] - 0.35, hot.hook[2] - 0.3], size: 3.2, color: '#ffe9a0', alpha: 0 });
   const shafts = node('sun-shafts', sunShafts(dirFrom(-4, 35), low ? [[0.3, -0.4, 9, 1.5], [-1.9, 1.0, 9.5, 1.0]] : [[0.3, -0.4, 9, 1.5], [-1.9, 1.0, 9.5, 1.0], [2.3, -1.6, 9, 1.1], [-0.6, -3.2, 8, 0.9]], '#ffe6a0'), rayMaterial({ power: 1.3, near: 0.26, far: 0.08 }));
   scene.root.add(shafts);
@@ -296,7 +298,7 @@ function build(engine = null, { light, low = false } = {}) {
       n.glow.pos[0] = n.hook[0] + Math.sin(bz) * n.len; n.glow.pos[1] = n.hook[1] - Math.cos(bz) * n.len * s; n.glow.alpha = 0.42 * n.now * sunK;
     }
     const tw = 0.5 + 0.5 * Math.sin(time * 0.9);
-    flare.alpha = 0.7 * sunK * (0.7 + 0.3 * tw); flare.rot = 0.3 + time * 0.12; flare.size[0] = flare.size[1] = 1.7 + 0.6 * tw; halo.alpha = 0.3 * sunK;
+    flare.alpha = 0.6 * sunK * (0.7 + 0.3 * tw); flare.rot = 0.3 + time * 0.12; flare.size[0] = flare.size[1] = 1.0 + 0.4 * tw; halo.alpha = 0.3 * sunK;
     shafts.visible = power > 0.15;
     for (let i = 0; i < BOATS.length; i++) {
       const b = BOATS[i];

@@ -22,7 +22,7 @@
 // Nan's stall
 //   lanternFrame (a bare frame, for instancing), pastePot, paperStack
 // Below decks
-//   hullSide, deckHead, cellFront, bunk, shipLantern, ladder7, seaChest
+//   hullSide, deckHead, cellFront (+ cellBarXs), bunk, shipLantern, ladder7, seaChest
 // Rooms
 //   wall7 (a wall with openings), tallWindow, lightCards, fanRays, floorPatch, tiles, chandelier7
 
@@ -831,15 +831,18 @@ export function deckHead({ w = 11, d = 5, beams = 6, hatch = null, plank = '#e0a
  * The barred front of a berth: `w` wide, `h` high, in the XY plane, bars toward the viewer at +Z. A door bay with a brass
  * lock plate takes the `door` end (-1 left, +1 right). Origin: bottom centre.
  */
-export function cellFront({ w = 2.7, h = 2.3, gap = 0.3, door = 1, iron = C7.navy, brass = C7.brass, r = 0.026 } = {}) {
-  const parts = [rb(w, 0.12, 0.14, 0.03, 0, 0.06, 0, iron), rb(w, 0.12, 0.14, 0.03, 0, h - 0.06, 0, iron), rb(w - 0.1, 0.07, 0.08, 0.02, 0, h * 0.5, 0, iron)];
-  const n = Math.round(w / gap);
-  for (let i = 0; i <= n; i++) { const x = -w / 2 + 0.05 + (w - 0.1) * (i / n); parts.push(cyl(r, r, h - 0.2, 5, x, 0.1, 0, iron)); }
-  const dx = door * (w / 2 - 0.55);
-  for (const sx of [-1, 1]) parts.push(rb(0.09, h - 0.2, 0.1, 0.02, dx + sx * 0.5, h / 2, 0.01, iron));
-  parts.push(rb(0.22, 0.3, 0.1, 0.03, dx - door * 0.42, h * 0.46, 0.06, brass), ball(0.035, dx - door * 0.42, h * 0.43, 0.12, iron, 5, 3));
+export function cellFront({ w = 2.7, h = 2.3, gap = 0.3, door = 1, rail = 0.5, iron = C7.navy, brass = C7.brass, r = 0.026 } = {}) {
+  const parts = [rb(w, 0.12, 0.14, 0.03, 0, 0.06, 0, iron), rb(w, 0.12, 0.14, 0.03, 0, h - 0.06, 0, iron), rb(w - 0.1, 0.07, 0.08, 0.02, 0, h * rail, 0, iron)];
+  for (const x of cellBarXs(w, gap)) parts.push(cyl(r, r, h - 0.2, 5, x, 0.1, 0, iron));
+  if (door) {   // door: 0 is a plain run of bars (a partition)
+    const dx = door * (w / 2 - 0.55);
+    for (const sx of [-1, 1]) parts.push(rb(0.09, h - 0.2, 0.1, 0.02, dx + sx * 0.5, h / 2, 0.01, iron));
+    parts.push(rb(0.22, 0.3, 0.1, 0.03, dx - door * 0.42, h * 0.46, 0.06, brass), ball(0.035, dx - door * 0.42, h * 0.43, 0.12, iron, 5, 3));
+  }
   return merge(parts);
 }
+/** Where cellFront stands its bars, along its own X. */
+export function cellBarXs(w = 2.7, gap = 0.3) { const n = Math.round(w / gap), out = []; for (let i = 0; i <= n; i++) out.push(-w / 2 + 0.05 + (w - 0.1) * (i / n)); return out; }
 
 /** A berth: a plank bed on two chains off the wall behind it, a rolled blanket, a thin pillow. Origin: the middle of its back edge at floor level; it sticks out toward +Z. */
 export function bunk({ w = 1.9, d = 0.72, y = 0.5, blanket = C7.wine, wood = '#e0a060' } = {}) {

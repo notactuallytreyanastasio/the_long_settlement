@@ -42,7 +42,7 @@ const LIGHTS = {
       sky: { zenith: '#1c2a90', mid: '#5a56d0', midAt: 0.45, horizon: '#f08ab0', below: '#34349c', stars: 0.6, moon: 0 },
       water: null,
     },
-    glass: '#b09cff', glassGlow: 0.9, shaft: '#b8a8ff', patch: '#c8b8ff', wallUp: '#ffe6cc', sleepers: false, cadets: 1,
+    glass: '#b09cff', glassGlow: 0.85, shaft: '#8274e0', patch: '#c8b8ff', wallUp: '#ffe6cc', sleepers: false, cadets: 1,
   },
   night: {
     preset: 'night', power: 0.6, night: true,
@@ -212,7 +212,7 @@ function build(engine = null, { light: lightName = 'evening', low = false } = {}
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: lampPos, size: 2.6, color: '#ffc060', alpha: 0 }), base: 0.5 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: lamps[2].pos, size: 1.6, color: '#ffc060', alpha: 0 }), base: 0.4 });
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [DOOR.x, 2.95, MOUTH + 0.1], size: 1.5, color: '#ffc870', alpha: 0 }), base: 0.45 });
-  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 2.9, BACK + 0.2], size: 4.4, color: L.night ? '#8fa8ff' : '#b8a0ff', alpha: 0 }), base: L.night ? 0.14 : 0.3, fixed: true });
+  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 2.9, BACK + 0.2], size: 4.4, color: L.night ? '#8fa8ff' : '#b8a0ff', alpha: 0 }), base: L.night ? 0.14 : 0.17, fixed: true });
   const stoveGlow = sprites.add({ kind: 'glow', pos: fire, size: 1.3, color: '#ff8a30', alpha: 0.5 });
   const tallyGlow = sprites.add({ kind: 'glow', pos: [tally.position[0], 0.36, tally.position[2]], size: 0.9, color: '#fff0a0', alpha: 0 });
 

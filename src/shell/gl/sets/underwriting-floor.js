@@ -109,8 +109,9 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
 
   // ---- desks: two files either side of the aisle. The near ones are drawn in ink and throw shadows.
   const DESKS = [];
+  // (the left file stands clear of the line from the cameras to the long drawer under C: the plot is in that drawer)
   // (the right file starts a desk further back than the left: that desk is the lit one, and nothing may stand in front of it)
-  for (const [x, zs] of [[-1.95, [-2.5, -4.6, -6.6]], [1.6, [-3.5, -5.6]], [-4.5, [-3.5, -5.7]], [4.4, [-2.6, -4.7, -6.6]]]) zs.forEach((z, i) => DESKS.push({ pos: [x, 0, z], yaw: (x < 0 ? 5 : -5) + (r() - 0.5) * 5, near: z > -3.6 && Math.abs(x) < 3 }));
+  for (const [x, zs] of [[-2.8, [-2.5, -4.6, -6.6]], [1.6, [-3.5, -5.6]], [-4.95, [-3.5, -5.7]], [4.4, [-2.6, -4.7, -6.6]]]) zs.forEach((z, i) => DESKS.push({ pos: [x, 0, z], yaw: (x < 0 ? 5 : -5) + (r() - 0.5) * 5, near: z > -3.6 && Math.abs(x) < 3 }));
   const LIT = DESKS.findIndex((d) => d.pos[0] > 0 && d.pos[0] < 3 && d.near);
   const darkLamp = merge(tint(lathe([[0, 0], [0.11, 0], [0.1, 0.03], [0.03, 0.06], [0.022, 0.3], [0, 0.3]], 6, { crease: 50 }), H3.brass), tint(place(lathe([[0.2, 0], [0.2, 0.05], [0.1, 0.13], [0, 0.14]], 8, { crease: 50 }), 0, 0.28, 0, 0, 0, 0, 1, 1, 0.7), '#1f9a78'));
   const litLamp = merge(tint(lathe([[0, 0], [0.11, 0], [0.1, 0.03], [0.03, 0.06], [0.022, 0.3], [0, 0.3]], 8, { crease: 50 }), H3.brass), setGlow(tint(place(lathe([[0.2, 0], [0.2, 0.05], [0.1, 0.13], [0, 0.14]], 10, { crease: 50 }), 0, 0.28, 0, 0, 0, 0, 1, 1, 0.7), '#4fe0a0'), 0.7), setGlow(tint(place(sphere(0.075, 6, 4), 0, 0.27, 0), '#fff2c0'), 1));
