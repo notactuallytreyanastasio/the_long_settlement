@@ -44,13 +44,13 @@ export const TRUST_PER_AID = 25;
  * 370 + 8 * 75 = 970; the refusing bot's best is 11 loans, 550, against 370. A book with
  * no gifts turns between the seventh loan and the eighth.
  */
-export const TRUST_PER_LOAN = 50;
+export const TRUST_PER_LOAN = 75;
 
 /**
  * Lifetime trust earned by letting the Commons cover a ball: a gift taken weighs a loan
  * and a half. It goes to trustEarned only, never to the town's meter, or aid would buy aid.
  */
-export const TRUST_PER_GIFT = 75;
+export const TRUST_PER_GIFT = 130;
 
 const FIELDS = ['score', 'marks', 'writs', 'debt', 'trust', 'aidUsed', 'spins', 'trustEarned', 'loansTaken'];
 

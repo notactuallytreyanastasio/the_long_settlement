@@ -36,7 +36,7 @@ export const PAY_SECONDS = 1.2;
  * Bumper, sling and target hits needed to light the spin shots again after a spin.
  * Tuned with LOAN and the lean paytable by test/playthrough.test.js; the numbers are there.
  */
-export const REELS_NEED = 30;
+export const REELS_NEED = 45;
 /** Seconds the Commons takes to pass the hat. A lever pull inside them goes to the Mint instead. */
 export const AID_WAIT = 2;
 /** Seconds after the table empties before the button is the lever: a press meant for a ball that just drained is not a pull. */
@@ -686,7 +686,7 @@ function idleBark(content, game) {
   return bark(content, { ...game, idleT: 0 }, 'idle');
 }
 
-/** One fixed step of the table: physics, its events, the objective, the reels, ball supply, the lever. */
+/** One fixed step of the table: physics, the reels, the step's events, the objective, ball supply, the lever. */
 function playTick(content, game, msg) {
   if (!msg.input) throw new Error('game: a tick in play needs msg.input');
   const table = tableOf(content, game);
@@ -694,15 +694,13 @@ function playTick(content, game, msg) {
   const stepped = stepPhysics(table, game.phys, msg.input, msg.dt);
   const moved = { ...tickBoons(game, msg.dt), phys: stepped.phys, plungeWas: !!msg.input.plunge };
   // The briefing goes first so that it, not a launch bark, is what is heard as the scene opens.
-  let step = stepped.events.reduce(
-    (s, ev) => then(s, (g) => onEvent(content, table, g, ev)),
-    brief(content, moved),
-  );
+  // Reel time passes before this tick's events, so a reel an event starts has its full time to run.
+  let step = then(brief(content, moved), (g) => tickReels(content, g, msg.dt));
+  step = stepped.events.reduce((s, ev) => then(s, (g) => onEvent(content, table, g, ev)), step);
   const scene = currentScene(content, step.game);
   if (scene && objectiveProgress(scene, step.game.hits, step.game.seq).complete) {
     return then(step, (g) => completeScene(content, g, scene));
   }
-  step = then(step, (g) => tickReels(content, g, msg.dt));
   step = then(step, (g) => supplyBall(content, table, g, msg.dt));
   if (pressed) step = then(step, (g) => pullLever(content, g));
   step = then(step, (g) => feedMultiball(table, g, msg.dt));

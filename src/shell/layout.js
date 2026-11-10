@@ -15,7 +15,7 @@
 //   table  184..920  table space (400 x 800) at 0.92, centred. The flippers come out at
 //                    y = 826..860, above where thumbs rest; below them is the drain.
 //   launch           bottom right, over the foot of the plunger lane and the outlane's
-//                    exit. Its left edge is 73 px right of the right flipper's pivot.
+//                    exit. Its left edge is 79 px right of the right flipper's pivot.
 //
 // The three controls are placed where no phone's notch or home bar reaches (the tallest
 // top inset is 59 pt = 65 logical px, the home bar 34 pt = 38), because they cannot move:

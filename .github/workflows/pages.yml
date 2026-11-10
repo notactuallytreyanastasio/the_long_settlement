@@ -79,7 +79,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/play
           cp -R journal/. _site/
-          rm -f _site/sync.mjs _site/check-imports.mjs
+          rm -f _site/sync.mjs _site/check-imports.mjs _site/usage.mjs
           G="${{ steps.pick.outputs.dir }}"
 
           # Pick the game's entry point. Order: a build output, a root index.html,

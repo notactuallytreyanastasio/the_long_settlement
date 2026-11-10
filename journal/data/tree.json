@@ -7241,13 +7241,13 @@
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 8569,
+  "bytes": 8570,
   "lines": 205
  },
  {
   "path": "src/core/game.js",
-  "bytes": 34231,
-  "lines": 748
+  "bytes": 34326,
+  "lines": 746
  },
  {
   "path": "src/core/physics.js",
@@ -7326,8 +7326,8 @@
  },
  {
   "path": "test/game.test.js",
-  "bytes": 36071,
-  "lines": 741
+  "bytes": 59138,
+  "lines": 1114
  },
  {
   "path": "test/physics.test.js",
@@ -7336,8 +7336,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 12084,
-  "lines": 243
+  "bytes": 17415,
+  "lines": 310
  },
  {
   "path": "test/rng.test.js",

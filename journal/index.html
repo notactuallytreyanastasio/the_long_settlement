@@ -45,6 +45,31 @@
 <main class="wrap">
   <section class="stats" id="stats" aria-label="Current state"></section>
 
+  <section class="cost viz-root" id="cost" aria-labelledby="cost-h" hidden>
+    <div class="cost-head">
+      <p class="kicker">What it cost · at API list prices</p>
+      <h2 id="cost-h">Tokens and dollars</h2>
+      <p class="small" id="cost-note"></p>
+    </div>
+    <div class="kpis" id="cost-kpis"></div>
+    <div class="cost-grid">
+      <figure class="chart-card">
+        <figcaption><b>Cumulative cost</b> <span class="small">by who spent it</span></figcaption>
+        <div class="legend" id="cost-legend"></div>
+        <div class="chart-wrap" id="cost-chart"></div>
+      </figure>
+      <figure class="chart-card">
+        <figcaption><b>Where the dollars went</b> <span class="small">by token type, all agents</span></figcaption>
+        <div id="cost-kinds"></div>
+        <p class="small" id="cost-kinds-note"></p>
+      </figure>
+    </div>
+    <details class="cost-table-wrap">
+      <summary>Table view: every number behind the charts</summary>
+      <div id="cost-table"></div>
+    </details>
+  </section>
+
   <div class="cols">
     <section class="timeline" aria-label="Timeline">
       <article class="synthesis" id="synthesis" hidden></article>

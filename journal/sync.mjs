@@ -18,6 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { homedir } from 'node:os';
+import { computeUsage } from './usage.mjs';
 
 const SRC = join(homedir(), 'code/fable_5_2');
 const REPO = join(homedir(), 'code/the_long_settlement');
@@ -169,6 +170,15 @@ async function tick() {
     writeJSON(join(DATA, 'snapshots.json'), snapshots);
     if (graph) writeJSON(join(DATA, 'graph.json'), graph);
     writeJSON(join(DATA, 'tree.json'), files);
+  }
+
+  // Token usage: refreshed with any other change, or every 10 minutes on its own, so the
+  // journal's own spending doesn't force a commit on every tick.
+  const usagePath = join(DATA, 'usage.json');
+  const prevUsage = readJSON(usagePath, null);
+  const usageStale = !prevUsage || Date.now() - Date.parse(prevUsage.generated) > 10 * 60 * 1000;
+  if (gameChanges.length || graphChanged || usageStale) {
+    try { writeJSON(usagePath, computeUsage()); } catch (e) { log('usage failed:', e.message); }
   }
 
   const all = changedPaths().filter((c) => !SENSITIVE.test(c.path));
