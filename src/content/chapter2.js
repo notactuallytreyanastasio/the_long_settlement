@@ -10,7 +10,7 @@ export const chapter2 = {
   subtitle: 'Saltmere, first city of the Circuit',
   tableId: 'saltmere',
   riggedSpin: null,
-  music: { play: 'mine', slot: 'tense' },
+  music: { play: 'mine', cine: 'tense' },
 
   prologue: [
     { id: 'ch2.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',

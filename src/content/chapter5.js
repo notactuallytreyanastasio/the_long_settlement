@@ -12,7 +12,7 @@ export const chapter5 = {
   subtitle: 'Tallis, third city of the Circuit',
   tableId: 'tallis',
   riggedSpin: null,
-  music: { play: 'exchange', slot: 'tense' },
+  music: { play: 'exchange', cine: 'tense' },
 
   // ───────────────────────── prologue ─────────────────────────
   prologue: [

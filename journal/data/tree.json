@@ -7271,7 +7271,7 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 21672,
+  "bytes": 21643,
   "lines": 343
  },
  {
@@ -7316,7 +7316,7 @@
  },
  {
   "path": "test/content.test.js",
-  "bytes": 13516,
+  "bytes": 13521,
   "lines": 237
  },
  {
@@ -7343,6 +7343,11 @@
   "path": "test/rng.test.js",
   "bytes": 3138,
   "lines": 102
+ },
+ {
+  "path": "test/shell.test.js",
+  "bytes": 5432,
+  "lines": 99
  },
  {
   "path": "test/slot.test.js",

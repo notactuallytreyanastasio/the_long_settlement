@@ -216,9 +216,9 @@
  * @property {Object<string,Line[]>} barks
  *        short one-liners over live play. keys: 'launch','drain','bumper','ramp','save','loan',
  *        'aid','jackpot','bust','idle'. The core picks one by rng and rate-limits them.
- * @property {{play:string, slot:string}} music
- *        play: the table.  slot: the quieter mood a prologue or epilogue falls back to (the name
- *        is from when the reels had a screen of their own)
+ * @property {{play:string, cine:string}} music
+ *        play: the table.  cine: the quieter mood a prologue or epilogue falls back to when its
+ *        first line names none
  *
  * @typedef {Object} CastMember
  * @property {string} id

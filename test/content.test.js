@@ -147,7 +147,7 @@ test('every music mood and sound effect a line or chapter names is one audio.js 
   }
   for (const ch of content.chapters) {
     assert.ok(MOODS.includes(ch.music.play), `${ch.id}: unknown play mood ${ch.music.play}`);
-    assert.ok(MOODS.includes(ch.music.slot), `${ch.id}: unknown slot mood ${ch.music.slot}`);
+    assert.ok(MOODS.includes(ch.music.cine), `${ch.id}: unknown cinematic mood ${ch.music.cine}`);
   }
 });
 

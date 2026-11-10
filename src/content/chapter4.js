@@ -12,7 +12,7 @@ export const chapter4 = {
   subtitle: 'Little Brand, nine years off the map',
   tableId: 'brand',
   riggedSpin: null,
-  music: { play: 'village', slot: 'silence' },
+  music: { play: 'village', cine: 'silence' },
 
   // ───────────────────────── prologue ─────────────────────────
   prologue: [

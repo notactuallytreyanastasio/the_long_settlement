@@ -9,7 +9,7 @@ export const chapter1 = {
   subtitle: 'Vessery, on the night of the Festival of Lots',
   tableId: 'vessery',
 
-  music: { play: 'festival', slot: 'tense' },
+  music: { play: 'festival', cine: 'tense' },
 
   // ───────────────────────── prologue ─────────────────────────
   prologue: [

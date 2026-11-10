@@ -247,7 +247,7 @@ function startCine(content, game, kind, lines) {
   const first = lines[0];
   const cine = { kind, lines, index: 0, lineT: 0, ...resolveStage(lines, 0), t: 0 };
   // A cutscene that names no music keeps the table's mood; a prologue or epilogue takes the quieter one.
-  const fallback = kind === 'scene' ? chapter.music.play : chapter.music.slot;
+  const fallback = kind === 'scene' ? chapter.music.play : chapter.music.cine;
   return ok({ ...enterMode(game, 'cine'), cine }, [
     HUSH,
     ...(first.music ? [] : [music(fallback)]),

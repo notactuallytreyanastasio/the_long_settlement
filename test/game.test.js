@@ -131,7 +131,7 @@ const content = {
         L('ch1.epi.02', 'thorne', 'The reels landed as arranged.', { fx: 'radio', bg: 'line' }),
       ],
       barks: barks('ch1'),
-      music: { play: 'tense', slot: 'court' },
+      music: { play: 'tense', cine: 'court' },
     },
     {
       id: 'ch2', number: 2, title: 'Two', subtitle: 'second', tableId: 'box',
@@ -148,7 +148,7 @@ const content = {
       ],
       epilogue: [L('ch2.epi.01', 'sable', 'They think you touched the reels.', { bg: 'shore-dusk', music: 'dread' })],
       barks: barks('ch2'),
-      music: { play: 'mine', slot: 'march' },
+      music: { play: 'mine', cine: 'march' },
     },
   ],
 };

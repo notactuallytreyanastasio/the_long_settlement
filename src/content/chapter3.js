@@ -12,7 +12,7 @@ export const chapter3 = {
   subtitle: 'Halcyon Reach, second city of the Circuit',
   tableId: 'halcyon',
   riggedSpin: null,
-  music: { play: 'academy', slot: 'tense' },
+  music: { play: 'academy', cine: 'tense' },
 
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
