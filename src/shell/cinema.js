@@ -36,8 +36,8 @@
 
 import {
   W, H, TAU, clamp, lerp, ease, mod, rgba, fade, vgrad, circ, seg, poly, rr, wrapText, FONT_UI, FONT_SERIF, FONT_MONO, HAS_DOM, newCanvas,
-  freeCanvas, NULL_CTX, cinemaCache, stillsFor, S, buildStills, paintBackdrop, _baked, baked, vignette, waveform, P, LINE_LIGHT, LINE_ID,
-  revealCount,
+  freeCanvas, NULL_CTX, cinemaCache, stillsFor, S, buildStills, stillsReady, warmStills, paintBackdrop, _baked, baked, vignette, waveform, P,
+  LINE_LIGHT, LINE_ID, revealCount,
 } from './cinema/kit.js';
 import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures, spriteBounds } from './cinema/figures.js';
 import { BACKDROPS_A } from './cinema/backdrops-a.js';
@@ -61,7 +61,7 @@ const _views = new WeakMap();
 function viewOf(lines) {
   let v = _views.get(lines);
   if (!v) {
-    v = { stages: [] };
+    v = { stages: [], lastT: -1, t0: 0, seen: false, gateIndex: -1, gateAt: 0 };
     let bg = 'black', on = [];
     for (const l of lines) {
       if (l.bg !== undefined) bg = l.bg;
@@ -501,6 +501,31 @@ function armIdle() {
   _idleTimer = setTimeout(tick, 2020);
 }
 
+const BUILD_MS = 3;   // a frame goes on building still layers until this much of it is spent: one layer at least
+
+/**
+ * Build the still layers of the cinematic that will run next, a layer a call, before it runs: the chapter's
+ * prologue while its card is up. The shell calls this every frame it is not drawing a cinematic and would like the
+ * next one to open without a stall; it paints nothing. dev is device pixels per logical unit (canvas.width / layout.W).
+ * Returns true when there is nothing left to build. Does nothing unless cinemaCache.stepped.
+ */
+export function warmCinema(content, game, layout, dev, timeMs) {
+  if (!cinemaCache.stepped || !HAS_DOM) return true;
+  const chapter = content.chapters[game.chapter];
+  if (game.mode !== 'card' || !chapter || chapter.prologue.length === 0) return true;
+  const lines = chapter.prologue;
+  const F = frameOf(layout);
+  const key = viewOf(lines).stages[0].bg;
+  if (!P[key]) throw new Error(`cinema: unknown backdrop key '${key}' on line ${lines[0].id}`);
+  const cfg = stillsConfig(F, key, dev);
+  if (!cfg) return true;
+  armIdle();                                  // held while the card is up, let go two seconds after it is not
+  if (stillsReady(key, cfg)) { stillsFor(key, cfg); return true; }
+  const heard = content.cast[LINE_ID] || null;
+  const info = { tms: timeMs, level: 0, lineT: 0, lines, index: 0, portrait: heard, portraitEmote: undefined, onePage: F.kind === 'portrait' };
+  return warmStills(key, cfg, timeMs / 1000, info, BUILD_MS);
+}
+
 /**
  * Draw the whole frame for the running cinematic.
  * fx: { timeMs, voiceLevel 0..1, flash, shake }
@@ -566,6 +591,21 @@ export function drawCinema(ctx, content, game, fx, layout) {
   };
   _frameNo++;
 
+  // ── is the picture ready to be shown? ── (only where the still layers are built a step at a time: cinemaCache.stepped)
+  // Building a backdrop's still layers in the frame that first shows it was a frame of 80 to 270 ms on a throttled
+  // phone. Stepped, the layers are built one to a frame and until they are all there the frame shows what it
+  // already has: black when the film is opening (it fades up from black anyway, and that fade now starts when the
+  // picture is ready), or the backdrop being dissolved away from, held, when the cut is in the middle of a film.
+  const stepped = cinemaCache.stepped && !!cfgNow;
+  if (cine.t < view.lastT) { view.seen = false; view.gateIndex = -1; }   // the same lines, run again from the top
+  view.lastT = cine.t;
+  let ready = !stepped || stillsReady(cine.bg, cfgNow);
+  if (!ready) warmStills(cine.bg, cfgNow, T, info, BUILD_MS);            // shown from the next frame, not this one
+  if (view.gateIndex !== cine.index) { view.gateIndex = cine.index; view.gateAt = ready ? 0 : null; }
+  if (ready && view.gateAt === null) view.gateAt = lt;
+  if (ready && !view.seen) { view.seen = true; view.t0 = stepped && cine.t < 2 && cine.t > 0.05 ? cine.t : 0; }
+  const blt = ready ? lt - view.gateAt : 0;                              // the dissolve's own clock
+
   ctx.save();
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, F.W, F.H);
@@ -591,11 +631,15 @@ export function drawCinema(ctx, content, game, fx, layout) {
   const zb = 1.06 + (z - 1) * 0.4;
   const bcy = H / 2 + (cy - H / 2) * 0.4 - low * 34;
   const bcxOf = (key) => panOf(F, key) + (cx - W / 2) * 0.4;
-  const mixBg = prevStage && prevStage.bg !== cine.bg ? ease(lt / 0.9) : 1;
-  if (mixBg < 1) {
+  const cut = !!prevStage && prevStage.bg !== cine.bg;
+  const mixBg = cut ? ease(blt / 0.9) : 1;
+  if (cut && !P[prevStage.bg]) throw new Error(`cinema: unknown backdrop key '${prevStage.bg}' on a line before ${line.id}`);
+  const cfgPrev = cut && mixBg < 1 ? stillsConfig(F, prevStage.bg, dev) : null;
+  const prevOk = cut && mixBg < 1 && (!stepped || stillsReady(prevStage.bg, cfgPrev));   // never built in the frame that shows it
+  const dark = !ready && !prevOk;                                        // nothing to show yet: the picture stays black
+  if (prevOk) {
     const key = prevStage.bg;
-    if (!P[key]) throw new Error(`cinema: unknown backdrop key '${key}' on a line before ${line.id}`);
-    const cfg = stillsConfig(F, key, dev);
+    const cfg = cfgPrev;
     ctx.save();
     ctx.translate(ox, oy); ctx.scale(F.s0 * zb, F.s0 * zb); ctx.translate(-bcxOf(key), -bcy);
     paintBackdrop(ctx, key, 'back', T, px, info, cfg, rest);
@@ -604,17 +648,16 @@ export function drawCinema(ctx, content, game, fx, layout) {
   }
   ctx.save();
   ctx.translate(ox, oy); ctx.scale(F.s0 * zb, F.s0 * zb); ctx.translate(-bcxOf(cine.bg), -bcy);
-  fade(ctx, mixBg, () => paintBackdrop(ctx, cine.bg, 'back', T, px, info, cfgNow, rest));
+  if (ready) fade(ctx, mixBg, () => paintBackdrop(ctx, cine.bg, 'back', T, px, info, cfgNow, rest));
   ctx.restore();
 
   const light = bgNow.light;
   // a little air between the backdrop and the people, and a floor of shadow for them to stand in
-  ctx.fillStyle = rgba(light.amb, 0.16);
-  ctx.fillRect(art.x - 20, art.y - 20, art.w + 40, art.h + 40);
+  if (!dark) { ctx.fillStyle = rgba(light.amb, 0.16); ctx.fillRect(art.x - 20, art.y - 20, art.w + 40, art.h + 40); }
 
   ctx.save();
   ctx.translate(ox, oy); ctx.scale(F.s0 * z, F.s0 * z); ctx.translate(-cx, -cy);
-  if (L1.crowd || (L0 && L0.crowd)) {
+  if (!dark && (L1.crowd || (L0 && L0.crowd))) {
     const a = L1.crowd && (!L0 || L0.crowd) ? 1 : L1.crowd ? ease(lt / 0.5) : 1 - ease(lt / 0.4);
     fade(ctx, a, () => drawCrowdFigures(ctx, light, T, line.who === 'crowd', level));
   }
@@ -638,7 +681,7 @@ export function drawCinema(ctx, content, game, fx, layout) {
   });
   const spk = figs.find((f) => f.id === L1.subject);
   figs.sort((a, b) => a.focus - b.focus);
-  for (const f of figs) {
+  for (const f of dark ? [] : figs) {
     const mem = cast[f.id];
     const isSpk = L1.speaker === f.id;
     let facing;
@@ -672,14 +715,14 @@ export function drawCinema(ctx, content, game, fx, layout) {
   ctx.restore();
 
   // what hangs in the air in front of them
-  if (bgNow.front) {
+  if (bgNow.front && ready) {
     const zf = lerp(zb, z, 0.5);
     ctx.save();
     ctx.translate(ox, oy); ctx.scale(F.s0 * zf, F.s0 * zf); ctx.translate(-lerp(bcxOf(cine.bg), cx, 0.5), -lerp(bcy, cy, 0.5));
     fade(ctx, mixBg, () => paintBackdrop(ctx, cine.bg, 'front', T, px * 1.4, info, cfgNow, rest));
     ctx.restore();
   }
-  vignette(ctx, { x: art.x - 20, y: art.y - 20, w: art.w + 40, h: art.h + 40 }, 0.5 + low * 0.15);
+  if (!dark) vignette(ctx, { x: art.x - 20, y: art.y - 20, w: art.w + 40, h: art.h + 40 }, 0.5 + low * 0.15);
   ctx.restore(); // picture clip
 
   // ── over and under the picture ──
@@ -726,17 +769,21 @@ export function drawCinema(ctx, content, game, fx, layout) {
     } else throw new Error(`cinema: fx.flash must be a number or { color, a }, got ${JSON.stringify(fx.flash)}`);
   }
   // fade up from black as the film begins
-  if (cine.t < 0.8) { ctx.fillStyle = `rgba(0,0,0,${1 - ease(cine.t / 0.8)})`; ctx.fillRect(-40, -40, F.W + 80, F.H + 80); }
+  const upT = view.seen ? cine.t - view.t0 : 0;                          // from the frame the picture was first there to show
+  if (upT < 0.8) { ctx.fillStyle = `rgba(0,0,0,${1 - ease(upT / 0.8)})`; ctx.fillRect(-40, -40, F.W + 80, F.H + 80); }
   ctx.restore();
 
   for (const [id, st] of _figs) if (st.frame !== _frameNo) { dropFig(st); _figs.delete(id); }
 
-  // Paint the next backdrop's still layers while this line is being spoken, so the cut to it does not stall.
-  if (lt > 1 && cine.index + 1 < lines.length) {
+  // Paint the next backdrop's still layers while this line is being spoken, so the cut to it does not stall:
+  // a layer a frame once this line's own picture has settled.
+  if (ready && blt > 1 && cine.index + 1 < lines.length) {
     const nextBg = view.stages[cine.index + 1].bg;
     if (nextBg !== cine.bg && P[nextBg]) {
       const cfg = stillsConfig(F, nextBg, dev);
-      if (cfg) {
+      if (cfg && cinemaCache.stepped) {
+        if (!stillsReady(nextBg, cfg)) { warmStills(nextBg, cfg, T, info, BUILD_MS); stillsFor(cine.bg, cfgNow); }
+      } else if (cfg) {
         const rec = stillsFor(nextBg, cfg);
         stillsFor(cine.bg, cfgNow);   // the one on screen stays the most recently used
         if (!rec.back.built) buildStills(nextBg, 'back', cfg, rec, T, info);

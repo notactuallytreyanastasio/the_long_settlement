@@ -21,6 +21,7 @@ import { init, update, SAVE_VERSION } from '../core/game.js';
 import { preloadIds } from '../core/story.js';
 import { STEP } from '../core/physics.js';
 import { createRenderer } from './render.js';
+import { cinemaCache, warmCinema } from './cinema.js';
 import { createAudio } from './audio.js';
 import { createVoice } from './voice.js';
 import { createInput } from './input.js';
@@ -148,6 +149,7 @@ async function boot() {
   if (window.visualViewport) window.visualViewport.addEventListener('resize', fit);
 
   const renderer = createRenderer(canvas);
+  cinemaCache.stepped = true;      // frames follow one another here: build a backdrop a layer a frame, never all in one
   const audio = createAudio();
   const voice = createVoice(audio, content.cast, await fetchManifest());
 
@@ -281,6 +283,8 @@ async function boot() {
       }
       fx.touch = fx.touch || (controls !== null && controls.touched());
       renderer.draw(content, game, fx, layout);
+      // while the chapter card is up, get the prologue's first backdrop ready behind it
+      if (game.mode === 'card') warmCinema(content, game, layout, canvas.width / layout.W, now);
     } catch (err) {
       fatal(err);
       return;

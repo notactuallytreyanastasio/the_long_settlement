@@ -187,8 +187,11 @@ export const cinemaCache = {
   enabled: true,
   keep: 2,          // backdrops held at once: the one on screen, and the one dissolving out or coming next
   budget: 5.2e6,    // most pixels one still layer may hold. A canvas too large to cache at its own resolution is painted live
+  stepped: false,   // build still layers one to a frame and hold the picture until they are there (see drawCinema). The game's
+                    // shell turns this on; a harness that draws single frames leaves it off and gets every layer at once
   holdCamera: false, // a harness sets this to compare cached frames with uncached ones: the uncached camera then rests too
-  builds: 0,
+  builds: 0,        // halves of a backdrop completed
+  steps: 0,         // single layers built by the stepped builder
   stats() {
     let layers = 0, px = 0;
     for (const r of _stills.values()) for (const part of [r.back, r.front]) for (const l of part.layers) if (l.canvas) { layers++; px += l.canvas.width * l.canvas.height; if (l.rest && l.rest.canvas) px += l.rest.canvas.width * l.rest.canvas.height; }
@@ -296,6 +299,8 @@ export function S(depth, alpha) {
   }
   if (p.mode === 'build') {
     sealLayer(p);
+    // A stepped build paints one section per pass: the others get the context that draws nothing.
+    if (p.only !== undefined && p.n++ !== p.only) return NULL_CTX;
     const { x, y, w, h } = p.cfg;
     const k = alpha === undefined ? p.cfg.k : p.cfg.k / 2;    // a pool of light has no detail to lose: half the resolution, a quarter of the memory
     const c = newCanvas(w * k, h * k);
@@ -324,6 +329,55 @@ export function buildStills(key, which, cfg, rec, T, info) {
   const outer = _pass;
   _pass = { mode: 'build', key, real: null, part, cfg, cur: null, i: 0, px: 0 };
   try { P[key][which](NULL_CTX, T, 0, info); sealLayer(_pass); part.built = true; cinemaCache.builds++; } finally { if (_pass.cur) freeCanvas(_pass.cur.canvas); _pass = outer; }
+}
+/**
+ * Build ONE more still layer of one half of a backdrop, and say whether that half is now complete.
+ * buildStills() paints every layer of a half in one call, which on a phone is a frame of 80 to 270 ms: the
+ * painter's vectors at full resolution, software-rastered, once per section. This runs the painter once per
+ * section instead, each time with only that section's context real, so the work can be laid one layer to a
+ * frame (see warmStills). The painter's own arithmetic is run again each time; against a context that draws
+ * nothing that is well under a millisecond.
+ */
+export function buildStillsStep(key, which, cfg, rec, T, info) {
+  const part = rec[which];
+  if (part.built) return true;
+  const fn = P[key][which];
+  if (!fn) { part.built = true; return true; }
+  const outer = _pass;
+  const only = part.layers.length;
+  _pass = { mode: 'build', key, real: null, part, cfg, cur: null, i: 0, px: 0, only, n: 0 };
+  try {
+    fn(NULL_CTX, T, 0, info);
+    sealLayer(_pass);
+    // sections seen: _pass.n. This pass built section `only` if there was one; the half is done when there is no next.
+    if (_pass.n <= only + 1) { part.built = true; cinemaCache.builds++; }
+    cinemaCache.steps++;
+  } finally { if (_pass.cur) freeCanvas(_pass.cur.canvas); _pass = outer; }
+  return part.built;
+}
+/** true when both halves of a backdrop are in the cache at this size (always, where nothing is cached) */
+export function stillsReady(key, cfg) {
+  if (!cfg) return true;
+  const rec = _stills.get(key);
+  return !!rec && rec.id === cfg.id && rec.back.built && (rec.front.built || !P[key].front);
+}
+/**
+ * Bring a backdrop's still layers nearer to ready: at least one layer, and more while the clock says there is
+ * time left in this frame. Returns true once everything is built. Never paints to the screen.
+ */
+export function warmStills(key, cfg, T, info, budgetMs = 4) {
+  if (!cfg) return true;
+  if (!P[key]) throw new Error(`cinema: cannot warm unknown backdrop '${key}'`);
+  const rec = stillsFor(key, cfg);
+  const now = typeof performance !== 'undefined' ? () => performance.now() : () => 0;
+  const t0 = now();
+  for (;;) {
+    if (!rec.back.built) buildStillsStep(key, 'back', cfg, rec, T, info);
+    else if (P[key].front && !rec.front.built) buildStillsStep(key, 'front', cfg, rec, T, info);
+    else return true;
+    if (now() - t0 >= budgetMs) break;
+  }
+  return rec.back.built && (rec.front.built || !P[key].front);
 }
 /**
  * Paint one half ('back' or 'front') of a backdrop. cfg (from stillsConfig) turns the still-layer cache on;
