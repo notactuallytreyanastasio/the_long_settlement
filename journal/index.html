@@ -30,11 +30,13 @@
 
   <div class="cols">
     <section class="timeline" aria-label="Timeline">
-      <div class="filters" role="tablist" id="filters">
+      <article class="synthesis" id="synthesis" hidden></article>
+      <div class="filters" id="filters">
         <button data-f="all" class="on">Everything</button>
         <button data-f="entry">Journal</button>
         <button data-f="node">Decision graph</button>
         <button data-f="sync">Code syncs</button>
+        <button id="thread-chip" class="thread-chip" hidden></button>
       </div>
       <ol id="feed" class="feed"></ol>
     </section>

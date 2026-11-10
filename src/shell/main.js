@@ -11,6 +11,7 @@
 
 import { content } from '../content/index.js';
 import { init, update } from '../core/game.js';
+import { preloadIds } from '../core/story.js';
 import { STEP } from '../core/physics.js';
 import { createRenderer } from './render.js';
 import { createAudio } from './audio.js';
@@ -23,6 +24,7 @@ const W = 1280;
 const H = 800;
 const MAX_FRAME = 0.1;          // seconds of real time one frame may bank
 const CHATTER_MAX = 3;          // non-blocking lines allowed to wait their turn
+const PRELOAD_AHEAD = 3;        // lines of a cinematic to have ready beyond the one being spoken
 
 const $ = (id) => {
   const el = document.getElementById(id);
@@ -160,6 +162,22 @@ async function boot() {
     run(effect);
   }
 
+  // ── preload ── have the audio for what is about to be said ready before the core asks.
+  // What is "about to be said" changes only when the story moves (mode, chapter, scene, or
+  // the line of a cinematic), so the list is rebuilt on that and not on every tick.
+  // voice.preload is optional: a voice without it fetches each line when it is spoken.
+  const canPreload = typeof voice.preload === 'function';
+  if (!canPreload) console.warn('main: this voice has no preload(ids); lines will load as they are spoken');
+  let preloadKey = null;
+  function preload() {
+    if (!canPreload) return;
+    const key = `${game.mode}|${game.chapter}|${game.scene}|${game.cine ? `${game.cine.kind}:${game.cine.index}` : ''}`;
+    if (key === preloadKey) return;
+    preloadKey = key;
+    const ids = preloadIds(content, game, PRELOAD_AHEAD);
+    if (ids.length > 0) voice.preload(ids);
+  }
+
   // ── dispatch ── (a voice callback can fire while effects are being interpreted; queue it)
   const pending = [];
   let dispatching = false;
@@ -180,6 +198,7 @@ async function boot() {
         game = r.game;
         for (const e of r.effects) interpret(e);
       }
+      preload();
     } catch (err) {
       pending.length = 0;
       fatal(err);

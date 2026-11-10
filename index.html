@@ -37,6 +37,12 @@
   #gate dl { display: grid; grid-template-columns: auto auto; gap: 0.3rem 1.2rem; justify-content: center; margin: 1.6rem 0 0; font-size: 0.85rem; color: rgba(234, 220, 192, 0.6); text-align: left; }
   #gate dt { font-family: "SF Mono", Menlo, Consolas, monospace; color: #c9a25a; text-align: right; }
   #gate dd { margin: 0; }
+  #gate dl.touch { display: none; }
+  #gate dl.touch dt { font-family: inherit; font-style: italic; }
+  @media (hover: none) and (pointer: coarse) {
+    #gate dl.keys { display: none; }
+    #gate dl.touch { display: grid; }
+  }
 
   #muted { position: fixed; top: 0.8rem; right: 1rem; font-size: 0.8rem; letter-spacing: 0.2em; color: #c9a25a; text-transform: uppercase; }
   #fatal {
@@ -53,15 +59,22 @@
   <div class="card">
     <div class="over">A voiced story on a pinball table</div>
     <h1>The Long Settlement</h1>
-    <p>Every note reads: payable in stillness. It is best with sound on.</p>
+    <p>Every note reads: payable in calm. It is best with sound on.</p>
     <button id="begin" disabled>Begin</button>
     <button id="resume" hidden></button>
-    <dl>
+    <dl class="keys">
       <dt>&larr; &rarr; &nbsp;or&nbsp; Z /</dt><dd>flippers (the Shift keys too)</dd>
       <dt>Space</dt><dd>hold and release to plunge</dd>
       <dt>Enter</dt><dd>spin, borrow, next line</dd>
       <dt>P &nbsp; R</dt><dd>to the table, back to the Reels</dd>
       <dt>S &nbsp; M</dt><dd>skip a scene, mute</dd>
+    </dl>
+    <dl class="touch">
+      <dt>left half, right half</dt><dd>flippers</dd>
+      <dt>bottom right corner</dt><dd>hold and release to plunge</dd>
+      <dt>tap</dt><dd>spin, borrow, next line</dd>
+      <dt>tap the table</dt><dd>to the table</dd>
+      <dt>top right corner</dt><dd>back to the Reels</dd>
     </dl>
   </div>
 </div>

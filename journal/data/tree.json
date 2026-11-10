@@ -2741,8 +2741,8 @@
  },
  {
   "path": "index.html",
-  "bytes": 3793,
-  "lines": 75
+  "bytes": 4345,
+  "lines": 88
  },
  {
   "path": "package.json",
@@ -2806,8 +2806,8 @@
  },
  {
   "path": "src/core/physics.js",
-  "bytes": 17151,
-  "lines": 412
+  "bytes": 17644,
+  "lines": 417
  },
  {
   "path": "src/core/rng.js",
@@ -2846,13 +2846,13 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 9452,
-  "lines": 256
+  "bytes": 10508,
+  "lines": 275
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 79006,
-  "lines": 2209
+  "bytes": 88895,
+  "lines": 2431
  },
  {
   "path": "src/shell/voice.js",
@@ -2871,7 +2871,7 @@
  },
  {
   "path": "test/economy.test.js",
-  "bytes": 13079,
+  "bytes": 13072,
   "lines": 277
  },
  {

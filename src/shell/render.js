@@ -10,7 +10,7 @@
 
 import { REEL_STRIPS } from '../core/slot.js';
 import { currentScene, objectiveProgress, litIds } from '../core/story.js';
-import { SPIN_COST, LOAN, canSpin, needsLoan } from '../core/economy.js';
+import { SPIN_COST, LOAN, TRUST_PER_LOAN, canSpin, needsLoan } from '../core/economy.js';
 import { drawCinema, drawPortrait } from './cinema.js';
 
 const W = 1280;
@@ -31,7 +31,7 @@ const RED = '#e5533d';
 const STEEL = '#cfd6de';
 
 const THREADS = {
-  duty: { color: '#e6cb7c', label: 'DUTY', gloss: 'the pilgrimage and the contract' },
+  duty: { color: '#e6cb7c', label: 'DUTY', gloss: 'the Circuit and the contract' },
   covert: { color: '#7fa6e6', label: 'COVERT', gloss: 'what the Line asks of you' },
   commons: { color: '#f28c4e', label: 'COMMONS', gloss: 'what the town will remember' },
 };
@@ -72,10 +72,21 @@ function inwardNormal(a, b) {
 // Where a reel sits (in strip-index units, float) and how fast it is moving.
 // Pure in game.slot: a reel runs at constant speed, decelerates quadratically
 // over the last DECEL seconds before its stopAt, lands exactly on its result
-// symbol and rocks once.
+// symbol and rocks there: it carries a little past the payline, swings back
+// short of it, and comes to rest.
 const REEL_SPEED = 20; // symbols per second at full speed
 const REEL_DECEL = 0.75; // seconds of easing before the stop
-function reelPose(i, slot) {
+const ROCK_SECONDS = 0.45; // shorter than the gap between two reels stopping
+const ROCK_SYMBOLS = 0.1; // the swing's envelope, in symbols: 6.6 px past the payline, then 2.5 px short of it
+
+/** Offset of a landed reel from its symbol, `since` seconds after it stopped. */
+export function reelRock(since) {
+  if (!(since > 0) || since >= ROCK_SECONDS) return 0;
+  const x = since / ROCK_SECONDS;
+  return ROCK_SYMBOLS * (1 - x) * (1 - x) * Math.sin(TAU * 1.5 * x);
+}
+
+export function reelPose(i, slot) {
   const strip = REEL_STRIPS[i];
   let base = (i * 2) % strip.length;
   if (slot.result) {
@@ -83,17 +94,27 @@ function reelPose(i, slot) {
     base = strip.indexOf(sym);
     if (base < 0) throw new Error(`render: reel ${i} result symbol '${sym}' is not on REEL_STRIPS[${i}]`);
   }
-  if (slot.phase === 'idle' || slot.phase === 'settled') return { p: base, speed: 0 };
+  if (slot.phase === 'idle') return { p: base, speed: 0 };
+  // The core settles the spin on the tick the last reel stops and restarts slot.t, so in
+  // 'settled' a reel stopped (slot.t + the head start it had on the last reel) seconds ago.
+  // Without this the last reel, the one the eye is on, would freeze dead while the others rocked.
+  if (slot.phase === 'settled') {
+    const last = slot.stopAt[slot.stopAt.length - 1];
+    return { p: base + reelRock(slot.t + last - slot.stopAt[i]), speed: 0 };
+  }
   if (slot.phase !== 'spinning') throw new Error(`render: unknown slot phase '${slot.phase}'`);
   const u = slot.stopAt[i] - slot.t;
-  if (u <= 0) {
-    const x = -u / 0.32;
-    const rock = x < 1 ? 0.16 * Math.sin(Math.PI * x) * (1 - x) : 0;
-    return { p: base + rock, speed: 0 };
-  }
+  if (u <= 0) return { p: base + reelRock(-u), speed: 0 };
   const rem = u < REEL_DECEL ? (REEL_SPEED * u * u) / (2 * REEL_DECEL) : REEL_SPEED * (u - REEL_DECEL / 2);
   return { p: base - rem, speed: u < REEL_DECEL ? (REEL_SPEED * u) / REEL_DECEL : REEL_SPEED };
 }
+
+// Where a finger does what, as fractions of the canvas. These mirror the tests in
+// src/shell/input.js onPointerDown; if that file changes, the markings must follow.
+//   play:  y < top is a strip (its right part, x > reelsFrom, goes back to the Reels);
+//          x > plungeX and y > plungeY is the plunger; otherwise left half / right half flip.
+//   slot:  the middle third (the table) goes to play; anywhere else is confirm.
+const TOUCH = { top: 0.12, reelsFrom: 0.75, plungeX: 0.78, plungeY: 0.72, tableFrom: 1 / 3, tableTo: 2 / 3 };
 
 // ───────────────────────── canvas helpers ─────────────────────────
 
@@ -432,10 +453,21 @@ export function createRenderer(canvas) {
     sparks: [], // {x,y,vx,vy,born,life,color}
     rings: [], // {x,y,born,color}
     prevHits: null,
-    eased: { marks: null, score: null, trust: null, debt: null },
+    eased: { marks: null, score: null, trust: null, debt: null, lean: null },
+    touch: false, // true on a touch device: draw where a finger does what
     toastSeen: new Map(), // kind|text -> timeMs first seen
     elems: new Map(), // table id -> Map(element id -> [x,y])
   };
+
+  // A touch device is one whose main pointer is a finger, or any device once it has been
+  // touched. A mouse click never turns the markings on.
+  const win = doc.defaultView;
+  if (win && typeof win.matchMedia === 'function') {
+    view.touch = win.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  }
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse') view.touch = true;
+  }, { passive: true });
 
   function layer(key, w, h, scale, paint) {
     const k = `${key}@${scale}`;
@@ -1479,10 +1511,16 @@ export function createRenderer(canvas) {
     g.stroke();
     if (game.mode === 'slot') {
       const e = game.econ;
-      if (needsLoan(e)) hintRow(g, [['key', 'Enter'], ['txt', `borrow ${fmtInt(LOAN.marks)} from the Mint`]], X, 732);
-      else if (canSpin(e)) hintRow(g, [['key', 'Enter'], ['txt', `spin the Reels (${fmtInt(SPIN_COST)} marks)`]], X, 732);
-      else hintRow(g, [['key', 'Enter'], ['txt', 'spin (not enough marks)']], X, 732);
-      hintRow(g, [['key', 'P'], ['txt', e.writs > 0 ? 'play the table' : 'play (needs a writ)'], ['key', 'M'], ['txt', 'mute']], X, 762);
+      const go = view.touch ? 'Tap' : 'Enter';
+      if (needsLoan(e)) hintRow(g, [['key', go], ['txt', `borrow ${fmtInt(LOAN.marks)} from the Mint`]], X, 732);
+      else if (canSpin(e)) hintRow(g, [['key', go], ['txt', `spin the Reels (${fmtInt(SPIN_COST)} marks)`]], X, 732);
+      else hintRow(g, [['key', go], ['txt', 'spin (not enough marks)']], X, 732);
+      const toTable = e.writs > 0 ? 'play the table' : 'play (needs a writ)';
+      if (view.touch) hintRow(g, [['key', 'Tap the table'], ['txt', toTable]], X, 762);
+      else hintRow(g, [['key', 'P'], ['txt', toTable], ['key', 'M'], ['txt', 'mute']], X, 762);
+    } else if (game.mode === 'play' && view.touch) {
+      hintRow(g, [['key', 'Left half'], ['key', 'Right half'], ['txt', 'flip']], X, 732);
+      hintRow(g, [['key', 'Corner'], ['txt', 'hold to plunge'], ['key', 'Top right'], ['txt', 'Reels']], X, 762);
     } else if (game.mode === 'play') {
       const cx = hintRow(g, [['key', '←'], ['key', '→'], ['txt', 'or'], ['key', 'Z'], ['key', '/'], ['txt', 'flip']], X, 732);
       hintRow(g, [['key', 'Space'], ['txt', 'plunge']], Math.max(cx + 4, 268), 732);
@@ -1524,7 +1562,7 @@ export function createRenderer(canvas) {
     g.font = `italic 12px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.45);
     g.textAlign = 'center';
-    g.fillText('Mint of Aurelle  ·  payable in stillness', 1060, 64);
+    g.fillText('Mint of Aurelle  ·  payable in calm', 1060, 64);
     g.textAlign = 'left';
 
     // housing
@@ -1684,7 +1722,7 @@ export function createRenderer(canvas) {
       g.fillText('Force is licensed. Writs are allotted by lot.', 1060, py + 40);
       g.font = `600 12px ${MONO}`;
       g.fillStyle = A(LANTERN, focus ? 0.6 + 0.4 * Math.sin(now / 260) : 0.4);
-      g.fillText(`ENTER  ·  ${fmtInt(SPIN_COST)} MARKS A DRAW`, 1060, py + 70);
+      g.fillText(`${view.touch ? 'TAP' : 'ENTER'}  ·  ${fmtInt(SPIN_COST)} MARKS A DRAW`, 1060, py + 70);
     }
     g.textAlign = 'left';
 
@@ -1875,6 +1913,10 @@ export function createRenderer(canvas) {
     const left = Math.max(0, earned - econ.aidUsed);
     g.fillText(left > 0 ? `the town will cover ${left} lost ball${left === 1 ? '' : 's'}` : 'the Mint lends; the Commons gives', bx, by + 32);
 
+    // the balance of the whole book stands at the right of the last row; boons keep to its left
+    const BAL_W = 84;
+    drawBalance(g, econ, R - 16 - BAL_W / 2, y0 + 236, now, dt);
+
     // boons
     cap('BOONS', L, y0 + 224);
     const chips = [];
@@ -1888,10 +1930,22 @@ export function createRenderer(canvas) {
       g.fillStyle = A(PAPER, 0.35);
       g.fillText('none in force', L, y0 + 248);
     }
+    // all three boons at once are wider than the room beside the balance: step the type down until they fit
+    const room = R - 16 - BAL_W - 10 - L;
+    let size = 11;
+    let pad = 9;
+    const rowWidth = () => {
+      g.font = `700 ${size}px ${MONO}`;
+      return chips.reduce((sum, [text]) => sum + g.measureText(text).width + pad * 2, 0) + 8 * Math.max(0, chips.length - 1);
+    };
+    while (size > 7 && rowWidth() > room) {
+      size -= 1;
+      pad = Math.max(5, pad - 1);
+    }
     let cx = L;
     for (const [text, col] of chips) {
-      g.font = `700 11px ${MONO}`;
-      const cw = g.measureText(text).width + 18;
+      g.font = `700 ${size}px ${MONO}`;
+      const cw = g.measureText(text).width + pad * 2;
       rr(g, cx, y0 + 234, cw, 22, 11);
       g.fillStyle = A(col, 0.14);
       g.fill();
@@ -1900,10 +1954,174 @@ export function createRenderer(canvas) {
       g.stroke();
       g.fillStyle = col;
       g.textBaseline = 'middle';
-      g.fillText(text, cx + 9, y0 + 245.5);
+      g.fillText(text, cx + pad, y0 + 245.5);
       g.textBaseline = 'alphabetic';
       cx += cw + 8;
     }
+  }
+
+  // Which way the book leans: a pair of scales, and no words. The left pan holds every
+  // trust the player has ever earned, the right pan every loan ever taken, weighed at
+  // TRUST_PER_LOAN each: the same sum economy.leaning() does. Level is level; the heavier
+  // pan hangs lower. It names no ending and shows no number.
+  function drawBalance(g, econ, cx, cy, now, dt) {
+    for (const f of ['trustEarned', 'loansTaken']) {
+      if (typeof econ[f] !== 'number' || !Number.isFinite(econ[f])) {
+        throw new Error(`render: econ.${f} must be a finite number to weigh, got ${String(econ[f])}`);
+      }
+    }
+    const trustW = econ.trustEarned;
+    const loanW = econ.loansTaken * TRUST_PER_LOAN;
+    const diff = ease('lean', trustW - loanW, dt); // > 0: the commons pan is the heavier
+    const MAX_TILT = 0.34; // radians
+    const tilt = MAX_TILT * Math.tanh(diff / (TRUST_PER_LOAN * 2)) + 0.012 * Math.sin(now / 1100);
+    const tc = THREADS.commons.color;
+    const ARM = 28;
+    const DROP = 17; // beam end to pan rim
+    const PAN = 11; // pan half-width
+    const pivot = [cx, cy - 15];
+
+    // post and foot
+    g.lineCap = 'round';
+    g.strokeStyle = brassGrad(g, cx - 3, pivot[1], cx + 3, cy + 20);
+    g.lineWidth = 2.5;
+    g.beginPath();
+    g.moveTo(cx, pivot[1]);
+    g.lineTo(cx, cy + 19);
+    g.stroke();
+    g.fillStyle = BRASS_LO;
+    rr(g, cx - 12, cy + 18, 24, 4, 2);
+    g.fill();
+    g.strokeStyle = A(BRASS_HI, 0.5);
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.moveTo(cx - 11, cy + 18.5);
+    g.lineTo(cx + 11, cy + 18.5);
+    g.stroke();
+
+    // beam: the left end sinks as the commons pan grows heavier
+    const dx = Math.cos(tilt) * ARM;
+    const dy = Math.sin(tilt) * ARM;
+    const ends = [[cx - dx, pivot[1] + dy], [cx + dx, pivot[1] - dy]];
+    g.strokeStyle = BRASS;
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(ends[0][0], ends[0][1]);
+    g.lineTo(ends[1][0], ends[1][1]);
+    g.stroke();
+    g.fillStyle = BRASS_HI;
+    g.beginPath();
+    g.arc(pivot[0], pivot[1], 2.6, 0, TAU);
+    g.fill();
+    // a pointer under the pivot swings with the beam
+    g.strokeStyle = A(BRASS_HI, 0.8);
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(pivot[0], pivot[1]);
+    g.lineTo(pivot[0] - Math.sin(tilt) * 12, pivot[1] + Math.cos(tilt) * 12);
+    g.stroke();
+
+    // pans hang plumb from the beam ends, each with what has been put in it
+    const fills = [1 - Math.exp(-trustW / 150), 1 - Math.exp(-loanW / 150)];
+    ends.forEach(([ex, ey], side) => {
+      const py = ey + DROP;
+      const col = side === 0 ? tc : RED;
+      const amount = fills[side];
+      g.strokeStyle = A(STEEL, 0.5);
+      g.lineWidth = 0.8;
+      g.beginPath();
+      g.moveTo(ex, ey);
+      g.lineTo(ex - PAN, py);
+      g.moveTo(ex, ey);
+      g.lineTo(ex + PAN, py);
+      g.stroke();
+      if (amount > 0.01) {
+        // a mound that grows with the total: lamplight on the left, red coin on the right
+        const h = 2 + amount * 8;
+        if (side === 0) glow(g, ex, py - h / 2, 9 + amount * 9, LANTERN, 0.25 + 0.35 * amount);
+        const mound = g.createLinearGradient(0, py - h, 0, py);
+        mound.addColorStop(0, side === 0 ? '#ffd9a0' : '#ff9a86');
+        mound.addColorStop(1, col);
+        g.fillStyle = mound;
+        g.beginPath();
+        g.ellipse(ex, py, PAN - 2.5, h, 0, Math.PI, TAU);
+        g.closePath();
+        g.fill();
+      }
+      g.fillStyle = '#2a1d0e';
+      g.strokeStyle = amount > 0.01 ? A(col, 0.95) : A(BRASS, 0.7);
+      g.lineWidth = 1.2;
+      g.beginPath();
+      g.moveTo(ex - PAN, py);
+      g.quadraticCurveTo(ex, py + 9, ex + PAN, py);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    });
+    g.lineCap = 'butt';
+  }
+
+  // ─────────── touch: where a finger does what ───────────
+  // Drawn over the cabinet, faintly, and only when view.touch is set.
+
+  function touchTag(g, text, x, y, color, a, align = 'center') {
+    g.font = `700 9px ${MONO}`;
+    g.fillStyle = A(color, a);
+    spaced(g, text, x, y, 1.5, align);
+  }
+
+  function touchFrame(g, x, y, w, h, color, a) {
+    rr(g, x, y, w, h, 12);
+    g.strokeStyle = A(color, a);
+    g.lineWidth = 1.2;
+    g.setLineDash([5, 7]);
+    g.stroke();
+    g.setLineDash([]);
+  }
+
+  function drawTouchZones(g, game, now) {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 320);
+    if (game.mode === 'slot') {
+      // the middle third is the table; everything else is the Reels
+      const x0 = W * TOUCH.tableFrom;
+      const x1 = W * TOUCH.tableTo;
+      const ready = game.econ.writs > 0 && game.slot.phase !== 'spinning';
+      touchFrame(g, x0 + 5, 5, x1 - x0 - 10, H - 10, BRASS_HI, ready ? 0.14 + 0.1 * pulse : 0.1);
+      touchTag(g, 'TAP · THE TABLE', (x0 + x1) / 2, H - 14, BRASS_HI, ready ? 0.5 : 0.28);
+      touchTag(g, 'TAP · THE REELS', (x1 + W) / 2, H - 14, LANTERN, 0.3);
+      return;
+    }
+    if (game.mode !== 'play') throw new Error(`render: no touch zones for mode '${game.mode}'`);
+    const balls = game.phys ? game.phys.balls : [];
+    const waiting = balls.some((b) => b.state === 'plunger');
+    const live = balls.some((b) => b.state === 'live');
+    const top = H * TOUCH.top;
+    // the two flipper halves, split down the middle of the table
+    g.strokeStyle = A(PAPER, 0.1);
+    g.lineWidth = 1;
+    g.setLineDash([3, 9]);
+    g.beginPath();
+    g.moveTo(W / 2 + 0.5, top);
+    g.lineTo(W / 2 + 0.5, H);
+    g.stroke();
+    g.setLineDash([]);
+    touchTag(g, '◀ LEFT FLIPPER', W / 2 - 14, H - 10, PAPER, 0.3, 'right');
+    touchTag(g, 'RIGHT FLIPPER ▶', W / 2 + 14, H - 10, PAPER, 0.3, 'left');
+    // the plunger corner
+    const px = W * TOUCH.plungeX;
+    const py = H * TOUCH.plungeY;
+    const charge = game.phys ? clamp(game.phys.charge, 0, 1) : 0;
+    if (charge > 0) {
+      rr(g, px + 5, py + 5, W - px - 10, H - py - 10, 12);
+      g.fillStyle = A(LANTERN, 0.08 * charge);
+      g.fill();
+    }
+    touchFrame(g, px + 5, py + 5, W - px - 10, H - py - 10, LANTERN, waiting ? 0.22 + 0.2 * pulse : 0.12);
+    touchTag(g, 'HOLD · RELEASE TO PLUNGE', (px + W) / 2, H - 10, LANTERN, waiting ? 0.75 : 0.3);
+    // the way back to the Reels: the right end of the top strip
+    const rx = W * TOUCH.reelsFrom;
+    touchFrame(g, rx + 5, 5, W - rx - 10, top - 10, BRASS_HI, live ? 0.1 : 0.18 + 0.14 * pulse);
+    touchTag(g, 'TAP · BACK TO THE REELS', W - 34, 21, BRASS_HI, live ? 0.26 : 0.6, 'right');
   }
 
   // ─────────── the unified cabinet (slot and play) ───────────
@@ -1936,18 +2154,19 @@ export function createRenderer(canvas) {
     if (game.mode === 'slot') {
       g.fillStyle = 'rgba(5,3,2,0.52)';
       g.fillRect(0, 0, TW, H);
-      if (game.econ.writs > 0) tableBanner(g, 'P — send the Plumb through the Orrery', 400, BRASS_HI, 0.75 + 0.25 * pulse);
+      if (game.econ.writs > 0) tableBanner(g, `${view.touch ? 'Tap here' : 'P'} — send the Plumb through the Orrery`, 400, BRASS_HI, 0.75 + 0.25 * pulse);
       else tableBanner(g, 'No writ, no Plumb. The Reels decide.', 400, PAPER, 0.7);
     } else {
       const balls = game.phys ? game.phys.balls : [];
-      if (balls.some((b) => b.state === 'plunger')) tableBanner(g, 'Hold Space, release to plunge', 506, BRASS_HI, 0.7 + 0.3 * pulse);
-      else if (balls.length === 0) tableBanner(g, 'P — back to the Reels', 506, PAPER, 0.7 + 0.3 * pulse);
+      if (balls.some((b) => b.state === 'plunger')) tableBanner(g, view.touch ? 'Hold the corner, release to plunge' : 'Hold Space, release to plunge', 506, BRASS_HI, 0.7 + 0.3 * pulse);
+      else if (balls.length === 0) tableBanner(g, `${view.touch ? 'Top right' : 'R'} — back to the Reels`, 506, PAPER, 0.7 + 0.3 * pulse);
     }
     g.drawImage(layer('bezel', TW + 16, H, scale, (c) => { c.translate(8, 0); paintBezel(c); }), -8, 0, TW + 16, H);
     g.restore();
 
     drawStory(g, content, game, fx, chapter, scene, table, threadCol);
     drawReels(g, game, fx, dt);
+    if (view.touch) drawTouchZones(g, game, now);
   }
 
   // ─────────── title, chapter card, end ───────────
@@ -2033,7 +2252,7 @@ export function createRenderer(canvas) {
     g.textAlign = 'center';
     g.font = `600 13px ${SERIF}`;
     g.fillStyle = A(BRASS, 0.85);
-    spaced(g, 'A PILGRIMAGE  ·  A CONTRACT  ·  A LEDGER', W / 2, 212, 5, 'center');
+    spaced(g, 'A TREATY  ·  A LOT  ·  A LEDGER', W / 2, 212, 5, 'center');
     g.font = `600 84px ${SERIF}`;
     g.shadowColor = 'rgba(255,170,70,0.75)';
     g.shadowBlur = 38;
@@ -2048,21 +2267,23 @@ export function createRenderer(canvas) {
     rule(g, W / 2, 410, 300, 0.9);
     g.font = `italic 22px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.85);
-    g.fillText('Every note reads: payable in stillness.', W / 2, 452);
+    g.fillText('Every note reads: payable in calm.', W / 2, 452);
 
     const p = 0.78 + 0.22 * Math.sin(now / 420);
     g.font = `600 17px ${SERIF}`;
     g.fillStyle = A(BRASS_HI, p);
     g.shadowColor = 'rgba(255,180,80,0.8)';
     g.shadowBlur = 16 * p;
-    spaced(g, 'PRESS ENTER TO OPEN THE ACCOUNT', W / 2, 640, 4, 'center');
+    spaced(g, view.touch ? 'TAP TO OPEN THE ACCOUNT' : 'PRESS ENTER TO OPEN THE ACCOUNT', W / 2, 640, 4, 'center');
     g.shadowBlur = 0;
     g.textAlign = 'left';
-    const y = 730;
-    let cx = W / 2 - 235;
-    cx = hintRow(g, [['key', 'Enter'], ['txt', 'begin']], cx, y) + 14;
-    cx = hintRow(g, [['key', 'S'], ['txt', 'skip a scene']], cx, y) + 14;
-    hintRow(g, [['key', 'M'], ['txt', 'mute']], cx, y);
+    if (!view.touch) {
+      const y = 730;
+      let cx = W / 2 - 235;
+      cx = hintRow(g, [['key', 'Enter'], ['txt', 'begin']], cx, y) + 14;
+      cx = hintRow(g, [['key', 'S'], ['txt', 'skip a scene']], cx, y) + 14;
+      hintRow(g, [['key', 'M'], ['txt', 'mute']], cx, y);
+    }
     g.font = `italic 13px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.35);
     g.textAlign = 'center';
@@ -2103,7 +2324,7 @@ export function createRenderer(canvas) {
     if (t > 1.6) {
       const p = 0.5 + 0.5 * Math.sin(now / 420);
       g.globalAlpha = 0.5 + 0.5 * p;
-      hintRow(g, [['key', 'Enter'], ['txt', 'continue']], W / 2 - 62, 720);
+      hintRow(g, [['key', view.touch ? 'Tap' : 'Enter'], ['txt', 'continue']], W / 2 - 62, 720);
       g.globalAlpha = 1;
     }
     // letterbox bars
@@ -2165,9 +2386,10 @@ export function createRenderer(canvas) {
     g.textAlign = 'center';
     g.font = `italic 17px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.55 + 0.25 * Math.sin(now / 600));
-    g.fillText(`End of the chapters written so far: ${content.chapters.length}. The road goes on.`, W / 2, 650);
+    g.fillText(`End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W / 2, 650);
     g.textAlign = 'left';
-    hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 730);
+    if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], W / 2 - 96, 730);
+    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 730);
   }
 
   // ─────────── entry point ───────────

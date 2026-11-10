@@ -133,7 +133,8 @@ function bounce(b, nx, ny, e, mu, svx, svy) {
 
 // Closest-point test of the ball centre against segment a-b; contact within `reach`.
 // On contact writes the contact normal and point into `c` and pushes the ball out.
-const c = { nx: 0, ny: 0, cx: 0, cy: 0 };
+// `end` is set when the contact is with an end of the segment: a point, not a face.
+const c = { nx: 0, ny: 0, cx: 0, cy: 0, end: false };
 function touchSeg(b, ax, ay, bx, by, reach) {
   const ex = bx - ax, ey = by - ay;
   const len2 = ex * ex + ey * ey;
@@ -153,7 +154,7 @@ function touchSeg(b, ax, ay, bx, by, reach) {
   } else {
     dx /= d; dy /= d;
   }
-  c.nx = dx; c.ny = dy; c.cx = cx; c.cy = cy;
+  c.nx = dx; c.ny = dy; c.cx = cx; c.cy = cy; c.end = t === 0 || t === 1;
   b.x = cx + dx * reach;
   b.y = cy + dy * reach;
   return true;
@@ -283,7 +284,11 @@ export function stepPhysics(table, phys, input, dt) {
           if (g.kind === KIND_ONEWAY && b.vx * g.px + b.vy * g.py > 0) continue;
           if (!touchSeg(b, g.ax, g.ay, g.bx, g.by, R)) continue;
           touched = true;
-          const impact = bounce(b, c.nx, c.ny, g.e, WALL_FRICTION, 0, 0);
+          // No friction against a point. With it, a slow ball that comes to the top of a post
+          // stops there for good: within atan(mu) of the top, friction outweighs the slope.
+          // Found on Vessery, where balls settled on the tip of the right outlane post at
+          // (342.82, 584.00), the same spot to 14 digits, on 2 seeds in 13.
+          const impact = bounce(b, c.nx, c.ny, g.e, c.end ? 0 : WALL_FRICTION, 0, 0);
           if (g.kind === KIND_TARGET) {
             if (impact > EVENT_SPEED.target) events.push({ type: 'target', id: g.id, ballId: b.id, speed: impact });
           } else if (g.kind === KIND_SLING) {

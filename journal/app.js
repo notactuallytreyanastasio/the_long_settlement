@@ -86,13 +86,29 @@ function renderTree(tree, snaps) {
   if (!tree.length) { $('#tree').innerHTML = '<p class="small">Nothing yet.</p>'; return; }
   const first = new Set();
   const lastChanged = new Set((snaps.at(-1)?.changed || []).map((c) => c.split(' ').slice(1).join(' ')));
-  const max = Math.max(...tree.map((f) => f.lines || 0), 1);
-  let html = '', dir = null;
+  // Code files get a row each; a directory of mostly binary assets is one summary row.
+  const dirs = new Map();
   for (const f of tree) {
     const d = f.path.includes('/') ? f.path.slice(0, f.path.lastIndexOf('/')) : '.';
-    if (d !== dir) { html += `<div class="dir">${esc(d)}/</div>`; dir = d; }
-    const name = f.path.slice(f.path.lastIndexOf('/') + 1);
-    html += `<div class="row ${lastChanged.has(f.path) ? 'new' : ''}"><span class="p" title="${esc(f.path)}">${esc(name)}</span><span class="n">${f.lines ?? ''}</span><span class="bar" style="width:${Math.max(2, ((f.lines || 0) / max) * 100)}%"></span></div>`;
+    if (!dirs.has(d)) dirs.set(d, []);
+    dirs.get(d).push(f);
+  }
+  const max = Math.max(...tree.filter((f) => !f.path.endsWith('.json')).map((f) => f.lines || 0), 1);
+  const kb = (b) => b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`;
+  let html = '';
+  for (const [d, files] of dirs) {
+    const binary = files.filter((f) => f.lines == null).length;
+    if (files.length > 12 && binary / files.length > 0.5) {
+      const bytes = files.reduce((s, f) => s + f.bytes, 0);
+      const changed = files.filter((f) => lastChanged.has(f.path)).length;
+      html += `<div class="dir">${esc(d)}/</div><div class="row ${changed ? 'new' : ''}"><span class="p">${files.length} files${changed ? `, ${changed} just changed` : ''}</span><span class="n" style="grid-column:span 2;text-align:left">${kb(bytes)}</span></div>`;
+      continue;
+    }
+    html += `<div class="dir">${esc(d)}/</div>`;
+    for (const f of files) {
+      const name = f.path.slice(f.path.lastIndexOf('/') + 1);
+      html += `<div class="row ${lastChanged.has(f.path) ? 'new' : ''}"><span class="p" title="${esc(f.path)}">${esc(name)}</span><span class="n">${f.lines ?? kb(f.bytes)}</span><span class="bar" style="width:${Math.max(2, ((f.lines || 0) / max) * 100)}%"></span></div>`;
+    }
   }
   $('#tree').innerHTML = html;
 }
@@ -134,8 +150,35 @@ function syncItem(s, prev) {
   return { kind: 'sync', at: s.at, html: `<li class="item" data-k="sync"><div class="when">${fmtTime(s.at)}</div><div class="what"><details><summary><span class="badge t-sync">sync</span><span class="meta" style="display:inline">${bits.join(' · ')}</span><span class="more">files</span></summary><div class="detail files">${detail}</div></details></div></li>` };
 }
 
+let threadNames = {};
+
 function entryItem(e) {
-  return { kind: 'entry', at: e.at, html: `<li class="item entry" data-k="entry"><div class="when">${fmtTime(e.at)} · <span class="t-entry">journal</span></div><h3>${esc(e.title)}</h3><div class="body">${md(e.body)}</div></li>` };
+  const tags = (e.threads || []).map((k) => `<button class="thread-tag" data-thread="${esc(k)}">${esc(threadNames[k] || k)}</button>`).join('');
+  const note = e.note ? `<div class="note"><b>Since then</b> ${md(e.note).replace(/^<p>|<\/p>$/g, '')}</div>` : '';
+  return { kind: 'entry', at: e.at, threads: e.threads || [], html: `<li class="item entry" data-k="entry"><div class="when">${fmtTime(e.at)} · <span class="t-entry">journal</span></div><h3>${esc(e.title)}</h3>${tags ? `<div class="tags">${tags}</div>` : ''}${note}<div class="body">${md(e.body)}</div></li>` };
+}
+
+function renderSynthesis(syn, entries) {
+  const el = $('#synthesis');
+  if (!syn) { el.hidden = true; return; }
+  el.hidden = false;
+  threadNames = Object.fromEntries((syn.threads || []).map((t) => [t.key, t.name]));
+  const count = (k) => entries.filter((e) => (e.threads || []).includes(k)).length;
+  el.innerHTML = `<p class="kicker">The story so far · revised ${ago(syn.updated)}</p><h2>${esc(syn.title)}</h2><div class="body">${md(syn.body)}</div>`
+    + `<h3 class="threads-h">Threads to follow</h3><ul class="threads">${(syn.threads || []).map((t) => `<li><button class="thread-link" data-thread="${esc(t.key)}"><span class="tn">${esc(t.name)}</span><span class="tc">${count(t.key)} entries, oldest first →</span></button><p>${esc(t.summary)}</p></li>`).join('')}</ul>`;
+}
+
+function setFilter(f) {
+  filter = f;
+  try { localStorage.setItem('feed-filter', filter); } catch {}
+  for (const x of document.querySelectorAll('#filters button[data-f]')) x.classList.toggle('on', x.dataset.f === filter);
+  const chip = $('#thread-chip');
+  if (filter.startsWith('thread:')) {
+    const k = filter.slice(7);
+    chip.hidden = false;
+    chip.innerHTML = `Thread: ${esc(threadNames[k] || k)} <span aria-hidden="true">×</span>`;
+  } else chip.hidden = true;
+  refresh();
 }
 
 function renderFeed(graph, snaps, entries) {
@@ -144,8 +187,12 @@ function renderFeed(graph, snaps, entries) {
     ...graph.nodes.map((n) => nodeItem(n, graph, byId)),
     ...snaps.map((s, i) => syncItem(s, snaps[i - 1])).filter(Boolean),
     ...entries.map(entryItem),
-  ].filter((x) => filter === 'all' || x.kind === filter)
-    .sort((a, b) => b.at.localeCompare(a.at) || (a.kind === 'entry' ? -1 : 1));
+  ];
+  const thread = filter.startsWith('thread:') ? filter.slice(7) : null;
+  const shown = items.filter((x) => thread ? x.kind === 'entry' && x.threads.includes(thread) : filter === 'all' || x.kind === filter);
+  // A thread reads as a story, so oldest first; the live feed is newest first.
+  shown.sort((a, b) => (thread ? a.at.localeCompare(b.at) : b.at.localeCompare(a.at)) || (a.kind === 'entry' ? -1 : 1));
+  items.length = 0; items.push(...shown);
   if (!items.length) { $('#feed').innerHTML = '<li class="empty">Nothing here yet.</li>'; return; }
   const open = new Set([...document.querySelectorAll('#feed details[open]')].map((d) => d.closest('li').dataset.key));
   let html = '', day = null;
@@ -159,10 +206,11 @@ function renderFeed(graph, snaps, entries) {
 }
 
 async function refresh() {
-  const [graph, snaps, entries, tree, build] = await Promise.all([
+  const [graph, snaps, entries, tree, build, syn] = await Promise.all([
     load('graph.json', { nodes: [], edges: [] }), load('snapshots.json', []), load('entries.json', []),
-    load('tree.json', []), load('build.json', null),
+    load('tree.json', []), load('build.json', null), load('synthesis.json', null),
   ]);
+  renderSynthesis(syn, entries);
   renderLive(snaps, build);
   renderStats(graph, snaps, build);
   renderPrompt(graph);
@@ -170,14 +218,13 @@ async function refresh() {
   renderFeed(graph, snaps, entries);
 }
 
-for (const b of document.querySelectorAll('#filters button')) {
-  b.classList.toggle('on', b.dataset.f === filter);
-  b.addEventListener('click', () => {
-    filter = b.dataset.f;
-    try { localStorage.setItem('feed-filter', filter); } catch {}
-    for (const x of document.querySelectorAll('#filters button')) x.classList.toggle('on', x === b);
-    refresh();
-  });
-}
-refresh();
+for (const b of document.querySelectorAll('#filters button[data-f]')) b.addEventListener('click', () => setFilter(b.dataset.f));
+$('#thread-chip').addEventListener('click', () => setFilter('all'));
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('[data-thread]');
+  if (!t) return;
+  setFilter(`thread:${t.dataset.thread}`);
+  $('#filters').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+setFilter(filter);
 setInterval(refresh, 60_000);

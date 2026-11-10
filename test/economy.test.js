@@ -154,7 +154,7 @@ test('TRUST_PER_LOAN against the five chapters: two loans a chapter leans common
   const turn = Math.floor(total / TRUST_PER_LOAN);
   assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn }), 'commons');
   assert.equal(leaning({ ...initEcon(), trustEarned: total, loansTaken: turn + 1 }), 'mint');
-  console.log(`with every commons scene done the book turns between loan ${turn} and loan ${turn + 1}`);
+  console.log(`over the five chapters the book turns between loan ${turn} and loan ${turn + 1}`);
 });
 
 test('applyPayout grants writs and marks and rejects malformed payouts', () => {
