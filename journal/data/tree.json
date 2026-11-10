@@ -2761,18 +2761,33 @@
  },
  {
   "path": "src/content/chapter1.js",
-  "bytes": 39584,
-  "lines": 622
+  "bytes": 46994,
+  "lines": 664
  },
  {
   "path": "src/content/chapter2.js",
-  "bytes": 46388,
-  "lines": 652
+  "bytes": 46013,
+  "lines": 632
+ },
+ {
+  "path": "src/content/chapter3.js",
+  "bytes": 55384,
+  "lines": 674
+ },
+ {
+  "path": "src/content/chapter4.js",
+  "bytes": 53384,
+  "lines": 666
+ },
+ {
+  "path": "src/content/chapter5.js",
+  "bytes": 53203,
+  "lines": 669
  },
  {
   "path": "src/content/index.js",
-  "bytes": 349,
-  "lines": 13
+  "bytes": 505,
+  "lines": 16
  },
  {
   "path": "src/content/tables.js",
@@ -2811,8 +2826,8 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 16448,
-  "lines": 285
+  "bytes": 17019,
+  "lines": 291
  },
  {
   "path": "src/shell/audio.js",
@@ -2846,8 +2861,8 @@
  },
  {
   "path": "story/BIBLE.md",
-  "bytes": 15550,
-  "lines": 241
+  "bytes": 41341,
+  "lines": 658
  },
  {
   "path": "test/content.test.js",

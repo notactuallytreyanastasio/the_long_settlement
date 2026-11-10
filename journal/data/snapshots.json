@@ -948,5 +948,78 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T04:43:14.574Z",
+  "files": 584,
+  "lines": 17841,
+  "bytes": 15134408,
+  "linesByDir": {
+   ".": 100,
+   "assets/voice": 2735,
+   "src/content": 3823,
+   "src/core": 1688,
+   "src/shell": 6446,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 140,
+   "test/economy.test.js": 198,
+   "test/game.test.js": 650,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 199,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 144,
+   "test/story.test.js": 96,
+   "test/tables.test.js": 196,
+   "tools/render-voices.mjs": 266,
+   "tools/serve.mjs": 76
+  },
+  "changed": [
+   "M src/content/chapter1.js",
+   "M src/content/chapter2.js",
+   "M src/content/index.js",
+   "M src/core/types.js",
+   "M story/BIBLE.md",
+   "?? src/content/chapter3.js",
+   "?? src/content/chapter4.js",
+   "?? src/content/chapter5.js"
+  ],
+  "tests": {
+   "total": 106,
+   "pass": 91,
+   "fail": 15,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 5027,
+   "failures": [
+    "every line is spoken by a cast member, says something, and uses only contract fields",
+    "every backdrop a line names is one cinema.js can paint",
+    "every music mood and sound effect a line or chapter names is one audio.js can play",
+    "every cinematic opens on a backdrop, and Thorne is only ever heard over the Line",
+    "chapters name a real table and every objective id is an element of it",
+    "the rigged first spin is three orbs and pays what the reels would pay in writs",
+    "seed 1: the bot plays from the title to the end of chapter two",
+    "seed 2: the bot plays from the title to the end of chapter two",
+    "seed 3: the bot plays from the title to the end of chapter two",
+    "seed 4: the bot plays from the title to the end of chapter two",
+    "seed 5: the bot plays from the title to the end of chapter two",
+    "seed 6: the bot plays from the title to the end of chapter two"
+   ]
+  },
+  "nodes": {
+   "goal": 1,
+   "option": 4,
+   "decision": 1,
+   "observation": 2,
+   "action": 2,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [
+   "06602fc0-d067-43b5-8815-cfb4334dac61",
+   "d3c388f1-9143-4948-8b7e-92c31ef1fbeb"
+  ],
+  "skippedLarge": []
  }
 ]

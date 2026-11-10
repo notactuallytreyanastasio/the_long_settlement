@@ -123,6 +123,8 @@
  * @property {number} trust                    0..100 standing with the people of the current town
  * @property {number} aidUsed                  mutual-aid balls drawn this chapter
  * @property {number} spins                    lifetime spins
+ * @property {number} trustEarned              lifetime trust gained, never reset: one side of the ending
+ * @property {number} loansTaken               lifetime loans from the Mint, never reset: the other side
  *
  * economy.js
  * export const SPIN_COST: number
@@ -139,6 +141,8 @@
  * export function takeLoan(econ: Econ): Econ
  * export function spendWrit(econ: Econ): Econ
  * export function addTrust(econ: Econ, n: number): Econ     clamped 0..100
+ * export function leaning(econ: Econ): 'commons'|'mint'
+ *        which ending the ledger currently describes: 'commons' when trustEarned >= loansTaken * TRUST_PER_LOAN
  * export function aidAvailable(econ: Econ): boolean
  *        mutual aid: the town covers a lost ball when trust is high enough.
  *        One aid ball per 25 trust, per chapter. The Mint lends at interest; the Commons gives.
@@ -158,6 +162,7 @@
  * @property {string} [music]    switch music mood at this line
  * @property {string} [sfx]      one-shot sound at line start
  * @property {string} [emote]    'smile'|'grim'|'shock'|'tears'|'anger'|'soft'   speaker's face
+ * @property {number} [minScene] barks only: not eligible until game.scene >= minScene (speaker not yet met)
  *
  * @typedef {Object} Objective
  * @property {'all'|'count'|'sequence'} kind
@@ -170,7 +175,7 @@
  * @property {string} id         'ch1.s1'
  * @property {string} title
  * @property {'duty'|'covert'|'commons'} thread
- *        duty: the pilgrimage and the contract. covert: espionage. commons: building trust.
+ *        duty: the Circuit and the contract. covert: espionage. commons: building trust.
  * @property {string} hint       HUD objective text, imperative, under 60 chars
  * @property {Objective} objective
  * @property {Line[]} briefing   1-3 short lines spoken over live play when the scene begins (non-blocking)
@@ -263,7 +268,8 @@
  *                                               eject, drain, launch, wall, reelStart, reelStop, payout,
  *                                               jackpot, bust, loan, aid, objective, sceneClear, card, confirm
  *   {type:'music', mood:string}                 moods: title, festival, tense, covert, sorrow, hope, march,
- *                                               mine, court, shrine, dread, silence
+ *                                               mine, court, shrine, dread, silence,
+ *                                               academy, storm, village, exchange
  *   {type:'shake', power:number}
  *   {type:'flash', color:string}
  *   {type:'save', save:Save}

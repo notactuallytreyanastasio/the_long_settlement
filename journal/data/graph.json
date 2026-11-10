@@ -145,6 +145,43 @@
    "prompt": "keep it going from here then build more chapters\n\nmake there be an unwinding of the incentives and what matters at the end being due to someone with power having one cursed delusion that undoes them\n\nbut maybe make it so it can end either way",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "06602fc0-d067-43b5-8815-cfb4334dac61",
+   "type": "action",
+   "status": "completed",
+   "title": "Replace chapters 1-2 with the treaty story, add chapters 3-5, and extend tables, backdrops, music and the ending ledger",
+   "description": null,
+   "created": "2026-11-10T04:41:50.308712Z",
+   "updated": "2026-11-10T04:41:50.308712Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "story/BIBLE.md",
+    "src/content/chapter1.js",
+    "src/content/chapter2.js",
+    "src/content/chapter3.js",
+    "src/content/chapter4.js",
+    "src/content/chapter5.js",
+    "src/content/index.js",
+    "src/core/types.js"
+   ],
+   "commit": null
+  },
+  {
+   "id": "d3c388f1-9143-4948-8b7e-92c31ef1fbeb",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Two-chapter build runs end to end in headless Chrome: 106/106 tests, 546 voice files, bot plays both chapters (median 23 min)",
+   "description": "Verified by the integrator's browser run and screenshots, which I inspected. Not verified: real-time keyboard play beyond a brief check, audio by ear, HiDPI/resize, other browsers. Ramp/orbit scenes were too hard for the bot at 3 shots and were cut to 2.",
+   "created": "2026-11-10T04:41:50.311638Z",
+   "updated": "2026-11-10T04:41:50.311638Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -210,6 +247,20 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T04:13:45.827979Z"
+  },
+  {
+   "from": "fed83bec-b76d-443d-a2f1-5e79e6fa8ae9",
+   "to": "06602fc0-d067-43b5-8815-cfb4334dac61",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-10T04:41:50.311001Z"
+  },
+  {
+   "from": "06602fc0-d067-43b5-8815-cfb4334dac61",
+   "to": "d3c388f1-9143-4948-8b7e-92c31ef1fbeb",
+   "type": "leads_to",
+   "rationale": "Result",
+   "created": "2026-11-10T04:41:50.313196Z"
   }
  ]
 }
