@@ -133,11 +133,11 @@ function build(engine = null, { light, low = false } = {}) {
   scene.root.add(node('door-spill', merge(spill), rayMaterial({ power: 1.2, near: 0.3, far: 0 })));
 
   const lamps = [
-    { name: 'file-front', pos: [0, 1.1, -1.6], color: '#ffac48', radius: 7.5, base: 2.1 },
-    { name: 'file-near', pos: [0.3, 1.5, 3.0], color: '#ffa848', radius: 9.5, base: 1.6 },
-    { name: 'file-2', pos: [0, 1.0, -6.4], color: '#ffac48', radius: 8, base: 1.9 },
-    { name: 'file-3', pos: [0, 1.0, -13.5], color: '#ffac48', radius: 9, base: 1.8 },
-    { name: 'file-4', pos: [0, 1.2, -23], color: '#ffac48', radius: 12, base: 1.7 },
+    { name: 'file-front', pos: [0, 1.1, -1.6], color: '#ffac48', radius: 6.2, base: 1.45 },
+    { name: 'file-near', pos: [0.3, 1.5, 3.0], color: '#ffa848', radius: 7.5, base: 0.95 },
+    { name: 'file-2', pos: [0, 1.0, -6.4], color: '#ffac48', radius: 6.8, base: 1.5 },
+    { name: 'file-3', pos: [0, 1.0, -13.5], color: '#ffac48', radius: 7.6, base: 1.5 },
+    { name: 'file-4', pos: [0, 1.2, -23], color: '#ffac48', radius: 10, base: 1.45 },
     { name: 'great-lamp', pos: [0, LAMP[1] - 4, LH_Z + 8], color: '#fff2c8', radius: 22, base: 1.2, fixed: true, flicker: 0.02 },
   ];
   const glows = [

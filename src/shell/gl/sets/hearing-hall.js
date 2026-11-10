@@ -39,8 +39,8 @@ const LIGHTS = {
   full: {
     preset: 'day', power: 0.8, night: false,
     env: {
-      key: { dir: norm3([-0.34, 0.74, 0.58]), color: '#fff2da' },
-      shadow: { tint: '#8d80ea', lift: 0.1, saturate: 1.4 },
+      key: { dir: norm3([0.16, 0.62, -0.78]), color: '#fff2da' }, // the great window is the sun in here: the house sits in its own shade, rim-lit
+      shadow: { tint: '#7f72e6', lift: 0.08, saturate: 1.45 },
       ambient: { sky: '#d4dcff', ground: '#ffc4a0', amount: 0.14 },
       rim: { color: '#fff0c0', amount: 0.6, edge: 0.76 },
       fog: { color: '#ffe9c8', density: 0.006, start: 9, max: 0.34 },
@@ -222,7 +222,7 @@ function build(engine = null, { light: lightName = 'full', low = false } = {}) {
   glows.push({ sprite: sprites.add({ kind: 'glow', pos: [lampPos[0], lampPos[1] + 0.1, lampPos[2]], size: 5.4, color: '#ffb850', alpha: 0 }), base: L.night ? 0.5 : 0.4 });
   for (const x of FOOT_X) glows.push({ sprite: sprites.add({ kind: 'glow', pos: [x, 0.2, LIP + 0.26], size: 0.42, color: '#ffc860', alpha: 0 }), base: 0.6 });
   for (const p of SCONCES) glows.push({ sprite: sprites.add({ kind: 'glow', pos: [p[0], p[1] + 0.4, p[2] + 0.5], size: 1.6, color: '#ffb450', alpha: 0 }), base: 0.5 });
-  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 8.2, BACK + 0.3], size: 8.5, color: L.night ? '#7f9cff' : '#fff0b0', alpha: 0 }), base: L.night ? 0.3 : 0.26, fixed: true });
+  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [0, 8.2, BACK + 0.3], size: 8.5, color: L.night ? '#7f9cff' : '#fff0b0', alpha: 0 }), base: L.night ? 0.3 : 0.13, fixed: true });
   const shellGlow = sprites.add({ kind: 'glow', pos: [SHELL[0], SHELL[1] + 0.08, SHELL[2]], size: 0.5, color: '#ff5040', alpha: 0 });
 
   // ---- the story's levers

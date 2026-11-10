@@ -661,14 +661,14 @@ export function plumb({ drop = 0.34, s = 1 } = {}) {
 // ------------------------------------------------------------------------------------ Nan's stall by day
 
 /** A bare lantern frame, hanging from its hook at the origin: two hoops and four bent ribs. Unlined, for instancing. */
-export function lanternFrame({ r = 0.16, shape = 'round', color = C7.bamboo, cord = 0.07 } = {}) {
-  const H = shape === 'tall' ? r * 2.6 : r * 1.85, y1 = -cord, parts = [cyl(0.006, 0.006, cord, 3, 0, -cord, 0, '#3a3560')];
-  parts.push(tint(place(torus(r * 0.45, 0.012, 6, 3), 0, y1, 0), color), tint(place(torus(r * 0.42, 0.012, 6, 3), 0, y1 - H, 0), color));
-  for (let k = 0; k < 4; k++) {
-    const a = (k / 4) * Math.PI * 2 + 0.4, c = Math.cos(a), s = Math.sin(a), rr = shape === 'tall' ? r * 0.82 : r;
-    parts.push(tint(tube(curve([[c * r * 0.45, y1, s * r * 0.45], [c * rr, y1 - H * 0.3, s * rr], [c * rr, y1 - H * 0.7, s * rr], [c * r * 0.42, y1 - H, s * r * 0.42]], 5), 0.009, 3, { caps: false, crease: 180 }), color));
+export function lanternFrame({ r = 0.16, shape = 'round', color = C7.bamboo, cord = 0.07, thick = 1 } = {}) {
+  const H = shape === 'tall' ? r * 2.6 : r * 1.85, y1 = -cord, k = thick, parts = [cyl(0.006 * k, 0.006 * k, cord, 3, 0, -cord, 0, '#3a3560')];
+  parts.push(tint(place(torus(r * 0.45, 0.012 * k, 6, 3), 0, y1, 0), color), tint(place(torus(r * 0.42, 0.012 * k, 6, 3), 0, y1 - H, 0), color));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + 0.4, c = Math.cos(a), s = Math.sin(a), rr = shape === 'tall' ? r * 0.82 : r;
+    parts.push(tint(tube(curve([[c * r * 0.45, y1, s * r * 0.45], [c * rr, y1 - H * 0.3, s * rr], [c * rr, y1 - H * 0.7, s * rr], [c * r * 0.42, y1 - H, s * r * 0.42]], 5), 0.009 * k, 3, { caps: false, crease: 180 }), color));
   }
-  parts.push(tint(place(torus(shape === 'tall' ? r * 0.82 : r, 0.009, 8, 3), 0, y1 - H / 2, 0), color));
+  parts.push(tint(place(torus(shape === 'tall' ? r * 0.82 : r, 0.009 * k, 8, 3), 0, y1 - H / 2, 0), color));
   return keep(noInk(merge(parts)), { centre: [0, y1 - H / 2, 0] });
 }
 

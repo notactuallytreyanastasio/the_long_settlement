@@ -28,8 +28,8 @@ import { C8, materials8, shell8, cams, marks8, pick8, norm8, arcWall, horseshoe,
 const CZ = -3.3, RW = 9.6, WALL_H = 5.4;
 
 const ENV = {
-  key: { dir: norm8([0.12, 1, 0.3]), color: '#c4c2f2' },
-  shadow: { tint: '#6a64d8', lift: 0.1, saturate: 1.45 },
+  key: { dir: norm8([0.12, 1, 0.3]), color: '#e2d6f6' },
+  shadow: { tint: '#5a50d0', lift: 0.08, saturate: 1.5 },
   ambient: { sky: '#a8c0ff', ground: '#e8a8b8', amount: 0.11 },
   rim: { color: '#fff4d0', amount: 0.6, edge: 0.76 },
   fog: { density: 0.0006, start: 40, max: 0.5 },
@@ -58,14 +58,14 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   // ---- the chamber
   const room = group('room'), deco = (n) => { n.castShadow = false; return n; };
   const disc = (rad, col, y) => tint(place(cylinder(rad, rad, 0.02, low ? 18 : 28), 0, y, CZ), col);
-  room.add(node('floor', setOutline(merge(tint(place(box(34, 0.02, 16), 0, -0.03, 2), '#c8a0c0'), disc(RW, '#e6ccd4', -0.024), disc(4.5, C8.oxblood, -0.018), disc(4.25, '#f2dcd0', -0.012), ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => tint(place(box(0.14, 0.006, 4.1), Math.sin(i * 45 * DEG) * 2.1, -0.009, CZ - Math.cos(i * 45 * DEG) * 2.1, 0, -i * 45, 0), i % 2 ? C8.royal : C8.oxblood)), disc(2.5, C8.brass, -0.006), disc(2.35, '#f6e6d6', -0.003)), 0), M.flat));
-  room.add(node('wall', arcWall({ r: RW, h: WALL_H, a0: -150, a1: 150, seg: low ? 14 : 22, color: '#d6aecb' }), M.wall, { pos: [0, 0, CZ] }));
+  room.add(node('floor', setOutline(merge(tint(place(box(34, 0.02, 16), 0, -0.03, 2), '#a880c4'), disc(RW, '#d8b4d0', -0.024), disc(4.5, C8.oxblood, -0.018), disc(4.25, '#e6bcc0', -0.012), ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => tint(place(box(0.14, 0.006, 4.1), Math.sin(i * 45 * DEG) * 2.1, -0.009, CZ - Math.cos(i * 45 * DEG) * 2.1, 0, -i * 45, 0), i % 2 ? C8.royal : C8.oxblood)), disc(2.5, C8.brass, -0.006), disc(2.35, '#f0d0c4', -0.003)), 0), M.flat));
+  room.add(node('wall', arcWall({ r: RW, h: WALL_H, a0: -150, a1: 150, seg: low ? 14 : 22, color: '#b48fe0' }), M.wall, { pos: [0, 0, CZ] }));
   room.add(node('frieze', arcWall({ r: RW - 0.05, y: WALL_H - 0.5, h: 0.5, a0: -150, a1: 150, seg: low ? 14 : 22, color: C8.brass }), M.wall, { pos: [0, 0, CZ] }));
-  room.add(node('dado', arcWall({ r: RW - 0.04, h: 1.5, a0: -150, a1: 150, seg: low ? 14 : 22, color: '#c8508a' }), M.wall, { pos: [0, 0, CZ] }));
-  room.add(node('dome', domeInside({ r: RW, h: 5.4, eye: 1.7, seg: low ? 14 : 20, ribs: low ? 8 : 12, color: '#7f8cec', low }), M.wall, { pos: [0, WALL_H, CZ] }));
+  room.add(node('dado', arcWall({ r: RW - 0.04, h: 1.5, a0: -150, a1: 150, seg: low ? 14 : 22, color: '#b03478' }), M.wall, { pos: [0, 0, CZ] }));
+  room.add(node('dome', domeInside({ r: RW, h: 5.4, eye: 1.7, seg: low ? 14 : 20, ribs: low ? 8 : 12, color: '#5c6ce4', low }), M.wall, { pos: [0, WALL_H, CZ] }));
   const HS = horseshoe({ rows: [14, 26], r0: 5.2, step: 1.3, rise: 0.42, a0: -116, a1: 116, cz: CZ });
-  room.add(node('tier1', tierArc({ r: 4.55, step: 1.3, h: 0.42, a0: -124, a1: 124, seg: low ? 12 : 20, color: '#eed8d8', riser: '#d898a8' }), M.wall, { pos: [0, 0, CZ] }));
-  room.add(node('tier2', tierArc({ r: 5.85, step: 3.8, h: 0.42, y: 0.42, a0: -124, a1: 124, seg: low ? 12 : 20, color: '#e6ccd4', riser: '#d898a8' }), M.wall, { pos: [0, 0, CZ] }));
+  room.add(node('tier1', tierArc({ r: 4.55, step: 1.3, h: 0.42, a0: -124, a1: 124, seg: low ? 12 : 20, color: '#dcb8d4', riser: '#b86a9c' }), M.wall, { pos: [0, 0, CZ] }));
+  room.add(node('tier2', tierArc({ r: 5.85, step: 3.8, h: 0.42, y: 0.42, a0: -124, a1: 124, seg: low ? 12 : 20, color: '#cfa8cc', riser: '#b86a9c' }), M.wall, { pos: [0, 0, CZ] }));
   // the public gallery: a balcony round the wall
   const GAL_Y = 3.15;
   room.add(node('gallery', merge(tierArc({ r: RW - 1.5, step: 1.5, h: 0.3, y: GAL_Y - 0.3, a0: -150, a1: 150, seg: low ? 14 : 22, color: '#e6ccd4', riser: C8.oxblood }), arcWall({ r: RW - 1.5, y: GAL_Y, h: 0.55, a0: -150, a1: 150, seg: low ? 14 : 22, color: '#f0dcdc' })), M.wall, { pos: [0, 0, CZ] }));
@@ -106,7 +106,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   // ---- the light from the eye
   const EYE = [0, WALL_H + 5.4, CZ];
-  const shaft = node('shaft', tint(rayMesh(EYE[1] + 0.2, 1.5, 2.7, low ? 12 : 18), '#fff4d0'), rayMaterial({ power: 1.3, near: 0.34, far: 0.12 }), { pos: EYE }); scene.root.add(shaft);
+  const shaft = node('shaft', tint(rayMesh(EYE[1] + 0.2, 1.5, 2.7, low ? 12 : 18), '#fff4d0'), rayMaterial({ power: 1.3, near: 0.5, far: 0.2 }), { pos: EYE }); scene.root.add(shaft);
   const pool = node('pool', setOutline(setGlow(tint(cylinder(2.6, 2.6, 0.012, 24), '#fffbe6'), 0.75), 0), M.flat, { pos: [0, 0.002, CZ] }); pool.castShadow = false; scene.root.add(pool);
 
   const fg = group('fg');
@@ -116,11 +116,11 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   const firePos = BZ.map((p) => anchorAt(bz, 'fire', p));
   const lamps = [
-    { name: 'eye', pos: [0, 3.0, CZ + 0.6], color: '#fff2c8', radius: 7.2, base: 1.35, flicker: 0, fixed: true },
+    { name: 'eye', pos: [0, 1.6, CZ + 0.5], color: '#fff0c0', radius: 5.0, base: 1.15, flicker: 0, fixed: true },
     { name: 'standard-left', pos: [firePos[0][0], firePos[0][1] + 0.3, firePos[0][2]], color: '#ffa850', radius: 5.2, base: 1.0, flicker: 0.12 },
     { name: 'standard-right', pos: [firePos[1][0], firePos[1][1] + 0.3, firePos[1][2]], color: '#ffa850', radius: 5.2, base: 1.0, flicker: 0.12 },
-    { name: 'windows-left', pos: [-6.6, 4.2, CZ - 3], color: '#bfe0ff', radius: 6, base: 0.45, flicker: 0, fixed: true },
-    { name: 'windows-right', pos: [6.6, 4.2, CZ - 3], color: '#bfe0ff', radius: 6, base: 0.45, flicker: 0, fixed: true },
+    { name: 'windows-left', pos: [-6.6, 4.2, CZ - 3], color: '#bfe0ff', radius: 5, base: 0.28, flicker: 0, fixed: true },
+    { name: 'windows-right', pos: [6.6, 4.2, CZ - 3], color: '#bfe0ff', radius: 5, base: 0.28, flicker: 0, fixed: true },
   ];
   const sprites = scene.sprites = createSprites(low ? 96 : 256);
   const glows = firePos.map((p, i) => ({ sprite: sprites.add({ kind: 'glow', pos: [p[0], p[1] + 0.25, p[2]], size: 1.7, color: '#ffa040', alpha: 0 }), base: 0.55, lamp: i + 1 }));

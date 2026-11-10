@@ -40,14 +40,14 @@ const LIGHTS = {
   afternoon: {
     preset: 'sunset', power: 1.1, slant: -52,
     env: {
-      key: { dir: norm8([0.2, 0.56, -0.8]), color: '#ffc890' },
-      shadow: { tint: '#6654d4', lift: 0.12, saturate: 1.45 },
-      ambient: { sky: '#ff9a8a', ground: '#5a48c4', amount: 0.15 },
+      key: { dir: norm8([0.2, 0.56, -0.8]), color: '#ffd4a4' },
+      shadow: { tint: '#5a48d0', lift: 0.1, saturate: 1.5 },
+      ambient: { sky: '#c08ae6', ground: '#4a3cc0', amount: 0.15 },
       rim: { color: '#ffb870', amount: 1.2, edge: 0.7 },
       fog: { density: 0.0006, start: 40, max: 0.5 },
       sky: { sunDir: norm8([0.3, 0.4, -1]) }, water: null,
     },
-    glass: '#ffc888', head: ['#ff8fb4', '#ffb050', '#b890ff'], shaft: '#ffb070', patch: '#ffc078', lampCol: '#ffd0a0',
+    glass: '#ffc888', head: ['#ff8fb4', '#ffb050', '#b890ff'], shaft: '#ffb070', patch: '#ffc078', lampCol: '#ffd0a0', winK: 0.6,
   },
 };
 
@@ -134,8 +134,8 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const actors = group('actors'); scene.root.add(actors);
 
   const lamps = [
-    { name: 'window', pos: [0, 4.2, BACK + 2.6], color: L.lampCol, radius: 8.5, base: 1.15, flicker: 0, fixed: true },
-    { name: 'floor', pos: [skew, 1.4, 0.4], color: L.patch, radius: 5.5, base: 0.75, flicker: 0, fixed: true },
+    { name: 'window', pos: [0, 4.2, BACK + 2.6], color: L.lampCol, radius: 8.5, base: 1.15 * (L.winK ?? 1), flicker: 0, fixed: true },
+    { name: 'floor', pos: [skew, 1.4, 0.4], color: L.patch, radius: 5.5, base: 0.75 * (L.winK ? 0.85 : 1), flicker: 0, fixed: true },
     { name: 'sconce-left', pos: [sconces[0][0], sconces[0][1] - 0.25, sconces[0][2] + 0.3], color: '#ffb458', radius: 5.5, base: 1.0 },
     { name: 'sconce-right', pos: [sconces[1][0], sconces[1][1] - 0.25, sconces[1][2] + 0.3], color: '#ffb458', radius: 5.5, base: 1.0 },
     { name: 'door-left', pos: DL.lamp, color: '#ffc470', radius: 4.2, base: 0.8 },

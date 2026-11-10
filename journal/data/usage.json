@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-10T18:28:05.143Z",
+ "generated": "2026-11-10T18:56:47.435Z",
  "pricesAsOf": "2026-11-03",
  "prices": {
   "claude-fable-5-2": {
@@ -47,126 +47,126 @@
  },
  "agents": {
   "lead": 1,
-  "helpers": 63,
+  "helpers": 71,
   "journal": 1
  },
  "first": "2026-11-10T03:36:36.214Z",
- "last": "2026-11-10T18:27:12.427Z",
+ "last": "2026-11-10T18:56:39.265Z",
  "total": {
-  "responses": 3237,
-  "input": 6778,
-  "write5m": 22852208,
-  "write1h": 1522038,
-  "read": 784126516,
-  "output": 7613887,
-  "thinking": 2745940,
+  "responses": 3391,
+  "input": 7092,
+  "write5m": 23828805,
+  "write1h": 1538980,
+  "read": 798996187,
+  "output": 7729378,
+  "thinking": 2786442,
   "cost": {
-   "input": 0.0494,
-   "write5m": 228.5221,
-   "write1h": 18.4622,
-   "read": 156.8253,
-   "output": 298.5615,
-   "total": 702.4205
+   "input": 0.0519,
+   "write5m": 238.2881,
+   "write1h": 18.6943,
+   "read": 159.7992,
+   "output": 303.1627,
+   "total": 719.9961
   },
-  "uncachedCost": 6111.4492,
+  "uncachedCost": 6240.2195,
   "unpriced": 0
  },
  "byGroup": {
   "lead": {
-   "responses": 88,
-   "input": 234,
+   "responses": 91,
+   "input": 244,
    "write5m": 0,
-   "write1h": 767366,
-   "read": 12216009,
-   "output": 168589,
-   "thinking": 42065,
+   "write1h": 779428,
+   "read": 12828060,
+   "output": 169914,
+   "thinking": 42303,
    "cost": {
-    "input": 0.0019,
+    "input": 0.002,
     "write5m": 0,
-    "write1h": 12.2779,
-    "read": 2.4432,
-    "output": 6.7436,
-    "total": 21.4665
+    "write1h": 12.4708,
+    "read": 2.5656,
+    "output": 6.7966,
+    "total": 21.835
    },
-   "uncachedCost": 110.6124,
+   "uncachedCost": 115.6584,
    "unpriced": 0
   },
   "helpers": {
-   "responses": 2640,
-   "input": 5334,
-   "write5m": 22852208,
+   "responses": 2787,
+   "input": 5628,
+   "write5m": 23828805,
    "write1h": 0,
-   "read": 608823764,
-   "output": 7145090,
-   "thinking": 2650616,
+   "read": 622401494,
+   "output": 7258333,
+   "thinking": 2690845,
    "cost": {
-    "input": 0.0427,
-    "write5m": 228.5221,
+    "input": 0.045,
+    "write5m": 238.2881,
     "write1h": 0,
-    "read": 121.7648,
-    "output": 285.8036,
-    "total": 636.1331
+    "read": 124.4803,
+    "output": 290.3333,
+    "total": 653.1467
    },
-   "uncachedCost": 5339.254,
+   "uncachedCost": 5460.2207,
    "unpriced": 0
   },
   "journal": {
-   "responses": 509,
-   "input": 1210,
+   "responses": 513,
+   "input": 1220,
    "write5m": 0,
-   "write1h": 754672,
-   "read": 163086743,
-   "output": 300208,
-   "thinking": 53259,
+   "write1h": 759552,
+   "read": 163766633,
+   "output": 301131,
+   "thinking": 53294,
    "cost": {
-    "input": 0.0048,
+    "input": 0.0049,
     "write5m": 0,
-    "write1h": 6.1844,
-    "read": 32.6173,
-    "output": 6.0144,
-    "total": 44.8209
+    "write1h": 6.2234,
+    "read": 32.7533,
+    "output": 6.0328,
+    "total": 45.0145
    },
-   "uncachedCost": 661.5827,
+   "uncachedCost": 664.3403,
    "unpriced": 0
   }
  },
  "byModel": {
   "claude-fable-5-2": {
-   "responses": 2729,
-   "input": 5570,
-   "write5m": 22852208,
-   "write1h": 785743,
-   "read": 621070861,
-   "output": 7314189,
-   "thinking": 2692787,
+   "responses": 2879,
+   "input": 5874,
+   "write5m": 23828805,
+   "write1h": 797805,
+   "read": 635260642,
+   "output": 7428757,
+   "thinking": 2733254,
    "cost": {
-    "input": 0.0446,
-    "write5m": 228.5221,
-    "write1h": 12.5719,
-    "read": 124.2142,
-    "output": 292.5676,
-    "total": 657.9203
+    "input": 0.047,
+    "write5m": 238.2881,
+    "write1h": 12.7649,
+    "read": 127.0521,
+    "output": 297.1503,
+    "total": 675.3023
    },
-   "uncachedCost": 5450.2826,
+   "uncachedCost": 5576.2953,
    "unpriced": 0
   },
   "claude-opus-5-5": {
-   "responses": 508,
-   "input": 1208,
+   "responses": 512,
+   "input": 1218,
    "write5m": 0,
-   "write1h": 736295,
-   "read": 163055655,
-   "output": 299698,
-   "thinking": 53153,
+   "write1h": 741175,
+   "read": 163735545,
+   "output": 300621,
+   "thinking": 53188,
    "cost": {
-    "input": 0.0048,
+    "input": 0.0049,
     "write5m": 0,
-    "write1h": 5.8904,
-    "read": 32.6111,
-    "output": 5.994,
-    "total": 44.5003
+    "write1h": 5.9294,
+    "read": 32.7471,
+    "output": 6.0124,
+    "total": 44.6938
    },
-   "uncachedCost": 661.1666,
+   "uncachedCost": 663.9242,
    "unpriced": 0
   }
  },
@@ -1243,12 +1243,48 @@
    "at": "2026-11-10T18:30:00.000Z",
    "lead": 21.4665,
    "helpers": 636.1331,
-   "journal": 44.8209
+   "journal": 45.0145
+  },
+  {
+   "at": "2026-11-10T18:35:00.000Z",
+   "lead": 21.4665,
+   "helpers": 636.1331,
+   "journal": 45.0145
+  },
+  {
+   "at": "2026-11-10T18:40:00.000Z",
+   "lead": 21.4665,
+   "helpers": 636.1331,
+   "journal": 45.0145
+  },
+  {
+   "at": "2026-11-10T18:45:00.000Z",
+   "lead": 21.4665,
+   "helpers": 636.1331,
+   "journal": 45.0145
+  },
+  {
+   "at": "2026-11-10T18:50:00.000Z",
+   "lead": 21.4665,
+   "helpers": 636.1331,
+   "journal": 45.0145
+  },
+  {
+   "at": "2026-11-10T18:55:00.000Z",
+   "lead": 21.835,
+   "helpers": 649.484,
+   "journal": 45.0145
+  },
+  {
+   "at": "2026-11-10T19:00:00.000Z",
+   "lead": 21.835,
+   "helpers": 653.1467,
+   "journal": 45.0145
   }
  ],
  "tools": {
   "journal": {
-   "Bash": 296,
+   "Bash": 298,
    "ToolSearch": 6,
    "mcp__deciduous__check_activity": 1,
    "mcp__deciduous__list_workspaces": 1,
@@ -1261,30 +1297,31 @@
    "mcp__deciduous__add_node": 10,
    "Monitor": 17,
    "CronDelete": 1,
-   "ScheduleWakeup": 83,
+   "ScheduleWakeup": 84,
    "TaskStop": 4,
    "Read": 49,
    "PushNotification": 3,
    "Skill": 2
   },
   "helpers": {
-   "Read": 1355,
+   "Read": 1477,
    "Write": 131,
-   "Bash": 2005,
+   "Bash": 2125,
    "Edit": 23,
-   "ToolSearch": 41,
-   "mcp__deciduous__read_messages": 99,
+   "ToolSearch": 49,
+   "mcp__deciduous__read_messages": 110,
    "TaskStop": 2,
-   "mcp__deciduous__post_message": 59
+   "mcp__deciduous__post_message": 61,
+   "mcp__deciduous__query_nodes": 2
   },
   "lead": {
-   "Bash": 31,
+   "Bash": 32,
    "ToolSearch": 4,
    "Skill": 1,
    "mcp__deciduous__capture_conversation_turn": 6,
    "Write": 8,
    "mcp__deciduous__add_node": 16,
-   "Workflow": 8,
+   "Workflow": 10,
    "Agent": 6,
    "Read": 10,
    "AskUserQuestion": 1,

@@ -25,6 +25,7 @@ const QUAY_Z = -5.6, WATER = -0.5;
 const LIGHTS = {
   day: {
     preset: 'day', power: 0, night: false,
+    ground: '#f2d6a2', cobbles: ['#ffe9bd', '#e6bb88', '#f8d9aa', '#dcae88', '#ffdcb8', '#f0b49c'],
     env: {
       key: { dir: norm8([-0.55, 0.8, 0.3]), color: '#fff4d6' },
       shadow: { tint: '#8f9cf0', lift: 0.08, saturate: 1.35 },
@@ -37,6 +38,7 @@ const LIGHTS = {
   },
   night: {
     preset: 'night', power: 1.15, night: true,
+    ground: '#e6d6c8', cobbles: ['#fff6e0', '#d8c4c0', '#f0e0d0', '#c8b8c8', '#fff0d8'],
     env: {
       key: { dir: norm8([0.22, 0.52, -1]), color: '#c2d4ff' },
       shadow: { tint: '#3448b4', lift: 0.12, saturate: 1.3 },
@@ -50,14 +52,14 @@ const LIGHTS = {
   },
 };
 
-const CAMERAS = cams({ low: { target: [0.4, 1.9, 0.2], dist: 6.4, yaw: -10, pitch: -13, fov: 56 } });
+const CAMERAS = cams({ two: { yaw: 7 }, low: { target: [0.4, 1.9, 0.2], dist: 6.4, yaw: -10, pitch: -13, fov: 56 } });
 
 function build(engine = null, { light: lightName, low = false } = {}) {
   const [light, L] = pick8('cresset-harbour', LIGHTS, lightName);
   const M = materials8(), r = rng(8101), night = L.night;
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env; env.sky.sunDir = norm8(env.sky.sunDir);
   const sprites = scene.sprites = createSprites(low ? 160 : 384);
-  const base = harbourBase({ scene, M, low, seed: 5, quayZ: QUAY_Z, water: WATER, ground: '#f6ead2', beam: L.beam, far: { lit: night ? 0.85 : 0.25, towerGlow: night ? 0.5 : 0 }, cloud: { ...L.cloud, count: 5 } });
+  const base = harbourBase({ scene, M, low, seed: 5, quayZ: QUAY_Z, water: WATER, ground: L.ground, cobbles: L.cobbles, beam: L.beam, far: { lit: night ? 0.85 : 0.25, towerGlow: night ? 0.5 : 0 }, cloud: { ...L.cloud, count: 5 } });
   const A = base.F.anchors;
 
   const near = group('near'), mid = group('mid');

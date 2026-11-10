@@ -12561,7 +12561,7 @@
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
-  "bytes": 15762,
+  "bytes": 15760,
   "lines": 167
  },
  {
@@ -12601,7 +12601,7 @@
  },
  {
   "path": "src/shell/gl/sets/commons-queue.js",
-  "bytes": 21416,
+  "bytes": 21413,
   "lines": 242
  },
  {
@@ -12626,8 +12626,8 @@
  },
  {
   "path": "src/shell/gl/sets/cresset-harbour.js",
-  "bytes": 12658,
-  "lines": 148
+  "bytes": 12883,
+  "lines": 150
  },
  {
   "path": "src/shell/gl/sets/cutter-deck.js",
@@ -12686,7 +12686,7 @@
  },
  {
   "path": "src/shell/gl/sets/full-bench.js",
-  "bytes": 15699,
+  "bytes": 15746,
   "lines": 172
  },
  {
@@ -12701,7 +12701,7 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 27246,
+  "bytes": 27329,
   "lines": 282
  },
  {
@@ -12716,7 +12716,7 @@
  },
  {
   "path": "src/shell/gl/sets/kedge-roads.js",
-  "bytes": 24992,
+  "bytes": 25040,
   "lines": 302
  },
  {
@@ -12751,7 +12751,7 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch7.js",
-  "bytes": 69687,
+  "bytes": 69733,
   "lines": 875
  },
  {
@@ -12771,7 +12771,7 @@
  },
  {
   "path": "src/shell/gl/sets/lantern-line.js",
-  "bytes": 15990,
+  "bytes": 15997,
   "lines": 195
  },
  {

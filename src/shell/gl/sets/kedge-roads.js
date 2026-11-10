@@ -17,7 +17,7 @@
 //   setBoat(0..1)   the Compact's open boat: 0 not yet put out (hidden), then it rows out down the lane to the mouth
 //   cue(lineId)     ch6.s7.c16 puts the boat out (it eases to the cutter over about a minute); ch6.s7.c26 sends it through
 //   marks.gangway, marks.focus (the lamp-house flame), marks.mouth (where the cutter lies)
-// low: true halves the far hulls, drops the cranes' bracing, the gulls and the far clouds' outline.
+// low: true keeps a third of the far hulls and five of the nine clouds, drops the cranes' bracing, the gulls and the far clouds' outline.
 
 import { m4, quat, rng, DEG, rgb } from '../math.js';
 import { merge, tint, place, plane, box, tube, curve, cylinder, extrude, setGlow, gradientY, deform, sphere } from '../mesh.js';
@@ -219,7 +219,7 @@ function build(engine = null, { light, low = false } = {}) {
   const cutterGlow = sprites.add({ kind: 'glow', pos: [MOUTH_POS[0], WATER + 9.5, MOUTH_POS[2]], size: 7, color: '#ffffff', alpha: L.cutter ? 0.5 : 0 });
 
   // ---- sky
-  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 9, seed: 17, arc: [156, 206], radius: [250, 430], height: [20, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: low ? 5 : 9, seed: 17, arc: [156, 206], radius: [250, 430], height: [20, 130], size: [0.7, 1.5], speed: 0.05, ...L.cloud });
   scene.root.add(clouds.node);
   const high = low ? null : cloudBank({ style: 'painted', count: 6, seed: 37, arc: [150, 212], radius: [300, 420], height: [170, 320], size: [0.9, 1.7], speed: 0.04, ...L.cloud });
   if (high) scene.root.add(high.node);
