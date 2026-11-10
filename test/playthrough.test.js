@@ -39,16 +39,33 @@ function mulberry(a) {
 
 const LEVER_REACTION = { commons: 40, mint: 1 };   // steps before the bot's thumb gets to the lever
 
+/**
+ * How well the bot's thumbs work, in physics steps (1/120 s).
+ *   steady    the bot the economy was tuned against: it never misses a ball it could reach, flips within
+ *             0-33 ms of the ball arriving and reads the ball 30 ms ahead. No person plays like this.
+ *   mediocre  somebody's first evening on the table: sees the ball where it is, not where it will be; flips
+ *             50-170 ms late; one ball in eight goes past without a flip at all; holds too long; and once in
+ *             a while slaps both flippers. Where the ball meets the flipper is random for both of them.
+ * The mediocre bot is what "can a person clear this scene" is asked of (see the test near the bottom).
+ */
+const SKILL = {
+  steady: { lead: 0.03, wait: [0, 5], hold: [8, 16], cool: [8, 10], aim: [14, 34], miss: 0, both: 0, plunge: [40, 80], lever: 0 },
+  mediocre: { lead: 0, wait: [6, 14], hold: [14, 26], cool: [14, 22], aim: [4, 48], miss: 0.125, both: 0.06, plunge: [30, 110], lever: 70 },
+};
+
 /** The flipper bot from test/tables.test.js, reading the game instead of owning the physics. */
-function makeBot(seedN, policy) {
+function makeBot(seedN, policy, skill = 'steady') {
   if (!(policy in LEVER_REACTION)) throw new Error(`playthrough: unknown bot policy ${JSON.stringify(policy)}`);
+  const K = SKILL[skill];
+  if (!K) throw new Error(`playthrough: unknown bot skill ${JSON.stringify(skill)}`);
   const rnd = mulberry(seedN);
-  const st = { fl: { wait: -1, hold: 0, cool: 0, aim: 20 }, fr: { wait: -1, hold: 0, cool: 0, aim: 20 }, plunge: 0, lever: 0 };
+  const span = ([lo, n]) => lo + Math.floor(rnd() * n);
+  const st = { fl: { wait: -1, hold: 0, cool: 0, aim: 20 }, fr: { wait: -1, hold: 0, cool: 0, aim: 20 }, plunge: 0, lever: 0, slap: 0 };
   return function input(table, game) {
     const { phys } = game;
     const out = { left: false, right: false, plunge: false, nudge: null };
     if (phys.balls.some((b) => b.state === 'plunger')) {
-      if (st.plunge === 0) st.plunge = 40 + Math.floor(rnd() * 80);
+      if (st.plunge === 0) st.plunge = span(K.plunge);
       st.plunge--;
       out.plunge = st.plunge > 0;
       st.lever = 0;
@@ -58,7 +75,7 @@ function makeBot(seedN, policy) {
       const live = status === 'free' || status === 'pull' || status === 'loan' || status === 'credit';
       if (live && (policy === 'mint' || !aidAvailable(game.econ))) {
         st.lever++;
-        const since = st.lever - LEVER_REACTION[policy];
+        const since = st.lever - LEVER_REACTION[policy] - K.lever;
         out.plunge = since > 0 && since % 12 < 4;      // a tap, and again if that was only the loan
       } else st.lever = 0;
     }
@@ -68,19 +85,26 @@ function makeBot(seedN, policy) {
       const near = phys.balls.some((b) => {
         if (b.state !== 'live') return false;
         const along = (b.pos[0] - f.pivot[0]) * dirX;
-        const lead = b.pos[1] + b.vel[1] * 0.03;
+        const lead = b.pos[1] + b.vel[1] * K.lead;
         const slow = Math.hypot(b.vel[0], b.vel[1]) < 160;
         return along > (slow ? s.aim : -4) && along < f.length + 6
           && lead > f.pivot[1] - 26 && b.pos[1] < f.pivot[1] + 30 && b.vel[1] > -200;
       });
       if (s.hold > 0) {
         s.hold--;
-        if (s.hold === 0) { s.cool = 8 + Math.floor(rnd() * 10); s.aim = 14 + rnd() * 34; }
+        if (s.hold === 0) { s.cool = K.cool[0] + Math.floor(rnd() * K.cool[1]); s.aim = K.aim[0] + rnd() * K.aim[1]; }
       } else if (s.cool > 0) s.cool--;
-      else if (s.wait >= 0) { if (s.wait === 0) s.hold = 8 + Math.floor(rnd() * 16); s.wait--; }
-      else if (near) s.wait = Math.floor(rnd() * 5);
+      else if (s.wait >= 0) {
+        if (s.wait === 0) { s.hold = K.hold[0] + Math.floor(rnd() * K.hold[1]); if (K.both > 0 && rnd() < K.both) st.slap = s.hold; }
+        s.wait--;
+      } else if (near) {
+        // the steady bot draws nothing extra here, so its games are the ones the economy was tuned on
+        if (K.miss > 0 && rnd() < K.miss) s.cool = 40;      // looked away: this ball goes by
+        else s.wait = K.wait[0] + Math.floor(rnd() * K.wait[1]);
+      }
       out[f.side] = s.hold > 0;
     }
+    if (st.slap > 0) { st.slap--; out.left = true; out.right = true; }
     return out;
   };
 }
@@ -88,9 +112,9 @@ function makeBot(seedN, policy) {
 const IDLE = { left: false, right: false, plunge: false, nudge: null };
 
 /** Play from the title to 'end'. Returns per-scene and per-chapter numbers and the effects seen. */
-export function playthrough(seedN, { policy = 'commons', maxSeconds = GAME_LIMIT * 3, onStep = null } = {}) {
+export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSeconds = GAME_LIMIT * 3, onStep = null } = {}) {
   let game = init(seedN);
-  const bot = makeBot(seedN * 7919 + 1, policy);
+  const bot = makeBot(seedN * 7919 + 1, policy, skill);
   const scenes = [];            // { id, seconds, pulls, loans, aid, balls, lanes, shots }
   const seen = { saves: 0, lines: 0, cine: {}, modes: new Set(['title']) };
   let tableSeconds = 0;

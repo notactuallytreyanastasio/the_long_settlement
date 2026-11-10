@@ -7286,8 +7286,8 @@
  },
  {
   "path": "src/shell/cinema/backdrops-a.js",
-  "bytes": 88672,
-  "lines": 1437
+  "bytes": 113836,
+  "lines": 1633
  },
  {
   "path": "src/shell/cinema/backdrops-b.js",
@@ -7361,8 +7361,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 17562,
-  "lines": 311
+  "bytes": 19206,
+  "lines": 335
  },
  {
   "path": "test/rng.test.js",
