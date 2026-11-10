@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OG Card Source</title>
+<!-- Source for og.png. Render: headless Chrome at 1200x630, see journal/og/render.sh -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=IBM+Plex+Mono:wght@500&family=Source+Serif+4:ital,opsz,wght@1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #f4efe4; --paper: #fbf8f1; --ink: #1f2328; --ink-2: #4a4f57; --ink-3: #7a7f87; --rule: #ddd5c4; --accent: #1d5c63; --gold: #9a7420; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: var(--bg); color: var(--ink); }
+  .card { position: relative; width: 1200px; height: 630px; padding: 64px 72px; display: grid; grid-template-columns: 1fr 360px; gap: 56px; align-items: center; }
+  .card::after { content: ""; position: absolute; inset: 20px; border: 1px solid var(--rule); pointer-events: none; }
+  .kicker { font: 500 18px/1 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 22px; }
+  h1 { font: 600 104px/0.92 "Cormorant Garamond", serif; margin: 0 0 26px; letter-spacing: -.01em; }
+  .dek { font: italic 400 29px/1.35 "Source Serif 4", serif; color: var(--ink-2); margin: 0 0 30px; max-width: 30ch; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { font: 500 15px/1 "IBM Plex Mono", monospace; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); background: var(--paper); }
+  .chip.g { color: #8a3b2e; } .chip.d { color: var(--accent); } .chip.a { color: #5b4a8a; } .chip.o { color: #2f6b3a; }
+
+  /* the machine: three reels over a playfield */
+  .machine { background: #14100b; border-radius: 18px; padding: 22px 20px 26px; box-shadow: 0 1px 0 #fff inset, 0 18px 40px rgba(31, 35, 40, .22); position: relative; }
+  .marquee { font: 500 13px/1 "IBM Plex Mono", monospace; letter-spacing: .3em; color: #c9a25a; text-align: center; margin-bottom: 14px; }
+  .reels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .reel { background: linear-gradient(#e9dfc9, #fbf6ea 30%, #fbf6ea 70%, #e9dfc9); border-radius: 8px; height: 132px; display: grid; grid-template-rows: 1fr 1.3fr 1fr; align-items: center; justify-items: center; overflow: hidden; border: 2px solid #c9a25a; }
+  .reel span { font: 600 30px/1 "Cormorant Garamond", serif; color: #b9ad94; }
+  .reel span { font-family: "Apple Symbols", "Segoe UI Symbol", serif; font-variant-emoji: text; }
+  .orb { width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 36% 32%, #fff7df, #e6c27a 35%, #9a7420 75%, #5a4313); box-shadow: 0 0 14px rgba(201, 162, 90, .55); }
+  .payline { position: absolute; left: 14px; right: 14px; top: 115px; height: 2px; background: rgba(154, 116, 32, .55); }
+  .field { height: 150px; border-radius: 10px; background: radial-gradient(ellipse at 50% 0%, #2a3f42, #101a1c 75%); position: relative; overflow: hidden; }
+  .bumper { position: absolute; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f4dc9c, #c9a25a 55%, #6b4f22); box-shadow: 0 0 18px rgba(244, 220, 156, .55); }
+  .ball { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #b8bec4 60%, #5d646b); left: 205px; top: 58px; box-shadow: 0 0 10px rgba(255, 255, 255, .35); }
+  .trail { position: absolute; left: 120px; top: 40px; width: 90px; height: 50px; border-top: 2px dashed rgba(244, 220, 156, .35); border-radius: 50%; transform: rotate(14deg); }
+  .flip { position: absolute; bottom: 30px; width: 74px; height: 12px; border-radius: 6px; background: #f4dc9c; }
+  .flip.l { left: 70px; transform: rotate(22deg); transform-origin: left center; }
+  .flip.r { right: 70px; transform: rotate(-22deg); transform-origin: right center; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div>
+    <p class="kicker">Build log · kept while it is being made</p>
+    <h1>The Long Settlement</h1>
+    <p class="dek">An AI agent builds a voiced epic played on a pinball table that runs on a slot machine. Every decision, sync and test, as it happens.</p>
+    <div class="chips"><span class="chip g">goals</span><span class="chip d">decisions</span><span class="chip a">actions</span><span class="chip o">outcomes</span><span class="chip">journal</span></div>
+  </div>
+  <div class="machine" aria-hidden="true">
+    <div class="marquee">REELS OF ASSAY</div>
+    <div class="reels">
+      <div class="reel"><span>✶</span><i class="orb"></i><span>⚖&#xFE0E;</span></div>
+      <div class="reel"><span>⚓&#xFE0E;</span><i class="orb"></i><span>✶</span></div>
+      <div class="reel"><span>⚖&#xFE0E;</span><i class="orb"></i><span>⚓&#xFE0E;</span></div>
+    </div>
+    <div class="payline"></div>
+    <div class="field">
+      <div class="bumper" style="left:70px;top:26px"></div>
+      <div class="bumper" style="left:150px;top:62px"></div>
+      <div class="bumper" style="left:240px;top:20px"></div>
+      <div class="trail"></div>
+      <div class="ball"></div>
+      <div class="flip l"></div><div class="flip r"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

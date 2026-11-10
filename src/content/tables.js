@@ -129,12 +129,16 @@ const mirrorLane = (lane) => ({
   inner: lane.inner.map(mirror), outer: lane.outer.map(mirror), gate: (y) => lane.gate(y).map(mirror).reverse(),
 });
 
-/** Three top-lane rollovers between four guides, and the guides. */
+/**
+ * Three top-lane rollovers between four guides, and the guides. Each sensor is as wide as
+ * the lane is to a ball's centre, plus one: with r = 10 in a 40-wide lane a ball sliding down
+ * a guide (centre 12 off the middle) went through unlit.
+ */
 function topLanes(ids, xs, y0, y1, group) {
   if (xs.length !== ids.length + 1) throw new Error(`tables: ${ids.length} lanes need ${ids.length + 1} guides, got ${xs.length}`);
   return {
     walls: xs.map((x) => ({ a: [x, y0], b: [x, y1] })),
-    rollovers: ids.map((id, i) => ({ id, pos: [(xs[i] + xs[i + 1]) / 2, (y0 + y1) / 2 + 1], r: 10, group })),
+    rollovers: ids.map((id, i) => ({ id, pos: [(xs[i] + xs[i + 1]) / 2, (y0 + y1) / 2 + 1], r: (xs[i + 1] - xs[i]) / 2 - R + 1, group })),
   };
 }
 
@@ -151,20 +155,20 @@ function vessery() {
   });
   const pier = sideLane(250, 330, 430, 34, 70);        // left: the pier ramp
   const dock = mirrorLane(pier);                       // right: the dock orbit
+  const lots = topLanes(['lotL', 'lotC', 'lotR'], [127, 167, 207, 247], 72, 118, 'lots');
 
   const walls = [
     ...sh.walls, ...lo.walls,
     // ceiling, then the breakwater that stops a launch and drops it on the lot lanes
     { a: sh.arcEnd, b: [118, 20] },
-    { a: [118, 20], b: [108, 80], bounce: 0.3 },
-    ...poly([[108, 80], [56, 130], [L, 205]]),
+    { a: [118, 20], b: [127, 72], bounce: 0.3 },
+    ...poly([[127, 118], [56, 150], [L, 205]]),
     // left wall, broken by the pier wedge
     { a: [L, 205], b: pier.outer[0] }, ...poly(pier.outer), { a: pier.outer[2], b: [L, 800] },
     ...poly(pier.inner),
     // right: the dock wedge sits against the lane divider
     ...poly(dock.outer), ...poly(dock.inner),
-    // lot lane guides
-    ...[127, 167, 207, 247].map((x) => ({ a: [x, 72], b: [x, 118] })),
+    ...lots.walls,
   ];
 
   return {
@@ -192,10 +196,7 @@ function vessery() {
       ...bank(['sealM', 'sealI', 'sealN', 'sealT'], [mx(98), 236], [mx(126), 304], 'seals', 0.06),
     ],
     rollovers: [
-      { id: 'lotL', pos: [147, 96], r: 10, group: 'lots' },
-      { id: 'lotC', pos: [187, 96], r: 10, group: 'lots' },
-      { id: 'lotR', pos: [227, 96], r: 10, group: 'lots' },
-      ...lo.rollovers,
+      ...lots.rollovers, ...lo.rollovers,
     ],
     shots: [
       // Both gates sit across the lane mouths, not up at the top of the lanes. With the gate at
@@ -245,10 +246,12 @@ function saltmere() {
   const lo = lower({
     divX: 30, divTop: 600, elbow: 664, pivot: [122, 702],
     sling: [[68, 566], [68, 652], [108, 670]], slingKick: 380,
-    flipLen: 57, rest: 0.52, active: 0.62, guard: [3, 18], guardY: 558,
+    flipLen: 57, rest: 0.52, active: 0.62, guard: [12, 20], guardY: 558,
   });
   const cause = sideLane(270, 360, 452, 32, 66);                   // left: the causeway ramp
-  const court = mirrorLane(sideLane(170, 350, 440, 30, 64));       // right: the court orbit, narrower and longer
+  const court = mirrorLane(sideLane(170, 350, 440, 33, 70));       // right: the court orbit, narrower and longer
+
+  const salts = topLanes(['saltL', 'saltC', 'saltR'], [236, 270, 304, 338], 74, 118, 'salt');
 
   // The gallery to the Orrery leans seven degrees and has no flare at its mouth. It sits
   // between the two angles a flipper gives easily (the near-side shot off the base, the
@@ -268,8 +271,7 @@ function saltmere() {
     ...poly(court.outer), ...poly(court.inner),
     // the headframe: stops a launch and drops it on the salt lanes
     { a: [212, 8], b: [218, 64], bounce: 0.3 },
-    // salt lane guides
-    ...[236, 270, 304, 338].map((x) => ({ a: [x, 74], b: [x, 118] })),
+    ...salts.walls,
     // the Orrery gallery, with a peaked roof so nothing rests on it
     ...poly(galL), ...poly(galR),
     ...poly([[174.5, 138], [191.5, 120], [208.5, 138]]),
@@ -293,13 +295,10 @@ function saltmere() {
     slings: lo.slings,
     targets: [
       ...bank(['strikeA', 'strikeB', 'strikeC'], [66, 292], [122, 240], 'strike', 0.06),
-      ...bank(['lienL', 'lienI', 'lienE', 'lienN'], [mx(41), 178], [mx(41), 282], 'lien', 0.06),
+      ...bank(['lienL', 'lienI', 'lienE', 'lienN'], [mx(44), 178], [mx(44), 282], 'lien', 0.06),
     ],
     rollovers: [
-      { id: 'saltL', pos: [253, 96], r: 10, group: 'salt' },
-      { id: 'saltC', pos: [287, 96], r: 10, group: 'salt' },
-      { id: 'saltR', pos: [321, 96], r: 10, group: 'salt' },
-      ...lo.rollovers,
+      ...salts.rollovers, ...lo.rollovers,
     ],
     shots: [
       // gates across the lane mouths, as on Vessery
@@ -351,7 +350,7 @@ function halcyon() {
   const lo = lower({
     divX: 30, divTop: 596, elbow: 662, pivot: [119, 700],
     sling: [[70, 570], [70, 650], [107, 667]], slingKick: 400,
-    flipLen: 57, rest: 0.5, active: 0.64, guard: [12, 12], guardY: 554,
+    flipLen: 57, rest: 0.5, active: 0.64, guard: [16, 16], guardY: 554,
   });
   const gallery = sideLane(196, 318, 424, 34, 68);     // left: the gallery ramp
   const parade = mirrorLane(gallery);                  // right: the parade orbit
@@ -530,7 +529,7 @@ function tallis() {
   const lo = lower({
     divX: 30, divTop: 604, elbow: 668, pivot: [121, 705],
     sling: [[69, 572], [69, 656], [107, 673]], slingKick: 430,
-    flipLen: 58, rest: 0.54, active: 0.62, guard: [15, 15], guardY: 560,
+    flipLen: 58, rest: 0.54, active: 0.62, guard: [19, 19], guardY: 560,
   });
   const steps = sideLane(262, 346, 442, 34, 66);                    // left: the exchange steps
   const clearing = mirrorLane(sideLane(236, 334, 436, 32, 70));     // right: the clearing-house orbit
