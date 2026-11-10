@@ -154,7 +154,7 @@ function stageOf(cast, line, on, F) {
   if (!tall) {
     switch (camName) {
       case 'wide': cam = { z: 1, cx: 640, cy: 400, low: 0 }; break;
-      case 'close': cam = subject ? { z: 1.5, cx: sx, cy: 352 + drop, low: 0 } : { z: 1.12, cx: 640, cy: 390, low: 0 }; break;
+      case 'close': cam = subject ? { z: 1.5, cx: sx, cy: 336 + drop, low: 0 } : { z: 1.12, cx: 640, cy: 390, low: 0 }; break;
       case 'two': cam = { z: n >= 2 ? 1.26 : 1.16, cx: (sx + ox) / 2, cy: 372 + drop * 0.5, low: 0 }; break;
       case 'low': cam = { z: 1.12, cx: sx, cy: 400, low: 1 }; break;
       default: throw new Error(`cinema: unknown cam '${camName}' on line ${line.id} (wide, close, two, low)`);
@@ -162,7 +162,7 @@ function stageOf(cast, line, on, F) {
   } else {
     // The same four framings, composed for a tall window. A face must be readable on a phone, so nothing is as
     // wide as 'wide', and the speaker's whole head is always inside the frame.
-    const head = 84 * scale;                                  // half the width of a head and its hair, in stage units
+    const head = 104 * scale;                                 // half the width of a head and its hair, in stage units (the cel heads: about 100, the widest hair 118)
     let z, cx, low = 0, dropK = 1;
     switch (camName) {
       case 'wide': {   // everyone, if everyone fits; leaning toward the speaker by whatever room is left over
@@ -179,7 +179,7 @@ function stageOf(cast, line, on, F) {
     const room = F.vw / (2 * z) - head - 14;
     if (subject && room > 0) cx = clamp(cx, sx - room, sx + room);
     cx = clamp(cx, 640 - PORTRAIT_REACH, 640 + PORTRAIT_REACH);
-    const faceY = STAGE_Y - 100 * FIG * scale + drop * dropK;
+    const faceY = STAGE_Y - 118 * FIG * scale + drop * dropK;   // between the eye line (122 figure units above the neck) and the mouth
     cam = { z, cx, cy: faceY + 0.085 * F.vh / z, low };        // faces sit a little above the middle of the painting
   }
   return { ids, xs, scale, speaker, subject, crowd, cam };
@@ -729,7 +729,10 @@ export function drawCinema(ctx, content, game, fx, layout) {
 
   const light = bgNow.light;
   // a little air between the backdrop and the people, and a floor of shadow for them to stand in
-  if (!dark) { ctx.fillStyle = rgba(light.amb, 0.16); ctx.fillRect(art.x - 20, art.y - 20, art.w + 40, art.h + 40); }
+  // A backdrop painted for the cel look declares a style.js Light (it has a direction, dx): its darks are meant to
+  // stay dark and its lamp cores near white, so it gets a third of the wash an old soft backdrop got.
+  const wash = light.dx !== undefined ? 0.06 : 0.16;
+  if (!dark) { ctx.fillStyle = rgba(light.amb, wash); ctx.fillRect(art.x - 20, art.y - 20, art.w + 40, art.h + 40); }
 
   ctx.save();
   ctx.translate(ox, oy); ctx.scale(F.s0 * z, F.s0 * z); ctx.translate(-cx, -cy);
