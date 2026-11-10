@@ -37,7 +37,7 @@ const LIGHTS = {
       sky: { zenith: '#161c7c', mid: '#5a46c0', midAt: 0.36, horizon: '#ff9666', below: '#b05c96', glow: '#ffc890', glowAmount: 0.85, sunDir: dirFrom(-20, -1.2), sun: { size: 3.4, haloAmount: 0.6 } },
       water: { deep: '#1a2486', mid: '#3c46b4', shallow: '#b0709c', foam: '#ffd0c4', glint: '#ffa880', glintDensity: 0.26 },
     },
-    cloud: { color: '#e88aa0', shadowTint: '#5a4ab8', count: 6 },
+    cloud: { color: '#e88aa0', shadowTint: '#5a4ab8', count: 5 },
   },
 };
 
@@ -82,7 +82,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   // ---- the city on the quay, backs to us, watching the water
   const spots = [];
-  for (let i = 0; i < 30; i++) { const sx = i % 2 ? 1 : -1, col = Math.floor(i / 2) % 5, row = Math.floor(i / 10); spots.push({ pos: [sx * (1.0 + col * 0.74 + r() * 0.3) + (sx < 0 ? -0.5 : 0.3), 0, -2.2 - row * 0.85 - r() * 0.4 - (col === 0 ? 0.9 : 0)], face: 180 + sx * (6 + r() * 22) }); }
+  for (let i = 0; i < 24; i++) { const sx = i % 2 ? 1 : -1, col = Math.floor(i / 2) % 5, row = Math.floor(i / 10); spots.push({ pos: [sx * (1.0 + col * 0.74 + r() * 0.3) + (sx < 0 ? -0.5 : 0.3), 0, -2.2 - row * 0.85 - r() * 0.4 - (col === 0 ? 0.9 : 0)], face: 180 + sx * (6 + r() * 22) }); }
   const folk = crowd({ spots: low ? spots.filter((_, i) => i % 2 === 0) : spots, material: M.prop, sprites, seed: 13, amount: 1, glow: '#ffc060', variants: 2 });
   scene.root.add(folk.node);
 

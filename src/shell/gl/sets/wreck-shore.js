@@ -50,7 +50,7 @@ const LIGHTS = {
       sky: { zenith: '#2a6ee0', mid: '#6fb8f4', midAt: 0.4, horizon: '#e8f4ff', below: '#a8dcf0', sunDir: dirFrom(-150, 50) },
       water: { deep: '#1d6ed0', mid: '#2ba8e0', shallow: '#7fe8dc', drift: [0.5, 0.25] },
     },
-    cloud: { color: '#ffffff', shadowTint: '#b8c4f8' }, shingle: 1, hill: ['#5fd0a0', '#c8c0f0', '#8a80d8'],
+    cloud: { color: '#ffffff', shadowTint: '#b8c4f8' }, shingle: 0.8, hill: ['#5fd0a0', '#c8c0f0', '#8a80d8'],
   },
 };
 
@@ -63,7 +63,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   const near = group('near'), ground = group('ground');
   // ---- the beach: it falls away to the left and toward the camera's left corner
   const slope = (x, z) => Math.min(0, -(Math.max(0, -x - 4.2 - z * 0.12)) * 0.16);
-  ground.add(node('beach', tint(deform(plane(60, 26, 20, 6), (p) => { p[2] -= 3; p[1] = slope(p[0], p[2]) - (p[2] < BW_Z - 1.2 ? 1.2 : 0); }, 180), dark ? '#b8aee8' : '#f0e6d8'), M.ground));
+  ground.add(node('beach', tint(deform(plane(60, 26, 20, 6), (p) => { p[2] -= 3; p[1] = slope(p[0], p[2]) - (p[2] < BW_Z - 1.2 ? 1.2 : 0); }, 180), dark ? '#b8aee8' : '#e2c8a4'), M.ground));
   ground.traverse((n) => { n.castShadow = false; });
 
   // ---- the breakwater, its round head, steps down to the shingle, an iron beacon nobody lights
@@ -146,9 +146,10 @@ function build(engine = GL0, { light, low = false } = {}) {
   const CUES = { 'ch4.pro.19': () => { setRescue(0); setSurf(0.7); }, 'ch4.pro.20': () => setRescue(0.1), 'ch4.s1.b01': () => setRescue(0.6), 'ch4.s1.c01': () => { setRescue(1); setSurf(0.5); }, 'ch4.s1.c24': () => setRescue(0.5), 'ch4.s1.c25': () => setRescue(0.1) };
   const cue = (id) => { const f = CUES[id]; if (f) f(); return !!f; };
 
+  const FOLK = { lit: 0, lively: 0.35 };
   function update(time, dt, pw) {
     surfNow += (surf - surfNow) * Math.min(1, dt + (dt === 0 ? 1 : 0));
-    folk.update(time, dt, { lit: 0, lively: 0.35 });
+    folk.update(time, dt, FOLK);
     swells.update(time, surfNow);
     const sway = Math.sin(time * 1.5) * 5 + Math.sin(time * 0.6 + 1) * 3, fl = 0.92 + 0.08 * Math.sin(time * 10.1) * Math.sin(time * 6.3), on = Math.min(1.4, pw);
     lantern.setRot(Math.sin(time * 1.1 + 2) * 3, 0, sway); cone.setRot(0, 0, sway * 0.5); cone.visible = pw > 0.05; cone.material.beam.near = 0.4 * on * fl;

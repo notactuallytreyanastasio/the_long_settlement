@@ -49,7 +49,7 @@ const ENVS = {
       ambient: { sky: '#4f7ae0', ground: '#2f3a9a', amount: 0.22 },
       rim: { color: '#b8e4ff', amount: 1.0, edge: 0.7 },
       fog: { color: '#2a44b0', density: 0.0075, start: 14, max: 0.9 },
-      sky: { zenith: '#0a1058', mid: '#1c2490', midAt: 0.5, horizon: '#3a7ccc', below: '#1c3aa4', glow: '#7fd0e8', glowAmount: 0.3, sunDir: dirFrom(7, 6), moon: 0, stars: 0, sun: { color: '#3f8ad4', size: 0.1, halo: '#3f8ad4', haloAmount: 0.0 } },
+      sky: { zenith: '#0a1058', mid: '#1c2490', midAt: 0.5, horizon: '#3a7ccc', below: '#1c3aa4', glow: '#8fe0e8', glowAmount: 0.55, sunDir: dirFrom(7, 6), moon: 0, stars: 0, sun: { color: '#3f8ad4', size: 0.1, halo: '#3f8ad4', haloAmount: 0.0 } },
       water: { deep: '#0c1a72', mid: '#1b48b4', shallow: '#3fb4cc', foam: '#f4fbff', glint: '#bfe8ff', glintDensity: 0.12, drift: [0.9, 0.6] },
     },
   },
@@ -105,7 +105,7 @@ function build(engine = GL0, { light, low = false } = {}) {
 
   const sprites = scene.sprites = createSprites(448);
   // ---- the sea, and the weather
-  const swells = seaSwells({ rows: [{ z: RAIL_Z - 3.2, n: 3, span: 15, size: 1.45, speed: 1.1 }, { z: -11.5, n: 4, span: 26, size: 2.5, speed: 0.9 }, { z: -20, n: 4, span: 44, size: 4.0, speed: 0.75 }, ...(low ? [] : [{ z: -36, n: 5, span: 80, size: 6.5, speed: 0.6 }])], material: M.ground, level: WATER, seed: 6, colors: { deep: '#14228a', mid: '#2458c8', lit: '#49d0d8', foam: '#f6fcff' } });
+  const swells = seaSwells({ rows: [{ z: RAIL_Z - 3.2, n: 3, span: 15, size: 1.45, speed: 1.1 }, { z: -11.5, n: 4, span: 26, size: 2.5, speed: 0.9 }, { z: -20, n: 4, span: 44, size: 4.0, speed: 0.75 }, ...(low ? [] : [{ z: -36, n: 5, span: 80, size: 4.6, speed: 0.6 }])], material: M.ground, level: WATER, seed: 6, colors: { deep: '#14228a', mid: '#2458c8', lit: '#49d0d8', foam: '#f6fcff' } });
   scene.root.add(swells.node);
   const rain = rainField({ count: low ? 60 : 130, area: [18, 9, 6.5], at: [0, 4, -3.2], material: M.speck, wind: [-4.2, -13, 1.0], seed: 2 });
   scene.root.add(rain.node);

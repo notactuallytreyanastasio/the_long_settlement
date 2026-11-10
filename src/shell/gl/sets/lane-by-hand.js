@@ -76,7 +76,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   // ---- people on the quay with their own small lights, watching the chain go out
   const spots = [];
-  for (let i = 0; i < 18; i++) { const sx = i % 2 ? 1 : -1, col = Math.floor(i / 2) % 3, row = Math.floor(i / 6); spots.push({ pos: [sx * (3.3 + col * 0.8 + r() * 0.3) + (sx > 0 ? 0.6 : 0), 0, -2.4 - row * 0.9 - r() * 0.4], face: 180 + sx * (10 + r() * 20) }); }
+  for (let i = 0; i < 14; i++) { const sx = i % 2 ? 1 : -1, col = Math.floor(i / 2) % 3, row = Math.floor(i / 6); spots.push({ pos: [sx * (3.3 + col * 0.8 + r() * 0.3) + (sx > 0 ? 0.6 : 0), 0, -2.4 - row * 0.9 - r() * 0.4], face: 180 + sx * (10 + r() * 20) }); }
   const folk = crowd({ spots: low ? spots.filter((_, i) => i % 2 === 0) : spots, material: M.prop, sprites, seed: 5, amount: 1, glow: '#ffc060', variants: 2 });
   scene.root.add(folk.node);
 

@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 26582,
-  "lines": 496
+  "bytes": 26935,
+  "lines": 500
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 62892,
-  "lines": 1681
+  "bytes": 63715,
+  "lines": 1689
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12560,6 +12560,11 @@
   "lines": 318
  },
  {
+  "path": "src/shell/gl/sets/assembly.js",
+  "bytes": 15762,
+  "lines": 167
+ },
+ {
   "path": "src/shell/gl/sets/bench.js",
   "bytes": 18314,
   "lines": 229
@@ -12573,6 +12578,21 @@
   "path": "src/shell/gl/sets/carrow-morning.js",
   "bytes": 18821,
   "lines": 215
+ },
+ {
+  "path": "src/shell/gl/sets/causeway.js",
+  "bytes": 14227,
+  "lines": 171
+ },
+ {
+  "path": "src/shell/gl/sets/cell.js",
+  "bytes": 14146,
+  "lines": 172
+ },
+ {
+  "path": "src/shell/gl/sets/clearing-house.js",
+  "bytes": 16945,
+  "lines": 202
  },
  {
   "path": "src/shell/gl/sets/commons-hall.js",
@@ -12610,9 +12630,14 @@
   "lines": 148
  },
  {
+  "path": "src/shell/gl/sets/cutter-deck.js",
+  "bytes": 17543,
+  "lines": 202
+ },
+ {
   "path": "src/shell/gl/sets/dark-village.js",
-  "bytes": 23348,
-  "lines": 230
+  "bytes": 24491,
+  "lines": 235
  },
  {
   "path": "src/shell/gl/sets/dormitory.js",
@@ -12623,6 +12648,11 @@
   "path": "src/shell/gl/sets/drum-hall.js",
   "bytes": 21159,
   "lines": 269
+ },
+ {
+  "path": "src/shell/gl/sets/drum-open.js",
+  "bytes": 22054,
+  "lines": 241
  },
  {
   "path": "src/shell/gl/sets/exchange-floor.js",
@@ -12641,7 +12671,7 @@
  },
  {
   "path": "src/shell/gl/sets/ferry-storm.js",
-  "bytes": 18336,
+  "bytes": 18337,
   "lines": 187
  },
  {
@@ -12653,6 +12683,11 @@
   "path": "src/shell/gl/sets/founders-lamp.js",
   "bytes": 16498,
   "lines": 182
+ },
+ {
+  "path": "src/shell/gl/sets/full-bench.js",
+  "bytes": 15699,
+  "lines": 172
  },
  {
   "path": "src/shell/gl/sets/hall-steps.js",
@@ -12671,7 +12706,7 @@
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
-  "bytes": 23869,
+  "bytes": 23875,
   "lines": 245
  },
  {
@@ -12696,33 +12731,33 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch3.js",
-  "bytes": 37291,
+  "bytes": 37325,
   "lines": 436
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
-  "bytes": 35734,
+  "bytes": 35737,
   "lines": 463
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
-  "bytes": 45150,
+  "bytes": 45155,
   "lines": 567
  },
  {
   "path": "src/shell/gl/sets/kit-ch6.js",
-  "bytes": 54145,
+  "bytes": 54230,
   "lines": 658
  },
  {
   "path": "src/shell/gl/sets/kit-ch7.js",
-  "bytes": 68808,
+  "bytes": 68787,
   "lines": 860
  },
  {
   "path": "src/shell/gl/sets/kit-ch8.js",
-  "bytes": 57225,
-  "lines": 638
+  "bytes": 57880,
+  "lines": 645
  },
  {
   "path": "src/shell/gl/sets/kit.js",
@@ -12743,6 +12778,11 @@
   "path": "src/shell/gl/sets/lantern-stalls.js",
   "bytes": 31807,
   "lines": 394
+ },
+ {
+  "path": "src/shell/gl/sets/ledger-room.js",
+  "bytes": 18041,
+  "lines": 208
  },
  {
   "path": "src/shell/gl/sets/ledger.js",
@@ -12781,7 +12821,7 @@
  },
  {
   "path": "src/shell/gl/sets/quarter-flame.js",
-  "bytes": 21012,
+  "bytes": 21019,
   "lines": 232
  },
  {
@@ -12796,13 +12836,18 @@
  },
  {
   "path": "src/shell/gl/sets/under-lane.js",
-  "bytes": 20432,
-  "lines": 210
+  "bytes": 20470,
+  "lines": 211
+ },
+ {
+  "path": "src/shell/gl/sets/underwriting-floor.js",
+  "bytes": 24045,
+  "lines": 253
  },
  {
   "path": "src/shell/gl/sets/wreck-shore.js",
-  "bytes": 17503,
-  "lines": 177
+  "bytes": 17526,
+  "lines": 178
  },
  {
   "path": "src/shell/gl/shaders.js",
@@ -12836,8 +12881,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 23253,
-  "lines": 489
+  "bytes": 23795,
+  "lines": 501
  },
  {
   "path": "src/shell/render.js",
@@ -12881,8 +12926,8 @@
  },
  {
   "path": "test/gl-layout.test.js",
-  "bytes": 7230,
-  "lines": 105
+  "bytes": 8250,
+  "lines": 119
  },
  {
   "path": "test/gl-pure.test.js",

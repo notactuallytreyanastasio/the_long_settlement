@@ -24,6 +24,7 @@
 //   arcWall(opts), arcStair(opts), glazing(opts)
 // The Assembly and the Bench
 //   horseshoe(opts)            seat positions on an arc open toward the camera
+//   wallRun(a, b, opts)        a straight wall between two floor points (splayed side walls)
 //   seat(), drape(), tierArc(opts), domeInside(opts), column8(opts), lectern(opts), treaty()
 //   highBench(opts), magistrate(opts), dock(opts), greatWindow(opts), bannerDrop(opts), chequer(opts), bucket()
 // Carrow
@@ -238,7 +239,7 @@ export function cressetFar({ M, low = false, tower = [3.4, -1.2, -52], h = 16, m
  * Returns { F (the cressetFar result), quayZ, water, clouds, lamp: { set(k 0..1), update(time) } }: lamp.set puts the
  * Founders' Lamp out or on (its panes, a big white halo, two turning beams).
  */
-export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, water = -0.5, ground = '#f2e6cc', cobbles = ['#fff6e0', '#eadcc0', '#f8ecd2', '#e4d4ba', '#fff0d8'], far = {}, cloud = {}, beam = 0.2, halo = '#dff0ff', haloSize = 20, quayLen = 30 } = {}) {
+export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, water = -0.5, ground = '#f2e6cc', cobbles = ['#fff6e0', '#eadcc0', '#f8ecd2', '#e4d4ba', '#fff0d8'], far = {}, cloud = {}, beam = 0.2, halo = '#dff0ff', haloSize = 20, quayLen = 24 } = {}) {
   const env = scene.env, r = rng(seed * 131 + 7), g = group('ground');
   g.add(node('ground', tint(place(plane(90, 22, 1, 1), 0, 0, quayZ + 0.3 + 11), ground), M.ground));
   g.add(node('quay', quayEdge({ len: low ? 22 : quayLen, drop: 1.7, seed }), M.ground, { pos: [0, 0, quayZ] }));
@@ -246,7 +247,7 @@ export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, wat
   g.traverse((n) => { n.castShadow = false; });
   scene.root.add(mergeStatic(g, 'ground'));
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
-  scatter(cob, low ? 150 : 320, (i) => {
+  scatter(cob, low ? 130 : 260, (i) => {
     const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = quayZ + 0.95 + row * (low ? 0.95 : 0.55) + (r() - 0.5) * 0.12;
     if (r() < 0.42) return null;
     const sc = 0.2 + r() * 0.09; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobbles[Math.floor(r() * cobbles.length)] };
@@ -256,7 +257,7 @@ export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, wat
   F.nodes.forEach((n) => fg.add(n)); scene.root.add(mergeStatic(fg, 'far'), F.glass);
   env.water.level = water;
   env.water.shores = [[0, quayZ + 0.1 + 900, 900, 0.75], [F.anchors.foot[0], F.anchors.foot[2], 6.0, 1.0]];
-  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 8, seed: seed + 6, arc: [156, 206], radius: [260, 430], height: [30, 150], size: [0.7, 1.5], speed: 0.05, ...cloud });
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 5, seed: seed + 6, arc: [156, 206], radius: [260, 430], height: [30, 150], size: [0.7, 1.5], speed: 0.05, ...cloud });
   scene.root.add(clouds.node);
   const A = F.anchors.lamp, glow = scene.sprites.add({ kind: 'glow', pos: A, size: haloSize, color: halo, alpha: 0 }), core = scene.sprites.add({ kind: 'glow', pos: A, size: haloSize * 0.36, color: '#ffffff', alpha: 0 });
   const beams = group('lamp-beams', { pos: A });
@@ -444,12 +445,12 @@ export function tierArc({ r = 5, step = 1.25, h = 0.42, y = 0, a0 = -124, a1 = 1
 
 /** A delegate's seat for instancing: a high rounded back, a seat, a little desk in front. White: tint per instance. Faces +Z. */
 export function seat() {
-  return merge(rb(0.74, 1.15, 0.14, 0.07, 0, 0.58, -0.3, '#ffffff'), rb(0.7, 0.36, 0.5, 0.05, 0, 0.18, 0, '#f2f2f2'), rb(0.8, 0.5, 0.2, 0.04, 0, 0.3, 0.48, '#e2e2e2'), bx(0.84, 0.05, 0.3, 0, 0.56, 0.48, '#ffffff'), tint(place(sphere(0.07, 6, 4), 0, 1.2, -0.3), '#ffe9a0'));
+  return merge(rb(0.74, 1.15, 0.14, 0.07, 0, 0.58, -0.3, '#ffffff'), bx(0.7, 0.36, 0.5, 0, 0.18, 0, '#e6e6e6'), bx(0.8, 0.5, 0.2, 0, 0.3, 0.48, '#d4d4d4'), bx(0.86, 0.05, 0.3, 0, 0.56, 0.48, '#ffffff'), tint(place(sphere(0.07, 5, 3), 0, 1.2, -0.3), '#ffe9a0'));
 }
 
 /** Grey cloth thrown over a seat (instanced on the draped seats): it hangs to the floor and still shows the folds. */
 export function drape() {
-  const m = deform(roundedBox(0.92, 1.3, 1.02, 0.16, 2), (p) => { const t = (0.65 - p[1]) / 1.3; p[0] *= 1 + 0.16 * t + 0.03 * Math.sin(p[2] * 9); p[2] *= 1 + 0.12 * t; if (p[1] > 0.3 && p[2] > 0) p[1] -= p[2] * 0.75; }, 60);
+  const m = deform(roundedBox(0.92, 1.3, 1.02, 0.16, 1), (p) => { const t = (0.65 - p[1]) / 1.3; p[0] *= 1 + 0.16 * t + 0.03 * Math.sin(p[2] * 9); p[2] *= 1 + 0.12 * t; if (p[1] > 0.3 && p[2] > 0) p[1] -= p[2] * 0.75; }, 60);
   place(m, 0, 0.65, 0.08);
   return merge(gradientY(m, C8.greyDark, C8.grey), bx(0.02, 0.9, 0.7, 0.2, 0.55, 0.2, C8.greyDark, 0, 0, 4), bx(0.02, 0.8, 0.6, -0.24, 0.5, 0.22, C8.greyDark, 0, 0, -5));
 }
@@ -461,6 +462,12 @@ export function domeInside({ r = 9, h = 6, eye = 1.6, seg = 20, ribs = 10, color
   const parts = [gradientY(flip(lathe(prof, seg, { crease: 180 })), color, '#fff8ee'), tint(place(torus(eye + 0.12, 0.2, 14, 5), 0, h, 0), rib)];
   for (let i = 0; i < ribs; i++) { const a = (i / ribs) * Math.PI * 2 + 0.2; parts.push(tint(tube(prof.map((p) => [Math.sin(a) * (p[0] - 0.08), p[1] - 0.04, -Math.cos(a) * (p[0] - 0.08)]), 0.09, 4, { crease: 180 }), rib)); }
   return keep(merge(parts), { eye: [0, h, 0] });
+}
+
+/** A straight wall from floor point a [x, z] to b [x, z], `h` high, `t` thick (behind the line as seen from the room side on its left). anchors: mid, yaw (degrees: the wall's room face looks along this yaw) */
+export function wallRun(a, b, { h = 6, t = 0.4, color = C8.marble, y = 0 } = {}) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz), yaw = Math.atan2(-dz, dx) / DEG;
+  return keep(tint(place(box(len, h, t), (a[0] + b[0]) / 2, y + h / 2, (a[1] + b[1]) / 2, 0, yaw, 0), color), { mid: [(a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2], yaw, len });
 }
 
 /** A plain fat column with a brass collar, standing on y = 0. */

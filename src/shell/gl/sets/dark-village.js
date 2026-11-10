@@ -76,11 +76,15 @@ function build(engine = GL0, { light, low = false } = {}) {
   const hw = HALL_W / 2, zb = HALL_Z - HALL_D;
 
   const town = group('town'), yard = group('yard'), inside = group('inside'), ground = group('ground');
-  ground.add(node('yard', tint(place(plane(70, 30, 1, 1), 0, 0, -6), '#d6d2f6'), M.ground));
+  ground.add(node('yard', tint(place(plane(70, 30, 1, 1), 0, 0, -6), night ? '#d6d2f6' : '#cbb6e2'), M.ground));
+  // big worn flags from the doors down the yard, and two puddles that hold the sky
+  { const q = rng(8), fl = []; for (let i = 0; i < 16; i++) { const row = Math.floor(i / 2), w = 0.95 + q() * 0.5, d = 0.7 + q() * 0.25; fl.push(tint(place(roundedBox(w, 0.05, d, 0.03, 1), (i % 2 ? 0.62 : -0.62) + (q() - 0.5) * 0.3 + (row % 2 ? 0.2 : -0.2), 0.012, HALL_Z + 0.75 + row * 0.86, 0, (q() - 0.5) * 12, 0), [night ? '#f0dcd0' : '#f6dcc0', night ? '#e6c8d8' : '#eccab0', night ? '#c8c0f0' : '#dcc0d8'][i % 3])); } ground.add(node('flags', merge(fl), M.flat));
+    const pool = (rx, rz, seed) => { const o = []; for (let i = 0; i < 12; i++) { const a = (i / 12) * 6.283, k = 1 + 0.22 * Math.sin(a * 3 + seed) + 0.1 * Math.sin(a * 5 + seed * 2); o.push([Math.cos(a) * rx * k, Math.sin(a) * rz * k]); } return o; };
+    for (const [x, z, rx, rz, seed] of [[-2.4, 2.3, 0.75, 0.4, 2], [2.9, 0.4, 0.55, 0.32, 5]]) ground.add(node('puddle', setGlow(tint(place(extrude(pool(rx, rz, seed), 0.02), x, 0.012, z, 90, 0, 0), night ? '#5f8cf4' : '#8fd0f8'), 0.5), M.flat)); }
   ground.traverse((n) => { n.castShadow = false; });
 
   // ---- the net hall: two stone piers, a timber lintel, a boarded gable, a slate roof with turf in it
-  const stones = (x0, x1, y1, z, seed) => { const q = rng(seed), out = []; for (let i = 0; i < 16; i++) { const w = 0.34 + q() * 0.3, h = 0.2 + q() * 0.16; out.push(tint(place(roundedBox(w, h, 0.09, 0.04, 1), x0 + w / 2 + q() * (x1 - x0 - w), 0.2 + q() * (y1 - 0.5), z, 0, 0, (q() - 0.5) * 6), [C4.stone, '#e2dcfa', C4.stoneDark, '#b4a8e8'][i % 4])); } return merge(out); };
+  const stones = (x0, x1, y1, z, seed) => { const q = rng(seed), out = []; for (let i = 0; i < 12; i++) { const w = 0.34 + q() * 0.3, h = 0.2 + q() * 0.16; out.push(tint(place(box(w, h, 0.09), x0 + w / 2 + q() * (x1 - x0 - w), 0.2 + q() * (y1 - 0.5), z, 0, 0, (q() - 0.5) * 6), [C4.stone, '#e2dcfa', C4.stoneDark, '#b4a8e8'][i % 4])); } return merge(out); };
   for (const sx of [-1, 1]) {
     const x0 = sx < 0 ? -hw : DOOR, x1 = sx < 0 ? -DOOR : hw;
     town.add(node('pier', tint(place(roundedBox(x1 - x0, EAVE + 0.1, 0.5, 0.08, 1), (x0 + x1) / 2, EAVE / 2, HALL_Z - 0.2), C4.stone2), M.prop), node('pier-stones', stones(x0, x1, EAVE, HALL_Z + 0.07, 5 + sx), M.prop));
@@ -138,7 +142,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     yard.add(node('sack', sack({ seed: 4, s: 0.3 }), M.prop, { pos: [-4.4, 0, 0.5] }), node('coil', ropeCoil({ r: 0.26 }), M.prop, { pos: [4.1, 0, 0.9] }), node('weed', kelp({ s: 0.7, seed: 4 }), M.flat, { pos: [-2.9, 0.01, -1.7] }));
   }
   // houses either side of the hall and up the lane behind: every shutter to, nothing in any window
-  for (const [x, z, yaw, o] of [[-7.6, -4.6, 22, { seed: 2, w: 3.2, h: 2.4 }], [7.9, -4.9, -24, { seed: 5, w: 3.0, h: 2.9, roofH: 1.7 }], [-11.5, -1.5, 50, { seed: 8, w: 3.0, h: 2.2 }], [11.6, -1.2, -52, { seed: 11, w: 3.2, h: 2.3 }]].slice(0, low ? 2 : 4)) town.add(node('hut', stoneHut(o), M.prop, { pos: [x, 0, z], rot: [0, yaw, 0] }));
+  for (const [x, z, yaw, o] of [[-7.6, -4.6, 22, { seed: 2, w: 3.2, h: 2.4 }], [7.9, -4.9, -24, { seed: 5, w: 3.0, h: 2.9, roofH: 1.7 }], [-11.5, -1.5, 50, { seed: 8, w: 3.0, h: 2.2 }], [11.6, -1.2, -52, { seed: 11, w: 3.2, h: 2.3 }]].slice(0, low ? 2 : 3)) town.add(node('hut', stoneHut(o), M.prop, { pos: [x, 0, z], rot: [0, yaw, 0] }));
   town.add(node('bush1', bush({ seed: 3, s: 1.3, color: '#3fa888' }), M.prop, { pos: [-5.4, 0.1, -3.9] }), node('bush2', bush({ seed: 6, s: 1.1, color: '#4fc4a0' }), M.prop, { pos: [5.6, 0.1, -4.2] }));
 
   // ---- the hill behind, and the island's light on it with its cap on
@@ -148,7 +152,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   { let top = 0; const Pm = hillMesh.positions; for (let i = 0; i < Pm.length; i += 3) if (Math.hypot(-Pm[i] + HILL[0] - TOWER[0], -Pm[i + 2] + HILL[2] - TOWER[2]) < 5 && Pm[i + 1] > top) top = Pm[i + 1]; TOWER[1] = HILL[1] + top - 0.6; }
   const tower = cappedLamp({ h: 7.2, r: 1.6 });
   far.add(node('tower', tower, FAR, { pos: TOWER }));
-  if (!low) for (const [x, z, s, seed] of [[5, -27, 1.5, 3], [10.5, -29, 1.3, 7], [1, -34, 1.2, 15]]) far.add(node('up-hut', stoneHut({ seed, w: 2.6 * s, d: 2.2 * s, h: 2.0 * s, roofH: 1.4 * s }), FAR, { pos: [x, HILL[1] + 5.6 + (seed % 5) * 0.5, z], rot: [0, (seed % 7) * 9 - 20, 0] }));
+  if (!low) for (const [x, z, s, seed] of [[5, -27, 1.5, 3], [10.5, -29, 1.3, 7]]) far.add(node('up-hut', stoneHut({ seed, w: 2.6 * s, d: 2.2 * s, h: 2.0 * s, roofH: 1.4 * s }), FAR, { pos: [x, HILL[1] + 5.6 + (seed % 5) * 0.5, z], rot: [0, (seed % 7) * 9 - 20, 0] }));
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm3(env.sky.sunDir); env.water.level = WATER;
@@ -157,7 +161,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(town, 'town'), insideNode, mergeStatic(far, 'far'));
 
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
-  const cobCols = ['#eceafc', '#c8c6f0', '#dcd4f6', '#bcc4f0', '#e6d6f0'];
+  const cobCols = night ? ['#eceafc', '#c8c6f0', '#dcd4f6', '#bcc4f0', '#e6d6f0'] : ['#dcc8ec', '#b8a8dc', '#e6c8d8', '#a8b0e0', '#d8b8d0'];
   scatter(cob, low ? 160 : 300, (i) => { const col = i % 20, row = Math.floor(i / 20), x = -6.6 + col * 0.68 + (row % 2) * 0.34 + (r() - 0.5) * 0.16, z = HALL_Z + 0.5 + row * 0.5 + (r() - 0.5) * 0.12; if (r() < 0.4) return null; const sc = 0.2 + r() * 0.1; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobCols[Math.floor(r() * cobCols.length)] }; });
   scene.root.add(cob);
 
@@ -168,9 +172,9 @@ function build(engine = GL0, { light, low = false } = {}) {
   const sprites = scene.sprites = createSprites(320);
   // ---- the island: benches in the hall first, then both sides of the yard
   const spots = [];
-  for (const [z, y] of [[zb + 1.55, 0.26], [zb + 0.95, 0.52]]) for (let i = 0; i < 6; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (1.0 + i * 0.42), y, z], face: sx * -14, s: 0.86 });
-  for (let i = 0; i < 5; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (1.15 + i * 0.44), 0.02, zb + 2.25], face: sx * -18, s: 0.86 });
-  for (let i = 0; i < (low ? 5 : 9); i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (3.55 + (i % 4) * 0.52 + r() * 0.14), 0, -1.9 + Math.floor(i / 4) * 0.62 + r() * 0.2], face: sx * -62 });
+  for (const [z, y] of [[zb + 1.55, 0.26], [zb + 0.95, 0.52]]) for (let i = 0; i < 5; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (1.0 + i * 0.5), y, z], face: sx * -14, s: 0.86 });
+  for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (1.2 + i * 0.52), 0.02, zb + 2.25], face: sx * -18, s: 0.86 });
+  for (let i = 0; i < (low ? 4 : 7); i++) for (const sx of [-1, 1]) spots.push({ pos: [sx * (3.55 + (i % 4) * 0.52 + r() * 0.14), 0, -1.9 + Math.floor(i / 4) * 0.62 + r() * 0.2], face: sx * -62 });
   const folk = crowd({ spots, material: M.prop, sprites: null, hold: 'none', detail: 1, variants: 2, seed: 5, amount: L.crowd });
   scene.root.add(folk.node);
 
@@ -195,9 +199,10 @@ function build(engine = GL0, { light, low = false } = {}) {
   const CUES = { 'ch4.s2.c01': () => { setCrowd(0.12); setMood(0.25); }, 'ch4.s3.c01': () => setCrowd(0), 'ch4.s5.c01': () => { setCrowd(1); setMood(0.25); }, 'ch4.s5.c04': () => setMood(0.6), 'ch4.s5.c05': () => setMood(0.15), 'ch4.s5.c13': () => { setMood(1); cheer = 1; }, 'ch4.s5.c14': () => setMood(0.4) };
   const cue = (id) => { const f = CUES[id]; if (f) f(); return !!f; };
 
+  const FOLK = { lit: 0, lively: 0 };
   function update(time, dt, pw) {
     moodNow += (mood - moodNow) * Math.min(1, dt * 2 + (dt === 0 ? 1 : 0));
-    folk.update(time, dt, { lit: 0, lively: moodNow });
+    FOLK.lively = moodNow; folk.update(time, dt, FOLK);
     const fk = 0.9 + 0.1 * Math.sin(time * 10.3) * Math.sin(time * 6.1), on = Math.min(1.4, pw);
     fire.setScale(1, 0.8 + 0.5 * on * fk, 1); fire.visible = pw > 0.05;
     fireGlow.alpha = 0.55 * on * fk; doorGlow.alpha = (night ? 0.3 : 0.1) * on * (0.4 + 0.6 * L.hall / 0.72); ventGlow.alpha = 0.5 * on * (night ? 1 : 0.3);

@@ -19,6 +19,10 @@
 // work in CSS px of the GL canvas. They differ by k = canvas.clientWidth / layout.W, and this file is the only place
 // that converts: rectangles go to the engine times k, head anchors come back divided by k.
 //
+// THE BAND'S FRAME. The director is told how much of the band's foot the HUD covers (F.pad, CSS px) and puts the
+// ground line just above it; layout.js makes the band taller under a notch (computeGlLayout's safeTop), because the
+// head of the band is then sky nobody can letter on. An empty table lays a veil of night over the band (drawHudPass).
+//
 // SETS are built here, never by the director: a queue ordered by first use, one build every few frames while a
 // title, card or cinematic is up, none during play. A set the director asks for before its turn is built at once
 // (one long frame, logged). Each new set is drawn once into a few pixels so its buffers are on the GPU before the

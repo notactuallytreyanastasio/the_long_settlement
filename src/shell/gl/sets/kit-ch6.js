@@ -457,9 +457,9 @@ export function greenLamp({ s = 1, shade = '#2fba7e', metal = K6.brass, reach = 
 /**
  * The cutter's mast and rig, standing on the origin: a fat mast with bands, a boom toward +X with the mainsail
  * furled along it in gaskets, shrouds and ratlines fanning down to both rails (toward +Z and -Z, `beam` apart), a
- * crosstree, a yard for the pennant. anchors: hounds (where the search lamp's bracket is), boomEnd, yard, top
+ * crosstree, a yard for the pennant. `sides`: which rails get shrouds (-1 = the -Z rail, 1 = the +Z rail). anchors: hounds (where the search lamp's bracket is), boomEnd, yard, top
  */
-export function mastRig({ h = 8.5, boom = 5.2, beam = 4.6, color = K6.timber2, sail = '#f4f1ff', rope = K6.tar, ratlines = 6 } = {}) {
+export function mastRig({ h = 8.5, boom = 5.2, beam = 4.6, color = K6.timber2, sail = '#f4f1ff', rope = K6.tar, ratlines = 6, sides = [-1, 1] } = {}) {
   const parts = [], hb = beam / 2, by = 1.35, hounds = [0, h * 0.6, 0];
   parts.push(tint(lathe([[0, 0], [0.3, 0], [0.26, 0.1], [0.17, 0.2], [0.15, h * 0.6], [0.1, h], [0, h]], 10, { crease: 50 }), color));
   for (const y of [0.55, by + 0.25, h * 0.6]) parts.push(tint(place(torus(0.18, 0.035, 10, 4), 0, y, 0), K6.brass));
@@ -468,7 +468,7 @@ export function mastRig({ h = 8.5, boom = 5.2, beam = 4.6, color = K6.timber2, s
   parts.push(tint(place(deform(sphere(1, 10, 6), (p) => { p[1] *= 1 + 0.25 * Math.sin(p[0] * 9); }), boom * 0.5, by + 0.42, 0, 0, 0, 3.8, boom * 0.44, 0.2, 0.22), sail));
   for (let i = 0; i < 5; i++) { const x = boom * (0.14 + i * 0.18); parts.push(tint(place(torus(0.22, 0.02, 8, 4), x, by + 0.36 + x * 0.066, 0, 0, 0, 90), K6.rope)); }
   parts.push(bx(0.12, 0.08, 1.5, 0, h * 0.6 + 0.12, 0, color), bar([-0.9, h * 0.86, 0], [0.9, h * 0.9, 0], 0.035, color, 5));
-  for (const sz of [-1, 1]) {
+  for (const sz of sides) {
     const feet = [[-0.75, 0.75, sz * hb], [0, 0.75, sz * hb], [0.75, 0.75, sz * hb]];
     for (const f of feet) parts.push(bar([0, h * 0.6, sz * 0.7], f, 0.024, rope, 4));
     for (let k = 1; k <= ratlines; k++) { const t = k / (ratlines + 1.5), y = 0.75 + (h * 0.6 - 0.75) * t, z = sz * (hb + (0.7 - hb) * t), x = 0.75 * (1 - t); parts.push(bar([-x, y, z], [x, y, z], 0.014, rope, 3)); }

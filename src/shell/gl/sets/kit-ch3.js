@@ -344,14 +344,14 @@ export function tubeRun(points, { r = 0.07, color = H3.brass, collar = H3.brassD
  * ledger, a stool. The clerk sits at +Z facing -Z... no: the clerk sits at -Z facing +Z, so the room sees the face.
  * Origin: floor, centre. anchors: lamp (back left of the top), top, seat
  */
-export function clerkDesk({ w = 1.5, color = H3.woodDark, top = H3.wood, cloth = H3.green, seed = 1, book = true, stool = true } = {}) {
+export function clerkDesk({ w = 1.5, color = H3.woodDark, top = H3.wood, cloth = H3.green, seed = 1, book = true, stool = true, rack = true } = {}) {
   const r = R(seed), parts = [], h = 0.86, d = 0.8;
   parts.push(rb(w * 0.9, h - 0.08, d * 0.72, 0.04, 0, (h - 0.08) / 2, 0, color));
   for (let i = 0; i < 3; i++) parts.push(rb(w * 0.74, 0.17, 0.04, 0.02, 0, 0.16 + i * 0.22, d * 0.36 + 0.01, top), tint(place(sphere(0.03, 5, 3), 0, 0.16 + i * 0.22, d * 0.36 + 0.05), H3.brass));
   parts.push(rb(w, 0.09, d, 0.03, 0, h, 0, top, 9, 0, 0), bx(w * 0.84, 0.02, d * 0.66, 0, h + 0.05, 0.02, cloth, 9, 0, 0));
   // pigeonholes along the back edge (the clerk's side is -Z, so the rack stands at the front, low, and does not hide a face)
-  parts.push(rb(w, 0.3, 0.2, 0.03, 0, h + 0.2, d * 0.5 - 0.02, color));
-  const n = 5; for (let i = 0; i < n; i++) { const x = -w / 2 + (w / n) * (i + 0.5); parts.push(bx(w / n - 0.05, 0.2, 0.03, x, h + 0.2, d * 0.5 + 0.085, '#4a3fa0')); if (r() < 0.7) parts.push(bx(w / n - 0.09, 0.05 + r() * 0.1, 0.05, x, h + 0.13 + r() * 0.03, d * 0.5 + 0.09, H3.paper)); }
+  if (rack) parts.push(rb(w, 0.3, 0.2, 0.03, 0, h + 0.2, d * 0.5 - 0.02, color));
+  const n = rack ? 5 : 0; for (let i = 0; i < n; i++) { const x = -w / 2 + (w / n) * (i + 0.5); parts.push(bx(w / n - 0.05, 0.2, 0.03, x, h + 0.2, d * 0.5 + 0.085, '#4a3fa0')); if (r() < 0.7) parts.push(bx(w / n - 0.09, 0.05 + r() * 0.1, 0.05, x, h + 0.13 + r() * 0.03, d * 0.5 + 0.09, H3.paper)); }
   if (book) parts.push(rb(0.56, 0.07, 0.4, 0.02, w * 0.1, h + 0.06, -0.08, '#c23a5e', 9, 8, 0), bx(0.5, 0.02, 0.36, w * 0.1, h + 0.1, -0.08, H3.paper, 9, 8, 0));
   if (stool) parts.push(cyl(0.19, 0.19, 0.06, 8, 0, 0.56, -d * 0.5 - 0.3, color), cyl(0.16, 0.16, 0.04, 8, 0, 0.61, -d * 0.5 - 0.3, H3.velvet), cyl(0.04, 0.07, 0.56, 6, 0, 0, -d * 0.5 - 0.3, H3.brassDark));
   return keep(wonk(merge(parts), { lean: (r() - 0.5) * 0.03, crease: 40 }), { lamp: [-w * 0.34, h + 0.36, d * 0.5 - 0.02], top: [0, h + 0.06, 0], seat: [0, 0, -d * 0.5 - 0.3] });

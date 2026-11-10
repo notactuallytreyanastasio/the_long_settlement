@@ -148,6 +148,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   };
   const cue = (id) => { const f = CUES[id]; if (f) f(); return !!f; };
 
+  const FOLK = { lit: 0, lively: 0 };
   function update(time, dt, pw) {
     const ease = Math.min(1, dt * 1.6 + (dt === 0 ? 1 : 0));
     hoodNow += (hood - hoodNow) * ease; cutNow += (cut - cutNow) * Math.min(1, dt * 0.7 + (dt === 0 ? 1 : 0)); strokeNow += (stroke - strokeNow) * ease;
@@ -165,7 +166,7 @@ function build(engine = GL0, { light, low = false } = {}) {
       m4.fromTRS(Mx, P, Q, S3); d.set(Mx, i * 20);
     }
     oars.instances.dirty = true;
-    folk.update(time, dt, { lit: 0, lively: 0.25 + 0.6 * strokeNow });
+    FOLK.lively = 0.25 + 0.6 * strokeNow; folk.update(time, dt, FOLK);
     // the lantern
     const sway = Math.sin(time * 1.3) * 7 + Math.sin(time * 0.53 + 1) * 4, fl = 0.92 + 0.08 * Math.sin(time * 10.1) * Math.sin(time * 6.3), open = 1 - 0.4 * hoodNow, on = Math.min(1.4, pw);
     lantern.setRot(Math.sin(time * 1.1 + 2) * 4, 0, sway);

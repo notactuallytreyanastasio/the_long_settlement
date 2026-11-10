@@ -128,7 +128,7 @@ export function knotNet({ w = 4.2, h = 2.3, cords = 13, seed = 1 } = {}) {
   for (let i = 0; i < cords; i++) {
     const x = -w / 2 + 0.2 + (w - 0.4) * (i / (cords - 1)), len = h * (0.55 + q() * 0.4), n = 2 + Math.floor(q() * 7), col = C4.knots[i % C4.knots.length];
     parts.push(tint(place(cylinder(0.022, 0.022, len, 5, { caps: false }), x, -len, 0.07), PAL.cream));
-    for (let k = 0; k < n; k++) parts.push(tint(place(sphere(0.058, 6, 4), x + (q() - 0.5) * 0.02, -0.18 - (len - 0.3) * (k / Math.max(1, n - 1)) * (0.6 + 0.4 * q()), 0.08), col));
+    for (let k = 0; k < n; k++) parts.push(tint(place(sphere(0.058, 5, 3), x + (q() - 0.5) * 0.02, -0.18 - (len - 0.3) * (k / Math.max(1, n - 1)) * (0.6 + 0.4 * q()), 0.08), col));
     parts.push(tint(place(roundedBox(0.13, 0.1, 0.03, 0.02, 1), x, -0.03, 0.07), col)); // the household's tag
     tops.push([x, 0, 0.08]);
   }
@@ -350,8 +350,8 @@ export function swell({ deep = '#2038a8', mid = '#2f6fd8', lit = '#49c8d8', foam
   gradientY(body, deep, mid, 0, 0.6);
   { const c = rgb(lit), C = body.colors, P = body.positions; for (let i = 0; i < P.length; i += 3) if (P[i + 1] > 0.55 && P[i + 2] > 0.1) { C[i] = c[0]; C[i + 1] = c[1]; C[i + 2] = c[2]; } }
   // the crest: a thin broken line of foam along the top, and a few gobs of it sliding down the face
-  const crest = []; for (const [x0, x1] of [[-2.2, -0.9], [-0.6, 0.7], [1.0, 2.1]]) crest.push(tube(curve([[x0, 0.97 * (1 - 0.3 * (x0 / 3) ** 2), 0.52], [(x0 + x1) / 2, 1.03 * (1 - 0.3 * ((x0 + x1) / 6) ** 2), 0.6], [x1, 0.97 * (1 - 0.3 * (x1 / 3) ** 2), 0.52]], 5), (t) => 0.05 + 0.06 * Math.sin(t * Math.PI), 5, { crease: 180 }));
-  for (const [x, y, s] of [[-1.5, 0.62, 0.16], [0.3, 0.7, 0.2], [1.6, 0.55, 0.14]]) crest.push(place(blob({ rx: s * 1.6, ry: s * 0.5, rz: s, lumps: 0.6, seed: x + 3, seg: 6, rings: 4 }), x, y, 0.86 - y * 0.2));
+  const crest = []; for (const [x0, x1] of [[-2.2, -0.9], [-0.6, 0.7], [1.0, 2.1]]) crest.push(tube(curve([[x0, 0.97 * (1 - 0.3 * (x0 / 3) ** 2), 0.52], [(x0 + x1) / 2, 1.03 * (1 - 0.3 * ((x0 + x1) / 6) ** 2), 0.6], [x1, 0.97 * (1 - 0.3 * (x1 / 3) ** 2), 0.52]], 5), (t) => 0.016 + 0.024 * Math.sin(t * Math.PI), 5, { crease: 180 }));
+  for (const [x, y, s] of [[-1.5, 0.62, 0.06], [0.3, 0.7, 0.08], [1.6, 0.55, 0.05]]) crest.push(place(blob({ rx: s * 1.6, ry: s * 0.5, rz: s, lumps: 0.6, seed: x + 3, seg: 6, rings: 4 }), x, y, 0.86 - y * 0.2));
   return setOutline(merge(body, setGlow(tint(merge(crest), foam), 0.5)), 0.7);
 }
 

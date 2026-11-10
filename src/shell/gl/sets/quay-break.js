@@ -36,7 +36,7 @@ const LIGHTS = {
       sky: { zenith: '#0a1060', mid: '#22309c', midAt: 0.4, horizon: '#5a66dc', below: '#2c3cb0', sunDir: dirFrom(-24, 30), moon: 0.4, stars: 0.7, sun: { size: 2.0 } },
       water: { deep: '#0e1a74', mid: '#1c34a0', shallow: '#4a58cc', foam: '#c8d0ff', glint: '#ffc890', glintDensity: 0.22 },
     },
-    cloud: { color: '#6a78d8', shadowTint: '#2c3890', count: 7 },
+    cloud: { color: '#6a78d8', shadowTint: '#2c3890', count: 5 },
   },
   after: {
     preset: 'night', power: 1.0, lamp: 1, sea: 0, crowd: 0, panic: 0,
@@ -49,7 +49,7 @@ const LIGHTS = {
       sky: { zenith: '#0a1568', mid: '#1b3cae', midAt: 0.42, horizon: '#5a8cee', below: '#3058c4', sunDir: dirFrom(18, 22), moon: 0.6, stars: 1, sun: { size: 2.0 } },
       water: { deep: '#122a88', mid: '#2048b4', shallow: '#3c80dc', glint: '#eaf2ff', glintDensity: 0.26 },
     },
-    cloud: { color: '#8fa6ea', shadowTint: '#3a50aa', count: 6 },
+    cloud: { color: '#8fa6ea', shadowTint: '#3a50aa', count: 5 },
   },
 };
 
@@ -100,7 +100,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
 
   // ---- the crowd on the quay, pressing toward the gangway
   const spots = [];
-  for (let i = 0; i < 28; i++) { const a = r() * 6.28, d = 0.8 + Math.sqrt(i) * 0.62 + r() * 0.3, x = GX + 0.4 + Math.cos(a) * d * 1.25, z = QUAY_Z + 1.9 + Math.abs(Math.sin(a)) * d * 0.62; if (z > -0.5 && Math.abs(x) < 3.6) continue; spots.push({ pos: [x, 0, z], face: Math.atan2(GX - x, (QUAY_Z + 0.4) - z) / DEG }); }
+  for (let i = 0; i < 24; i++) { const a = r() * 6.28, d = 0.8 + Math.sqrt(i) * 0.62 + r() * 0.3, x = GX + 0.4 + Math.cos(a) * d * 1.25, z = QUAY_Z + 1.9 + Math.abs(Math.sin(a)) * d * 0.62; if (z > -0.5 && Math.abs(x) < 3.6) continue; spots.push({ pos: [x, 0, z], face: Math.atan2(GX - x, (QUAY_Z + 0.4) - z) / DEG }); }
   const folk = crowd({ spots: low ? spots.filter((_, i) => i % 2 === 0) : spots, material: M.prop, sprites, seed: 21, amount: L.crowd, hold: 'none', variants: 2 });
   folk.pace = 14; scene.root.add(folk.node);
 

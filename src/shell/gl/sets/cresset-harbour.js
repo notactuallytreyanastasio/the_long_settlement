@@ -57,7 +57,7 @@ function build(engine = null, { light: lightName, low = false } = {}) {
   const M = materials8(), r = rng(8101), night = L.night;
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env; env.sky.sunDir = norm8(env.sky.sunDir);
   const sprites = scene.sprites = createSprites(low ? 160 : 384);
-  const base = harbourBase({ scene, M, low, seed: 5, quayZ: QUAY_Z, water: WATER, ground: '#f6ead2', beam: L.beam, far: { lit: night ? 0.85 : 0.25, towerGlow: night ? 0.5 : 0 }, cloud: { ...L.cloud, count: 6 } });
+  const base = harbourBase({ scene, M, low, seed: 5, quayZ: QUAY_Z, water: WATER, ground: '#f6ead2', beam: L.beam, far: { lit: night ? 0.85 : 0.25, towerGlow: night ? 0.5 : 0 }, cloud: { ...L.cloud, count: 5 } });
   const A = base.F.anchors;
 
   const near = group('near'), mid = group('mid');

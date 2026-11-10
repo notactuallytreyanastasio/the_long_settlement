@@ -400,9 +400,21 @@ async function boot() {
         if (fx.flash.a <= 0) fx.flash = null;
       }
       fx.touch = fx.touch || (controls !== null && controls.touched());
+      let drawn = false;
       if (pickRenderer()) {
-        glApp.draw(content, game, fx, layout);
-      } else {
+        try {
+          glApp.draw(content, game, fx, layout);
+          drawn = true;
+        } catch (err) {
+          // Asked for by name (?gl=1), a 3D renderer that throws stops the page, loudly. As the default it must not
+          // take the game with it: say so, retire it for this session, and let the 2D renderer draw this very frame.
+          if (GL_ASKED) throw err;
+          console.error('main: the 3D renderer threw; the 2D renderer takes over for this session', err);
+          glApp.ok = false;
+          pickRenderer();
+        }
+      }
+      if (!drawn) {
         renderer.draw(content, game, fx, layout);
         // while the chapter card is up, get the prologue's first backdrop ready behind it
         if (game.mode === 'card') warmCinema(content, game, layout, canvas.width / layout.W, now);

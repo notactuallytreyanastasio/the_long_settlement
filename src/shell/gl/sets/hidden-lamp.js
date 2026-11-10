@@ -43,20 +43,20 @@ const LIGHTS = {
     cloud: { color: '#6f8ae6', shadowTint: '#2a3a9a' }, smoke: '#9fd0ff', rock: ['#5a36b4', '#b07cf0'], sand: '#ffd9cf',
   },
   dawn: {
-    preset: 'sunset', power: 0.8, candle: 0.7, shaft: 0.36, flame: 0.85,
+    preset: 'sunset', power: 0.8, candle: 0.7, shaft: 0.13, flame: 0.85,
     env: {
       key: { dir: norm3([-0.4, 0.6, 0.7]), color: '#ffd9c8' },
       shadow: { tint: '#6a5fd8', lift: 0.14, saturate: 1.35 },
       ambient: { sky: '#ffb8c8', ground: '#6a5cc8', amount: 0.2 },
       rim: { color: '#ffe0a0', amount: 1.1, edge: 0.7 },
       fog: { color: '#f0a8c0', density: 0.003, start: 16, max: 0.8 },
-      sky: { zenith: '#4a5ad0', mid: '#e89ad0', midAt: 0.34, horizon: '#ffe08a', below: '#ffb890', glow: '#fff0a8', glowAmount: 0.8, sunDir: dirFrom(7.5, 3.2), sun: { color: '#fffbe6', size: 3.0, halo: '#ffc060', haloAmount: 0.7 } },
+      sky: { zenith: '#4a5ad0', mid: '#e89ad0', midAt: 0.34, horizon: '#ffe08a', below: '#ffb890', glow: '#fff0a8', glowAmount: 0.45, sunDir: dirFrom(7.5, 3.2), sun: { color: '#fffbe6', size: 2.0, halo: '#ffc060', haloAmount: 0.35 } },
       water: { deep: '#4a5ad0', mid: '#8a8ae8', shallow: '#ffc8b8', foam: '#fff6ee', glint: '#fff0b0', glintDensity: 0.34 },
     },
-    cloud: { color: '#ffc8d0', shadowTint: '#a878d8' }, smoke: '#ffe0e8', rock: ['#7a4cc0', '#d09af0'], sand: '#ffe0d0',
+    cloud: { color: '#ffc8d0', shadowTint: '#a878d8' }, smoke: '#ffe0e8', rock: ['#7a4cc0', '#d09af0'], sand: '#f4c4c8',
   },
   day: {
-    preset: 'day', power: 0.6, candle: 0, shaft: 0.3, flame: 0.7,
+    preset: 'day', power: 0.6, candle: 0, shaft: 0.12, flame: 0.7,
     env: {
       key: { dir: norm3([-0.4, 0.66, 0.64]), color: '#fff2dc' },
       shadow: { tint: '#6f6ae0', lift: 0.12, saturate: 1.35 },
@@ -65,7 +65,7 @@ const LIGHTS = {
       sky: { sunDir: dirFrom(30, 40) },
       water: { deep: '#1d7ed8', mid: '#2bb8e0', shallow: '#7fe8dc' },
     },
-    cloud: { color: '#ffffff', shadowTint: '#b4c6f8' }, smoke: '#ffffff', rock: ['#8a66d8', '#d8b8f8'], sand: '#ffe9c8',
+    cloud: { color: '#ffffff', shadowTint: '#b4c6f8' }, smoke: '#ffffff', rock: ['#8a66d8', '#d8b8f8'], sand: '#f0d2b4',
   },
 };
 
@@ -210,7 +210,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     fl.setScale(0.9 + 0.5 * Math.min(1.5, pw) * L.flame, (0.9 + 0.6 * Math.min(1.5, pw) * L.flame) * (0.92 + 0.16 * flick), 0.9 + 0.5 * Math.min(1.5, pw) * L.flame); fl.setRot(Math.sin(time * 3.1) * 5, time * 40, Math.sin(time * 2.3) * 6);
     flameGlow.alpha = 0.62 * f; flameGlow.size[0] = flameGlow.size[1] = 2.0 + 0.9 * pw; flameCore.alpha = 0.8 * f;
     lamps[0].k = (0.62 + 0.38 * shutNow) * L.flame * flick;
-    beam.visible = shutNow > 0.2 && pw > 0.05; beam.material.beam.near = 1.3 * Math.min(1, (shutNow - 0.2) / 0.5) * Math.min(1.2, pw) * (light === 'day' ? 0.4 : 1);
+    beam.visible = shutNow > 0.2 && pw > 0.05; beam.material.beam.near = 0.85 * Math.min(1, (shutNow - 0.2) / 0.5) * Math.min(1.2, pw) * (light === 'night' ? 1 : 0.3);
     spill.material.beam.near = 0.26 * f;
     cf.setScale(1, 0.9 + 0.2 * Math.sin(time * 11), 1); candleGlow.alpha = 0.6 * L.candle;
     // the answers: each island keeps its own slow time

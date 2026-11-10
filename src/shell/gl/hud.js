@@ -26,14 +26,22 @@
 //              band      Rect: the band as drawn this frame. As it grows past layout.gl.band the play HUD leaves
 //                        and the subtitle box arrives; absent, play shows the HUD and a cinematic shows the box.
 //              anchors   { [castId]: { x, y } }: the top of a head, logical px. A bark hangs its speech tick there;
-//                        with no anchor for the speaker it takes the objective line's place at the foot of the band.
+//                        with no anchor for the speaker it lies along the foot of the band, above the strip.
 //              hasSave   { chapter, scene } | null: the title offers Continue
 //              loading   0..1 while the sets build: title and card show a bar where the tap prompt goes
 //              In a cinematic an anchor for the speaker also gets a small speaking marker over their head.
 //              Not drawn here: the energy arcs from the table to the stage (the director's drawOverlay).
 //              sideways  true: only the turn-me-upright card is drawn
 //
-// State: none but caches (when a bark was first seen, so a long one can turn its pages; measured lettering).
+// THE BAND IN PLAY (the stage must be seen, so lettering keeps to its edges):
+//   head row     score pill, left; the opposition on one pill, right: name, done/total, and the bar of what is left along its foot
+//   between them the combo, centred over the gap the two sides face each other across: count, score multiplier, name, fuse
+//   under score  the scene's name and the beat the stage has come to, for a few seconds when either changes, then gone
+//   foot         the 30 px status strip: writs, marks, owed, trust, mute. Nothing else: the cast's feet stand just above it
+//   barks        a bubble over the speaker's head, drawn last, never above the head row's top (the notch)
+// The objective's sentence is not on the band: it is a pill on the table under the drums while no ball is live.
+//
+// State: none but caches (when a bark was first seen, so a long one can turn its pages; when the beat last changed; measured lettering).
 
 import { currentScene, lineSeconds, endingOf } from '../../core/story.js';
 import { SPIN_COST, LOAN, ledger } from '../../core/economy.js';

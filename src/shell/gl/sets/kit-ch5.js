@@ -458,9 +458,9 @@ export const pendulum = ({ len = 0.95, metal = TL.brass } = {}) => merge(bx(0.02
 // ------------------------------------------------------------------------------------ indoors: the clearing house
 
 /** A round strongroom door in a square steel frame, facing +Z, standing on y = 0. { frame, wheel }; anchors on frame: hub */
-export function vaultDoor({ r = 1.15, steel = TL.stoneBlue, dark = TL.slateDark, metal = TL.brass } = {}) {
+export function vaultDoor({ r = 1.15, steel = '#8fe0d8', dark = TL.navy, metal = TL.brass, face = '#c8f4ec' } = {}) {
   const cy = r + 0.3, parts = [rb(r * 2 + 0.7, r * 2 + 0.6, 0.3, 0.08, 0, cy, -0.15, dark)];
-  parts.push(tint(place(cylinder(r, r * 0.96, 0.22, 16), 0, cy, 0.0, 90, 0, 0), steel), tint(place(cylinder(r * 0.78, r * 0.74, 0.1, 16), 0, cy, 0.2, 90, 0, 0), '#b8c2ff'));
+  parts.push(tint(place(cylinder(r, r * 0.96, 0.22, 16), 0, cy, 0.0, 90, 0, 0), steel), tint(place(cylinder(r * 0.78, r * 0.74, 0.1, 16), 0, cy, 0.2, 90, 0, 0), face));
   for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283; parts.push(tint(place(sphere(0.09, 6, 4), Math.cos(a) * r * 0.88, cy + Math.sin(a) * r * 0.88, 0.2), metal)); }
   for (const sy of [-1, 1]) parts.push(rb(0.3, 0.22, 0.2, 0.04, -r - 0.12, cy + sy * r * 0.5, 0.12, metal));
   const spokes = [tint(place(torus(r * 0.36, 0.045, 12, 5), 0, 0, 0, 90, 0, 0), metal), tint(place(cylinder(0.11, 0.11, 0.16, 8), 0, 0, -0.04, 90, 0, 0), metal)];

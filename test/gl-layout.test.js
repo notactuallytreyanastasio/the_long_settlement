@@ -102,3 +102,17 @@ test('gl layout: the touch contract. Launch is bottom right, clear of the right 
     assert.ok(g.skip.y >= 59 * (430 / 393) - 8 || L.kind === 'wide', `${at}: skip is below the tallest notch`);
   }
 });
+
+test('computeGlLayout: under a notch the band is taller, the canvas is the same size, and the table still stands on its foot', () => {
+  const plain = computeGlLayout(393, 852);
+  const notch = computeGlLayout(393, 852, 64);
+  assert.equal(notch.W, plain.W);
+  assert.equal(notch.H, plain.H);
+  assert.ok(notch.gl.band.h > plain.gl.band.h + 30, `band ${notch.gl.band.h} against ${plain.gl.band.h}`);
+  assert.ok(notch.gl.band.h - 64 >= plain.gl.band.h - 30, 'what is left under the notch is about a whole band');
+  assert.ok(notch.table.scale < plain.table.scale && notch.table.scale > 0.8, `table scale ${notch.table.scale}`);
+  assert.ok(Math.abs(notch.table.y + 800 * notch.table.scale - (notch.H - 12)) < 0.01, 'the table foot is 12 px above the bottom edge');
+  assert.equal(computeGlLayout(393, 852, 64), notch, 'one object per height and inset');
+  assert.equal(computeGlLayout(393, 852, 0), plain);
+  assert.equal(computeGlLayout(1280, 800, 64), computeGlLayout(1280, 800), 'the wide layout has no notch');
+});

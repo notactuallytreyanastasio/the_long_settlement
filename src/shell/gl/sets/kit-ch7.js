@@ -648,7 +648,7 @@ export function reelWorks({ w = 3.5, h = 2.7, d = 1.15, color = C7.royal, trim =
   // the back-plate: brass, studded, with a maker's oval and two lifting handles
   const pw = w - 0.36, ph = h - 0.62, pp = [rb(pw, ph, 0.06, 0.03, 0, ph / 2, 0, trim), rb(pw - 0.3, ph - 0.3, 0.03, 0.02, 0, ph / 2, 0.035, '#ffd870')];
   for (let i = 0; i < 6; i++) for (const sy of [0.1, ph - 0.1]) pp.push(ball(0.04, -pw / 2 + 0.12 + i * ((pw - 0.24) / 5), sy, 0.04, C7.brassDark, 5, 3));
-  pp.push(tint(place(cylinder(0.3, 0.3, 0.03, 10), 0, ph * 0.56, 0.04, 90, 0, 0, 1, 1, 0.6), C7.navy));
+  pp.push(place(mintSeal7({ r: 0.34, glow: 0.5, seg: 10 }), 0, ph * 0.54, 0.075));
   for (const sx of [-1, 1]) pp.push(tint(place(torus(0.1, 0.022, 7, 3), sx * pw * 0.34, ph * 0.5, 0.07, 90, 0, 0), C7.brassDark));
   return { cabinet, wheel, plate: merge(pp), anchors: { wheels, plateOn: [0, 0.34, d / 2 - 0.04], plumb: [gap + 0.22, cy - 0.1, 0.36], lamp: [gap * 0.4, cy - 0.2, 0.9], top: [0, h + h * 0.26, 0], r } };
 }

@@ -198,10 +198,10 @@ function build(engine = null, { light, low = false } = {}) {
     const fy = FIRE[1] + hgt * 0.9;
     mix3(env.points[0].color, cQuarter, cWhite, w); mix3(env.points[1].color, cQuarter, cWhite, w);
     env.points[0].intensity *= 0.42 + 0.58 * w; env.points[0].radius = 9 + 6 * w; env.points[1].intensity *= 0.35 + 0.65 * w;
-    mix3(halo.color, cQuarter, cWhite, w); halo.size[0] = halo.size[1] = 4.2 + 5.5 * w; halo.alpha = (0.5 - 0.3 * w) * flick; halo.pos[1] = fy;
+    mix3(halo.color, cQuarter, cWhite, w); halo.size[0] = halo.size[1] = 4.2 + 3.6 * w; halo.alpha = (0.5 - 0.3 * w) * flick; halo.pos[1] = fy;
     core.size[0] = core.size[1] = 1.3 + 2.2 * w; core.alpha = 0.16; core.pos[1] = FIRE[1] + hgt * 0.7; mix3(core.color, cQuarter, ONE, 0.4 + 0.6 * w);
-    star.size[0] = star.size[1] = (1.6 + 3.4 * w) * flick; star.pos[1] = fy; star.rot = time * 0.15; star.alpha = 0.3 + 0.5 * w; mix3(star.color, cQuarter, ONE, 0.3 + 0.7 * w);
-    cone.visible = w > 0.08; cone.tint[0] = cone.tint[1] = cone.tint[2] = w;
+    star.size[0] = star.size[1] = (1.6 + 2.0 * w) * flick; star.pos[1] = fy; star.rot = time * 0.15; star.alpha = 0.3 + 0.5 * w; mix3(star.color, cQuarter, ONE, 0.3 + 0.7 * w);
+    cone.visible = w > 0.08; cone.tint[0] = cone.tint[1] = cone.tint[2] = w * 0.55;
     moonShafts.tint[0] = moonShafts.tint[1] = moonShafts.tint[2] = 0.35 + 0.65 * q;   // the moon only shows in the room once the lamp is down
     // the engine: turning while the lamp is whole, run down and stopped at a quarter
     for (let i = 0; i < rings.length; i++) { const g = rings[i]; g.a += g.rate * dt * w * w; g.n.setRot(g.tilt[0], g.a, g.tilt[2]); }
