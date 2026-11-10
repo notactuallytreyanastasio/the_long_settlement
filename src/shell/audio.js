@@ -1099,6 +1099,7 @@ export function createAudio() {
   // gesture; pause()/resume() are for the page being hidden and shown.
   let paused = false;
   let everRan = false;
+  let suspending = null;        // the promise of the suspend() pause() asked for, until resume() has dealt with it
 
   function onRunning() {
     everRan = true;
@@ -1135,14 +1136,22 @@ export function createAudio() {
     paused = true;
     stopTimer();
     if (silentEl) silentEl.pause();
-    if (ctx.state === 'running') ctx.suspend().catch(() => {});
+    if (ctx.state === 'running') suspending = ctx.suspend().catch(() => {});
   }
 
   /** The page is back. Outside a gesture iOS may refuse; the next touch calls unlock(). */
   function resume() {
     if (!paused) return;
     paused = false;
-    if (everRan) unlock();
+    if (!everRan) return;
+    unlock();
+    // suspend() settles later. Hidden and shown again inside that moment (a banner, a flick of the app
+    // switcher), the unlock() above can find the state still 'running' and ask for nothing, and then the
+    // suspension lands with nobody left to undo it until the next touch. So ask again once it has settled.
+    // (By reading the spec, for Safari: Chrome honours the two calls in order and did not show this.)
+    const was = suspending;
+    suspending = null;
+    if (was) was.then(() => { if (!paused && ctx.state !== 'running') unlock(); });
   }
 
   function setMuted(m) {
