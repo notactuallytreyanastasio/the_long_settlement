@@ -334,6 +334,8 @@
  * export function currentScene(content, game): Scene|null
  * export function objectiveProgress(scene: Scene, hits, seq): { done:number, total:number, complete:boolean }
  * export function litIds(content, game): string[]      element ids the current objective still needs
+ * export function spotFor(table, scene, hits, id): string   the element a hit on id counts for: in an 'all' objective a
+ *        standup target already lit passes its hit to the nearest unlit target of its bank (same group)
  * export function spinIds(content, game): string[]     element ids that spin the reels if hit now ([] unless armed)
  * export function metSpeakers(content, chapterIndex, sceneIndex): Set<string>
  * export function eligibleBarks(content, game, key): Line[]

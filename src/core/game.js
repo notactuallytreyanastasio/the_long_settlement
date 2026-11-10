@@ -21,7 +21,7 @@ import {
 } from './economy.js';
 import { seed, next, pick } from './rng.js';
 import {
-  currentChapter, currentScene, objectiveProgress, registerHit, resolveStage, lineSeconds, eligibleBarks,
+  currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
 } from './story.js';
 
 // ───────────────────────── tuning ─────────────────────────
@@ -677,7 +677,8 @@ function onEvent(content, table, game, ev) {
   const effects = [eventSfx(ev)];
   const scene = currentScene(content, g);
   if (scene && HIT_TYPES.has(ev.type) && ev.id !== undefined) {
-    const hit = registerHit(scene, g.hits, g.seq, ev.id);
+    // a lit target of a bank passes its hit along the bank (story.spotFor)
+    const hit = registerHit(scene, g.hits, g.seq, spotFor(table, scene, g.hits, ev.id));
     if (hit.progressed) {
       g = { ...g, hits: hit.hits, seq: hit.seq };
       effects.push(sfx('objective'));

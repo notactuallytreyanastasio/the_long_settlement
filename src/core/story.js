@@ -72,6 +72,33 @@ export function registerHit(scene, hits, seq, id) {
   throw new Error(`story: scene ${scene.id} has unknown objective kind ${JSON.stringify(o.kind)}`);
 }
 
+/**
+ * Spotting. Which element a hit on `id` counts for in this scene: `id` itself, except that in an 'all'
+ * objective a standup target that is already lit passes its hit to the nearest target of its own bank
+ * (the same `group` in the table) that the objective still needs. Nearest by place in the bank, the lower
+ * one on a tie.
+ *
+ * Without this, "light all four seals" is four separate shots at targets about 20 units wide. Fired from a
+ * trapped ball each one is open for 8 to 17 ms (measured: every standup on every table), which nobody aims
+ * for; so banks are finished by luck, and the last target of a bank is where a scene stalls (the worst seeds
+ * of the bank scenes ran 4 to 6 minutes). With it the shot is the bank, and every hit on the bank is progress.
+ * Lanes, saucers and shots are not spotted: only table.targets, and only in 'all' objectives.
+ */
+export function spotFor(table, scene, hits, id) {
+  const o = checkObjective(scene);
+  if (o.kind !== 'all' || !o.ids.includes(id) || !(hits[id] > 0)) return id;
+  if (!table || !Array.isArray(table.targets)) throw new Error(`story: spotFor needs a table with targets, got ${JSON.stringify(table && table.id)}`);
+  const at = table.targets.findIndex((t) => t.id === id);
+  if (at < 0 || table.targets[at].group === undefined) return id;
+  const { group } = table.targets[at];
+  let best = -1;
+  table.targets.forEach((t, i) => {
+    if (t.group !== group || !o.ids.includes(t.id) || hits[t.id] > 0) return;
+    if (best < 0 || Math.abs(i - at) < Math.abs(best - at)) best = i;
+  });
+  return best < 0 ? id : table.targets[best].id;
+}
+
 /** Element ids the current objective still needs (what the table should light). */
 export function litIds(content, game) {
   const scene = currentScene(content, game);

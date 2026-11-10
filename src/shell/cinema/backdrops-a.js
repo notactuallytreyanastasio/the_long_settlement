@@ -214,7 +214,8 @@ def('ledger', L_LEDGER, (ctx, t, px, info) => {
   ctx.restore();
   stroke(ctx, bx + half, by, bx + half, by + bh, II);
   outline(ctx, rp(bx, by, bw, bh), II);
-  // rules, drawn by hand: not quite straight
+  // rules, drawn by hand: not quite straight (a still section of their own: no one section of this painting is long to build)
+  ctx = S(0.5);
   const top = by + 92, lh = 36, rows = 13, mL = 64, mR = 92;
   for (let side = 0; side < 2; side++) {
     const x0 = bx + side * half, xa = x0 + 22, xb = x0 + half - 22;
@@ -429,7 +430,7 @@ def('harbor-night', L_HARBOR, (ctx, t, px) => {
   shimmer(ctx, 15, X0, 1540, hy + 8, 700, 26, '#ffd27a', t);
   // the quay's own string, close to us: the great lantern is what lights this side of the water
   ctx = S(0.9);
-  const q = px * 0.9, hook = [468 + q, 52], a0 = [-240 + q, -70], c0 = [150 + q, 80], b1 = [1520 + q, -70], c1 = [930 + q, 130];
+  const q = px * 0.9, hook = [432 + q, 52], a0 = [-240 + q, -70], c0 = [150 + q, 80], b1 = [1520 + q, -70], c1 = [930 + q, 130];
   ink(ctx, 2.6);
   ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.quadraticCurveTo(c0[0], c0[1], hook[0], hook[1]); ctx.quadraticCurveTo(c1[0], c1[1], b1[0], b1[1]); ctx.stroke();
   for (const [u, s, k] of [[0.5, 26, 1], [0.86, 22, 4]]) { const p = quadAt(hook, c1, b1, u); paperLantern(ctx, p[0], p[1], s, LCOLS[k], L, true, 0.55); }
@@ -808,7 +809,7 @@ const L_MINT = keyLight('#ffc878', -Math.PI * 0.74, { depth: 0.9 });
 def('mint-office', L_MINT, (ctx, t, px) => {
   const L = L_MINT, DARK = '#1a0a24', WINE = '#3c1230';
   ctx = S(0.2);
-  const o = px * 0.2, lx0 = 470 + o;
+  const o = px * 0.2, lx0 = 440 + o;
   fillAll(ctx, DARK);
   rings(ctx, lx0, 124, 720, ['#2a0e2c', '#4c1634', '#7c2a3a'], [1, 0.6, 0.32]);
   for (let i = -1; i < 9; i++) {   // panelling: ink, and a brass bead inside it
@@ -836,6 +837,7 @@ def('mint-office', L_MINT, (ctx, t, px) => {
   for (let i = 0; i < motto.length; i++) { ctx.save(); ctx.rotate((i / motto.length) * TAU - Math.PI / 2); ctx.fillText(motto[i], 0, -61); ctx.restore(); }
   ctx.restore(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   // window on the harbour, at the right of the wide film: the festival is still going on out there
+  ctx = S(0.2);
   const wx = 944 + px * 0.3, NAVY = '#0a0c36', win = (c) => { c.moveTo(wx, 462); c.lineTo(wx, 190); c.arc(wx + 120, 190, 120, Math.PI, 0); c.lineTo(wx + 240, 462); c.closePath(); };
   ctx.save(); ctx.beginPath(); win(ctx); ctx.clip();
   bands(ctx, wx, 60, 240, 380, ['#0a0926', '#172068', '#213a8c', '#3d4a96'], [0.4, 0.7, 0.92, 1]);
@@ -862,7 +864,7 @@ def('mint-office', L_MINT, (ctx, t, px) => {
   rimmed(ctx, (c) => { c.moveTo(fx - 70, 204); c.quadraticCurveTo(fx - 60, 148, fx, 144); c.quadraticCurveTo(fx + 60, 148, fx + 70, 204); c.closePath(); }, '#2a1634', L, 4, '#c9785a');
   // the lamp
   ctx = S(0.5);
-  const lx = 470 + px * 0.5, ly = 124;
+  const lx = 440 + px * 0.5, ly = 124;
   shaft(ctx, lx, ly, 0.9, 900, 0.9, L.col, 0.16);
   stroke(ctx, lx, -180, lx, ly - 46, 3);
   bloom(ctx, lx, ly, 200, L.col, 1);
@@ -896,7 +898,7 @@ def('mint-office', L_MINT, (ctx, t, px) => {
 // ── ferry-dawn: the morning lane out of harbour. Key light: the sun, just up ──
 const L_DAWN = keyLight('#ffd08a', -Math.PI * 0.4, { depth: 0.75, tint: '#2c1c6a' });
 def('ferry-dawn', L_DAWN, (ctx, t, px) => {
-  const L = L_DAWN, hy = 252, sx = 704 + px * 0.05, sy = 172;
+  const L = L_DAWN, hy = 252, sx = 704 + px * 0.05, sy = 150;
   ctx = S(0);
   sky(ctx, hy, ['#2a2468', '#6a3c8a', '#d8587c', '#ff9a62', '#ffd88a'], [0.3, 0.5, 0.7, 0.88, 1]);
   starsFlat(ctx, 6, 10, 20);
@@ -961,7 +963,7 @@ def('causeway', L_SALT, (ctx, t, px) => {
   const L = L_SALT, hy = 300, DEEP = '#123c6a';
   ctx = S(0);
   sky(ctx, hy, ['#1a5496', '#3a88c2', '#7cc2de', '#c8eeee'], [0.34, 0.62, 0.86, 1]);
-  const ux = 500 + px * 0.05, uy = 128;
+  const ux = 440 + px * 0.05, uy = 114;
   rings(ctx, ux, uy, 190, [alpha(C.white, 0.16), alpha(C.white, 0.26)], [1, 0.56]);
   circ(ctx, ux, uy, 42, '#ffffff');
   ctx = S(0.08);
@@ -1168,7 +1170,7 @@ def('mine-deep', L_MINE, (ctx, t, px) => {
   for (const s of [-1, 1]) { taperPath(ctx, [[vx + s * 16, vy + 66], [vx + s * 330, 880]], 2.4, 12); taperPath(ctx, [[vx + s * 16, vy + 66], [vx + s * 330, 880]], 1, 5, '#6ab4e8'); }
   // the lamp, hooked under the first cap: a hard cone of cold light under it
   ctx = S(0.6);
-  const lx = 566 + px * 0.6, ly = 158;
+  const lx = 604 + px * 0.6, ly = 128;
   shaft(ctx, lx, ly, Math.PI / 2, 760, 1.0, L.col, 0.2);
   stroke(ctx, lx, 70, lx, ly - 34, 3);
   bloom(ctx, lx, ly, 200, L.col, 1);
@@ -1491,6 +1493,7 @@ def('commons-hall', L_COMMONS, (ctx, t, px) => {
   rect(ctx, sx - 30, 364, 60, 34, C.lantern); outline(ctx, rp(sx - 30, 364, 60, 34), II); stroke(ctx, sx - 10, 364, sx - 10, 398, 2); stroke(ctx, sx + 10, 364, sx + 10, 398, 2);
   cel(ctx, rrp(sx - 46, 268, 92, 54, 10), C.brass, L, { off: 12, ink: IW, rim: 4 });
   // the board: Gave, and Is owed
+  ctx = S(0.25);
   const bx = 480 + o, bw = 420, by = 86, bh = 284;
   cel(ctx, rp(bx - 16, by - 16, bw + 32, bh + 38), '#8a4a34', L, { off: 9, ink: IW, rim: 4 });
   rect(ctx, bx, by, bw, bh, '#0f3038');
@@ -1557,7 +1560,7 @@ def('commons-hall', L_COMMONS, (ctx, t, px) => {
 const L_DUSK = keyLight('#ff9d5c', -Math.PI * 0.42, { depth: 0.88, tint: '#1a1250' });
 const L_DUSK_MOON = keyLight('#ffffff', Math.PI * 0.25);
 def('shore-dusk', L_DUSK, (ctx, t, px, info) => {
-  const L = L_DUSK, hy = 226, sx = 694 + px * 0.05, DARK = '#1c1450';
+  const L = L_DUSK, hy = 205, sx = 694 + px * 0.05, DARK = '#1c1450';
   const line = info && info.lines ? info.lines[info.index] : null, fireScene = !!line && String(line.id).startsWith('ch2.');
   ctx = S(0);
   sky(ctx, hy, ['#141040', '#3c2472', '#8c3478', '#e2506a', '#ff9a5a'], [0.3, 0.52, 0.72, 0.9, 1]);
@@ -1569,7 +1572,7 @@ def('shore-dusk', L_DUSK, (ctx, t, px, info) => {
   cel(ctx, cp(420 + px * 0.05, 92, 22), C.cream, L_DUSK_MOON, { off: 13, shadow: '#3c2472', ink: 0 });   // a thin moon, already up
   ctx = S(0.08);
   const q = px * 0.08;
-  for (const [x, y, w, h, sd] of [[330, 170, 300, 64, 3], [1060, 132, 360, 80, 5], [900, 206, 190, 34, 8], [80, 110, 240, 50, 11]]) {
+  for (const [x, y, w, h, sd] of [[330, 160, 300, 64, 3], [1060, 126, 360, 80, 5], [900, 190, 190, 34, 8], [80, 106, 240, 50, 11]]) {
     cloud(ctx, x + q, y, w, h, '#4a2474', L, sd, 0);
     rect(ctx, x + q - w / 2 + 8, y - 6, w - 16, 6, '#ff9a5a');
   }

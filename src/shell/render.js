@@ -5,29 +5,37 @@
 // Portrait (430 x 932, a phone held upright) is the cabinet; 'wide' (1280 x 800) is the
 // same table with the story panel on its left and the ledger on its right.
 //
-//   portrait   hud     score line, then the Reels of Assay in a lit window with marks to
-//                      their left and writs, trust and the leaning scale to their right
+//   portrait   hud     score line, then the Reels of Assay as three inked tiles with marks
+//                      to their left and writs, trust and the leaning scale to their right
 //              story   scene title, objective pips, the line being spoken
-//              table   the playfield. Fill lanes show the reel they feed; spin elements
-//                      glow when the reels are armed and carry a charge arc when not.
-//              launch  one round button: plunger while a ball waits, lever when none can
+//              table   the playfield. Fill lanes show the reel they feed and carry a tag
+//                      that says so; spin elements carry a curl that fills as the reels
+//                      charge and burn with rays once the reels are armed.
+//              launch  one round cap: plunger while a ball waits, lever when none can
+//
+// The look is cel: flat colour, one hard shadow tone and one hard highlight per form, an
+// indigo ink line, and one key light per table (LOOKS below) that every form obeys. The
+// helpers are src/shell/style.js. Nothing here makes a gradient, sets shadowBlur or
+// ctx.filter, or reads pixels: light is flat discs and wedges, shadows are flat shapes.
 //
 // Imperative shell: this file reads game state and paints. It never writes to `game`.
 // The only state it keeps is view state in the createRenderer closure (ball trails, hit
 // flashes, sparks, eased numbers, cached layers).
 //
-// Frame cost. Mobile Safari rasterises shadowBlur on the CPU, per call, so nothing here
-// sets it while drawing a frame. Every glow is a cached radial sprite stamped with
-// drawImage; every lit title is rendered once, with its shadow, into its own canvas;
-// the playfield with all its unlit furniture, the frame, the reel housing, the reel
-// symbols and the ball are layers painted once per size. A frame is then a few dozen
-// drawImage calls, the lit overlays, the flippers and the text.
+// Frame cost. The playfield with its scene, cast shadows and every unlit element is one
+// layer painted once per size; so are the head plate, the frame, the reel housing, the
+// reel symbols, the button caps, the ball and the posters behind the title, the chapter
+// card and the end. A frame is those drawImage calls, the lit overlays, the flippers and
+// the text.
 
 import { REEL_STRIPS } from '../core/slot.js';
 import { currentScene, objectiveProgress, litIds, lineSeconds } from '../core/story.js';
-import { SPIN_COST, LOAN, TRUST_PER_LOAN } from '../core/economy.js';
+import { SPIN_COST, LOAN, TRUST_PER_LOAN, leaning } from '../core/economy.js';
 import { leverStatus, AID_WAIT } from '../core/game.js';
 import { drawCinema, drawPortrait } from './cinema.js';
+import {
+  INK, PALETTE, light, shadowOf, alpha as A, blend, shade, tint, ink as inkLine, cel, bloom, shaft, glint, curl, bands, rings, waves,
+} from './style.js';
 
 const TW = 400; // table space
 const TH = 800;
@@ -37,21 +45,61 @@ const MIN_TYPE = 11; // logical px; nothing is lettered smaller than this
 const SERIF = '"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif';
 const MONO = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace';
 
-const BRASS = '#c9a25a';
-const BRASS_HI = '#f4dc9c';
-const BRASS_LO = '#6b4f22';
-const PAPER = '#eadcc0';
-const LANTERN = '#ffb347';
-const RED = '#e5533d';
-const STEEL = '#cfd6de';
+const WHITE = PALETTE.white;
+const NIGHT = PALETTE.night;
+const PLATE = '#17123f'; // the head and the panels: ink indigo, a step above night
+const BRASS = PALETTE.brass;
+const BRASS_HI = '#ffd873';
+const BRASS_LO = '#8a5a1c';
+const PAPER = PALETTE.cream;
+const LANTERN = PALETTE.lantern;
+const CRIMSON = PALETTE.crimson;
+const RED = '#ff5466'; // crimson as lettering on a dark ground
+const STEEL = '#bcd0ff';
+const PEARL = '#ece6f7';
+const PEARL_LO = '#8c8cc6';
 
 const THREADS = {
-  duty: { color: '#e6cb7c', label: 'DUTY', gloss: 'the Circuit and the contract' },
-  covert: { color: '#7fa6e6', label: 'COVERT', gloss: 'what the Line asks of you' },
-  commons: { color: '#f28c4e', label: 'COMMONS', gloss: 'what the town will remember' },
+  duty: { color: '#ffd24a', label: 'DUTY', gloss: 'the Circuit and the contract' },
+  covert: { color: '#6fb6ff', label: 'COVERT', gloss: 'what the Line asks of you' },
+  commons: { color: '#ff8a3c', label: 'COMMONS', gloss: 'what the town will remember' },
 };
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+// The lamp over the head of the cabinet: the reels, the button and the ledger are lit by it.
+const HUD_L = light(LANTERN, -Math.PI * 0.68, { depth: 0.8 });
+
+// One key light per table. `lamp` is where it stands on the playfield (table space); the
+// light's angle points from the middle of the field toward it, and every wall, post, bumper
+// and target throws a hard shadow the other way. `pool` is the lit ground, stepped outward
+// from the lamp; `night` is what the light does not reach.
+function look(o) {
+  const ang = Math.atan2(o.lamp[1] - 400, o.lamp[0] - 200);
+  return Object.freeze({ ...o, L: light(o.light, ang, { depth: 0.85 }) });
+}
+const LOOKS = [
+  // Vessery: a festival lantern over the breakwater, teal water going to night
+  [/lantern|harbo|festival|lot/, look({ key: 'harbour', lamp: [62, 66], light: '#ffb054', night: '#090d30', pool: ['#0b2350', '#0d4470', '#127a86'], poolR: [760, 500, 250],
+    rail: '#e0a83a', bump: '#d6263f', cap: '#ff9326', dim: '#152058', word: '#1a5f8a', flip: '#fff6e0', stripe: '#ff9326' })],
+  // Saltmere: the headframe's cold lamp, slate strata
+  [/salt|crystal|mine|shaft|strata/, look({ key: 'mine', lamp: [338, 44], light: '#bfeaff', night: '#0a0d26', pool: ['#141f45', '#1f3d66', '#3a7396'], poolR: [740, 470, 230],
+    rail: '#9fb6d8', bump: '#2c5fa8', cap: '#7fd6ff', dim: '#17204c', word: '#2a5580', flip: '#eef6ff', stripe: '#3aa7e0' })],
+  // Halcyon: a low dawn over the parade ground
+  [/banner|parade|academy/, look({ key: 'parade', lamp: [187, 20], light: '#ffd08a', night: '#100b34', pool: ['#221a5c', '#3d2f8a', '#7a4f9a'], poolR: [780, 480, 210],
+    rail: '#e0a83a', bump: '#fff6e0', cap: '#e0a83a', dim: '#1c1650', word: '#4a3fa0', flip: '#fff6e0', stripe: '#d6263f' })],
+  // Little Brand: one hidden hearth, and the rest of the water black
+  [/reef|dark|tide|brand/, look({ key: 'reef', lamp: [330, 200], light: '#ff8a3c', night: '#05061a', pool: ['#080c26', '#0c1838', '#143050'], poolR: [520, 300, 130],
+    rail: '#6f7fb0', bump: '#1f2a5c', cap: '#d9773a', dim: '#0d1230', word: '#16284a', flip: '#dfe6ff', stripe: '#ff8a3c' })],
+  // Tallis: the bell lamp over the exchange floor, oxblood and gold
+  [/ticker|exchange|price|bell/, look({ key: 'exchange', lamp: [187, 30], light: '#fff0b0', night: '#150a2a', pool: ['#2e1238', '#5a1f3a', '#96402e'], poolR: [800, 500, 230],
+    rail: '#ffd24a', bump: '#7a1730', cap: '#ffd24a', dim: '#231040', word: '#7a2f44', flip: '#fff6e0', stripe: '#d6263f' })],
+];
+function lookOf(table) {
+  const m = String(table.theme && table.theme.motif).toLowerCase();
+  for (const [re, k] of LOOKS) if (re.test(m)) return k;
+  throw new Error(`render: table '${table.id}' has motif ${JSON.stringify(table.theme && table.theme.motif)}, which no look is drawn for`);
+}
 
 // How a turning reel moves. Pure in cell.spin (seconds left): full speed, then a
 // quadratic run-out over the last REEL_DECEL seconds that ends exactly on the symbol.
@@ -94,9 +142,6 @@ export function launchState(content, game) {
   if (status === 'loan') return { kind: 'loan', charge: 0 };
   throw new Error(`render: the core's leverStatus gave a value this renderer does not know: ${JSON.stringify(status)}`);
 }
-
-// ───────────────────────── small pure helpers ─────────────────────────
-
 // ───────────────────────── small pure helpers ─────────────────────────
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -129,32 +174,11 @@ function inwardNormal(a, b) {
 }
 // ───────────────────────── canvas helpers ─────────────────────────
 
-const rgbCache = new Map();
-let probe = null; // a 2d context used only to normalise css colours
-function rgbOf(color) {
-  let v = rgbCache.get(color);
-  if (v) return v;
-  probe.fillStyle = '#000';
-  probe.fillStyle = color;
-  const s = String(probe.fillStyle);
-  if (s[0] === '#') {
-    v = [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
-  } else {
-    const m = s.match(/[\d.]+/g);
-    if (!m || m.length < 3) throw new Error(`render: cannot parse colour '${color}'`);
-    v = [Number(m[0]), Number(m[1]), Number(m[2])];
-  }
-  rgbCache.set(color, v);
-  return v;
-}
-function A(color, a) {
-  const [r, g, b] = rgbOf(color);
-  return `rgba(${r},${g},${b},${a})`;
-}
+let probe = null; // a 2d context used only to measure lettering
 
-function rr(g, x, y, w, h, r) {
-  const q = Math.min(r, w / 2, h / 2);
-  g.beginPath();
+/** add a rounded rectangle to the current path (a pathFn body: no beginPath) */
+function rrPath(g, x, y, w, h, r) {
+  const q = Math.max(0, Math.min(r, w / 2, h / 2));
   g.moveTo(x + q, y);
   g.arcTo(x + w, y, x + w, y + h, q);
   g.arcTo(x + w, y + h, x, y + h, q);
@@ -162,6 +186,57 @@ function rr(g, x, y, w, h, r) {
   g.arcTo(x, y, x + w, y, q);
   g.closePath();
 }
+function rr(g, x, y, w, h, r) {
+  g.beginPath();
+  rrPath(g, x, y, w, h, r);
+}
+const circ = (x, y, r) => (c) => { c.moveTo(x + r, y); c.arc(x, y, r, 0, TAU); c.closePath(); };
+const box = (x, y, w, h, r) => (c) => rrPath(c, x, y, w, h, r);
+const poly = (pts) => (c) => { pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); };
+
+/** add a star of n rays to the current path: points at r1, valleys at r0 */
+function starPath(g, x, y, r0, r1, n, rot) {
+  for (let i = 0; i < n * 2; i++) {
+    const a = rot + (i / (n * 2)) * TAU;
+    const r = i % 2 ? r0 : r1;
+    if (i) g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    else g.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+  }
+  g.closePath();
+}
+/** a burst: hard rays, near-white, with an ink line round them */
+function burst(g, x, y, r0, r1, n, rot, fill, inkW) {
+  g.beginPath();
+  starPath(g, x, y, r0, r1, n, rot);
+  if (inkW > 0) { inkLine(g, inkW * 2); g.stroke(); }
+  g.fillStyle = fill;
+  g.fill();
+}
+/** a fan of hard wedges from (x, y): every other one of 2n sectors, from r0 out to r1 */
+function rays(g, x, y, r0, r1, n, rot, fill) {
+  g.fillStyle = fill;
+  g.beginPath();
+  const w = TAU / (n * 2);
+  for (let i = 0; i < n; i++) {
+    const a = rot + i * 2 * w;
+    g.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0);
+    g.lineTo(x + Math.cos(a - w * 0.1) * r1, y + Math.sin(a - w * 0.1) * r1);
+    g.lineTo(x + Math.cos(a + w * 1.1) * r1, y + Math.sin(a + w * 1.1) * r1);
+    g.lineTo(x + Math.cos(a + w) * r0, y + Math.sin(a + w) * r0);
+    g.closePath();
+  }
+  g.fill();
+}
+/** a teardrop: a disc of radius r at (x, y) with a point reaching `reach` along ang */
+function tearPath(g, x, y, r, ang, reach) {
+  const phi = Math.acos(Math.min(1, r / reach));
+  g.moveTo(x + Math.cos(ang) * reach, y + Math.sin(ang) * reach);
+  g.arc(x, y, r, ang + phi, ang - phi + TAU);
+  g.closePath();
+}
+/** a number in hard steps: a sine made to tick */
+const stepped = (v, n) => Math.round(v * n) / n;
+
 function wrap(g, text, maxW) {
   const out = [];
   let line = '';
@@ -203,31 +278,34 @@ function fitFont(g, text, maxW, size, make) {
   return s;
 }
 
-function brassGrad(g, x0, y0, x1, y1) {
-  const gr = g.createLinearGradient(x0, y0, x1, y1);
-  gr.addColorStop(0, BRASS_HI);
-  gr.addColorStop(0.35, BRASS);
-  gr.addColorStop(0.7, BRASS_LO);
-  gr.addColorStop(1, '#a8833f');
-  return gr;
+/** lettering with an ink line round it, drawn straight (for the few labels that change every frame) */
+function inked(g, text, x, y, fill, inkW = 3) {
+  g.lineJoin = 'round';
+  g.strokeStyle = INK;
+  g.lineWidth = inkW;
+  g.strokeText(text, x, y);
+  g.fillStyle = fill;
+  g.fillText(text, x, y);
 }
 
+const brassGrad = () => BRASS; // brass is one flat tone now
+
 function keycap(g, label, x, y) {
-  g.font = `600 12px ${MONO}`;
+  g.font = `700 12px ${MONO}`;
   const w = Math.max(24, g.measureText(label).width + 14);
-  rr(g, x, y - 11, w, 22, 5);
-  const gr = g.createLinearGradient(0, y - 11, 0, y + 11);
-  gr.addColorStop(0, '#3a2c1a');
-  gr.addColorStop(1, '#1c140c');
-  g.fillStyle = gr;
+  rr(g, x, y - 9, w, 22, 5);
+  g.fillStyle = INK;
   g.fill();
-  g.strokeStyle = A(BRASS, 0.7);
-  g.lineWidth = 1;
+  rr(g, x, y - 11, w, 20, 5);
+  g.fillStyle = PAPER;
+  g.fill();
+  g.strokeStyle = INK;
+  g.lineWidth = 2;
   g.stroke();
-  g.fillStyle = BRASS_HI;
+  g.fillStyle = INK;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(label, x + w / 2, y + 0.5);
+  g.fillText(label, x + w / 2, y - 0.5);
   g.textAlign = 'left';
   g.textBaseline = 'alphabetic';
   return w;
@@ -240,7 +318,7 @@ function hintRow(g, parts, x, y) {
     if (kind === 'key') cx += keycap(g, s, cx, y) + 6;
     else if (kind === 'txt') {
       g.font = `15px ${SERIF}`;
-      g.fillStyle = A(PAPER, 0.78);
+      g.fillStyle = A(PAPER, 0.85);
       g.textBaseline = 'middle';
       g.fillText(s, cx, y + 1);
       g.textBaseline = 'alphabetic';
@@ -250,176 +328,97 @@ function hintRow(g, parts, x, y) {
   return cx;
 }
 // ───────────────────────── symbol art ─────────────────────────
-// Each symbol is drawn centred on (cx, cy) inside a box of half-size s.
+// Each symbol is drawn centred on (cx, cy) inside a box of half-size s: flat shapes, one
+// shadow tone, one highlight, an ink line. They are large in their tiles on purpose.
 
 function drawSymbol(g, sym, cx, cy, s) {
+  const L = HUD_L;
+  const iw = Math.max(1.4, s * 0.12);
   g.save();
   g.translate(cx, cy);
   g.lineCap = 'round';
   g.lineJoin = 'round';
   if (sym === 'coin') {
-    const gr = g.createRadialGradient(-s * 0.3, -s * 0.35, s * 0.05, 0, 0, s * 0.95);
-    gr.addColorStop(0, '#fff3c4');
-    gr.addColorStop(0.45, '#e3b548');
-    gr.addColorStop(1, '#8a6418');
-    g.fillStyle = gr;
+    cel(g, circ(0, 0, s * 0.92), BRASS, L, { off: s * 0.24, ink: iw, shadow: '#b06a1c',
+      hi: (c) => { c.ellipse(-s * 0.36, -s * 0.44, s * 0.3, s * 0.13, -0.7, 0, TAU); }, hiCol: WHITE });
+    g.fillStyle = INK;
     g.beginPath();
-    g.arc(0, 0, s * 0.88, 0, TAU);
+    poly([[0, -s * 0.46], [s * 0.32, 0], [0, s * 0.46], [-s * 0.32, 0]])(g);
     g.fill();
-    g.strokeStyle = '#5e430f';
-    g.lineWidth = s * 0.06;
-    g.stroke();
-    g.strokeStyle = 'rgba(94,67,15,0.65)';
-    g.lineWidth = s * 0.035;
+    g.fillStyle = BRASS_HI;
     g.beginPath();
-    g.arc(0, 0, s * 0.66, 0, TAU);
-    g.stroke();
-    g.fillStyle = '#6e4f12';
-    g.beginPath();
-    g.moveTo(0, -s * 0.42);
-    g.lineTo(s * 0.27, 0);
-    g.lineTo(0, s * 0.42);
-    g.lineTo(-s * 0.27, 0);
-    g.closePath();
+    poly([[0, -s * 0.2], [s * 0.14, 0], [0, s * 0.2], [-s * 0.14, 0]])(g);
     g.fill();
-    g.strokeStyle = '#fff0b8';
-    g.lineWidth = s * 0.05;
-    g.beginPath();
-    g.moveTo(-s * 0.44, 0);
-    g.lineTo(s * 0.44, 0);
-    g.stroke();
   } else if (sym === 'scale') {
-    g.strokeStyle = '#3b2a12';
-    g.lineWidth = s * 0.09;
-    g.beginPath();
-    g.moveTo(0, -s * 0.66);
-    g.lineTo(0, s * 0.7);
-    g.moveTo(-s * 0.42, s * 0.76);
-    g.lineTo(s * 0.42, s * 0.76);
-    g.moveTo(-s * 0.7, -s * 0.5);
-    g.lineTo(s * 0.7, -s * 0.5);
+    const frame = () => {
+      g.beginPath();
+      g.moveTo(0, -s * 0.62);
+      g.lineTo(0, s * 0.66);
+      g.moveTo(-s * 0.44, s * 0.76);
+      g.lineTo(s * 0.44, s * 0.76);
+      g.moveTo(-s * 0.72, -s * 0.5);
+      g.lineTo(s * 0.72, -s * 0.5);
+    };
+    frame();
+    inkLine(g, s * 0.3);
     g.stroke();
-    g.lineWidth = s * 0.035;
+    frame();
+    inkLine(g, s * 0.12, BRASS);
+    g.stroke();
     for (const sx of [-1, 1]) {
+      inkLine(g, iw * 0.6);
       g.beginPath();
-      g.moveTo(sx * s * 0.7, -s * 0.5);
-      g.lineTo(sx * s * 0.94, s * 0.12);
-      g.moveTo(sx * s * 0.7, -s * 0.5);
-      g.lineTo(sx * s * 0.46, s * 0.12);
+      g.moveTo(sx * s * 0.72, -s * 0.5);
+      g.lineTo(sx * s * 0.98, s * 0.14);
+      g.moveTo(sx * s * 0.72, -s * 0.5);
+      g.lineTo(sx * s * 0.46, s * 0.14);
       g.stroke();
-      const gr = g.createLinearGradient(0, s * 0.1, 0, s * 0.4);
-      gr.addColorStop(0, '#e8c261');
-      gr.addColorStop(1, '#8a6418');
-      g.fillStyle = gr;
-      g.beginPath();
-      g.arc(sx * s * 0.7, s * 0.12, s * 0.27, 0, Math.PI);
-      g.closePath();
-      g.fill();
-      g.stroke();
+      const x = sx * s * 0.7;
+      cel(g, (c) => { c.moveTo(x - s * 0.32, s * 0.12); c.arc(x, s * 0.12, s * 0.32, Math.PI, 0, true); c.closePath(); }, sx < 0 ? '#ff8a3c' : CRIMSON, L, { off: s * 0.1, ink: iw * 0.8 });
     }
-    g.fillStyle = '#d7ab45';
-    g.beginPath();
-    g.arc(0, -s * 0.72, s * 0.11, 0, TAU);
-    g.fill();
-    g.stroke();
+    cel(g, circ(0, -s * 0.7, s * 0.16), BRASS_HI, L, { off: 0, ink: iw * 0.8 });
   } else if (sym === 'gavel') {
-    g.fillStyle = '#3b2a12';
-    rr(g, -s * 0.78, s * 0.66, s * 1.0, s * 0.17, s * 0.06);
-    g.fill();
+    cel(g, box(-s * 0.8, s * 0.6, s * 1.05, s * 0.24, s * 0.08), '#8a4a1c', L, { off: s * 0.08, ink: iw * 0.8 });
     g.rotate(-0.62);
-    const wood = g.createLinearGradient(0, -s * 0.2, 0, s * 0.9);
-    wood.addColorStop(0, '#8a5526');
-    wood.addColorStop(1, '#4a2a10');
-    g.fillStyle = wood;
-    rr(g, -s * 0.08, -s * 0.15, s * 0.16, s * 1.05, s * 0.07);
-    g.fill();
-    const head = g.createLinearGradient(0, -s * 0.66, 0, -s * 0.14);
-    head.addColorStop(0, '#a56a31');
-    head.addColorStop(1, '#5a3414');
-    g.fillStyle = head;
-    rr(g, -s * 0.56, -s * 0.66, s * 1.12, s * 0.52, s * 0.1);
-    g.fill();
-    g.strokeStyle = '#2c1a08';
-    g.lineWidth = s * 0.04;
-    g.stroke();
-    g.fillStyle = '#e0b552';
-    g.fillRect(-s * 0.42, -s * 0.66, s * 0.11, s * 0.52);
-    g.fillRect(s * 0.31, -s * 0.66, s * 0.11, s * 0.52);
+    cel(g, box(-s * 0.11, -s * 0.2, s * 0.22, s * 1.12, s * 0.09), '#c9772e', L, { off: s * 0.07, ink: iw * 0.8 });
+    cel(g, box(-s * 0.62, -s * 0.72, s * 1.24, s * 0.58, s * 0.12), '#c9772e', L, { off: s * 0.16, ink: iw,
+      hi: (c) => { c.rect(-s * 0.46, -s * 0.72, s * 0.14, s * 0.58); c.rect(s * 0.32, -s * 0.72, s * 0.14, s * 0.58); }, hiCol: BRASS_HI });
   } else if (sym === 'crown') {
-    const gr = g.createLinearGradient(0, -s * 0.7, 0, s * 0.75);
-    gr.addColorStop(0, '#fff0b0');
-    gr.addColorStop(0.5, '#e0b040');
-    gr.addColorStop(1, '#8a6418');
-    g.fillStyle = gr;
-    g.strokeStyle = '#5e430f';
-    g.lineWidth = s * 0.05;
-    g.beginPath();
-    g.moveTo(-s * 0.78, s * 0.42);
-    g.lineTo(-s * 0.88, -s * 0.36);
-    g.lineTo(-s * 0.42, s * 0.06);
-    g.lineTo(0, -s * 0.66);
-    g.lineTo(s * 0.42, s * 0.06);
-    g.lineTo(s * 0.88, -s * 0.36);
-    g.lineTo(s * 0.78, s * 0.42);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    rr(g, -s * 0.8, s * 0.42, s * 1.6, s * 0.26, s * 0.05);
-    g.fill();
-    g.stroke();
-    g.fillStyle = '#c0392b';
-    for (const [x, y] of [[-0.88, -0.4], [0, -0.7], [0.88, -0.4], [0, 0.55]]) {
+    cel(g, poly([[-s * 0.8, s * 0.62], [-s * 0.92, -s * 0.4], [-s * 0.42, s * 0.04], [0, -s * 0.72], [s * 0.42, s * 0.04], [s * 0.92, -s * 0.4], [s * 0.8, s * 0.62]]), BRASS, L, { off: s * 0.2, ink: iw, shadow: '#b06a1c',
+      hi: (c) => { c.rect(-s, s * 0.3, s * 2, s * 0.12); }, hiCol: BRASS_HI });
+    for (const [x, y, col] of [[-0.9, -0.44, CRIMSON], [0, -0.76, CRIMSON], [0.9, -0.44, CRIMSON], [-0.4, 0.46, PALETTE.sea], [0.4, 0.46, PALETTE.sea], [0, 0.46, WHITE]]) {
       g.beginPath();
-      g.arc(x * s, y * s, s * 0.09, 0, TAU);
+      g.arc(x * s, y * s, s * 0.12, 0, TAU);
+      g.fillStyle = col;
       g.fill();
+      inkLine(g, iw * 0.6);
       g.stroke();
-    }
-    g.fillStyle = '#2f6f8c';
-    for (const x of [-0.45, 0.45]) {
-      g.beginPath();
-      g.arc(x * s, s * 0.55, s * 0.07, 0, TAU);
-      g.fill();
     }
   } else if (sym === 'tide') {
-    const cols = ['#5cc1c9', '#2d93a8', '#1c5f78'];
-    g.lineWidth = s * 0.15;
-    for (let k = 0; k < 3; k++) {
-      g.strokeStyle = cols[k];
-      g.beginPath();
-      const y0 = (-0.4 + k * 0.4) * s;
-      for (let j = 0; j <= 24; j++) {
-        const x = (-0.84 + (1.68 * j) / 24) * s;
-        const y = y0 + Math.sin((j / 24) * TAU * 1.5 + k * 1.3) * s * 0.13;
-        if (j === 0) g.moveTo(x, y);
-        else g.lineTo(x, y);
-      }
-      g.stroke();
-    }
-    g.strokeStyle = '#13455a';
-    g.lineWidth = s * 0.05;
+    g.save();
     g.beginPath();
-    g.moveTo(-s * 0.84, s * 0.74);
-    g.lineTo(s * 0.84, s * 0.74);
+    g.arc(0, 0, s * 0.92, 0, TAU);
+    g.clip();
+    g.fillStyle = '#bfeee4';
+    g.fillRect(-s, -s, s * 2, s * 2);
+    waves(g, -s, -s * 0.2, s * 2, s * 2, { len: s * 0.95, amp: s * 0.2, col: PALETTE.sea, every: 1, phase: 0.3, foam: false, ink: iw * 0.7 });
+    waves(g, -s, s * 0.34, s * 2, s * 2, { len: s * 0.8, amp: s * 0.16, col: PALETTE.seaDeep, every: 1, phase: 0.8, foam: false, ink: iw * 0.7 });
+    g.restore();
+    g.beginPath();
+    g.arc(0, 0, s * 0.92, 0, TAU);
+    inkLine(g, iw);
     g.stroke();
+    curl(g, -s * 0.1, -s * 0.36, s * 0.3, 1.2, 1, s * 0.16, WHITE, iw * 0.5);
   } else if (sym === 'orb') {
-    const gr = g.createRadialGradient(-s * 0.26, -s * 0.3, s * 0.04, 0, 0, s * 0.74);
-    gr.addColorStop(0, '#eef0ff');
-    gr.addColorStop(0.3, '#8f8bf0');
-    gr.addColorStop(0.75, '#3a2f96');
-    gr.addColorStop(1, '#130e3a');
-    g.fillStyle = gr;
+    cel(g, circ(0, 0, s * 0.68), '#6a5cff', L, { off: s * 0.22, ink: iw, shadow: '#2c2196',
+      hi: (c) => { c.ellipse(-s * 0.26, -s * 0.32, s * 0.2, s * 0.11, -0.7, 0, TAU); }, hiCol: WHITE });
     g.beginPath();
-    g.arc(0, 0, s * 0.68, 0, TAU);
-    g.fill();
-    g.strokeStyle = '#8a6418';
-    g.lineWidth = s * 0.06;
-    g.beginPath();
-    g.ellipse(0, 0, s * 0.94, s * 0.28, -0.42, 0.25, Math.PI - 0.25);
+    g.ellipse(0, 0, s * 0.98, s * 0.28, -0.42, 0.3, Math.PI - 0.3);
+    inkLine(g, s * 0.2);
     g.stroke();
-    g.fillStyle = '#e3b548';
-    g.beginPath();
-    g.arc(s * 0.82, -s * 0.36, s * 0.08, 0, TAU);
-    g.fill();
+    inkLine(g, s * 0.08, BRASS_HI);
+    g.stroke();
+    glint(g, s * 0.72, -s * 0.52, s * 0.3, WHITE, 1, 0);
   } else {
     throw new Error(`render: no art for reel symbol '${sym}'`);
   }
@@ -483,57 +482,67 @@ export function createRenderer(canvas) {
     return c;
   }
 
-  /** A soft round light. One 64 px sprite per colour, stamped at any size. */
+  /** A light, in three flat discs. (The name is from when it was a soft sprite.) */
   function glow(g, x, y, r, color, a) {
     if (!(a > 0) || !(r > 0)) return;
-    let s = view.glows.get(color);
-    if (!s) {
-      s = doc.createElement('canvas');
-      s.width = s.height = 64;
-      const c = s.getContext('2d');
-      const gr = c.createRadialGradient(32, 32, 0, 32, 32, 32);
-      gr.addColorStop(0, A(color, 1));
-      gr.addColorStop(0.45, A(color, 0.35));
-      gr.addColorStop(1, A(color, 0));
-      c.fillStyle = gr;
-      c.fillRect(0, 0, 64, 64);
-      view.glows.set(color, s);
-    }
-    const prev = g.globalAlpha;
-    g.globalAlpha = prev * Math.min(1, a);
-    g.drawImage(s, x - r, y - r, r * 2, r * 2);
-    g.globalAlpha = prev;
+    bloom(g, x, y, r * 0.8, color, Math.min(1, a * 1.5));
   }
 
   /**
-   * Lettering with a halo, rendered once (shadow and all) into its own canvas and stamped.
-   * `fill` is a css colour or a list of [stop, colour] for a top-to-bottom gradient.
+   * Inked lettering, rendered once into its own canvas and stamped: an ink line round each
+   * letter, a flat fill, optionally a second tone on the lower part of the letters (lo) and
+   * a hard drop behind them (drop px, down and to the right, in dropCol).
    * (x, y) is the alphabetic baseline; align is 'left' | 'center' | 'right'.
    */
-  function litText(g, text, x, y, o) {
-    const { size, weight = '600', style = '', gap = 0, fill, halo, blur, align = 'center', alpha = 1 } = o;
-    const font = `${style} ${weight} ${size}px ${SERIF}`.trim();
-    const key = `lit|${text}|${font}|${gap}|${JSON.stringify(fill)}|${halo}|${blur}`;
+  function inkText(g, text, x, y, o) {
+    const { size, weight = '700', style = '', gap = 0, face = SERIF, align = 'center', alpha = 1, drop = 0, dropCol = CRIMSON, lo = null } = o;
+    const fill = typeof o.fill === 'string' ? o.fill : Array.isArray(o.fill) ? o.fill[0][1] : WHITE;
+    const iw = o.ink === undefined ? Math.max(2, size * 0.11) : o.ink;
+    const font = `${style} ${weight} ${size}px ${face}`.trim();
+    const key = `ink|${text}|${font}|${gap}|${fill}|${iw}|${drop}|${dropCol}|${lo}`;
     probe.font = font;
     const chars = [...String(text)];
     const tw = gap ? chars.reduce((s, c) => s + probe.measureText(c).width, 0) + gap * (chars.length - 1) : probe.measureText(text).width;
-    const pad = blur * 1.6 + 4;
+    const pad = iw + drop + 4;
     const w = tw + pad * 2;
     const h = size * 1.5 + pad * 2;
     const base = pad + size * 1.1;
     const c = layer(key, w, h, view.ds, (c2) => {
-      c2.font = font;
-      c2.textBaseline = 'alphabetic';
-      if (typeof fill === 'string') c2.fillStyle = fill;
-      else {
-        const gr = c2.createLinearGradient(0, base - size, 0, base + size * 0.15);
-        for (const [stop, col] of fill) gr.addColorStop(stop, col);
-        c2.fillStyle = gr;
+      const put = (k, dx, dy, stroke) => {
+        k.font = font;
+        k.textBaseline = 'alphabetic';
+        k.lineJoin = 'round';
+        const one = (s, px) => (stroke ? k.strokeText(s, px + dx, base + dy) : k.fillText(s, px + dx, base + dy));
+        if (!gap) return one(text, pad);
+        let px = pad;
+        for (const ch of chars) { one(ch, px); px += k.measureText(ch).width + gap; }
+        return undefined;
+      };
+      if (drop > 0) {
+        c2.strokeStyle = c2.fillStyle = dropCol;
+        c2.lineWidth = iw * 2;
+        put(c2, drop * 0.7, drop, true);
+        put(c2, drop * 0.7, drop, false);
       }
-      c2.shadowColor = halo;
-      c2.shadowBlur = blur * view.ds; // painted once, here, never per frame
-      if (gap) spaced(c2, text, pad, base, gap);
-      else c2.fillText(text, pad, base);
+      if (iw > 0) {
+        c2.strokeStyle = INK;
+        c2.lineWidth = iw * 2;
+        put(c2, 0, 0, true);
+      }
+      // the letters themselves, on their own canvas so the second tone stays inside them
+      const t = doc.createElement('canvas');
+      t.width = Math.ceil(w * view.ds);
+      t.height = Math.ceil(h * view.ds);
+      const k = t.getContext('2d');
+      k.scale(view.ds, view.ds);
+      k.fillStyle = fill;
+      put(k, 0, 0, false);
+      if (lo) {
+        k.globalCompositeOperation = 'source-atop';
+        k.fillStyle = lo;
+        k.fillRect(0, base - size * 0.3, w, size);
+      }
+      c2.drawImage(t, 0, 0, w, h);
     });
     const left = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
     const prev = g.globalAlpha;
@@ -542,23 +551,49 @@ export function createRenderer(canvas) {
     g.globalAlpha = prev;
     return tw;
   }
+  const litText = inkText;
+
+  /** A sticker: a flat pill with an ink line and inked-on lettering, centred on (cx, cy). Returns its width. */
+  function sticker(g, text, cx, cy, o) {
+    const { size = 12, fill = PAPER, col = INK, face = MONO, weight = '700', padX = 9, h = size + 10, maxW = 1e9, gap = 0, lineW = 2 } = o || {};
+    g.font = `${weight} ${size}px ${face}`;
+    const tw = Math.min(maxW - padX * 2, g.measureText(text).width + gap * (String(text).length - 1));
+    const w = tw + padX * 2;
+    rr(g, cx - w / 2, cy - h / 2 + 2.5, w, h, h / 2);
+    g.fillStyle = INK;
+    g.fill();
+    rr(g, cx - w / 2, cy - h / 2, w, h, h / 2);
+    g.fillStyle = fill;
+    g.fill();
+    g.strokeStyle = INK;
+    g.lineWidth = lineW;
+    g.stroke();
+    g.fillStyle = col;
+    g.textBaseline = 'middle';
+    if (gap) spaced(g, text, cx, cy + 0.5, gap, 'center');
+    else {
+      g.textAlign = 'center';
+      g.fillText(text, cx, cy + 0.5, tw);
+      g.textAlign = 'left';
+    }
+    g.textBaseline = 'alphabetic';
+    return w;
+  }
 
   /** A reel symbol of half-size s centred on (cx, cy), from a sprite. */
-  function symbol(g, sym, cx, cy, s) {
-    const box = s * 2.4;
-    const c = layer(`sym:${sym}:${s}`, box, box, view.ds, (c2) => {
-      if (sym === 'orb') glowInto(c2, box / 2, box / 2, s * 1.15, '#786eff', 0.55);
-      drawSymbol(c2, sym, box / 2, box / 2, s);
-    });
-    g.drawImage(c, cx - box / 2, cy - box / 2, box, box);
+  function symbol(g, sym, cx, cy, s, k = 1) {
+    const bx = s * 2.4;
+    const c = layer(`sym:${sym}:${s}`, bx, bx, view.ds, (c2) => drawSymbol(c2, sym, bx / 2, bx / 2, s));
+    g.drawImage(c, cx - (bx * k) / 2, cy - (bx * k) / 2, bx * k, bx * k);
   }
-  function glowInto(c, x, y, r, color, a) {
-    const gr = c.createRadialGradient(x, y, 0, x, y, r);
-    gr.addColorStop(0, A(color, a));
-    gr.addColorStop(0.6, A(color, a * 0.5));
-    gr.addColorStop(1, A(color, 0));
-    c.fillStyle = gr;
-    c.fillRect(x - r, y - r, r * 2, r * 2);
+  view.pay = { result: null, since: 0 }; // the paying line the reel window last saw, and when it landed
+
+  /** A writ, or a ball seen small: a flat pearl of radius r in a sprite 2r + 4 square. */
+  function pearl(r) {
+    return layer(`pearl:${r}`, r * 2 + 4, r * 2 + 4, view.ds, (c) => {
+      cel(c, circ(r + 2, r + 2, r), PEARL, HUD_L, { off: r * 0.5, shadow: PEARL_LO, ink: Math.max(1.2, r * 0.2),
+        hi: (k2) => { k2.ellipse(r + 2 - r * 0.3, r + 2 - r * 0.36, r * 0.3, r * 0.17, -0.7, 0, TAU); }, hiCol: '#ffffff' });
+    });
   }
 
   function chapterOf(content, game) {
@@ -605,218 +640,225 @@ export function createRenderer(canvas) {
   }
 
   // ─────────── the playfield: what never changes ───────────
+  // The scene under the furniture. It keeps to the ground tones of its look and thin ink, so
+  // that nothing in it can be mistaken for something to shoot at: only the key lamp is bright.
 
-  function paintMotif(g, table) {
-    const { accent, glow: gl, motif } = table.theme;
-    const m = String(motif).toLowerCase();
-    if (/lantern|harbo|festival|lot/.test(m)) {
-      // a harbour of paper lanterns: strings across the upper field, lights on the water below
-      g.strokeStyle = A(accent, 0.16);
-      g.lineWidth = 1;
-      for (let k = 0; k < 4; k++) {
-        const y = 70 + k * 135;
-        g.beginPath();
-        g.moveTo(10, y);
-        g.quadraticCurveTo(200, y + 46, 390, y - 8);
-        g.stroke();
-        for (let j = 1; j < 9; j++) {
-          const t = j / 9;
-          const x = 10 + 380 * t;
-          const yy = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * (y + 46) + t * t * (y - 8);
-          glow(g, x, yy + 9, 16, gl, 0.16);
-          g.fillStyle = A(gl, 0.34);
-          rr(g, x - 3.5, yy + 3, 7, 11, 3);
-          g.fill();
+  const ell = (x, y, rx, ry) => (c) => { c.moveTo(x + rx, y); c.ellipse(x, y, rx, ry, 0, 0, TAU); c.closePath(); };
+
+  /** The key lamp as a paper lantern of radius r: stepped bloom, orange paper, a near-white core. */
+  function paperLamp(g, x, y, r, K) {
+    const L = K.L;
+    rings(g, x, y, r * 3.4, [A(L.col, 0.14), A(L.col, 0.2), A(L.col, 0.34)], [1, 0.68, 0.42]);
+    g.fillStyle = INK;
+    g.fillRect(x - r * 0.3, y - r * 1.3, r * 0.6, r * 2.6);
+    cel(g, ell(x, y, r * 0.88, r), LANTERN, HUD_L, { off: r * 0.3, ink: 2.4, shadow: '#d1481c' });
+    g.fillStyle = WHITE;
+    g.beginPath();
+    g.ellipse(x, y, r * 0.42, r * 0.6, 0, 0, TAU);
+    g.fill();
+    inkLine(g, 1.2);
+    g.beginPath();
+    g.ellipse(x, y, r * 0.5, r, 0, 0, TAU);
+    g.stroke();
+    glint(g, x - r * 0.3, y - r * 0.36, r * 0.62, '#ffffff', 1, 0);
+  }
+  /** The key lamp as a bare flame or a sun: stepped bloom and a near-white core, no body. */
+  function bareLamp(g, x, y, r, K, n) {
+    const L = K.L;
+    rings(g, x, y, r * 4, [A(L.col, 0.14), A(L.col, 0.22), A(L.col, 0.4)], [1, 0.66, 0.4]);
+    if (n > 0) burst(g, x, y, r * 0.9, r * 1.7, n, 0.2, L.rim, 0);
+    g.fillStyle = L.core;
+    g.beginPath();
+    g.arc(x, y, r, 0, TAU);
+    g.fill();
+    if (n >= 0) glint(g, x, y, r * 2.2, WHITE, 0.95, 0);
+  }
+  function smallLantern(g, x, y, w, h, fill, inkW) {
+    rr(g, x - w / 2, y - h / 2, w, h, w * 0.4);
+    g.fillStyle = fill;
+    g.fill();
+    inkLine(g, inkW);
+    g.stroke();
+    g.fillStyle = INK;
+    g.fillRect(x - w * 0.3, y - h / 2 - 1.5, w * 0.6, 2);
+  }
+
+  function paintMotif(g, table, K) {
+    const L = K.L;
+    const [lx, ly] = K.lamp;
+    const toMid = Math.atan2(430 - ly, 190 - lx);
+    if (K.key === 'harbour') {
+      // the harbour on festival night: scalloped water that takes the light of the pool
+      for (let k = 0; k < 11; k++) {
+        waves(g, 0, 148 + k * 62, TW, 62, { len: 84 - (k % 3) * 10, amp: 6 + (k % 2) * 3, phase: hash(k + 3) * 2,
+          col: k % 2 ? A('#040a3a', 0.3) : A('#3fd6c0', 0.09), foam: A(WHITE, 0.16 + 0.3 * (1 - k / 11)), every: 3, L });
+      }
+      shaft(g, lx, ly, toMid, 760, 0.46, L.col, 0.16);
+      // paper lanterns set adrift, each carrying a name
+      for (let i = 0; i < 10; i++) {
+        const x = 34 + hash(i + 20) * 310;
+        const y = 350 + hash(i + 40) * 420;
+        g.fillStyle = A(LANTERN, 0.32);
+        g.fillRect(x - 7, y + 8, 14, 2.5);
+        smallLantern(g, x, y, 8, 10, blend('#ff9326', K.pool[1], 0.3), 1.2);
+      }
+      // a string of them from the lamp to the dock side
+      inkLine(g, 1.5);
+      g.beginPath();
+      g.moveTo(lx + 16, ly - 14);
+      g.quadraticCurveTo(210, 74, 352, 30);
+      g.stroke();
+      for (let j = 1; j <= 7; j++) {
+        const t = j / 8;
+        const u = 1 - t;
+        const x = u * u * (lx + 16) + 2 * u * t * 210 + t * t * 352;
+        const y = u * u * (ly - 14) + 2 * u * t * 74 + t * t * 30;
+        smallLantern(g, x, y + 7, 7, 9, j % 2 ? blend(CRIMSON, K.pool[1], 0.25) : blend(LANTERN, K.pool[1], 0.2), 1.2);
+      }
+      paperLamp(g, lx, ly, 21, K);
+    } else if (K.key === 'mine') {
+      // stillsalt strata: faulted bands, and shards standing out of them
+      const edge = (k) => {
+        const pts = [];
+        for (let x = 0; x <= TW; x += 50) {
+          const y = 96 + k * 74 + x * 0.24 + (hash(k * 17 + x) - 0.5) * 22;
+          pts.push([x, y], [x + 50, y]);
         }
-      }
-      for (let i = 0; i < 46; i++) {
-        const x = 20 + hash(i) * 360;
-        const y = 520 + hash(i + 100) * 270;
-        glow(g, x, y, 8 + hash(i + 200) * 10, gl, 0.1);
-        g.fillStyle = A(gl, 0.3);
-        g.fillRect(x - 1.5, y - 1.5, 3, 3);
-        g.fillStyle = A(gl, 0.07);
-        g.fillRect(x - 6, y + 5, 12, 1);
-      }
-    } else if (/salt|crystal|mine|shaft|strata/.test(m)) {
-      // strata and stillsalt shards
-      g.lineWidth = 1;
-      for (let k = 0; k < 16; k++) {
-        const y = 40 + k * 50;
-        g.strokeStyle = A(accent, 0.07 + hash(k) * 0.06);
+        return pts;
+      };
+      for (let k = -1; k < 11; k++) {
+        const top = edge(k);
+        const bot = edge(k + 1).reverse();
         g.beginPath();
-        g.moveTo(0, y);
-        for (let x = 0; x <= 400; x += 40) g.lineTo(x, y + (hash(k * 13 + x) - 0.5) * 22);
-        g.stroke();
+        poly([...top, ...bot])(g);
+        g.fillStyle = k % 2 ? A('#02041e', 0.3) : A('#8fdcff', 0.05);
+        g.fill();
       }
-      for (let i = 0; i < 26; i++) {
-        const x = 20 + hash(i + 5) * 360;
-        const y = 40 + hash(i + 50) * 720;
-        const h = 14 + hash(i + 80) * 30;
-        const w = h * 0.3;
+      shaft(g, lx, ly, toMid, 820, 0.4, L.col, 0.13);
+      shaft(g, lx, ly, toMid + 0.52, 520, 0.16, L.col, 0.1);
+      for (let i = 0; i < 15; i++) {
+        const x = 26 + hash(i + 5) * 330;
+        const y = 150 + hash(i + 50) * 620;
+        const h = 16 + hash(i + 80) * 26;
+        const w = h * 0.34;
         const lean = (hash(i + 31) - 0.5) * 0.9;
         g.save();
         g.translate(x, y);
-        g.rotate(lean);
-        glow(g, 0, 0, h * 0.9, gl, 0.08);
+        // its shadow first, thrown down the field
+        g.fillStyle = A('#02031a', 0.42);
         g.beginPath();
-        g.moveTo(0, -h / 2);
-        g.lineTo(w, -h / 6);
-        g.lineTo(w * 0.7, h / 2);
-        g.lineTo(-w * 0.7, h / 2);
-        g.lineTo(-w, -h / 6);
-        g.closePath();
-        g.fillStyle = A(gl, 0.1);
+        poly([[-w * 0.7, h / 2], [w * 0.7, h / 2], [w * 0.7 - L.dx * h * 1.3, h / 2 - L.dy * h * 1.3], [-w * 0.7 - L.dx * h * 1.3, h / 2 - L.dy * h * 1.1]])(g);
         g.fill();
-        g.strokeStyle = A(gl, 0.3);
-        g.stroke();
-        g.beginPath();
-        g.moveTo(0, -h / 2);
-        g.lineTo(0, h / 2);
-        g.strokeStyle = A(gl, 0.16);
-        g.stroke();
+        g.rotate(lean);
+        cel(g, poly([[0, -h / 2], [w, -h / 6], [w * 0.7, h / 2], [-w * 0.7, h / 2], [-w, -h / 6]]), blend(K.pool[2], '#9fe6ff', 0.3), L, { off: w * 0.7, ink: 1.5, rim: 1.4, rimCol: A(WHITE, 0.8) });
         g.restore();
       }
-    } else if (/banner|parade|academy/.test(m)) {
-      // a parade ground: ranked flagstones, and plumb-weight banners hung down both sides
-      g.lineWidth = 1;
-      g.strokeStyle = A(accent, 0.055);
+      bareLamp(g, lx, ly, 7, K, 0);
+    } else if (K.key === 'parade') {
+      // the parade ground at first light: ranked flagstones, the sun on the pediment
+      rays(g, lx, ly, 30, 900, 9, 0.12, A(L.col, 0.07));
+      g.fillStyle = A('#05032a', 0.2);
       g.beginPath();
-      for (let y = 30; y < 800; y += 44) { g.moveTo(0, y); g.lineTo(400, y); }
-      for (let x = 12; x < 400; x += 47) { g.moveTo(x, 0); g.lineTo(x, 800); }
-      g.stroke();
-      for (let i = 0; i < 6; i++) {
-        const x = i % 2 ? 338 : 62;
-        const y = 150 + Math.floor(i / 2) * 212;
-        const w = 30;
-        const h = 92;
-        glow(g, x, y + h / 2, 70, gl, 0.05);
-        g.beginPath();
-        g.moveTo(x - w / 2, y);
-        g.lineTo(x + w / 2, y);
-        g.lineTo(x + w / 2, y + h);
-        g.lineTo(x, y + h - 14);
-        g.lineTo(x - w / 2, y + h);
-        g.closePath();
-        g.fillStyle = A(accent, 0.07);
-        g.fill();
-        g.strokeStyle = A(accent, 0.24);
-        g.stroke();
-        // the plumb: a line and a weight
-        g.strokeStyle = A(gl, 0.3);
-        g.beginPath();
-        g.moveTo(x - 6, y + 12);
-        g.lineTo(x + 6, y + 12);
-        g.moveTo(x, y + 12);
-        g.lineTo(x, y + 34);
-        g.stroke();
-        // a bob, not an arrowhead: square shoulders, then the point
-        g.beginPath();
-        g.moveTo(x - 5, y + 34);
-        g.lineTo(x + 5, y + 34);
-        g.lineTo(x + 5, y + 45);
-        g.lineTo(x, y + 58);
-        g.lineTo(x - 5, y + 45);
-        g.closePath();
-        g.fillStyle = A(gl, 0.22);
-        g.fill();
-      }
-    } else if (/reef|dark|tide|brand/.test(m)) {
-      // black water: long swell lines, rock under the surface, a few shuttered lights
-      g.lineWidth = 1;
-      for (let k = 0; k < 20; k++) {
-        const y = 30 + k * 40;
-        g.strokeStyle = A(gl, 0.035 + hash(k + 9) * 0.04);
-        g.beginPath();
-        g.moveTo(0, y);
-        for (let x = 0; x <= 400; x += 25) g.lineTo(x, y + Math.sin(x / 38 + k * 1.7) * 6 + (hash(k * 7 + x) - 0.5) * 4);
-        g.stroke();
-      }
-      for (let i = 0; i < 14; i++) {
-        const x = 24 + hash(i + 3) * 352;
-        const y = 60 + hash(i + 41) * 700;
-        const r = 12 + hash(i + 77) * 26;
-        g.beginPath();
-        for (let k = 0; k <= 9; k++) {
-          const a = (k / 9) * TAU;
-          const rr_ = r * (0.62 + hash(i * 11 + (k % 9)) * 0.5);
-          const px = x + Math.cos(a) * rr_ * 1.5;
-          const py = y + Math.sin(a) * rr_ * 0.7;
-          if (k) g.lineTo(px, py); else g.moveTo(px, py);
+      for (let r = 0; r < 15; r++) {
+        for (let c = -1; c < 7; c++) {
+          if ((r + c) & 1) continue;
+          g.rect(c * 62 + (r % 2) * 31, 120 + r * 46, 60, 44);
         }
-        g.closePath();
-        g.fillStyle = 'rgba(0,0,0,0.3)';
-        g.fill();
-        g.strokeStyle = A(gl, 0.09);
-        g.stroke();
       }
-      for (let i = 0; i < 9; i++) {
-        const x = 30 + hash(i + 300) * 340;
-        const y = 420 + hash(i + 330) * 360;
-        glow(g, x, y, 14, accent, 0.16);
-        g.fillStyle = A(accent, 0.5);
-        g.fillRect(x - 1, y - 2, 2, 4);
-      }
-    } else if (/ticker|exchange|price|bell/.test(m)) {
-      // the exchange: ruled ledger columns and a price line that will not sit still
-      g.lineWidth = 1;
-      g.strokeStyle = A(accent, 0.06);
-      g.beginPath();
-      for (let x = 20; x < 400; x += 36) { g.moveTo(x, 0); g.lineTo(x, 800); }
-      for (let y = 24; y < 800; y += 24) { g.moveTo(0, y); g.lineTo(400, y); }
-      g.stroke();
-      for (let k = 0; k < 3; k++) {
-        const y0 = 170 + k * 230;
-        let y = y0;
-        g.strokeStyle = A(gl, 0.2 - k * 0.04);
-        g.lineWidth = 1.4;
-        g.beginPath();
-        g.moveTo(8, y);
-        for (let x = 20; x <= 400; x += 12) {
-          y = clamp(y + (hash(k * 97 + x) - 0.5 + (k === 1 ? 0.12 : -0.05)) * 26, y0 - 70, y0 + 70);
-          g.lineTo(x, y);
-        }
-        g.stroke();
-      }
-      g.font = `600 12px ${MONO}`;
-      g.textAlign = 'center';
-      for (let i = 0; i < 30; i++) {
-        const x = 38 + (i % 10) * 36;
-        const y = 36 + Math.floor(hash(i + 500) * 30) * 24;
-        const n = 40 + Math.floor(hash(i + 520) * 59);
-        g.fillStyle = A(hash(i + 540) > 0.5 ? gl : accent, 0.16);
-        g.fillText(String(n), x, y + 8);
-      }
-      g.textAlign = 'left';
-    } else {
-      throw new Error(`render: table '${table.id}' has motif ${JSON.stringify(motif)}, which paintMotif cannot draw`);
-    }
-    // Every table is an Orrery: the brass rings are always there, under the motif.
-    g.save();
-    g.translate(200, 300);
-    for (let k = 0; k < 5; k++) {
-      const r = 46 + k * 38;
-      g.strokeStyle = A(accent, 0.1 - k * 0.012);
-      g.lineWidth = k % 2 ? 1 : 2;
-      g.beginPath();
-      g.arc(0, 0, r, 0, TAU);
-      g.stroke();
-      const a = hash(k + 70) * TAU;
-      g.fillStyle = A(accent, 0.28);
-      g.beginPath();
-      g.arc(Math.cos(a) * r, Math.sin(a) * r, 3, 0, TAU);
       g.fill();
-    }
-    for (let k = 0; k < 24; k++) {
-      const a = (k / 24) * TAU;
-      g.strokeStyle = A(accent, 0.1);
-      g.lineWidth = 1;
+      for (const [x, y] of [[66, 150], [308, 150], [140, 392], [234, 392]]) {
+        const w = 26;
+        const h = 78;
+        const shape = poly([[x - w / 2, y], [x + w / 2, y], [x + w / 2, y + h], [x, y + h - 14], [x - w / 2, y + h]]);
+        // long shadows straight down the ground, away from the sun
+        g.fillStyle = A('#05032a', 0.4);
+        g.beginPath();
+        poly([[x - w / 2, y + h - 6], [x + w / 2, y + h - 6], [x + w / 2 + (x - lx) * 0.16, y + h + 88], [x - w / 2 + (x - lx) * 0.16, y + h + 88]])(g);
+        g.fill();
+        cel(g, shape, blend(CRIMSON, K.pool[1], 0.42), L, { off: 5, ink: 1.5, rim: 1.6, rimCol: A(L.rim, 0.7) });
+        // the plumb: a line and a bob
+        g.fillStyle = A(BRASS, 0.75);
+        g.fillRect(x - 6, y + 12, 12, 2.5);
+        g.fillRect(x - 1, y + 12, 2, 22);
+        g.beginPath();
+        poly([[x - 5, y + 34], [x + 5, y + 34], [x + 5, y + 44], [x, y + 56], [x - 5, y + 44]])(g);
+        g.fill();
+        g.fillStyle = INK;
+        g.fillRect(x - w / 2 - 3, y - 3, w + 6, 4);
+      }
+      bareLamp(g, lx, ly - 8, 26, K, -1);
+    } else if (K.key === 'reef') {
+      // black water. One hearth is still lit, behind a shutter, and the rocks know where it is.
+      for (let k = 0; k < 12; k++) {
+        waves(g, 0, 70 + k * 62, TW, 62, { len: 92 - (k % 3) * 12, amp: 5 + (k % 2) * 3, phase: hash(k + 9) * 2,
+          col: k % 2 ? A('#000008', 0.34) : A('#3a5fa8', 0.06), foam: A('#9fb4e6', 0.14), every: 4, L });
+      }
+      rays(g, lx, ly, 20, 250, 7, 0.4, A(L.col, 0.07));
+      rings(g, lx, ly, 58, [A(L.col, 0.16), A(L.col, 0.26)], [1, 0.6]);
+      for (let i = 0; i < 12; i++) {
+        const x = 30 + hash(i + 3) * 320;
+        const y = 120 + hash(i + 41) * 640;
+        const r = 9 + hash(i + 77) * 15;
+        const pts = [];
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * TAU;
+          const q = r * (0.7 + hash(i * 11 + k) * 0.5);
+          pts.push([x + Math.cos(a) * q * 1.4, y + Math.sin(a) * q * 0.75]);
+        }
+        const toLamp = Math.atan2(ly - y, lx - x);
+        const local = { ...L, dx: Math.cos(toLamp), dy: Math.sin(toLamp) };
+        cel(g, poly(pts), '#141a40', local, { off: r * 0.5, ink: 1.8, shadow: '#070a20', rim: 2, rimCol: A(L.col, clamp(1.15 - Math.hypot(lx - x, ly - y) / 420, 0.12, 0.9)) });
+      }
+      // the lanterns of nine winters, unlit
+      for (let i = 0; i < 9; i++) smallLantern(g, 40 + hash(i + 300) * 300, 430 + hash(i + 330) * 330, 8, 10, '#161c48', 1.2);
+    } else if (K.key === 'exchange') {
+      // the exchange floor under the bell lamp: lozenge tiles, and a price that is falling
+      rays(g, lx, ly, 26, 900, 11, 0.1, A(L.col, 0.06));
+      g.fillStyle = A('#0a0224', 0.22);
       g.beginPath();
-      g.moveTo(Math.cos(a) * 198, Math.sin(a) * 198);
-      g.lineTo(Math.cos(a) * (k % 6 ? 204 : 212), Math.sin(a) * (k % 6 ? 204 : 212));
+      for (let r = 0; r < 26; r++) {
+        for (let c = 0; c < 7; c++) {
+          const x = c * 68 + (r % 2) * 34;
+          const y = 96 + r * 30;
+          poly([[x, y - 28], [x + 32, y], [x, y + 28], [x - 32, y]])(g);
+        }
+      }
+      g.fill();
+      // the price line: steps up, then the run
+      const line = [[14, 392], [60, 392], [60, 368], [108, 368], [108, 380], [150, 380], [150, 350], [196, 350], [196, 366], [236, 366], [236, 420], [270, 420], [270, 476], [300, 476], [300, 548], [330, 548]];
+      g.beginPath();
+      line.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
+      g.lineJoin = 'miter';
+      g.lineCap = 'butt';
+      g.strokeStyle = A('#ff7a5c', 0.2);
+      g.lineWidth = 7;
       g.stroke();
+      g.fillStyle = A('#ff7a5c', 0.2);
+      g.beginPath();
+      poly([[314, 548], [346, 548], [330, 572]])(g);
+      g.fill();
+      // dropped slips
+      for (let i = 0; i < 14; i++) {
+        g.save();
+        g.translate(30 + hash(i + 500) * 320, 440 + hash(i + 520) * 330);
+        g.rotate(hash(i + 540) * 3);
+        g.fillStyle = A(PAPER, 0.16);
+        g.fillRect(-7, -4, 14, 8);
+        g.restore();
+      }
+      // the bell lamp
+      rings(g, lx, ly, 86, [A(L.col, 0.14), A(L.col, 0.22), A(L.col, 0.4)], [1, 0.66, 0.4]);
+      cel(g, (c) => { c.moveTo(lx - 17, ly + 12); c.quadraticCurveTo(lx - 14, ly - 16, lx, ly - 17); c.quadraticCurveTo(lx + 14, ly - 16, lx + 17, ly + 12); c.closePath(); }, BRASS_HI, HUD_L, { off: 5, ink: 2.4, shadow: '#c9772e' });
+      g.fillStyle = WHITE;
+      g.beginPath();
+      g.arc(lx, ly + 13, 5, 0, TAU);
+      g.fill();
+      inkLine(g, 1.5);
+      g.stroke();
+      glint(g, lx, ly + 13, 22, WHITE, 0.95, 0);
+    } else {
+      throw new Error(`render: look '${K.key}' has no scene`);
     }
-    g.restore();
   }
 
   // The wireform of a ramp: two rails from the gate, dropping onto the exit.
@@ -847,22 +889,25 @@ export function createRenderer(canvas) {
     return r;
   }
 
-  function strokeRails(g, rails, railStyle, tieStyle) {
-    g.lineWidth = 1.3;
-    g.strokeStyle = railStyle;
-    for (const rail of [rails.left, rails.right]) {
-      g.beginPath();
-      rail.forEach((p, k) => (k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
-      g.stroke();
+  // A ramp's wireform: two inked rails and their ties.
+  function strokeRails(g, rails, col, a) {
+    g.globalAlpha = a;
+    for (const [w, c] of [[4.2, INK], [1.8, col]]) {
+      inkLine(g, w, c);
+      for (const rail of [rails.left, rails.right]) {
+        g.beginPath();
+        rail.forEach((p, k) => (k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
+        g.stroke();
+      }
     }
-    g.lineWidth = 1;
-    g.strokeStyle = tieStyle;
+    inkLine(g, 1.2, col);
     g.beginPath();
     for (let k = 1; k < rails.left.length - 1; k += 2) {
       g.moveTo(rails.left[k][0], rails.left[k][1]);
       g.lineTo(rails.right[k][0], rails.right[k][1]);
     }
     g.stroke();
+    g.globalAlpha = 1;
   }
 
   const unit = (v) => {
@@ -870,21 +915,20 @@ export function createRenderer(canvas) {
     return [v[0] / l, v[1] / l];
   };
 
-  function chevron(g, cx, cy, ang, fill, stroke) {
+  // A fat arrowhead of half-size s pointing along ang.
+  function chevron(g, cx, cy, ang, s, fill, inkW) {
     g.save();
     g.translate(cx, cy);
     g.rotate(ang);
     g.beginPath();
-    g.moveTo(6, 0);
-    g.lineTo(-4, -6);
-    g.lineTo(-1.5, 0);
-    g.lineTo(-4, 6);
+    g.moveTo(s, 0);
+    g.lineTo(-s * 0.6, -s);
+    g.lineTo(-s * 0.1, 0);
+    g.lineTo(-s * 0.6, s);
     g.closePath();
     g.fillStyle = fill;
     g.fill();
-    g.strokeStyle = stroke;
-    g.lineWidth = 1;
-    g.stroke();
+    if (inkW > 0) { inkLine(g, inkW); g.stroke(); }
     g.restore();
   }
 
@@ -922,21 +966,60 @@ export function createRenderer(canvas) {
   // A fill lane's light is big enough to show the symbol its reel holds.
   const laneRad = (table, r) => (table.reels.fill.includes(r.id) ? 11 : Math.max(5, Math.min(r.r, 9)));
 
+  // Insert lettering stays between the left wall and the plunger lane: a long name is moved in, never cut.
+  const LABEL_X0 = 13;
+  const LABEL_X1 = 362;
+  // An unlit insert's name: flat and quiet, with a hard drop so it holds on any ground.
   function label(g, tf, text, spot, color) {
     if (!text) return;
     g.font = `700 ${tf}px ${MONO}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    const half = g.measureText(text).width / 2 + 3;
-    const x = clamp(spot[0], 10 + half, TW - 10 - half); // keep insert lettering on the playfield
-    g.fillStyle = 'rgba(0,0,0,0.6)';
-    g.fillText(text, x + 0.5, spot[1] + 1);
+    const half = g.measureText(text).width / 2 + 2;
+    const x = clamp(spot[0], LABEL_X0 + half, LABEL_X1 - half);
+    g.fillStyle = A('#04031c', 0.8);
+    g.fillText(text, x + 1, spot[1] + 1.5);
     g.fillStyle = color;
     g.fillText(text, x, spot[1]);
     g.textAlign = 'left';
     g.textBaseline = 'alphabetic';
   }
+  // A lit insert's name: a sticker in the light's colour with ink lettering.
+  function tag(g, tf, text, spot, fill, col = INK) {
+    if (!text) return;
+    g.font = `700 ${tf}px ${MONO}`;
+    const half = g.measureText(text).width / 2 + 7;
+    sticker(g, text, clamp(spot[0], LABEL_X0 + half, LABEL_X1 - half), spot[1], { size: tf, fill, col, padX: 6, h: tf + 6, lineW: 1.8 });
+  }
 
+  // The tag under the three fill lanes: what they are for, with a pointer up into each.
+  function fillTagBox(g, table, tf) {
+    const lanes = table.reels.fill.map((id) => table.rollovers.find((r) => r.id === id));
+    if (lanes.some((r) => !r)) throw new Error(`render: table '${table.id}' reels.fill names a lane that is not a rollover`);
+    const names = table.reels.fill.map((id) => table.labels[id]);
+    const text = names[0] && names.every((n) => n === names[0]) ? `${names[0]} · FILL REELS` : 'FILL REELS';
+    const cx = lanes.reduce((s, r) => s + r.pos[0], 0) / lanes.length;
+    const y = Math.max(...lanes.map((r) => r.pos[1] + laneRad(table, r))) + tf / 2 + 16;
+    g.font = `700 ${tf}px ${MONO}`;
+    const half = g.measureText(text).width / 2 + 8;
+    return { lanes, text, half, x: clamp(cx, LABEL_X0 + half, LABEL_X1 - half), y, h: tf + 7 };
+  }
+  function fillTag(g, table, tf, fill, col) {
+    const { lanes, text, half, x, y, h } = fillTagBox(g, table, tf);
+    for (const r of lanes) {
+      const px = clamp(r.pos[0], x - half + 8, x + half - 8);
+      g.beginPath();
+      g.moveTo(px - 6, y - h / 2 + 1);
+      g.lineTo(px, y - h / 2 - 8);
+      g.lineTo(px + 6, y - h / 2 + 1);
+      g.closePath();
+      g.fillStyle = fill;
+      g.fill();
+      inkLine(g, 1.8);
+      g.stroke();
+    }
+    sticker(g, text, x, y, { size: tf, fill, col, padX: 8, h, lineW: 1.8 });
+  }
   // Three lanes that share one name are named once, under the middle lane.
   function labelText(table, e) {
     const fill = table.reels.fill;
@@ -952,167 +1035,213 @@ export function createRenderer(canvas) {
     for (const e of table.bumpers) fn('bumper', e);
   }
 
-  // The whole playfield at rest: art, rails and every element unlit. tf is the insert type size.
-  function paintTable(g, table, tf) {
-    const { accent, glow: gl } = table.theme;
-    const stops = table.theme.bg;
-    if (!Array.isArray(stops) || stops.length === 0) throw new Error(`render: table '${table.id}' theme.bg is empty`);
-    const bg = g.createLinearGradient(0, 0, 0, TH);
-    stops.forEach((c, i) => bg.addColorStop(stops.length === 1 ? 0 : i / (stops.length - 1), c));
-    g.fillStyle = bg;
+
+  // A bumper at rest: a lantern or a drum seen from above. Skirt and skin, each in two tones.
+  function paintBumper(g, b, K) {
+    const L = K.L;
+    const [x, y] = b.pos;
+    const r = b.r;
+    cel(g, circ(x, y, r), K.bump, L, { off: r * 0.36, ink: 2.6, rim: 2.2 });
+    g.fillStyle = INK;
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * TAU + 0.5;
+      g.beginPath();
+      g.arc(x + Math.cos(a) * r * 0.82, y + Math.sin(a) * r * 0.82, 1.5, 0, TAU);
+      g.fill();
+    }
+    cel(g, circ(x, y, r * 0.64), K.cap, L, { off: r * 0.2, ink: 1.8,
+      hi: (c) => { c.ellipse(x + L.dx * r * 0.3, y + L.dy * r * 0.3, r * 0.2, r * 0.1, L.angle + Math.PI / 2, 0, TAU); }, hiCol: WHITE });
+  }
+
+  // A standup target's insert: a teardrop whose point touches the target it stands for.
+  function targetInsert(g, table, t, tf, fill, col, inkW) {
+    const n = inwardNormal(t.a, t.b);
+    const [x, y] = labelSpot(table, 'target', t);
+    g.beginPath();
+    tearPath(g, x, y, 8.5, Math.atan2(-n[1], -n[0]), 13.5);
+    g.fillStyle = fill;
+    g.fill();
+    inkLine(g, inkW);
+    g.stroke();
+    g.font = `700 ${tf}px ${MONO}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = col;
+    g.fillText(table.labels[t.id] || '', x, y + 0.5);
+    g.textAlign = 'left';
+    g.textBaseline = 'alphabetic';
+  }
+
+  // The whole playfield at rest: the scene, the cast shadows, the rails and every element unlit.
+  // tf is the insert type size, res the device pixels per table unit it is painted at.
+  function paintTable(g, table, tf, res) {
+    const K = lookOf(table);
+    const L = K.L;
+    const fills = table.reels.fill;
+    g.fillStyle = K.night;
     g.fillRect(0, 0, TW, TH);
-    // lantern light from above the top arch, pooled light over the flippers
-    glow(g, 200, 120, 330, gl, 0.13);
-    glow(g, 200, 700, 240, gl, 0.07);
-    paintMotif(g, table);
-    // playfield lettering
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, TW, TH);
+    g.clip();
+    rings(g, K.lamp[0], K.lamp[1], K.poolR[0], K.pool, K.poolR.map((v) => v / K.poolR[0]));
+    paintMotif(g, table, K);
+    // playfield lettering: part of the ground, in the ground's own tone, with a hard drop
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     for (const d of table.decor) {
+      const big = d.size >= 20;
       g.save();
       g.translate(d.pos[0], d.pos[1]);
       if (d.angle) g.rotate(d.angle);
-      g.font = `italic 600 ${Math.max(d.size, tf)}px ${SERIF}`;
-      g.fillStyle = 'rgba(0,0,0,0.5)';
-      g.fillText(d.text, 1, 1.5);
-      g.fillStyle = A(accent, 0.42);
+      g.font = `italic 700 ${Math.max(d.size, tf)}px ${SERIF}`;
+      g.fillStyle = A('#04031c', 0.6);
+      g.fillText(d.text, big ? 2 : 1, big ? 3 : 1.5);
+      g.fillStyle = big ? K.word : blend(K.word, PAPER, 0.3);
       g.fillText(d.text, 0, 0);
       g.restore();
     }
     g.textAlign = 'left';
     g.textBaseline = 'alphabetic';
-    // vignette
-    const v = g.createRadialGradient(200, 380, 180, 200, 400, 520);
-    v.addColorStop(0, 'rgba(0,0,0,0)');
-    v.addColorStop(1, 'rgba(0,0,0,0.6)');
-    g.fillStyle = v;
-    g.fillRect(0, 0, TW, TH);
+    g.restore();
+
+    const trace = (c) => {
+      c.beginPath();
+      for (const w of table.walls) {
+        c.moveTo(w.a[0], w.a[1]);
+        c.lineTo(w.b[0], w.b[1]);
+      }
+    };
+
+    // cast shadows: everything that stands on the field throws one flat shape away from the lamp.
+    // Painted solid on their own canvas and laid down once, so that where two meet they do not double.
+    {
+      const sh = doc.createElement('canvas');
+      sh.width = Math.max(1, Math.ceil(TW * res));
+      sh.height = Math.max(1, Math.ceil(TH * res));
+      const s = sh.getContext('2d');
+      s.scale(res, res);
+      const sx = -L.dx;
+      const sy = -L.dy;
+      s.strokeStyle = s.fillStyle = '#04031c';
+      s.lineCap = 'round';
+      s.lineJoin = 'round';
+      s.lineWidth = 6.5;
+      for (let i = 1; i <= 6; i++) {
+        s.save();
+        s.translate(sx * i * 2.1, sy * i * 2.1);
+        trace(s);
+        s.stroke();
+        s.restore();
+      }
+      for (const b of table.bumpers) {
+        s.lineWidth = b.r * 2;
+        s.beginPath();
+        s.moveTo(b.pos[0] + sx * 4, b.pos[1] + sy * 4);
+        s.lineTo(b.pos[0] + sx * b.r * 1.15, b.pos[1] + sy * b.r * 1.15);
+        s.stroke();
+      }
+      s.lineWidth = 7;
+      for (const t of [...table.targets, ...table.slings]) {
+        for (let i = 1; i <= 3; i++) {
+          s.beginPath();
+          s.moveTo(t.a[0] + sx * i * 3, t.a[1] + sy * i * 3);
+          s.lineTo(t.b[0] + sx * i * 3, t.b[1] + sy * i * 3);
+          s.stroke();
+        }
+      }
+      g.globalAlpha = 0.55;
+      g.drawImage(sh, 0, 0, TW, TH);
+      g.globalAlpha = 1;
+    }
 
     // ramps and orbit gates
     for (const s of table.shots) {
       const m = mid(s.a, s.b);
       const d = unit(s.dir);
-      if (s.exit) strokeRails(g, rampRails(table, s), A(STEEL, 0.2), A(STEEL, 0.1));
+      if (s.exit) strokeRails(g, rampRails(table, s), STEEL, 0.4);
       g.beginPath();
       g.moveTo(s.a[0], s.a[1]);
       g.lineTo(s.b[0], s.b[1]);
-      g.strokeStyle = A(accent, 0.28);
-      g.lineWidth = 2;
-      g.setLineDash([3, 4]);
+      inkLine(g, 5);
       g.stroke();
-      g.setLineDash([]);
-      for (let k = 1; k <= 2; k++) chevron(g, m[0] - d[0] * (10 + k * 15), m[1] - d[1] * (10 + k * 15), Math.atan2(d[1], d[0]), 'rgba(0,0,0,0.45)', A(accent, 0.4));
+      inkLine(g, 2.2, K.dim);
+      g.stroke();
+      for (let k = 0; k < 3; k++) chevron(g, m[0] - d[0] * (13 + k * 15), m[1] - d[1] * (13 + k * 15), Math.atan2(d[1], d[0]), 7, K.dim, 1.5);
     }
 
-    // rails: drop shadow, brass body, lit edge
-    g.lineCap = 'round';
-    const trace = () => {
-      g.beginPath();
-      for (const w of table.walls) {
-        g.moveTo(w.a[0], w.a[1]);
-        g.lineTo(w.b[0], w.b[1]);
-      }
-    };
+    // rails: an ink line, the rail in two tones, a bright rim on the lamp's side
+    trace(g);
+    inkLine(g, 7.6);
+    g.stroke();
+    inkLine(g, 4.4, K.rail);
+    g.stroke();
     g.save();
-    g.translate(1.5, 3);
-    trace();
-    g.strokeStyle = 'rgba(0,0,0,0.55)';
-    g.lineWidth = 7;
+    g.translate(-L.dx * 1.3, -L.dy * 1.3);
+    trace(g);
+    inkLine(g, 1.8, shadowOf(K.rail, L));
     g.stroke();
     g.restore();
-    trace();
-    g.strokeStyle = '#3a2a12';
-    g.lineWidth = 6;
-    g.stroke();
-    g.strokeStyle = BRASS;
-    g.lineWidth = 3.6;
-    g.stroke();
     g.save();
-    g.translate(-0.6, -0.8);
-    trace();
-    g.strokeStyle = A(BRASS_HI, 0.85);
-    g.lineWidth = 1.1;
+    g.translate(L.dx * 1.3, L.dy * 1.3);
+    trace(g);
+    inkLine(g, 1.5, WHITE);
     g.stroke();
     g.restore();
 
-    // lane lights
+    // lane inserts, unlit
     for (const r of table.rollovers) {
       const rad = laneRad(table, r);
+      const reel = fills.indexOf(r.id);
       g.beginPath();
       g.arc(r.pos[0], r.pos[1], rad, 0, TAU);
-      g.fillStyle = 'rgba(0,0,0,0.5)';
+      g.fillStyle = K.dim;
       g.fill();
-      g.strokeStyle = A(accent, 0.45);
-      g.lineWidth = 1.2;
+      inkLine(g, reel >= 0 ? 2.4 : 1.8);
       g.stroke();
     }
+    fillTag(g, table, tf, K.dim, A(PAPER, 0.6));
 
-    // saucers
+    // saucers: a hole with a rail round it
     for (const s of table.saucers) {
-      const hole = g.createRadialGradient(s.pos[0], s.pos[1] + 2, 1, s.pos[0], s.pos[1], s.r);
-      hole.addColorStop(0, '#000');
-      hole.addColorStop(0.8, '#0a0705');
-      hole.addColorStop(1, '#2a1d0e');
-      g.fillStyle = hole;
+      const [x, y] = s.pos;
       g.beginPath();
-      g.arc(s.pos[0], s.pos[1], s.r, 0, TAU);
+      g.arc(x, y, s.r, 0, TAU);
+      g.fillStyle = '#04031c';
       g.fill();
-      g.strokeStyle = BRASS;
-      g.lineWidth = 2.5;
+      inkLine(g, 6.4);
       g.stroke();
-      g.strokeStyle = A(BRASS_HI, 0.5);
-      g.lineWidth = 0.8;
+      inkLine(g, 3, K.rail);
+      g.stroke();
+      inkLine(g, 1.4, WHITE);
       g.beginPath();
-      g.arc(s.pos[0], s.pos[1], s.r + 2.2, Math.PI * 1.05, Math.PI * 1.75);
+      g.arc(x, y, s.r + 0.6, L.angle - 0.7, L.angle + 0.7);
       g.stroke();
     }
 
-    // standup targets
+    // standup targets: a slab, and its teardrop insert in front of it
+    const slab = blend(K.cap, K.night, 0.5);
     for (const t of table.targets) {
-      const n = inwardNormal(t.a, t.b);
       g.beginPath();
       g.moveTo(t.a[0], t.a[1]);
       g.lineTo(t.b[0], t.b[1]);
-      g.strokeStyle = '#1a120a';
-      g.lineWidth = 8;
+      inkLine(g, 9);
       g.stroke();
-      g.strokeStyle = A(accent, 0.55);
+      g.lineCap = 'butt';
+      g.strokeStyle = slab;
       g.lineWidth = 5;
       g.stroke();
-      g.strokeStyle = 'rgba(255,255,255,0.35)';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(t.a[0] + n[0] * 1.6, t.a[1] + n[1] * 1.6);
-      g.lineTo(t.b[0] + n[0] * 1.6, t.b[1] + n[1] * 1.6);
-      g.stroke();
+      targetInsert(g, table, t, tf, K.dim, A(PAPER, 0.6), 1.6);
     }
 
     // one-way gates, with small chevrons pointing the way a ball may pass
     for (const o of table.oneWays) {
-      g.beginPath();
-      g.moveTo(o.a[0], o.a[1]);
-      g.lineTo(o.b[0], o.b[1]);
-      g.strokeStyle = A(STEEL, 0.5);
-      g.lineWidth = 1.5;
-      g.setLineDash([2, 3]);
-      g.stroke();
-      g.setLineDash([]);
       const p = unit(o.pass);
       const pa = Math.atan2(p[1], p[0]);
-      const count = Math.max(1, Math.floor(Math.hypot(o.b[0] - o.a[0], o.b[1] - o.a[1]) / 26));
-      g.strokeStyle = A(STEEL, 0.55);
-      g.lineWidth = 1.2;
+      const count = Math.max(1, Math.floor(Math.hypot(o.b[0] - o.a[0], o.b[1] - o.a[1]) / 22));
       for (let k = 0; k < count; k++) {
         const t = (k + 0.5) / count;
-        g.save();
-        g.translate(o.a[0] + (o.b[0] - o.a[0]) * t, o.a[1] + (o.b[1] - o.a[1]) * t);
-        g.rotate(pa);
-        g.beginPath();
-        g.moveTo(-1, -3.5);
-        g.lineTo(3, 0);
-        g.lineTo(-1, 3.5);
-        g.stroke();
-        g.restore();
+        chevron(g, o.a[0] + (o.b[0] - o.a[0]) * t, o.a[1] + (o.b[1] - o.a[1]) * t, pa, 4.5, STEEL, 1.4);
       }
     }
 
@@ -1121,100 +1250,73 @@ export function createRenderer(canvas) {
       g.beginPath();
       g.moveTo(s.a[0], s.a[1]);
       g.lineTo(s.b[0], s.b[1]);
-      g.strokeStyle = A(accent, 0.85);
-      g.lineWidth = 3.2;
+      inkLine(g, 7.5);
+      g.stroke();
+      inkLine(g, 3.6, K.cap);
       g.stroke();
       for (const p of [s.a, s.b]) {
-        g.fillStyle = BRASS;
         g.beginPath();
-        g.arc(p[0], p[1], 3, 0, TAU);
+        g.arc(p[0], p[1], 3.8, 0, TAU);
+        g.fillStyle = WHITE;
         g.fill();
+        inkLine(g, 1.8);
+        g.stroke();
       }
     }
 
-    // bumpers
-    for (const b of table.bumpers) {
-      const [x, y] = b.pos;
-      const r = b.r;
-      glow(g, x, y, r * 2.4, gl, 0.16);
-      g.fillStyle = 'rgba(0,0,0,0.5)';
-      g.beginPath();
-      g.arc(x + 2, y + 4, r, 0, TAU);
-      g.fill();
-      g.beginPath();
-      g.arc(x, y, r, 0, TAU);
-      g.fillStyle = brassGrad(g, x - r, y - r, x + r, y + r);
-      g.fill();
-      g.strokeStyle = '#2a1d0e';
-      g.lineWidth = 1;
-      g.stroke();
-      const cap = g.createRadialGradient(x - r * 0.25, y - r * 0.3, r * 0.05, x, y, r * 0.78);
-      cap.addColorStop(0, A('#ffffff', 0.85));
-      cap.addColorStop(0.3, A(accent, 1));
-      cap.addColorStop(1, 'rgba(20,12,6,0.95)');
-      g.fillStyle = cap;
-      g.beginPath();
-      g.arc(x, y, r * 0.76, 0, TAU);
-      g.fill();
-      g.strokeStyle = 'rgba(0,0,0,0.6)';
-      g.lineWidth = 1.5;
-      g.stroke();
-    }
+    for (const b of table.bumpers) paintBumper(g, b, K);
 
-    eachLabelled(table, (kind, e) => label(g, tf, labelText(table, e), labelSpot(table, kind, e), A(PAPER, 0.45)));
-    paintGlassShadow(g);
+    const tagBox = fillTagBox(g, table, tf);
+    eachLabelled(table, (kind, e) => {
+      if (kind === 'target' || fills.includes(e.id)) return; // these carry their own lettering
+      const spot = labelSpot(table, kind, e);
+      // a name that would sit on the fill tag is left off: it comes up as a sticker when its insert is lit
+      if (Math.abs(spot[1] - tagBox.y) < tagBox.h + 6 && Math.abs(spot[0] - tagBox.x) < tagBox.half + 24) return;
+      label(g, tf, table.labels[e.id], spot, A(PAPER, 0.62));
+    });
+
+    // the frame's own shadow on the glass: a hard strip along the top and along the lamp's side
+    g.fillStyle = A('#04031c', 0.5);
+    g.fillRect(0, 0, TW, 6);
+    g.fillRect(L.dx < 0 ? 0 : TW - 6, 6, 6, TH - 6);
   }
 
-  // The shadow the frame throws on the glass. Part of the table layer.
-  function paintGlassShadow(g) {
-    for (const [x0, x1] of [[0, 14], [TW, TW - 14]]) {
-      const sh = g.createLinearGradient(x0, 0, x1, 0);
-      sh.addColorStop(0, 'rgba(0,0,0,0.6)');
-      sh.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = sh;
-      g.fillRect(Math.min(x0, x1), 0, 14, TH);
-    }
-    const top = g.createLinearGradient(0, 0, 0, 30);
-    top.addColorStop(0, 'rgba(0,0,0,0.7)');
-    top.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = top;
-    g.fillRect(0, 0, TW, 30);
-  }
-
-  // The two brass rails either side of the glass, painted into the frame layer at T.
+  // The frame either side of the glass, painted into the frame layer at T: two flat brass rails.
   function paintRails(g, T, H) {
     for (const x of [T.x - 8 * T.scale, T.x + TW * T.scale]) {
       const w = 8 * T.scale;
-      const rg = g.createLinearGradient(x, 0, x + w, 0);
-      rg.addColorStop(0, BRASS_LO);
-      rg.addColorStop(0.35, BRASS_HI);
-      rg.addColorStop(0.6, BRASS);
-      rg.addColorStop(1, '#3d2c12');
-      g.fillStyle = rg;
+      g.fillStyle = INK;
+      g.fillRect(x - 1.5, T.y, w + 3, H - T.y);
+      g.fillStyle = BRASS;
       g.fillRect(x, T.y, w, H - T.y);
+      g.fillStyle = BRASS_HI;
+      g.fillRect(x, T.y, w * 0.3, H - T.y);
+      g.fillStyle = BRASS_LO;
+      g.fillRect(x + w * 0.7, T.y, w * 0.3, H - T.y);
     }
   }
 
-  function paintBall(g, r, gl) {
-    const c = r * 2;
-    g.fillStyle = 'rgba(0,0,0,0.45)';
+  // The Plumb: a flat pearl. Its sprite is 5 radii square with the ball in the middle and the
+  // shadow it throws, away from the table's lamp, beside it.
+  function paintBall(g, r, K) {
+    const L = K.L;
+    const c = r * 2.5;
+    g.fillStyle = A('#04031c', 0.5);
     g.beginPath();
-    g.ellipse(c + 2, c + 4, r, r * 0.85, 0, 0, TAU);
+    g.ellipse(c - L.dx * r * 0.8, c - L.dy * r * 0.8 + 1.5, r * 1.02, r * 0.92, 0, 0, TAU);
     g.fill();
-    const sg = g.createRadialGradient(c - r * 0.35, c - r * 0.4, r * 0.08, c, c, r);
-    sg.addColorStop(0, '#ffffff');
-    sg.addColorStop(0.3, '#d9dee6');
-    sg.addColorStop(0.75, '#737b88');
-    sg.addColorStop(1, '#262a31');
-    g.fillStyle = sg;
-    g.beginPath();
-    g.arc(c, c, r, 0, TAU);
-    g.fill();
-    g.strokeStyle = A(gl, 0.5);
-    g.lineWidth = 0.8;
-    g.beginPath();
-    g.arc(c, c, r - 0.6, Math.PI * 0.15, Math.PI * 0.85);
-    g.stroke();
+    cel(g, circ(c, c, r), PEARL, L, { off: r * 0.5, shadow: PEARL_LO, ink: 1.8,
+      hi: (k) => { k.ellipse(c + L.dx * r * 0.42, c + L.dy * r * 0.42, r * 0.3, r * 0.17, L.angle + Math.PI / 2, 0, TAU); }, hiCol: '#ffffff' });
+  }
+
+  function flipperPath(g, px, py, ang, len, r0, r1) {
+    const b = Math.asin(clamp((r0 - r1) / len, -1, 1));
+    const a0 = ang + Math.PI / 2 + b;
+    const a1 = ang - Math.PI / 2 - b;
+    g.moveTo(px + Math.cos(a0) * r0, py + Math.sin(a0) * r0);
+    g.arc(px, py, r0, a0, a1 + TAU);
+    g.arc(px + Math.cos(ang) * len, py + Math.sin(ang) * len, r1, a1, a0);
+    g.closePath();
   }
 
   // ─────────── the playfield: what moves and what is lit ───────────
@@ -1234,34 +1336,40 @@ export function createRenderer(canvas) {
     return t === undefined ? 0 : clamp(1 - (now - t) / 240, 0, 1);
   };
 
+
   // Drawn in table space (400 x 800); the caller has translated and scaled. res is device
   // pixels per table unit, tf the insert type size.
   function drawTable(g, table, game, scene, lit, threadCol, now, dt, res, tf) {
-    const { accent, glow: gl } = table.theme;
-    g.drawImage(layer(`table:${table.id}:${tf}`, TW, TH, res, (c) => paintTable(c, table, tf)), 0, 0, TW, TH);
+    const K = lookOf(table);
+    const L = K.L;
+    g.drawImage(layer(`table:${table.id}:${tf}`, TW, TH, res, (c) => paintTable(c, table, tf, res)), 0, 0, TW, TH);
 
     const reels = reelsOf(game);
     const phys = game.phys;
     const balls = phys ? phys.balls : [];
     const br = table.ballRadius;
-    const pulse = 0.5 + 0.5 * Math.sin(now / 170);
-    const slow = 0.5 + 0.5 * Math.sin(now / 420);
+    // lights tick: they are on, half on or off, never fading
+    const pulse = stepped(0.5 + 0.5 * Math.sin(now / 170), 2);
+    const slow = stepped(0.5 + 0.5 * Math.sin(now / 420), 2);
+    const blink = Math.floor(now / 520) % 2 === 0;
     const hits = game.hits || {};
     const wanted = scene ? scene.objective.ids : [];
     const done = (id) => scene && scene.objective.kind === 'all' && wanted.includes(id) && (hits[id] || 0) > 0;
-    const litAmt = (id) => (lit.has(id) ? 0.45 + 0.55 * pulse : 0);
+    const litAmt = (id) => (lit.has(id) ? 0.5 + 0.5 * pulse : 0);
+    const hot = (col, on) => (on >= 1 ? tint(col, 0.7) : col);
     const spinIds = table.reels.spin;
+    const fills = table.reels.fill;
     const armed = reels.armed === true;
     const chargeFrac = armed ? 1 : reels.need > 0 ? clamp(reels.charge / reels.need, 0, 1) : 0;
     const kickback = Boolean(game.boons && game.boons.kickback);
-    const relabel = (kind, e, color) => label(g, tf, labelText(table, e), labelSpot(table, kind, e), color);
+    const name = (e) => table.labels[e.id];
 
     // contacts seen this frame feed the retained flashes
     for (const b of balls) {
       if (b.state !== 'live') continue;
-      for (const bu of table.bumpers) if (Math.hypot(b.pos[0] - bu.pos[0], b.pos[1] - bu.pos[1]) < bu.r + br + 3) touch(bu.id, b.pos[0], b.pos[1], now, gl);
-      for (const t of table.targets) if (segDist(b.pos, t.a, t.b) < br + 3.5) touch(t.id, b.pos[0], b.pos[1], now, accent);
-      for (const s of table.slings) if (segDist(b.pos, s.a, s.b) < br + 3) touch(s.id, b.pos[0], b.pos[1], now, accent);
+      for (const bu of table.bumpers) if (Math.hypot(b.pos[0] - bu.pos[0], b.pos[1] - bu.pos[1]) < bu.r + br + 3) touch(bu.id, b.pos[0], b.pos[1], now, WHITE);
+      for (const t of table.targets) if (segDist(b.pos, t.a, t.b) < br + 3.5) touch(t.id, b.pos[0], b.pos[1], now, K.cap);
+      for (const s of table.slings) if (segDist(b.pos, s.a, s.b) < br + 3) touch(s.id, b.pos[0], b.pos[1], now, K.cap);
     }
     // objective progress made since last frame rings the element
     if (view.prevHits && view.prevHits !== hits) {
@@ -1275,37 +1383,45 @@ export function createRenderer(canvas) {
     }
     view.prevHits = hits;
 
-    // A spin element: lit gold and circled while the reels are armed; otherwise it carries
-    // a small arc that fills as bumpers, slings and targets charge the reels back up.
-    const spinMark = (x, y, r) => {
+    // The charge of the reels, shown at every element that spins them: an arc that fills as
+    // bumpers, slings and targets charge them, and a ring of turning rays once they are armed.
+    const spinRing = (x, y, r) => {
       if (armed) {
-        glow(g, x, y, r * 2.6, LANTERN, 0.4 + 0.3 * slow);
-        g.strokeStyle = A(LANTERN, 0.75 + 0.25 * slow);
-        g.lineWidth = 2;
-        g.setLineDash([5, 4]);
-        g.lineDashOffset = -now / 60;
+        rays(g, x, y, r + 2, r + 9 + 3 * slow, 9, now / 900, LANTERN);
         g.beginPath();
         g.arc(x, y, r, 0, TAU);
+        inkLine(g, 5.5);
         g.stroke();
-        g.setLineDash([]);
-        g.lineDashOffset = 0;
+        inkLine(g, 2.6, slow >= 1 ? WHITE : BRASS_HI);
+        g.stroke();
       } else {
-        g.strokeStyle = 'rgba(0,0,0,0.5)';
-        g.lineWidth = 3.4;
         g.beginPath();
         g.arc(x, y, r, 0, TAU);
+        inkLine(g, 5);
         g.stroke();
-        g.strokeStyle = A(LANTERN, 0.22);
-        g.lineWidth = 2;
+        inkLine(g, 2.2, K.dim);
         g.stroke();
         if (chargeFrac > 0) {
-          g.strokeStyle = A(LANTERN, 0.95);
-          g.lineCap = 'round';
           g.beginPath();
           g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * chargeFrac);
+          inkLine(g, 2.6, LANTERN);
           g.stroke();
         }
       }
+    };
+    // ...and on a lane, where there is room, the curl that means "this spins the reels"
+    const spinBadge = (x, y) => {
+      const R = 9;
+      const bx = R * 2 + 6;
+      if (armed) bloom(g, x, y, R * 2.3, LANTERN, 0.7 + 0.3 * slow);
+      g.drawImage(layer(`spin:${table.id}:${armed}`, bx, bx, res, (c) => {
+        c.beginPath();
+        c.arc(bx / 2, bx / 2, R - 1, 0, TAU);
+        c.fillStyle = armed ? WHITE : K.dim;
+        c.fill();
+        curl(c, bx / 2, bx / 2, R * 0.74, 1.5, 1, R * 0.46, armed ? LANTERN : A(PAPER, 0.5), armed ? 1 : 0);
+      }), x - bx / 2, y - bx / 2, bx, bx);
+      spinRing(x, y, R);
     };
 
     // ramps and orbit gates
@@ -1313,111 +1429,139 @@ export function createRenderer(canvas) {
       const on = litAmt(s.id);
       const spins = spinIds.includes(s.id);
       const gold = spins && armed;
-      if (on === 0 && !spins) continue;
       const m = mid(s.a, s.b);
       const d = unit(s.dir);
-      const col = on > 0 ? threadCol : LANTERN;
-      const amt = on > 0 ? on : gold ? 0.5 + 0.5 * slow : 0;
-      if (amt > 0) {
-        if (s.exit) strokeRails(g, rampRails(table, s), A(col, 0.25 + 0.3 * amt), A(col, 0.14 + 0.16 * amt));
+      if (on > 0 || gold) {
+        const col = on > 0 ? threadCol : LANTERN;
+        if (s.exit) strokeRails(g, rampRails(table, s), col, 0.9);
         g.beginPath();
         g.moveTo(s.a[0], s.a[1]);
         g.lineTo(s.b[0], s.b[1]);
-        g.strokeStyle = A(col, 0.5 + 0.4 * amt);
-        g.lineWidth = 2;
+        inkLine(g, 5.5);
         g.stroke();
-        for (let k = 1; k <= 2; k++) {
-          const cx = m[0] - d[0] * (10 + k * 15);
-          const cy = m[1] - d[1] * (10 + k * 15);
-          const a = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(now / 170 + k * 1.4));
-          glow(g, cx, cy, 15, col, 0.4 * a);
-          chevron(g, cx, cy, Math.atan2(d[1], d[0]), A(col, 0.5 + 0.5 * a), A('#ffffff', 0.5 * a));
+        inkLine(g, 2.6, WHITE);
+        g.stroke();
+        // three arrows marching up into the lane, one of them white-hot at a time
+        const lead = 2 - (Math.floor(now / 150) % 3);
+        const ang = Math.atan2(d[1], d[0]);
+        for (let k = 0; k < 3; k++) {
+          const cx = m[0] - d[0] * (13 + k * 15);
+          const cy = m[1] - d[1] * (13 + k * 15);
+          if (k === lead) bloom(g, cx, cy, 15, col, 0.9);
+          chevron(g, cx, cy, ang, k === lead ? 8.5 : 7, k === lead ? WHITE : col, 1.6);
         }
-        relabel('shot', s, A(col, 0.6 + 0.4 * amt));
+        tag(g, tf, gold && blink ? 'SPIN' : name(s), labelSpot(table, 'shot', s), gold && blink ? WHITE : hot(col, on));
       }
-      if (spins) spinMark(m[0] + d[0] * 16, m[1] + d[1] * 16, 9);
+      if (spins) spinBadge(m[0] + d[0] * 16, m[1] + d[1] * 16);
     }
 
-    // lane lights
+    // lane inserts
+    let wanting = false;
     for (const r of table.rollovers) {
       const on = litAmt(r.id);
       const over = balls.some((b) => b.inside && b.inside.includes(r.id));
       const got = done(r.id);
-      const reel = table.reels.fill.indexOf(r.id);
+      const reel = fills.indexOf(r.id);
       const kick = kickback && /^out/.test(r.id);
       if (on === 0 && !over && !got && reel < 0 && !kick) continue;
       const [x, y] = r.pos;
       const rad = laneRad(table, r);
-      const ringCol = on > 0 || got ? threadCol : kick ? LANTERN : reel >= 0 ? BRASS_HI : accent;
-      if (on > 0 || over || kick) glow(g, x, y, rad * 3.2, over ? '#ffffff' : ringCol, 0.5 * Math.max(on, over ? 1 : 0, kick ? 0.5 + 0.3 * slow : 0));
       if (reel >= 0) {
         // the lane shows the reel it feeds: its numeral while empty, the symbol once it holds one
         const cell = reels.cells[reel];
-        const holds = cell.sym !== null && !(cell.spin > 0);
+        const turning = cell.spin > 0;
+        const holds = cell.sym !== null && !turning;
+        const want = !holds && !turning && reels.phase === 'open';
+        wanting = wanting || want;
+        if (want || on > 0 || over) bloom(g, x, y, rad * 2.3, on > 0 ? threadCol : BRASS_HI, over ? 1 : 0.55 + 0.35 * slow);
         g.beginPath();
         g.arc(x, y, rad, 0, TAU);
-        g.fillStyle = over ? '#fff' : holds ? '#efe3c6' : cell.spin > 0 ? A(LANTERN, 0.5 + 0.4 * pulse) : `rgba(12,8,5,${0.82 - 0.2 * slow})`;
+        g.fillStyle = over ? '#ffffff' : holds ? PAPER : turning ? LANTERN : want && slow >= 1 ? WHITE : want ? BRASS_HI : K.dim;
         g.fill();
-        if (holds) symbol(g, cell.sym, x, y, rad * 0.8);
-        else if (!(cell.spin > 0)) {
-          g.font = `700 ${tf}px ${SERIF}`;
+        inkLine(g, 2.4);
+        g.stroke();
+        if (holds) symbol(g, cell.sym, x, y, Math.round(rad * 0.74));
+        else if (!turning) {
+          g.font = `700 ${tf + 1}px ${SERIF}`;
           g.textAlign = 'center';
           g.textBaseline = 'middle';
-          g.fillStyle = A(BRASS_HI, 0.6 + 0.4 * slow);
+          g.fillStyle = INK;
           g.fillText(ROMAN[reel + 1], x, y + 0.5);
           g.textAlign = 'left';
           g.textBaseline = 'alphabetic';
         }
+        if (on > 0) {
+          g.beginPath();
+          g.arc(x, y, rad + 3.5, 0, TAU);
+          inkLine(g, 2.2, hot(threadCol, on));
+          g.stroke();
+        }
       } else {
+        const col = on > 0 || got ? threadCol : kick ? LANTERN : K.cap;
+        if (on > 0 || over || kick) bloom(g, x, y, rad * 2.4, over ? WHITE : col, over ? 1 : kick && on === 0 ? 0.5 + 0.3 * slow : on);
         g.beginPath();
         g.arc(x, y, rad, 0, TAU);
-        g.fillStyle = over ? '#fff' : on > 0 ? A(threadCol, 0.35 + 0.6 * on) : kick ? A(LANTERN, 0.55 + 0.3 * slow) : A(threadCol, 0.55);
+        g.fillStyle = over ? '#ffffff' : on > 0 ? hot(col, on) : col;
         g.fill();
+        inkLine(g, 2);
+        g.stroke();
+        if (on > 0 || kick) {
+          g.fillStyle = WHITE;
+          g.beginPath();
+          g.arc(x, y, rad * 0.4, 0, TAU);
+          g.fill();
+        }
+        if (kick) tag(g, tf, 'KICK', labelSpot(table, 'rollover', r), LANTERN);
+        else if (on > 0 || got) tag(g, tf, name(r), labelSpot(table, 'rollover', r), hot(threadCol, on));
       }
-      g.beginPath();
-      g.arc(x, y, rad, 0, TAU);
-      g.strokeStyle = A(ringCol, on > 0 ? 0.6 + 0.4 * on : 0.9);
-      g.lineWidth = on > 0 ? 2 : 1.3;
-      g.stroke();
-      if (kick) label(g, tf, 'KICK', labelSpot(table, 'rollover', r), LANTERN);
-      else if (on > 0 || got) relabel('rollover', r, A(threadCol, 0.6 + 0.4 * Math.max(on, 0.5)));
     }
+    if (wanting) fillTag(g, table, tf, slow >= 1 ? WHITE : BRASS_HI, INK);
 
     // saucers
     for (const s of table.saucers) {
       const on = litAmt(s.id);
+      const spins = spinIds.includes(s.id);
+      const [x, y] = s.pos;
+      if (spins) spinRing(x, y, s.r + 5);
       if (on > 0) {
-        glow(g, s.pos[0], s.pos[1], s.r * 3, threadCol, 0.45 * on);
-        g.strokeStyle = A(threadCol, 0.6 + 0.4 * on);
-        g.lineWidth = 2.5;
+        bloom(g, x, y, s.r * 2.6, threadCol, on);
         g.beginPath();
-        g.arc(s.pos[0], s.pos[1], s.r, 0, TAU);
+        g.arc(x, y, s.r, 0, TAU);
+        inkLine(g, 6.4);
         g.stroke();
-        relabel('saucer', s, A(threadCol, 0.6 + 0.4 * on));
-      }
-      if (spinIds.includes(s.id)) {
-        spinMark(s.pos[0], s.pos[1], s.r + 6);
-        if (armed && on === 0) relabel('saucer', s, A(LANTERN, 0.7 + 0.3 * slow));
+        inkLine(g, 3.2, hot(threadCol, on));
+        g.stroke();
+        tag(g, tf, name(s), labelSpot(table, 'saucer', s), hot(threadCol, on));
+      } else if (spins && armed) {
+        tag(g, tf, blink ? 'SPIN' : name(s), labelSpot(table, 'saucer', s), blink ? WHITE : LANTERN);
       }
     }
 
     // standup targets
-    g.lineCap = 'round';
     for (const t of table.targets) {
       const on = litAmt(t.id);
       const fl = flashOf(t.id, now);
       const got = done(t.id);
       if (on === 0 && fl === 0 && !got) continue;
-      const n = inwardNormal(t.a, t.b);
       const m = mid(t.a, t.b);
-      if (on > 0 || fl > 0) glow(g, m[0] + n[0] * 4, m[1] + n[1] * 4, 24, fl > 0 ? '#ffffff' : threadCol, 0.5 * Math.max(on, fl));
+      const spot = labelSpot(table, 'target', t);
+      if (on > 0) bloom(g, spot[0], spot[1], 19, threadCol, on);
+      if (fl > 0) burst(g, m[0], m[1], 5, 11 + 9 * stepped(fl, 2), 7, 0.3, WHITE, 1.4);
       g.beginPath();
       g.moveTo(t.a[0], t.a[1]);
       g.lineTo(t.b[0], t.b[1]);
-      g.strokeStyle = fl > 0.05 ? A('#ffffff', 0.6 + 0.4 * fl) : on > 0 ? A(threadCol, 0.55 + 0.45 * on) : A(threadCol, 0.7);
+      inkLine(g, 9);
+      g.stroke();
+      g.lineCap = 'butt';
+      g.strokeStyle = fl > 0.05 ? '#ffffff' : hot(threadCol, on);
       g.lineWidth = 5;
       g.stroke();
-      if (on > 0 || got) relabel('target', t, A(threadCol, 0.6 + 0.4 * Math.max(on, 0.6)));
+      if (on > 0 && fl <= 0.05) {
+        g.strokeStyle = WHITE;
+        g.lineWidth = 1.6;
+        g.stroke();
+      }
+      if (on > 0 || got) targetInsert(g, table, t, tf, on >= 1 ? WHITE : threadCol, INK, 1.8);
     }
 
     // slingshots: the rubber jumps when struck
@@ -1426,119 +1570,118 @@ export function createRenderer(canvas) {
       if (fl === 0) continue;
       const n = inwardNormal(s.a, s.b);
       const m = mid(s.a, s.b);
-      glow(g, m[0], m[1], 30, accent, 0.5 * fl);
+      burst(g, m[0] + n[0] * 6, m[1] + n[1] * 6, 5, 10 + 9 * stepped(fl, 2), 6, 0.2, WHITE, 1.4);
       g.beginPath();
       g.moveTo(s.a[0], s.a[1]);
-      g.quadraticCurveTo(m[0] + n[0] * 9 * fl, m[1] + n[1] * 9 * fl, s.b[0], s.b[1]);
-      g.strokeStyle = A('#ffffff', 0.5 + 0.5 * fl);
-      g.lineWidth = 3.2;
+      g.quadraticCurveTo(m[0] + n[0] * 11 * fl, m[1] + n[1] * 11 * fl, s.b[0], s.b[1]);
+      inkLine(g, 7.5);
+      g.stroke();
+      inkLine(g, 3.6, '#ffffff');
       g.stroke();
     }
 
-    // bumpers
+    // bumpers: struck, they flash in a burst of hard rays; lit, they burn in the thread's colour
     for (const b of table.bumpers) {
       const on = litAmt(b.id);
       const fl = flashOf(b.id, now);
       if (on === 0 && fl === 0) continue;
       const [x, y] = b.pos;
-      glow(g, x, y, b.r * (2.4 + 0.6 * fl), fl > 0 ? '#ffffff' : threadCol, 0.5 * Math.max(fl, on * 0.8));
+      const r = b.r;
       if (fl > 0) {
-        g.strokeStyle = A('#ffffff', fl);
-        g.lineWidth = 2;
+        const q = stepped(fl, 3);
+        burst(g, x, y, r * 1.02, r + 5 + 15 * q, 10, 0.16 + (1 - q) * 0.3, q > 0.5 ? '#ffffff' : L.rim, 1.6);
         g.beginPath();
-        g.arc(x, y, b.r + 2 + 6 * (1 - fl), 0, TAU);
-        g.stroke();
-      }
-      if (on > 0) {
-        g.fillStyle = A(threadCol, 0.25 + 0.3 * on);
-        g.beginPath();
-        g.arc(x, y, b.r * 0.76, 0, TAU);
+        g.arc(x, y, r, 0, TAU);
+        g.fillStyle = K.cap;
         g.fill();
-        g.strokeStyle = A(threadCol, 0.35 + 0.6 * on);
-        g.lineWidth = 2;
-        g.beginPath();
-        g.arc(x, y, b.r + 4 + 2 * pulse, 0, TAU);
+        inkLine(g, 2.6);
         g.stroke();
-        relabel('bumper', b, A(threadCol, 0.6 + 0.4 * on));
+        g.beginPath();
+        g.arc(x, y, r * 0.64, 0, TAU);
+        g.fillStyle = '#ffffff';
+        g.fill();
+        inkLine(g, 1.8);
+        g.stroke();
+      } else {
+        bloom(g, x, y, r * 2.2, threadCol, on);
+        g.beginPath();
+        g.arc(x, y, r * 0.64, 0, TAU);
+        g.fillStyle = threadCol;
+        g.fill();
+        inkLine(g, 1.8);
+        g.stroke();
+        g.fillStyle = WHITE;
+        g.beginPath();
+        g.arc(x, y, r * (on >= 1 ? 0.4 : 0.26), 0, TAU);
+        g.fill();
       }
+      if (on > 0) tag(g, tf, name(b), labelSpot(table, 'bumper', b), hot(threadCol, on));
     }
 
     // ball save insert between the flippers
     if (game.boons && game.boons.ballSave > 0 && table.flippers.length >= 2) {
       const fx0 = table.flippers.reduce((s, f) => s + f.pivot[0], 0) / table.flippers.length;
       const fy0 = Math.max(...table.flippers.map((f) => f.pivot[1])) + 46;
-      glow(g, fx0, fy0, 34, LANTERN, 0.35 + 0.25 * pulse);
-      g.font = `700 ${tf}px ${MONO}`;
-      g.textAlign = 'center';
-      g.fillStyle = A(LANTERN, 0.75 + 0.25 * pulse);
-      g.fillText(`SAVE ${Math.ceil(game.boons.ballSave)}`, fx0, fy0 + 4);
-      g.textAlign = 'left';
+      bloom(g, fx0, fy0, 30, LANTERN, 0.6 + 0.3 * pulse);
+      tag(g, tf, `SAVE ${Math.ceil(game.boons.ballSave)}`, [fx0, fy0], pulse >= 1 ? WHITE : LANTERN);
     }
 
-    // plunger: a sprung rod under the ball rest, hotter as it is drawn back
+    // plunger: a sprung rod under the ball rest, and a ring that closes as it is drawn back
     {
       const [px, py] = table.plunger.pos;
       const charge = phys ? clamp(phys.charge, 0, 1) : 0;
       const top = py + br + 3 + charge * 34;
+      g.fillStyle = INK;
+      g.fillRect(px - 4.5, top, 9, TH - top);
       g.fillStyle = BRASS;
       g.fillRect(px - 2.5, top, 5, TH - top);
       g.fillStyle = BRASS_HI;
-      g.fillRect(px - 1, top, 1.5, TH - top);
-      g.fillStyle = BRASS;
-      rr(g, px - 7, top - 2, 14, 7, 3);
+      g.fillRect(px - 2.5, top, 1.6, TH - top);
+      rr(g, px - 8, top - 4, 16, 8, 3);
+      g.fillStyle = CRIMSON;
       g.fill();
+      inkLine(g, 1.8);
+      g.stroke();
       if (charge > 0) {
-        glow(g, px, py, 30, LANTERN, 0.35 * charge);
         g.beginPath();
-        g.arc(px, py, br + 5, -Math.PI / 2, -Math.PI / 2 + TAU * charge);
-        g.strokeStyle = charge > 0.92 ? '#fff' : LANTERN;
-        g.lineWidth = 2.5;
+        g.arc(px, py, br + 5.5, -Math.PI / 2, -Math.PI / 2 + TAU * charge);
+        inkLine(g, 6);
+        g.stroke();
+        inkLine(g, 3, charge > 0.92 ? '#ffffff' : LANTERN);
         g.stroke();
       }
     }
 
-    // flippers
-    g.lineCap = 'round';
+    // flippers: chunky, inked, one stripe
     for (const f of table.flippers) {
       const st = phys && phys.flippers ? phys.flippers[f.id] : null;
       const ang = st ? st.angle : f.restAngle;
-      const tip = [f.pivot[0] + Math.cos(ang) * f.length, f.pivot[1] + Math.sin(ang) * f.length];
-      const line = (ox, oy) => {
-        g.beginPath();
-        g.moveTo(f.pivot[0] + ox, f.pivot[1] + oy);
-        g.lineTo(tip[0] + ox, tip[1] + oy);
-      };
-      line(2, 5);
-      g.strokeStyle = 'rgba(0,0,0,0.5)';
-      g.lineWidth = f.radius * 2 + 2;
+      const [px, py] = f.pivot;
+      const r0 = f.radius + 2.6;
+      const r1 = f.radius + 0.4;
+      const shape = (c) => flipperPath(c, px, py, ang, f.length, r0, r1);
+      g.fillStyle = A('#04031c', 0.5);
+      g.beginPath();
+      flipperPath(g, px - L.dx * 4 + 1, py - L.dy * 4 + 3, ang, f.length, r0, r1);
+      g.fill();
+      cel(g, shape, K.flip, L, { off: 3.2, ink: 2.2 });
+      const ca = Math.cos(ang);
+      const sa = Math.sin(ang);
+      g.beginPath();
+      g.moveTo(px + ca * 11, py + sa * 11);
+      g.lineTo(px + ca * (f.length - 3), py + sa * (f.length - 3));
+      inkLine(g, 3.2, K.stripe);
       g.stroke();
-      line(0, 0);
-      g.strokeStyle = '#1a120a';
-      g.lineWidth = f.radius * 2 + 2.5;
-      g.stroke();
-      g.strokeStyle = '#e6d3a4';
-      g.lineWidth = f.radius * 2;
-      g.stroke();
-      line(0, -f.radius * 0.45);
-      g.strokeStyle = '#fff6dc';
-      g.lineWidth = f.radius * 0.7;
-      g.stroke();
-      line(0, 0);
-      g.strokeStyle = A(accent, 0.9);
-      g.lineWidth = Math.max(1.5, f.radius * 0.45);
-      g.stroke();
+      g.beginPath();
+      g.arc(px, py, 3.6, 0, TAU);
       g.fillStyle = BRASS;
-      g.beginPath();
-      g.arc(f.pivot[0], f.pivot[1], f.radius * 0.62, 0, TAU);
       g.fill();
-      g.fillStyle = BRASS_HI;
-      g.beginPath();
-      g.arc(f.pivot[0] - 1, f.pivot[1] - 1, f.radius * 0.25, 0, TAU);
-      g.fill();
+      inkLine(g, 1.6);
+      g.stroke();
     }
 
-    // balls and their trails
-    const ballSprite = layer(`ball:${table.id}`, br * 4, br * 4, res, (c) => paintBall(c, br, gl));
+    // balls: a cast shadow, a short stepped trail when fast, the pearl
+    const ballSprite = layer(`ball:${table.id}`, br * 5, br * 5, res, (c) => paintBall(c, br, K));
     const seen = new Set();
     for (const b of balls) {
       seen.add(b.id);
@@ -1547,48 +1690,48 @@ export function createRenderer(canvas) {
       const lastP = tr[tr.length - 1];
       if (!lastP || Math.hypot(lastP[0] - b.pos[0], lastP[1] - b.pos[1]) > 160) tr.length = 0; // carried by a ramp: do not smear
       tr.push([b.pos[0], b.pos[1]]);
-      if (tr.length > 12) tr.shift();
+      if (tr.length > 8) tr.shift();
       const [x, y] = b.pos;
       const held = b.state === 'held';
-      if (b.state === 'live') {
-        g.lineCap = 'round';
-        // three strokes of falling weight, not one per sample
-        for (const [from, w, a] of [[0, 0.5, 0.1], [4, 1.0, 0.16], [8, 1.5, 0.22]]) {
-          if (tr.length <= from + 1) continue;
-          g.beginPath();
-          g.moveTo(tr[from][0], tr[from][1]);
-          for (let i = from + 1; i < tr.length; i++) g.lineTo(tr[i][0], tr[i][1]);
-          g.strokeStyle = A(gl, a);
-          g.lineWidth = br * w;
-          g.stroke();
+      if (b.state === 'live' && tr.length >= 4) {
+        const far = tr[tr.length - 4];
+        if (Math.hypot(far[0] - x, far[1] - y) > 13) {
+          // three flat discs falling away behind it
+          const n = tr.length;
+          for (const [back, k, a] of [[6, 0.42, 0.22], [4, 0.6, 0.36], [2, 0.8, 0.55]]) {
+            if (n - 1 - back < 0) continue;
+            const p = tr[n - 1 - back];
+            g.fillStyle = A(L.rim, a);
+            g.beginPath();
+            g.arc(p[0], p[1], br * k, 0, TAU);
+            g.fill();
+          }
         }
-        glow(g, x, y, br * 2.6, gl, 0.22);
       }
-      g.globalAlpha = held ? 0.7 : 1;
+      g.globalAlpha = held ? 0.75 : 1;
       const k = held ? 0.86 : 1;
-      g.drawImage(ballSprite, x - br * 2 * k, y - br * 2 * k, br * 4 * k, br * 4 * k);
+      g.drawImage(ballSprite, x - br * 2.5 * k, y - br * 2.5 * k, br * 5 * k, br * 5 * k);
       g.globalAlpha = 1;
     }
     for (const id of [...view.trails.keys()]) if (!seen.has(id)) view.trails.delete(id);
 
-    // sparks and objective rings
+    // sparks are four-point glints; objective rings are two hard rings
     view.sparks = view.sparks.filter((s) => now - s.born < s.life && now >= s.born);
     for (const s of view.sparks) {
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.vy += 260 * dt;
-      g.globalAlpha = 1 - (now - s.born) / s.life;
-      g.fillStyle = s.color;
-      g.fillRect(s.x - 1.2, s.y - 1.2, 2.4, 2.4);
+      const k = 1 - (now - s.born) / s.life;
+      glint(g, s.x, s.y, 2.5 + 4.5 * k, s.color, 1, 0.4);
     }
-    g.globalAlpha = 1;
     view.rings = view.rings.filter((r) => now - r.born < 600 && now >= r.born);
     for (const r of view.rings) {
-      const k = (now - r.born) / 600;
-      g.strokeStyle = A(r.color, (1 - k) * 0.9);
-      g.lineWidth = 3 * (1 - k) + 0.5;
+      const k = stepped((now - r.born) / 600, 6);
       g.beginPath();
-      g.arc(r.x, r.y, 10 + k * 46, 0, TAU);
+      g.arc(r.x, r.y, 12 + k * 44, 0, TAU);
+      inkLine(g, 6.5 * (1 - k) + 2);
+      g.stroke();
+      inkLine(g, 4 * (1 - k) + 0.8, k < 0.34 ? WHITE : r.color);
       g.stroke();
     }
   }
@@ -1604,7 +1747,7 @@ export function createRenderer(canvas) {
     g.clip();
     if (sh > 0) {
       // a shaken table uncovers a sliver of what is behind it
-      g.fillStyle = '#000';
+      g.fillStyle = NIGHT;
       g.fillRect(T.x, T.y, TW * s, L.H - T.y);
     }
     g.translate(T.x + Math.sin(now / 17) * 7 * sh * s, T.y + Math.cos(now / 13) * 5 * sh * s);
@@ -1613,17 +1756,21 @@ export function createRenderer(canvas) {
     g.restore();
   }
 
+
   // A prompt on the glass, in table space. Only shown while no ball is in play.
   function tableBanner(g, text, y, color, a, tf) {
-    g.font = `italic ${tf + 3}px ${SERIF}`;
+    g.font = `italic 700 ${tf + 3}px ${SERIF}`;
     const w = Math.min(TW - 44, g.measureText(text).width + 32);
-    rr(g, 187 - w / 2, y - 16, w, 32, 16);
-    g.fillStyle = `rgba(10,7,5,${0.84 * a})`;
+    rr(g, 187 - w / 2, y - 13, w, 32, 16);
+    g.fillStyle = '#04031c';
     g.fill();
-    g.strokeStyle = A(color, 0.7 * a);
-    g.lineWidth = 1;
+    rr(g, 187 - w / 2, y - 16, w, 32, 16);
+    g.fillStyle = PLATE;
+    g.fill();
+    g.strokeStyle = color;
+    g.lineWidth = a >= 0.9 ? 2.6 : 1.6;
     g.stroke();
-    g.fillStyle = A(color, a);
+    g.fillStyle = color;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(text, 187, y + 1, w - 20);
@@ -1696,61 +1843,49 @@ export function createRenderer(canvas) {
     ];
   }
 
+
   // ─────────── the Reels of Assay ───────────
 
-  // Three cells in a brass housing at (x, y). cw x ch is one cell; returns the housing's size.
+  // Three tiles in a brass housing at (x, y). cw x ch is one tile; returns the housing's size.
+  // An empty reel is a dark well with its numeral; a held one is a cream tile with a large flat
+  // symbol; a turning one streaks; a paying line slams, and rays stand out round the housing.
   function drawReelWindow(g, game, x, y, cw, ch, gap, pad, now) {
     const reels = reelsOf(game);
     const W = cw * 3 + gap * 2 + pad * 2;
     const H = ch + pad * 2;
-    const ss = Math.round(Math.min(cw, ch) * 0.36); // symbol half-size
+    const ss = Math.round(Math.min(cw, ch) * 0.4); // symbol half-size
     const paying = reels.phase === 'paying';
     const win = paying && pays(reels.result.payout);
-    g.drawImage(layer(`housing:${cw}:${ch}:${gap}:${pad}`, W + 8, H + 10, view.ds, (c) => {
-      c.translate(4, 3);
-      c.fillStyle = 'rgba(0,0,0,0.5)';
-      rr(c, 0, 3, W, H, pad + 4);
+    if (!paying) view.pay = { result: null, since: 0 };
+    else if (view.pay.result !== reels.result || now < view.pay.since) view.pay = { result: reels.result, since: now };
+    const slam = paying ? clamp((now - view.pay.since) / 170, 0, 1) : 1;
+    const flick = Math.floor(now / 110) % 2 === 0;
+    if (win) {
+      const m = pad * 1.5;
+      g.save();
+      g.beginPath();
+      g.rect(x - m, y - m * 0.7, W + m * 2, H + m * 1.4);
+      g.clip();
+      rays(g, x + W / 2, y + H / 2, H * 0.3, W, 12, now / 1300, flick ? WHITE : BRASS_HI);
+      g.restore();
+    }
+    g.drawImage(layer(`housing:${cw}:${ch}:${gap}:${pad}`, W + 12, H + 14, view.ds, (c) => {
+      c.translate(6, 4);
+      rr(c, 1, 5, W, H, pad + 4);
+      c.fillStyle = '#04031c';
       c.fill();
-      rr(c, 0, 0, W, H, pad + 4);
-      c.fillStyle = brassGrad(c, 0, 0, W, H);
-      c.fill();
-      rr(c, 2, 2, W - 4, H - 4, pad + 2);
-      const face = c.createLinearGradient(0, 0, 0, H);
-      face.addColorStop(0, '#2b1e11');
-      face.addColorStop(1, '#130d08');
-      c.fillStyle = face;
+      cel(c, box(0, 0, W, H, pad + 4), BRASS, HUD_L, { off: 4, ink: 2.6, shadow: '#b06a1c', rim: 1.8, rimCol: WHITE });
+      rr(c, pad - 3, pad - 3, W - pad * 2 + 6, H - pad * 2 + 6, 7);
+      c.fillStyle = INK;
       c.fill();
       for (let i = 0; i < 3; i++) {
-        const cx = pad + i * (cw + gap);
-        rr(c, cx, pad, cw, ch, 5);
-        const well = c.createLinearGradient(0, pad, 0, pad + ch);
-        well.addColorStop(0, '#050302');
-        well.addColorStop(1, '#16100a');
-        c.fillStyle = well;
+        rr(c, pad + i * (cw + gap), pad, cw, ch, 5);
+        c.fillStyle = '#231d66';
         c.fill();
-        c.strokeStyle = A(BRASS_HI, 0.5);
-        c.lineWidth = 1;
-        c.stroke();
       }
-    }), x - 4, y - 3, W + 8, H + 10);
+    }), x - 6, y - 4, W + 12, H + 14);
     const paper = layer(`paper:${cw}:${ch}`, cw, ch, view.ds, (c) => {
-      rr(c, 0, 0, cw, ch, 5);
-      const p = c.createLinearGradient(0, 0, cw, 0);
-      p.addColorStop(0, '#d9c9a4');
-      p.addColorStop(0.5, '#f3e8cc');
-      p.addColorStop(1, '#d4c39c');
-      c.fillStyle = p;
-      c.fill();
-    });
-    const drum = layer(`drum:${cw}:${ch}`, cw, ch, view.ds, (c) => {
-      rr(c, 0, 0, cw, ch, 5);
-      const curve = c.createLinearGradient(0, 0, 0, ch);
-      curve.addColorStop(0, 'rgba(8,5,3,0.8)');
-      curve.addColorStop(0.24, 'rgba(8,5,3,0)');
-      curve.addColorStop(0.76, 'rgba(8,5,3,0)');
-      curve.addColorStop(1, 'rgba(8,5,3,0.8)');
-      c.fillStyle = curve;
-      c.fill();
+      cel(c, box(0, 0, cw, ch, 5), PAPER, HUD_L, { off: 3.5, shadow: '#dcc089', ink: 1.6 });
     });
 
     for (let i = 0; i < 3; i++) {
@@ -1776,183 +1911,203 @@ export function createRenderer(canvas) {
         g.rect(cx, cy, cw, ch);
         g.clip();
         g.drawImage(paper, cx, cy, cw, ch);
-        g.globalAlpha = fast ? 0.55 : 1;
+        if (fast) {
+          // the streak: the same symbols twice more behind, each a step fainter, and hard speed lines
+          for (const [back, a] of [[0.44, 0.22], [0.22, 0.42]]) {
+            g.globalAlpha = a;
+            for (let k = -1; k <= 1; k++) symbol(g, strip[mod(fl + k, strip.length)], mx, my - (k - fr) * ch - ch * back, ss);
+          }
+          g.globalAlpha = 1;
+        }
         for (let k = -1; k <= 1; k++) symbol(g, strip[mod(fl + k, strip.length)], mx, my - (k - fr) * ch, ss);
         if (fast) {
-          // a smear, not a second reel: the same symbols a third of a cell behind
-          g.globalAlpha = 0.25;
-          for (let k = -1; k <= 1; k++) symbol(g, strip[mod(fl + k, strip.length)], mx, my - (k - fr) * ch - ch * 0.3, ss);
+          g.fillStyle = A(INK, 0.5);
+          for (let j = 0; j < 4; j++) {
+            const lx = cx + cw * (0.14 + j * 0.24);
+            const ly = cy + mod(now * 0.5 + j * ch * 0.37 + i * 9, ch * 1.4) - ch * 0.4;
+            g.fillRect(lx, ly, 2, ch * 0.36);
+          }
         }
-        g.globalAlpha = 1;
-        g.drawImage(drum, cx, cy, cw, ch);
+        g.fillStyle = A(INK, 0.4);
+        g.fillRect(cx, cy, cw, 5);
+        g.fillRect(cx, cy + ch - 5, cw, 5);
         g.restore();
       } else if (cell.sym !== null) {
         const since = view.locked[i] === null ? 9 : (now - view.locked[i]) / 1000;
         const u = since >= 0 && since < 0.4 ? since / 0.4 : 1;
         const rock = u < 1 ? 0.09 * ch * (1 - u) * (1 - u) * Math.sin(TAU * 1.5 * u) : 0;
         g.drawImage(paper, cx, cy, cw, ch);
-        if (win) {
-          g.fillStyle = `rgba(255,190,80,${0.22 + 0.2 * Math.sin(now / 110 + i)})`;
-          rr(g, cx, cy, cw, ch, 5);
+        if (win && flick) {
+          rr(g, cx + 1.5, cy + 1.5, cw - 3, ch - 3, 4);
+          g.fillStyle = '#fff2a8';
           g.fill();
         }
-        symbol(g, cell.sym, mx, my + rock, ss);
-        g.drawImage(drum, cx, cy, cw, ch);
+        symbol(g, cell.sym, mx, my + rock, ss, win ? 1 + 0.3 * (1 - slam) : 1);
         if (u < 1) {
-          g.strokeStyle = A('#ffffff', 1 - u);
-          g.lineWidth = 2;
           rr(g, cx - 1, cy - 1, cw + 2, ch + 2, 6);
+          g.strokeStyle = u < 0.5 ? '#ffffff' : BRASS_HI;
+          g.lineWidth = u < 0.5 ? 3 : 1.5;
           g.stroke();
         }
       } else {
         // empty: the reel's numeral, waiting for its lane
-        g.font = `600 ${Math.max(MIN_TYPE, Math.round(ch * 0.34))}px ${SERIF}`;
+        g.font = `700 ${Math.max(MIN_TYPE, Math.round(ch * 0.36))}px ${SERIF}`;
         g.textAlign = 'center';
         g.textBaseline = 'middle';
-        g.fillStyle = A(BRASS, 0.3 + 0.12 * Math.sin(now / 420 + i * 1.3));
+        g.fillStyle = A(BRASS_HI, Math.floor(now / 520 + i) % 3 === 0 ? 0.85 : 0.45);
         g.fillText(ROMAN[i + 1], mx, my + 1);
         g.textAlign = 'left';
         g.textBaseline = 'alphabetic';
       }
     }
-    // payline, bright while the line pays
+    // the payline: a bar between two pointers, white while the line pays
     const ly = y + pad + ch / 2;
-    g.fillStyle = win ? A('#ffffff', 0.85) : paying ? A(RED, 0.8) : A(RED, 0.35);
-    g.fillRect(x + pad - 3, ly - 0.5, W - pad * 2 + 6, 1);
+    const col = win ? '#ffffff' : paying ? RED : CRIMSON;
+    if (paying) {
+      g.fillStyle = INK;
+      g.fillRect(x + pad - 2, ly - 2, W - pad * 2 + 4, 4);
+      g.fillStyle = col;
+      g.fillRect(x + pad - 2, ly - 1, W - pad * 2 + 4, 2);
+    }
+    for (const [px, dir] of [[x + 2, 1], [x + W - 2, -1]]) {
+      g.beginPath();
+      g.moveTo(px, ly - 5);
+      g.lineTo(px + dir * (pad + 1), ly);
+      g.lineTo(px, ly + 5);
+      g.closePath();
+      g.fillStyle = col;
+      g.fill();
+      inkLine(g, 1.4);
+      g.stroke();
+    }
     return { w: W, h: H };
   }
 
-  // Progress to re-arming: a rule that fills, and burns steadily once the reels are armed.
+  // Progress to re-arming, in pips: brass as they fill, lantern-and-white once the reels are armed.
   function drawChargeBar(g, reels, x, y, w, now) {
     const armed = reels.armed === true;
-    const frac = armed ? 1 : reels.need > 0 ? clamp(reels.charge / reels.need, 0, 1) : 0;
-    rr(g, x, y, w, 4, 2);
-    g.fillStyle = 'rgba(0,0,0,0.6)';
+    const need = reels.need > 0 ? reels.need : 0;
+    const n = need >= 2 && need <= 14 ? Math.round(need) : 10;
+    const frac = armed ? 1 : need > 0 ? clamp(reels.charge / need, 0, 1) : 0;
+    const litN = armed ? n : Math.floor(frac * n + 1e-6);
+    const hotOn = Math.floor(now / 260) % 2 === 0;
+    rr(g, x, y, w, 6, 3);
+    g.fillStyle = INK;
     g.fill();
-    if (frac > 0) {
-      rr(g, x, y, Math.max(4, w * frac), 4, 2);
-      g.fillStyle = armed ? A(LANTERN, 0.75 + 0.25 * Math.sin(now / 200)) : A(BRASS, 0.9);
-      g.fill();
+    const sw = (w - 3) / n;
+    for (let i = 0; i < n; i++) {
+      g.fillStyle = i < litN ? (armed ? (hotOn ? WHITE : LANTERN) : BRASS_HI) : '#2f2877';
+      g.fillRect(x + 2 + i * sw, y + 1.5, sw - 1.5, 3);
     }
-    if (armed) glow(g, x + w / 2, y + 2, w * 0.4, LANTERN, 0.18 + 0.1 * Math.sin(now / 200));
   }
 
   // ─────────── the one button ───────────
+  // A cel cap in a brass bezel. The plunger is a smooth ring with an orange cap; the lever is
+  // a toothed ring, and its cap's colour says what a press will cost: crimson for marks, gold
+  // when it is free, plum when the Mint must lend, sea-green when the town's hat is coming.
 
-  const DOMES = {
-    launch: ['#ffe7b0', '#f0a23a', '#7a3d0c'],
-    lever: ['#ffc0b0', '#d2452f', '#56140b'],
-    loan: ['#ffc0b0', '#b8321f', '#3d0d07'],
-    free: ['#fff3c4', '#e3b548', '#6e4f12'],
-    credit: ['#ffc0b0', '#b8321f', '#3d0d07'],
-    idle: ['#9a8a68', '#4a3d28', '#1c150c'],
-    busy: ['#9a8a68', '#4a3d28', '#1c150c'],
+  const CAPS = {
+    launch: { cap: LANTERN, lo: '#d1481c', text: INK, cog: false, halo: LANTERN },
+    idle: { cap: '#2f2a7a', lo: '#1c1850', text: A(PAPER, 0.6), cog: false, halo: null },
+    busy: { cap: '#2f2a7a', lo: '#1c1850', text: PAPER, cog: true, halo: null },
+    lever: { cap: CRIMSON, lo: '#8f1030', text: WHITE, cog: true, halo: RED },
+    free: { cap: BRASS_HI, lo: '#e08a1c', text: INK, cog: true, halo: BRASS_HI },
+    loan: { cap: '#7a1440', lo: '#450a2c', text: WHITE, cog: true, halo: CRIMSON },
+    credit: { cap: PALETTE.sea, lo: PALETTE.seaDeep, text: WHITE, cog: true, halo: THREADS.commons.color },
   };
+
+  function paintCap(c, kind, r, m) {
+    const k = CAPS[kind];
+    c.fillStyle = '#04031c';
+    c.beginPath();
+    c.arc(m + 2, m + 5, r, 0, TAU);
+    c.fill();
+    const bezel = k.cog ? (p) => starPath(p, m, m, r - 3.5, r + 0.5, 16, 0) : circ(m, m, r);
+    cel(c, bezel, BRASS, HUD_L, { off: 5, ink: 2.8, shadow: '#b06a1c', rim: 2, rimCol: WHITE });
+    c.beginPath();
+    c.arc(m, m, r - 6.5, 0, TAU);
+    c.fillStyle = INK;
+    c.fill();
+    const dr = r - 9.5;
+    cel(c, circ(m, m, dr), k.cap, HUD_L, { off: dr * 0.24, shadow: k.lo, ink: 2,
+      hi: (p) => { p.ellipse(m - dr * 0.36, m - dr * 0.5, dr * 0.34, dr * 0.12, -0.62, 0, TAU); }, hiCol: kind === 'idle' || kind === 'busy' ? A(WHITE, 0.25) : WHITE });
+    // what the cap does, as a mark over its lettering
+    const gy = m - dr * 0.56;
+    if (kind === 'launch' || kind === 'idle') chevron(c, m, gy + 1, -Math.PI / 2, 5.5, k.text, 0);
+    else if (kind === 'lever') chevron(c, m, gy, Math.PI / 2, 5.5, k.text, 0);
+    else if (kind === 'free') glint(c, m, gy, 8, INK, 1, 0);
+    else if (kind === 'loan') {
+      c.beginPath();
+      c.arc(m, gy, 4.5, 0, TAU);
+      c.fillStyle = BRASS_HI;
+      c.fill();
+      inkLine(c, 1.5);
+      c.stroke();
+    } else if (kind === 'credit') {
+      // the hat that goes round
+      c.fillStyle = k.text;
+      c.beginPath();
+      c.arc(m, gy + 2, 5, Math.PI, 0);
+      c.closePath();
+      c.fill();
+      c.fillRect(m - 8.5, gy + 1.5, 17, 2.4);
+    }
+  }
 
   function drawLaunch(g, b, state, now) {
     const { x, y, r } = b;
-    const dome = DOMES[state.kind];
-    if (!dome) throw new Error(`render: no button face for launch state '${state.kind}'`);
+    const k = CAPS[state.kind];
+    if (!k) throw new Error(`render: no button face for launch state '${state.kind}'`);
     const live = state.kind !== 'idle' && state.kind !== 'busy';
-    const pulse = 0.5 + 0.5 * Math.sin(now / 300);
-    const box = r * 2 + 16;
-    if (live) glow(g, x, y, r * 1.7, state.kind === 'launch' || state.kind === 'free' ? LANTERN : RED, 0.25 + 0.25 * pulse);
-    g.drawImage(layer(`button:${r}`, box, box, view.ds, (c) => {
-      const m = box / 2;
-      c.fillStyle = 'rgba(0,0,0,0.55)';
-      c.beginPath();
-      c.arc(m + 1.5, m + 4, r, 0, TAU);
-      c.fill();
-      c.beginPath();
-      c.arc(m, m, r, 0, TAU);
-      c.fillStyle = brassGrad(c, m - r, m - r, m + r, m + r);
-      c.fill();
-      c.strokeStyle = '#2a1d0e';
-      c.lineWidth = 1;
-      c.stroke();
-      c.beginPath();
-      c.arc(m, m, r - 7, 0, TAU);
-      c.fillStyle = '#0d0906';
-      c.fill();
-      // knurling on the bezel
-      c.strokeStyle = 'rgba(40,26,8,0.55)';
-      c.lineWidth = 1;
-      for (let k = 0; k < 36; k++) {
-        const a = (k / 36) * TAU;
-        c.beginPath();
-        c.moveTo(m + Math.cos(a) * (r - 6), m + Math.sin(a) * (r - 6));
-        c.lineTo(m + Math.cos(a) * (r - 1.5), m + Math.sin(a) * (r - 1.5));
-        c.stroke();
-      }
-    }), x - box / 2, y - box / 2, box, box);
-    const dr = r - 9;
-    const sink = state.charge > 0 ? 1.5 : 0;
-    g.drawImage(layer(`dome:${state.kind}:${r}`, dr * 2, dr * 2, view.ds, (c) => {
-      const gr = c.createRadialGradient(dr * 0.7, dr * 0.6, dr * 0.08, dr, dr, dr);
-      gr.addColorStop(0, dome[0]);
-      gr.addColorStop(0.45, dome[1]);
-      gr.addColorStop(1, dome[2]);
-      c.fillStyle = gr;
-      c.beginPath();
-      c.arc(dr, dr, dr, 0, TAU);
-      c.fill();
-      c.strokeStyle = 'rgba(255,255,255,0.35)';
-      c.lineWidth = 1.2;
-      c.beginPath();
-      c.arc(dr, dr, dr - 2.5, Math.PI * 1.1, Math.PI * 1.6);
-      c.stroke();
-    }), x - dr, y - dr + sink, dr * 2, dr * 2);
+    const pulse = stepped(0.5 + 0.5 * Math.sin(now / 300), 2);
+    const bx = r * 2 + 24;
+    if (live) {
+      bloom(g, x, y, r * 1.55, k.halo, 0.55 + 0.35 * pulse);
+      if (state.kind === 'free') rays(g, x, y, r + 1, r + 9, 10, now / 1100, BRASS_HI);
+    }
+    const sink = state.charge > 0 ? 2 : 0;
+    g.drawImage(layer(`cap:${state.kind}:${r}`, bx, bx, view.ds, (c) => paintCap(c, state.kind, r, bx / 2)), x - bx / 2, y - bx / 2 + sink, bx, bx);
 
-    // charge: a ring on the bezel, and the dome whitening as it fills
-    if (state.kind === 'launch' && state.charge > 0) {
-      g.fillStyle = A('#ffffff', 0.3 * state.charge);
-      g.beginPath();
-      g.arc(x, y + sink, dr, 0, TAU);
-      g.fill();
+    // charge: a ring closing round the bezel, white when full
+    const ring = (frac, col) => {
       g.lineCap = 'butt';
-      g.strokeStyle = state.charge > 0.92 ? '#ffffff' : LANTERN;
-      g.lineWidth = 5;
       g.beginPath();
-      g.arc(x, y, r - 3.5, -Math.PI / 2, -Math.PI / 2 + TAU * state.charge);
+      g.arc(x, y + sink, r - 3.2, -Math.PI / 2, -Math.PI / 2 + TAU * frac);
+      g.strokeStyle = INK;
+      g.lineWidth = 7.5;
       g.stroke();
-    } else if (live) {
-      g.strokeStyle = A('#ffffff', 0.25 + 0.45 * pulse);
-      g.lineWidth = 1.5;
+      g.strokeStyle = col;
+      g.lineWidth = 4.5;
+      g.stroke();
+    };
+    if (state.kind === 'launch' && state.charge > 0) ring(state.charge, state.charge > 0.92 ? '#ffffff' : WHITE);
+    else if (live) {
+      g.strokeStyle = A(WHITE, pulse >= 1 ? 0.9 : pulse > 0 ? 0.5 : 0.2);
+      g.lineWidth = 2;
       g.beginPath();
-      g.arc(x, y, r + 3 + 2 * pulse, 0, TAU);
+      g.arc(x, y, r + 4 + 2 * pulse, 0, TAU);
       g.stroke();
     }
-
-    if (state.kind === 'credit') {
-      // the hat coming round: when the ring closes the town's ball arrives
-      g.lineCap = 'butt';
-      g.strokeStyle = THREADS.commons.color;
-      g.lineWidth = 5;
-      g.beginPath();
-      g.arc(x, y, r - 3.5, -Math.PI / 2, -Math.PI / 2 + TAU * state.hat);
-      g.stroke();
-    }
+    if (state.kind === 'credit') ring(state.hat, THREADS.commons.color); // when it closes the town's ball arrives
 
     let main;
     let sub;
     if (state.kind === 'launch') [main, sub] = ['LAUNCH', state.charge > 0 ? `${Math.round(state.charge * 100)}%` : 'HOLD'];
     else if (state.kind === 'idle') [main, sub] = ['LAUNCH', ''];
-    else if (state.kind === 'busy') [main, sub] = ['REELS', '·'.repeat(1 + (Math.floor(now / 300) % 3))];
+    else if (state.kind === 'busy') [main, sub] = ['REELS', '●'.repeat(1 + (Math.floor(now / 300) % 3))];
     else if (state.kind === 'lever') [main, sub] = ['LEVER', `−${fmtInt(SPIN_COST)}`];
     else if (state.kind === 'free') [main, sub] = ['LEVER', 'FREE'];
     else if (state.kind === 'loan') [main, sub] = ['LOAN', `+${fmtInt(LOAN.marks)}`];
     else if (state.kind === 'credit') [main, sub] = ['BORROW', '+ PULL'];
     else throw new Error(`render: no button lettering for launch state '${state.kind}'`);
-    const dark = live && state.kind !== 'lever' && state.kind !== 'loan' && state.kind !== 'credit';
-    const ink = dark ? '#2a1606' : live ? '#fff3e6' : A(PAPER, 0.5);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = `700 ${r >= 44 ? 14 : 12}px ${MONO}`;
-    g.fillStyle = ink;
-    g.fillText(main, x, y + sink - (sub ? 6 : 0));
+    g.fillStyle = k.text;
+    g.fillText(main, x, y + sink + (sub ? 0 : 5));
     if (sub) {
       g.font = `700 ${r >= 44 ? 12 : MIN_TYPE}px ${MONO}`;
-      g.fillText(sub, x, y + sink + 8);
+      g.fillText(sub, x, y + sink + 13);
     }
     g.textAlign = 'left';
     g.textBaseline = 'alphabetic';
@@ -1960,19 +2115,12 @@ export function createRenderer(canvas) {
 
   function drawMute(g, b, muted) {
     const { x, y, r } = b;
-    const box = r * 2 + 6;
-    g.drawImage(layer(`mute:${r}`, box, box, view.ds, (c) => {
-      const m = box / 2;
-      c.beginPath();
-      c.arc(m, m, r, 0, TAU);
-      c.fillStyle = 'rgba(10,7,5,0.85)';
-      c.fill();
-      c.strokeStyle = A(BRASS, 0.75);
-      c.lineWidth = 1.2;
-      c.stroke();
-      // a speaker
+    const bx = r * 2 + 8;
+    g.drawImage(layer(`mute:${r}`, bx, bx, view.ds, (c) => {
+      const m = bx / 2;
+      cel(c, circ(m, m, r), '#2f2a7a', HUD_L, { off: 3, ink: 2, shadow: '#1c1850' });
       const k = r / 16;
-      c.fillStyle = BRASS_HI;
+      c.fillStyle = PAPER;
       c.beginPath();
       c.moveTo(m - 7 * k, m - 3 * k);
       c.lineTo(m - 3.5 * k, m - 3 * k);
@@ -1982,12 +2130,12 @@ export function createRenderer(canvas) {
       c.lineTo(m - 7 * k, m + 3 * k);
       c.closePath();
       c.fill();
-    }), x - box / 2, y - box / 2, box, box);
+    }), x - bx / 2, y - bx / 2, bx, bx);
     const k = r / 16;
     g.lineCap = 'round';
     if (muted) {
       g.strokeStyle = RED;
-      g.lineWidth = 1.8;
+      g.lineWidth = 2.2;
       g.beginPath();
       g.moveTo(x + 3 * k, y - 3.5 * k);
       g.lineTo(x + 8 * k, y + 3.5 * k);
@@ -1995,8 +2143,8 @@ export function createRenderer(canvas) {
       g.lineTo(x + 3 * k, y + 3.5 * k);
       g.stroke();
     } else {
-      g.strokeStyle = BRASS_HI;
-      g.lineWidth = 1.4;
+      g.strokeStyle = PAPER;
+      g.lineWidth = 1.6;
       g.beginPath();
       g.arc(x + 1 * k, y, 4 * k, -0.7, 0.7);
       g.stroke();
@@ -2008,55 +2156,46 @@ export function createRenderer(canvas) {
 
   // ─────────── portrait: the head of the table ───────────
 
-  function paintWood(g, w, h) {
-    const bg = g.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, '#16100a');
-    bg.addColorStop(1, '#070504');
-    g.fillStyle = bg;
+  // What shows round the glass: night, with the cabinet's edge as one hard band.
+  function paintFrameP(g, w, h) {
+    g.fillStyle = '#07051c';
     g.fillRect(0, 0, w, h);
-    g.lineWidth = 1;
-    const n = Math.round(h / 9);
-    for (let i = 0; i < n; i++) {
-      g.strokeStyle = `rgba(${hash(i) > 0.5 ? '255,200,140' : '0,0,0'},${0.015 + hash(i + 9) * 0.03})`;
-      const y = hash(i + 40) * h;
-      g.beginPath();
-      g.moveTo(0, y);
-      g.bezierCurveTo(w * 0.3, y + hash(i + 3) * 14 - 7, w * 0.7, y + hash(i + 5) * 14 - 7, w, y + hash(i + 7) * 8 - 4);
-      g.stroke();
-    }
+    g.fillStyle = '#0d0a2c';
+    g.fillRect(0, 0, w * 0.5, h);
   }
 
   // The plate behind the hud and the story strip, in its own coordinates (0,0 = hud's corner).
   function paintHeadP(g, L) {
     const w = L.hud.w;
     const h = L.hud.h + L.story.h;
-    const p = g.createLinearGradient(0, 0, 0, h);
-    p.addColorStop(0, '#241910');
-    p.addColorStop(0.6, '#17100b');
-    p.addColorStop(1, '#0d0906');
-    g.fillStyle = p;
+    g.fillStyle = PLATE;
     g.fillRect(0, 0, w, h);
-    const lamp = g.createRadialGradient(w / 2, 20, 10, w / 2, 20, 260);
-    lamp.addColorStop(0, 'rgba(255,180,90,0.16)');
-    lamp.addColorStop(1, 'rgba(255,180,90,0)');
-    g.fillStyle = lamp;
-    g.fillRect(0, 0, w, h);
-    // the story strip is a darker inlay
-    g.fillStyle = 'rgba(0,0,0,0.34)';
+    // the lamp over the reels: a hard wedge of light down the middle of the head
+    g.save();
+    g.beginPath();
+    g.rect(0, 32, w, L.hud.h - 32);
+    g.clip();
+    shaft(g, w / 2, -70, Math.PI / 2, 190, 1.5, LANTERN, 0.2);
+    g.restore();
+    g.fillStyle = NIGHT;
+    g.fillRect(0, 0, w, 32);
     g.fillRect(0, L.hud.h, w, L.story.h);
-    g.fillStyle = A(BRASS, 0.3);
-    g.fillRect(12, 31, w - 24, 1);
-    g.fillRect(0, L.hud.h, w, 1);
-    const edge = g.createLinearGradient(0, h - 3, 0, h);
-    edge.addColorStop(0, BRASS_HI);
-    edge.addColorStop(0.5, BRASS);
-    edge.addColorStop(1, BRASS_LO);
-    g.fillStyle = edge;
-    g.fillRect(0, h - 3, w, 3);
+    g.fillStyle = INK;
+    g.fillRect(0, 31, w, 2);
+    g.fillStyle = INK;
+    g.fillRect(0, L.hud.h - 1.5, w, 3);
+    g.fillStyle = A(BRASS, 0.55);
+    g.fillRect(0, L.hud.h - 0.5, w, 1);
+    g.fillStyle = INK;
+    g.fillRect(0, h - 5, w, 5);
+    g.fillStyle = BRASS;
+    g.fillRect(0, h - 4, w, 3);
+    g.fillStyle = BRASS_HI;
+    g.fillRect(0, h - 4, w, 1);
   }
 
-  function cap(g, text, x, y, color = A(BRASS, 0.8), align = 'left') {
-    g.font = `600 ${MIN_TYPE}px ${SERIF}`;
+  function cap(g, text, x, y, color = A(PAPER, 0.75), align = 'left') {
+    g.font = `700 ${MIN_TYPE}px ${SERIF}`;
     g.fillStyle = color;
     return spaced(g, text, x, y, 2, align);
   }
@@ -2065,25 +2204,15 @@ export function createRenderer(canvas) {
     const showN = writs > maxN ? maxN - 1 : writs;
     for (let i = 0; i < Math.max(showN, 1); i++) {
       const bx = x + r + i * step;
-      if (i < showN) g.drawImage(layer(`writ:${r}`, r * 2 + 2, r * 2 + 2, view.ds, (c) => {
-        const m = r + 1;
-        const sg = c.createRadialGradient(m - r * 0.33, m - r * 0.33, r * 0.1, m, m, r);
-        sg.addColorStop(0, '#ffffff');
-        sg.addColorStop(0.4, '#c9d0d8');
-        sg.addColorStop(1, '#3a4049');
-        c.fillStyle = sg;
-        c.beginPath();
-        c.arc(m, m, r, 0, TAU);
-        c.fill();
-      }), bx - r - 1, y - r - 1, r * 2 + 2, r * 2 + 2);
+      if (i < showN) g.drawImage(pearl(r), bx - r - 2, y - r - 2, r * 2 + 4, r * 2 + 4);
       else {
-        g.strokeStyle = A(RED, 0.7);
-        g.lineWidth = 1;
-        g.setLineDash([2, 3]);
         g.beginPath();
         g.arc(bx, y, r - 0.5, 0, TAU);
+        g.fillStyle = INK;
+        g.fill();
+        g.strokeStyle = RED;
+        g.lineWidth = 1.5;
         g.stroke();
-        g.setLineDash([]);
       }
     }
     return x + Math.max(showN, 1) * step;
@@ -2091,34 +2220,33 @@ export function createRenderer(canvas) {
 
   function trustBar(g, econ, trust, x, y, w, h, now) {
     const tc = THREADS.commons.color;
-    rr(g, x, y, w, h, h / 2);
-    g.fillStyle = 'rgba(0,0,0,0.6)';
+    rr(g, x - 1.5, y - 1.5, w + 3, h + 3, h / 2 + 1.5);
+    g.fillStyle = INK;
     g.fill();
-    g.strokeStyle = A(tc, 0.45);
-    g.lineWidth = 1;
-    g.stroke();
+    rr(g, x, y, w, h, h / 2);
+    g.fillStyle = '#2f2877';
+    g.fill();
     if (trust > 0) {
-      g.drawImage(layer(`trustfill:${w}:${h}`, w, h, view.ds, (c) => {
-        rr(c, 0, 0, w, h, h / 2);
-        const tg = c.createLinearGradient(0, 0, w, 0);
-        tg.addColorStop(0, '#8a3d1a');
-        tg.addColorStop(1, '#ffc27a');
-        c.fillStyle = tg;
-        c.fill();
-      }), 0, 0, ((w * trust) / 100) * view.ds, h * view.ds, x, y, (w * trust) / 100, h);
+      const fw = Math.max(h, (w * trust) / 100);
+      rr(g, x, y, fw, h, h / 2);
+      g.fillStyle = tc;
+      g.fill();
+      g.fillStyle = '#ffc27a';
+      g.fillRect(x + h / 2, y + 1, Math.max(0, fw - h), Math.max(1.5, h * 0.3));
     }
     // one aid ball per 25 trust: a lantern at each quarter
     const earned = Math.floor(econ.trust / 25);
+    const flick = Math.floor(now / 300) % 2 === 0;
     for (let q = 1; q <= 4; q++) {
       const qx = x + (w * q) / 4 - (q === 4 ? 4 : 0);
       const state = q > earned ? 'unlit' : q <= econ.aidUsed ? 'spent' : 'lit';
       const ly = y + h / 2;
-      if (state === 'lit') glow(g, qx, ly, h + 6, LANTERN, 0.55 + 0.2 * Math.sin(now / 250 + q));
-      rr(g, qx - 3, ly - h / 2 - 2.5, 6, h + 5, 2.5);
-      g.fillStyle = state === 'lit' ? '#ffd9a0' : state === 'spent' ? '#5a3c1e' : '#120c08';
+      if (state === 'lit') bloom(g, qx, ly, h + 7, LANTERN, flick ? 1 : 0.7);
+      rr(g, qx - 3.5, ly - h / 2 - 3, 7, h + 6, 3);
+      g.fillStyle = state === 'lit' ? WHITE : state === 'spent' ? '#7a4a1e' : PLATE;
       g.fill();
-      g.strokeStyle = state === 'unlit' ? A(PAPER, 0.3) : tc;
-      g.lineWidth = 1;
+      g.strokeStyle = state === 'lit' ? LANTERN : INK;
+      g.lineWidth = 1.6;
       g.stroke();
     }
   }
@@ -2135,11 +2263,11 @@ export function createRenderer(canvas) {
     if (marquee) {
       const score = ease('score', econ.score, dt);
       const sw = cap(g, 'SCORE', hud.x + 14, y0 + 22);
-      g.font = `600 13px ${MONO}`;
-      g.fillStyle = PAPER;
+      g.font = `700 13px ${MONO}`;
+      g.fillStyle = WHITE;
       g.fillText(fmtInt(score), hud.x + 14 + sw + 8, y0 + 22);
-      g.font = `600 ${MIN_TYPE}px ${SERIF}`;
-      g.fillStyle = A(BRASS, 0.85);
+      g.font = `700 ${MIN_TYPE}px ${SERIF}`;
+      g.fillStyle = BRASS_HI;
       const place = ellipsize(g, `${roman(chapter.number)} · ${String(table.name).toUpperCase()}`, 170);
       spaced(g, place, hud.x + hud.w - 14, y0 + 22, 1.5, 'right');
     }
@@ -2166,9 +2294,13 @@ export function createRenderer(canvas) {
       const space = Math.max(6, (ww - total) / (lamps.length - 1));
       let cx = wx + Math.min(0, (ww - total - space * (lamps.length - 1)) / 2);
       lamps.forEach(([, col, , on], i) => {
-        if (on) glow(g, cx + widths[i] / 2, y0 + 111, widths[i] * 0.8, col, 0.3);
-        g.fillStyle = on ? col : A(PAPER, 0.2);
-        g.fillText(texts[i], cx, y0 + 111.5);
+        if (on) {
+          rr(g, cx - 3, y0 + 105, widths[i] + 6, 13, 3);
+          g.fillStyle = col;
+          g.fill();
+        }
+        g.fillStyle = on ? INK : A(PAPER, 0.3);
+        g.fillText(texts[i], cx, y0 + 112);
         cx += widths[i] + space;
       });
       g.textBaseline = 'alphabetic';
@@ -2177,27 +2309,35 @@ export function createRenderer(canvas) {
     // left of the reels: marks, and what is owed
     const lx = hud.x + 14;
     const marks = ease('marks', econ.marks, dt);
-    cap(g, 'MARKS', lx, y0 + 50);
+    symbol(g, 'coin', lx + 6, y0 + 46, 6);
+    cap(g, 'MARKS', lx + 17, y0 + 50);
     const mText = fmtInt(marks);
     const mult = game.boons && game.boons.mult > 1 && game.boons.multT > 0;
-    const mSize = fitFont(g, mText, wx - lx - (mult ? 30 : 8), 23, (s) => `600 ${s}px ${MONO}`);
+    const mSize = fitFont(g, mText, wx - lx - (mult ? 32 : 10), 25, (s) => `700 ${s}px ${MONO}`);
+    g.fillStyle = INK;
+    g.fillText(mText, lx + 1.5, y0 + 78.5);
     g.fillStyle = BRASS_HI;
-    g.fillText(mText, lx, y0 + 76);
+    g.fillText(mText, lx, y0 + 77);
     if (mult) {
       const mw = g.measureText(mText).width;
       g.font = `700 12px ${MONO}`;
       g.fillStyle = LANTERN;
-      g.fillText(`×${game.boons.mult}`, lx + mw + 4, y0 + 76 - (mSize - 12) * 0.2);
+      g.fillText(`×${game.boons.mult}`, lx + mw + 4, y0 + 77 - (mSize - 12) * 0.2);
     }
     const debt = ease('debt', econ.debt, dt);
     if (econ.debt > 0) {
       g.font = `700 12px ${MONO}`;
-      g.fillStyle = A(RED, 0.8 + 0.2 * Math.sin(now / 300));
-      g.fillText(`OWED ${fmtInt(Math.ceil(debt))}`, lx, y0 + 95);
+      const text = `OWED ${fmtInt(Math.ceil(debt))}`;
+      const tw = g.measureText(text).width;
+      rr(g, lx - 3, y0 + 85, tw + 8, 15, 3);
+      g.fillStyle = Math.floor(now / 500) % 2 ? CRIMSON : '#b01834';
+      g.fill();
+      g.fillStyle = WHITE;
+      g.fillText(text, lx + 1, y0 + 96.5);
     } else {
       g.font = `italic 12px ${SERIF}`;
-      g.fillStyle = A(PAPER, 0.4);
-      g.fillText('no arrears', lx, y0 + 95);
+      g.fillStyle = A(PAPER, 0.5);
+      g.fillText('no arrears', lx, y0 + 96);
     }
 
     // which way the whole book leans: the small scale, under the marks
@@ -2212,16 +2352,16 @@ export function createRenderer(canvas) {
     const rw = hud.x + hud.w - 46 - rx;
     cap(g, 'WRITS', rx, y0 + 50);
     const writs = Math.max(0, Math.floor(econ.writs));
-    const endX = writBalls(g, writs, rx, y0 + 63, 6, 15, 4);
+    const endX = writBalls(g, writs, rx, y0 + 64, 6.5, 16, 4);
     if (writs > 4 || writs === 0) {
-      g.font = `700 12px ${MONO}`;
-      g.fillStyle = writs > 0 ? PAPER : A(RED, 0.9);
-      g.fillText(writs > 4 ? `×${writs}` : '0', endX + 3, y0 + 67);
+      g.font = `700 13px ${MONO}`;
+      g.fillStyle = writs > 0 ? WHITE : RED;
+      g.fillText(writs > 4 ? `×${writs}` : '0', endX + 3, y0 + 68.5);
     }
     const trust = clamp(ease('trust', econ.trust, dt), 0, 100);
-    cap(g, 'TRUST', rx, y0 + 90, A(THREADS.commons.color, 0.95));
-    g.font = `600 12px ${MONO}`;
-    g.fillStyle = PAPER;
+    cap(g, 'TRUST', rx, y0 + 90, THREADS.commons.color);
+    g.font = `700 13px ${MONO}`;
+    g.fillStyle = WHITE;
     g.textAlign = 'right';
     g.fillText(String(Math.round(trust)), rx + rw, y0 + 90);
     g.textAlign = 'left';
@@ -2376,6 +2516,7 @@ export function createRenderer(canvas) {
     }
   }
 
+
   // The button sits over the foot of the plunger lane. A ball waiting there is drawn again
   // on top of the button's rim, where it really is, so it is never hidden.
   function drawWaitingBall(g, b, T, table, game) {
@@ -2386,26 +2527,13 @@ export function createRenderer(canvas) {
       const x = T.x + ball.pos[0] * T.scale;
       const y = T.y + ball.pos[1] * T.scale;
       if (Math.hypot(x - b.x, y - b.y) > b.r + r + 8) continue;
-      glow(g, x, y, r * 2.6, LANTERN, 0.5);
-      const sprite = layer(`waitingBall:${r.toFixed(2)}`, r * 2 + 2, r * 2 + 2, view.ds, (c) => {
-        const m = r + 1;
-        const gr = c.createRadialGradient(m - r * 0.35, m - r * 0.4, r * 0.1, m, m, r);
-        gr.addColorStop(0, '#ffffff');
-        gr.addColorStop(0.35, '#c9d0d8');
-        gr.addColorStop(1, '#4b5560');
-        c.fillStyle = gr;
-        c.beginPath();
-        c.arc(m, m, r, 0, TAU);
-        c.fill();
-        c.strokeStyle = 'rgba(0,0,0,0.6)';
-        c.lineWidth = 1;
-        c.stroke();
-      });
-      g.drawImage(sprite, x - r - 1, y - r - 1, r * 2 + 2, r * 2 + 2);
+      bloom(g, x, y, r * 2.4, LANTERN, 0.9);
+      const rq = Math.round(r * 4) / 4;
+      g.drawImage(pearl(rq), x - rq - 2, y - rq - 2, rq * 2 + 4, rq * 2 + 4);
     }
   }
 
-  // Toasts, newest last, as pills centred on cx from y downward. The kinds the pay plate
+  // Toasts, newest last, as stickers centred on cx from y downward. The kinds the pay plate
   // already names are left to it.
   function drawToasts(g, game, cx, y, maxW, maxN, threadCol, now) {
     const toasts = game.toasts || [];
@@ -2414,29 +2542,17 @@ export function createRenderer(canvas) {
       const key = `${t.kind}|${t.text}`;
       live.add(key);
       if (!view.toastSeen.has(key) || view.toastSeen.get(key) > now) view.toastSeen.set(key, now);
-      const a = clamp((now - view.toastSeen.get(key)) / 180, 0, 1);
+      const a = clamp((now - view.toastSeen.get(key)) / 160, 0, 1);
       const col = toastColor(t.kind, threadCol);
-      fitFont(g, t.text, maxW - 28, 14, (s) => `600 ${s}px ${SERIF}`);
+      const size = fitFont(g, t.text, maxW - 28, 14, (s) => `700 ${s}px ${SERIF}`);
       const text = ellipsize(g, t.text, maxW - 28);
-      const w = g.measureText(text).width + 28;
-      const ty = y + i * 30 - (1 - a) * 8;
-      rr(g, cx - w / 2, ty, w, 26, 13);
-      g.fillStyle = `rgba(8,6,4,${0.86 * a})`;
-      g.fill();
-      g.strokeStyle = A(col, 0.7 * a);
-      g.lineWidth = 1;
-      g.stroke();
-      g.fillStyle = A(col, a);
-      g.textAlign = 'center';
-      g.textBaseline = 'middle';
-      g.fillText(text, cx, ty + 13.5);
-      g.textAlign = 'left';
-      g.textBaseline = 'alphabetic';
+      sticker(g, text, cx, y + 13 + i * 31 - (1 - a) * 7, { size, face: SERIF, fill: a < 1 ? WHITE : col, col: INK, padX: 13, h: 26, maxW, lineW: 2.2 });
     });
     for (const k of [...view.toastSeen.keys()]) if (!live.has(k)) view.toastSeen.delete(k);
   }
 
-  // The payout, named over the foot of the reel window while the line pays.
+  // The payout, named on a plate hung under the story strip while the line pays: parchment
+  // when it paid, plate-dark when it did not. It is 44 tall and stops short of the top lanes.
   // The core shows a paid line for PAY_SECONDS and then clears the cells; the plate stays
   // up for PLATE_MS so the name can be read, and returns whether it was drawn.
   function drawPayPlate(g, reels, cx, y, w, now) {
@@ -2448,21 +2564,23 @@ export function createRenderer(canvas) {
     if (!view.plate.result) return false;
     const payout = view.plate.result.payout;
     const win = pays(payout);
-    const flash = 0.5 + 0.5 * Math.sin(now / 90);
-    const col = win ? BRASS_HI : A(PAPER, 0.8);
-    rr(g, cx - w / 2, y, w, 44, 8);
-    g.fillStyle = 'rgba(10,7,4,0.94)';
+    const fresh = now - view.plate.since < 420 && Math.floor(now / 70) % 2 === 0;
+    rr(g, cx - w / 2 + 2, y + 4, w, 44, 9);
+    g.fillStyle = '#04031c';
     g.fill();
-    g.strokeStyle = win ? A(LANTERN, 0.6 + 0.4 * flash) : A(RED, 0.7);
-    g.lineWidth = 1.5;
+    rr(g, cx - w / 2, y, w, 44, 9);
+    g.fillStyle = win ? (fresh ? '#ffffff' : PAPER) : PLATE;
+    g.fill();
+    g.strokeStyle = win ? INK : RED;
+    g.lineWidth = win ? 2.6 : 2;
     g.stroke();
     g.textAlign = 'center';
-    fitFont(g, payout.name, w - 20, 17, (s) => `600 ${s}px ${SERIF}`);
-    g.fillStyle = win ? A(BRASS_HI, 0.7 + 0.3 * flash) : col;
+    fitFont(g, payout.name, w - 20, 17, (s) => `700 ${s}px ${SERIF}`);
+    g.fillStyle = win ? INK : A(PAPER, 0.9);
     g.fillText(payout.name, cx, y + 20);
     const gains = gainsOf(payout);
     g.font = `700 ${MIN_TYPE}px ${MONO}`;
-    g.fillStyle = win ? LANTERN : A(PAPER, 0.5);
+    g.fillStyle = win ? '#b01834' : A(PAPER, 0.6);
     g.fillText(gains.length ? gains.join(' · ').toUpperCase() : 'NOTHING ALLOTTED', cx, y + 36, w - 16);
     g.textAlign = 'left';
     return true;
@@ -2488,9 +2606,9 @@ export function createRenderer(canvas) {
     const ts = (L.table.scale * (full - dy)) / full;
     const T = { x: L.table.x + (TW * (L.table.scale - ts)) / 2, y: L.table.y + dy, scale: ts };
 
-    // The frame: wood and the two rails. Only what the head and the table leave showing is drawn.
+    // The frame: night and the two rails. Only what the head and the table leave showing is drawn.
     {
-      const frame = layer(`frameP:${dy}`, L.W, L.H, view.ds, (c) => { paintWood(c, L.W, L.H); paintRails(c, T, L.H); });
+      const frame = layer(`frameP:${dy}`, L.W, L.H, view.ds, (c) => { paintFrameP(c, L.W, L.H); paintRails(c, T, L.H); });
       const k = view.ds;
       const strip = (x, y, w, h) => { if (w > 0 && h > 0) g.drawImage(frame, x * k, y * k, w * k, h * k, x, y, w, h); };
       const tw = TW * ts;
@@ -2507,19 +2625,23 @@ export function createRenderer(canvas) {
       g.save();
       g.translate(T.x, T.y);
       g.scale(ts, ts);
-      tableBanner(g, prompt[0], 540, prompt[1], 0.75 + 0.25 * Math.sin(now / 260), Math.ceil(MIN_TYPE / ts));
+      tableBanner(g, prompt[0], BANNER_Y, prompt[1], 0.75 + 0.25 * Math.sin(now / 260), Math.ceil(MIN_TYPE / ts));
       g.restore();
     }
 
     drawHudP(g, L, dy, game, chapter, table, now, dt, marquee);
     drawStoryP(g, L, dy, content, game, fx, table, scene, threadCol, now);
-    // on the glass under the head: what the line paid, then the callouts
-    const paying = drawPayPlate(g, reelsOf(game), L.W / 2, L.table.y + dy + 8, 310, now);
-    drawToasts(g, game, L.W / 2, L.table.y + dy + (paying ? 58 : 8), L.W - 80, 2, threadCol, now);
+    // What the line paid hangs under the head, above the top lanes. Callouts go on the open
+    // water of the lower field, between the lane mouths and the slingshots, where they cover
+    // neither the lanes nor the flippers.
+    drawPayPlate(g, reelsOf(game), L.W / 2, T.y + 5, 310, now);
+    drawToasts(g, game, T.x + 187 * ts, T.y + TOAST_Y * ts, 300, 2, threadCol, now);
     drawLaunch(g, L.launch, state, now);
     drawWaitingBall(g, L.launch, T, table, game);
     drawMute(g, L.mute, Boolean(fx.muted));
   }
+  const TOAST_Y = 504; // table space: under every table's ramp-mouth labels, over its name
+  const BANNER_Y = 592; // the prompt (shown only while no ball is in play) sits under the toasts, across the slingshots
 
   function safeOf(fx) {
     const s = fx.safe;
@@ -2547,55 +2669,42 @@ export function createRenderer(canvas) {
     const DROP = 17; // beam end to pan rim
     const PAN = 11; // pan half-width
     const pivot = [cx, cy - 15];
-
-    // post and foot
-    g.lineCap = 'round';
-    g.strokeStyle = brassGrad(g, cx - 3, pivot[1], cx + 3, cy + 20);
-    g.lineWidth = 2.5;
-    g.beginPath();
-    g.moveTo(cx, pivot[1]);
-    g.lineTo(cx, cy + 19);
-    g.stroke();
-    g.fillStyle = BRASS_LO;
-    rr(g, cx - 12, cy + 18, 24, 4, 2);
-    g.fill();
-    g.strokeStyle = A(BRASS_HI, 0.5);
-    g.lineWidth = 0.8;
-    g.beginPath();
-    g.moveTo(cx - 11, cy + 18.5);
-    g.lineTo(cx + 11, cy + 18.5);
-    g.stroke();
-
-    // beam: the left end sinks as the commons pan grows heavier
     const dx = Math.cos(tilt) * ARM;
     const dy = Math.sin(tilt) * ARM;
+    // the left end sinks as the commons pan grows heavier
     const ends = [[cx - dx, pivot[1] + dy], [cx + dx, pivot[1] - dy]];
-    g.strokeStyle = BRASS;
-    g.lineWidth = 2;
-    g.beginPath();
-    g.moveTo(ends[0][0], ends[0][1]);
-    g.lineTo(ends[1][0], ends[1][1]);
+
+    // post, foot and beam: one ink pass, one brass pass
+    const frame = () => {
+      g.beginPath();
+      g.moveTo(cx, pivot[1]);
+      g.lineTo(cx, cy + 19);
+      g.moveTo(cx - 11, cy + 20);
+      g.lineTo(cx + 11, cy + 20);
+      g.moveTo(ends[0][0], ends[0][1]);
+      g.lineTo(ends[1][0], ends[1][1]);
+    };
+    frame();
+    inkLine(g, 6);
     g.stroke();
+    frame();
+    inkLine(g, 2.8, BRASS);
+    g.stroke();
+    g.beginPath();
+    g.arc(pivot[0], pivot[1], 3.4, 0, TAU);
     g.fillStyle = BRASS_HI;
-    g.beginPath();
-    g.arc(pivot[0], pivot[1], 2.6, 0, TAU);
     g.fill();
-    // a pointer under the pivot swings with the beam
-    g.strokeStyle = A(BRASS_HI, 0.8);
-    g.lineWidth = 1;
-    g.beginPath();
-    g.moveTo(pivot[0], pivot[1]);
-    g.lineTo(pivot[0] - Math.sin(tilt) * 12, pivot[1] + Math.cos(tilt) * 12);
+    inkLine(g, 1.5);
     g.stroke();
 
     // pans hang plumb from the beam ends, each with what has been put in it
     const fills = [1 - Math.exp(-trustW / 150), 1 - Math.exp(-loanW / 150)];
     ends.forEach(([ex, ey], side) => {
       const py = ey + DROP;
-      const col = side === 0 ? tc : RED;
+      const col = side === 0 ? tc : CRIMSON;
       const amount = fills[side];
-      g.strokeStyle = A(STEEL, 0.5);
-      g.lineWidth = 0.8;
+      g.strokeStyle = STEEL;
+      g.lineWidth = 1.2;
       g.beginPath();
       g.moveTo(ex, ey);
       g.lineTo(ex - PAN, py);
@@ -2604,25 +2713,25 @@ export function createRenderer(canvas) {
       g.stroke();
       if (amount > 0.01) {
         // a mound that grows with the total: lamplight on the left, red coin on the right
-        const h = 2 + amount * 8;
-        if (side === 0) glow(g, ex, py - h / 2, 9 + amount * 9, LANTERN, 0.25 + 0.35 * amount);
-        const mound = g.createLinearGradient(0, py - h, 0, py);
-        mound.addColorStop(0, side === 0 ? '#ffd9a0' : '#ff9a86');
-        mound.addColorStop(1, col);
-        g.fillStyle = mound;
+        const h = 2.5 + amount * 8;
+        if (side === 0) bloom(g, ex, py - h / 2, 8 + amount * 9, LANTERN, 0.5 + 0.4 * amount);
+        g.fillStyle = col;
         g.beginPath();
         g.ellipse(ex, py, PAN - 2.5, h, 0, Math.PI, TAU);
         g.closePath();
         g.fill();
+        g.fillStyle = side === 0 ? WHITE : '#ff8a96';
+        g.beginPath();
+        g.ellipse(ex - 2, py - h * 0.5, (PAN - 2.5) * 0.4, h * 0.3, 0, 0, TAU);
+        g.fill();
       }
-      g.fillStyle = '#2a1d0e';
-      g.strokeStyle = amount > 0.01 ? A(col, 0.95) : A(BRASS, 0.7);
-      g.lineWidth = 1.2;
       g.beginPath();
       g.moveTo(ex - PAN, py);
-      g.quadraticCurveTo(ex, py + 9, ex + PAN, py);
+      g.quadraticCurveTo(ex, py + 10, ex + PAN, py);
       g.closePath();
+      g.fillStyle = amount > 0.01 ? BRASS_HI : BRASS;
       g.fill();
+      inkLine(g, 1.8);
       g.stroke();
     });
     g.lineCap = 'butt';
@@ -2634,74 +2743,38 @@ export function createRenderer(canvas) {
     const W = L.W;
     const H = L.H;
     const TX = L.table.x;
-    const bg = g.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#16100a');
-    bg.addColorStop(1, '#070504');
-    g.fillStyle = bg;
+    g.fillStyle = '#07051c';
     g.fillRect(0, 0, W, H);
-    // wood grain
-    g.lineWidth = 1;
-    for (let i = 0; i < 90; i++) {
-      g.strokeStyle = `rgba(${hash(i) > 0.5 ? '255,200,140' : '0,0,0'},${0.015 + hash(i + 9) * 0.03})`;
-      const y = hash(i + 40) * H;
-      g.beginPath();
-      g.moveTo(0, y);
-      g.bezierCurveTo(W * 0.3, y + hash(i + 3) * 14 - 7, W * 0.7, y + hash(i + 5) * 14 - 7, W, y + hash(i + 7) * 8 - 4);
-      g.stroke();
-    }
     for (const x of [L.story.x, L.hud.x]) {
-      // panel plate with inner shadow and a brass edge
-      rr(g, x, 10, 420, 780, 14);
-      const p = g.createLinearGradient(0, 10, 0, 790);
-      p.addColorStop(0, '#221810');
-      p.addColorStop(0.5, '#17100b');
-      p.addColorStop(1, '#0e0a07');
-      g.fillStyle = p;
-      g.shadowColor = 'rgba(0,0,0,0.9)';
-      g.shadowBlur = 18;
+      // a panel: a flat plate with a hard drop, an ink line, and the lamp's wedge across its head
+      rr(g, x + 4, 15, 420, 780, 14);
+      g.fillStyle = '#020110';
       g.fill();
-      g.shadowBlur = 0;
-      g.save();
       rr(g, x, 10, 420, 780, 14);
+      g.fillStyle = PLATE;
+      g.fill();
+      g.save();
       g.clip();
-      const lamp = g.createRadialGradient(x + 210, -40, 20, x + 210, -40, 520);
-      lamp.addColorStop(0, 'rgba(255,180,90,0.16)');
-      lamp.addColorStop(1, 'rgba(255,180,90,0)');
-      g.fillStyle = lamp;
-      g.fillRect(x, 10, 420, 780);
-      g.strokeStyle = 'rgba(0,0,0,0.8)';
-      g.lineWidth = 10;
-      g.shadowColor = 'rgba(0,0,0,0.9)';
-      g.shadowBlur = 16;
-      rr(g, x - 4, 6, 428, 788, 16);
-      g.stroke();
+      shaft(g, x + 210, -120, Math.PI / 2, 420, 1.3, LANTERN, 0.12);
       g.restore();
-      g.shadowBlur = 0;
-      rr(g, x + 0.5, 10.5, 419, 779, 14);
-      g.strokeStyle = brassGrad(g, x, 10, x + 420, 790);
+      rr(g, x + 1.5, 11.5, 417, 777, 13);
+      g.strokeStyle = INK;
+      g.lineWidth = 4;
+      g.stroke();
+      rr(g, x + 5, 15, 410, 770, 10);
+      g.strokeStyle = BRASS;
       g.lineWidth = 1.5;
       g.stroke();
-      rr(g, x + 6.5, 16.5, 407, 767, 10);
-      g.strokeStyle = A(BRASS, 0.18);
-      g.lineWidth = 1;
-      g.stroke();
-      for (const [sx, sy] of [[x + 14, 24], [x + 406, 24], [x + 14, 776], [x + 406, 776]]) {
-        const sg = g.createRadialGradient(sx - 1, sy - 1, 0.5, sx, sy, 4);
-        sg.addColorStop(0, BRASS_HI);
-        sg.addColorStop(1, BRASS_LO);
-        g.fillStyle = sg;
+      for (const [sx, sy] of [[x + 15, 25], [x + 405, 25], [x + 15, 775], [x + 405, 775]]) {
         g.beginPath();
-        g.arc(sx, sy, 3.2, 0, TAU);
+        g.arc(sx, sy, 3.4, 0, TAU);
+        g.fillStyle = BRASS_HI;
         g.fill();
-        g.strokeStyle = 'rgba(0,0,0,0.6)';
-        g.lineWidth = 1;
-        g.beginPath();
-        g.moveTo(sx - 2, sy - 1.4);
-        g.lineTo(sx + 2, sy + 1.4);
+        inkLine(g, 1.4);
         g.stroke();
       }
     }
-    g.fillStyle = '#000';
+    g.fillStyle = NIGHT;
     g.fillRect(TX, 0, TW, H);
     paintRails(g, L.table, H);
   }
@@ -2744,10 +2817,7 @@ export function createRenderer(canvas) {
 
     // scene card
     rr(g, X - 8, 150, PW + 16, 168, 8);
-    const card = g.createLinearGradient(0, 150, 0, 318);
-    card.addColorStop(0, 'rgba(0,0,0,0.42)');
-    card.addColorStop(1, 'rgba(0,0,0,0.22)');
-    g.fillStyle = card;
+    g.fillStyle = NIGHT;
     g.fill();
     g.strokeStyle = A(threadCol, 0.35);
     g.lineWidth = 1;
@@ -2994,10 +3064,7 @@ export function createRenderer(canvas) {
     const w = R - X;
     // a ledger page
     rr(g, X, y0, w, 266, 8);
-    const page = g.createLinearGradient(0, y0, 0, y0 + 266);
-    page.addColorStop(0, '#1d1610');
-    page.addColorStop(1, '#100b08');
-    g.fillStyle = page;
+    g.fillStyle = NIGHT;
     g.fill();
     g.strokeStyle = A(BRASS, 0.4);
     g.lineWidth = 1;
@@ -3045,14 +3112,7 @@ export function createRenderer(canvas) {
       const bx = C + 10 + i * 24;
       const by = y0 + 46;
       if (i < showN) {
-        const sg = g.createRadialGradient(bx - 3, by - 3, 1, bx, by, 9);
-        sg.addColorStop(0, '#ffffff');
-        sg.addColorStop(0.4, '#c9d0d8');
-        sg.addColorStop(1, '#3a4049');
-        g.fillStyle = sg;
-        g.beginPath();
-        g.arc(bx, by, 9, 0, TAU);
-        g.fill();
+        g.drawImage(pearl(9), bx - 11, by - 11, 22, 22);
       } else {
         g.strokeStyle = A(STEEL, 0.3);
         g.setLineDash([2, 3]);
@@ -3116,10 +3176,7 @@ export function createRenderer(canvas) {
       g.save();
       rr(g, bx, by, bw, 12, 6);
       g.clip();
-      const tg = g.createLinearGradient(bx, 0, bx + bw, 0);
-      tg.addColorStop(0, '#8a3d1a');
-      tg.addColorStop(1, '#ffc27a');
-      g.fillStyle = tg;
+      g.fillStyle = tc;
       g.fillRect(bx, by, (bw * trust) / 100, 12);
       g.restore();
     }
@@ -3224,7 +3281,7 @@ export function createRenderer(canvas) {
       const gains = gainsOf(payout);
       g.font = `600 12px ${MONO}`;
       g.fillStyle = win ? LANTERN : A(PAPER, 0.4);
-      g.fillText(gains.length ? gains.join('   ·   ') : 'nothing allotted', CX, py + 86);
+      g.fillText(gains.length ? gains.join('  ·  ') : 'nothing allotted', CX, py + 86, R - X - 24); // pts.*maxWidth
     } else {
       const [text, col] = reelsCaption(table, game);
       g.font = `italic 17px ${SERIF}`;
@@ -3301,90 +3358,158 @@ export function createRenderer(canvas) {
     drawMute(g, L.mute, Boolean(fx.muted));
   }
 
-  // ─────────── title, chapter card, end ───────────
 
-  function nightSky(g, L, now, warm) {
+  // ─────────── title, chapter card, end: posters ───────────
+  // One coast, at night, seen from the water. The lighthouse on the near rock is the key
+  // light; the headlands go away to the left with a lamp on each, burning or out. The title
+  // shows a coast with some of its lamps gone. The end shows it one of two ways, by which
+  // way the ledger leans: every lamp lit and the water full of lanterns, or every lamp out
+  // under the Mint's one cold flame.
+
+  const COLD_L = light('#bfeaff', -Math.PI * 0.3, { depth: 0.9 });
+  const COAST = {
+    title: { key: 'title', tower: true, cold: false, lamps: [1, 0, 1, 1, 0, 1], adrift: 1 },
+    // at the end the coast stands lower in an upright frame, under the ledger page
+    commons: { key: 'commons', tower: true, cold: false, lamps: [1, 1, 1, 1, 1, 1], adrift: 1.6, low: true },
+    mint: { key: 'mint', tower: false, cold: true, lamps: [0, 0, 0, 0, 0, 0], adrift: 0.5, low: true },
+  };
+
+  function coastGeom(L, v) {
+    const P = L.kind === 'portrait';
+    const hy = P ? (v.low ? 700 : 540) : 470;
+    const tx = P ? (v.low ? 366 : 338) : 1096;
+    const th = P ? 118 : 185;
+    return { P, hy, tx, th, top: hy - 8 - th, lamp: [tx, hy - 8 - th - 16], cold: P ? [58, 70] : [L.W * 0.15, 150] };
+  }
+
+  function paintCoast(c, L, v) {
     const { W, H } = L;
-    const wide = L.kind === 'wide';
-    g.drawImage(layer('sky', W, H, view.ds, (c) => {
-      const bg = c.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, '#05070f');
-      bg.addColorStop(0.55, '#0b1020');
-      bg.addColorStop(0.56, '#070a14');
-      bg.addColorStop(1, '#020203');
-      c.fillStyle = bg;
-      c.fillRect(0, 0, W, H);
-      for (let i = 0; i < 90; i++) {
-        c.fillStyle = `rgba(220,225,255,${0.45 * hash(i + 300)})`;
-        c.fillRect(hash(i) * W, hash(i + 500) * H * 0.5, 1.4, 1.4);
+    const G = coastGeom(L, v);
+    const { hy, tx, th, top } = G;
+    const key = v.cold ? COLD_L.col : LANTERN;
+    const TL = v.cold ? COLD_L : HUD_L;
+    bands(c, 0, 0, W, hy + 2, [NIGHT, '#141046', '#221968', v.cold ? '#262c7c' : '#3d2585', v.cold ? '#2f4a8c' : '#8f3a78'], [0.36, 0.6, 0.8, 0.93, 1]);
+    for (let i = 0; i < 46; i++) {
+      const x = hash(i) * W;
+      const y = hash(i + 500) * hy * 0.76;
+      if (i % 6 === 0) glint(c, x, y, 5 + hash(i + 9) * 5, WHITE, 0.9, 0);
+      else {
+        c.fillStyle = A(WHITE, 0.3 + 0.5 * hash(i + 300));
+        c.fillRect(x, y, 2, 2);
       }
-      const m = Math.max(W, H);
-      const v = c.createRadialGradient(W / 2, H * 0.45, m * 0.2, W / 2, H / 2, m * 0.66);
-      v.addColorStop(0, 'rgba(0,0,0,0)');
-      v.addColorStop(1, 'rgba(0,0,0,0.85)');
-      c.fillStyle = v;
-      c.fillRect(0, 0, W, H);
-    }), 0, 0, W, H);
-    // the sea, and ten thousand paper lanterns going out on it
-    const horizon = H * 0.56;
-    glow(g, W / 2, horizon, wide ? 620 : 420, LANTERN, 0.1 * warm);
-    const n = wide ? 150 : 90;
-    g.fillStyle = '#ffd9a0';
+    }
+    if (v.cold) {
+      // the Mint's flame: cold, high, and the only light there is
+      const [mx, my] = G.cold;
+      rays(c, mx, my, 30, Math.hypot(W, H), 10, 0.25, A(key, 0.05));
+      rings(c, mx, my, G.P ? 110 : 150, [A(key, 0.12), A(key, 0.2), A(key, 0.38)], [1, 0.64, 0.36]);
+      burst(c, mx, my, 15, 30, 8, 0.2, COLD_L.rim, 0);
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.arc(mx, my, 15, 0, TAU);
+      c.fill();
+      glint(c, mx, my, 48, '#ffffff', 1, 0);
+    }
+    // the sea, in flat scalloped bands that darken toward us
+    const sea = ['#14337a', '#102b6c', '#0d245e', '#0a1d50', '#081742', '#061134', '#040c28', '#03081e'];
+    c.fillStyle = sea[0];
+    c.fillRect(0, hy, W, H - hy);
+    // the coast going away to the left: three headlands, each a step paler than the one in front
+    const heads = [[0.66, 20, '#2b2278'], [0.44, 36, '#1e1860'], [0.2, 60, '#130f48']];
+    let lampN = 0;
+    heads.forEach(([reach, h, col], k) => {
+      const x1 = W * reach;
+      const top2 = poly([[-4, hy + 3], [-4, hy - h * 0.7], [x1 * 0.3, hy - h], [x1 * 0.68, hy - h * 0.8], [x1 - W * 0.05, hy - h * 0.5], [x1, hy + 3]]);
+      cel(c, top2, col, TL, { off: 5, ink: k === 2 ? 2.6 : 1.6, shadow: shade(col, 0.4) });
+      for (const u of k === 0 ? [0.56, 0.78, 0.93] : k === 1 ? [0.62, 0.9] : [0.72]) {
+        const lx = x1 * u;
+        const ly = hy - h * (u < 0.7 ? 1 : u < 0.86 ? 0.82 : 0.56) - 2;
+        const s = 1 + k * 0.6;
+        const on = v.lamps[lampN++ % v.lamps.length];
+        c.fillStyle = INK;
+        c.fillRect(lx - s, ly - 5 * s, s * 2, 6 * s);
+        if (on) {
+          bloom(c, lx, ly - 6.5 * s, 9 * s, LANTERN, 1, WHITE);
+          c.fillStyle = A(LANTERN, 0.8);
+          c.fillRect(lx - 3 * s, hy + 6 + k * 5, 6 * s, 2);
+        }
+      }
+    });
+    for (let k = 0; k < 8; k++) {
+      const y = hy + 12 + (k * k * (H - hy)) / 62;
+      waves(c, 0, y, W, H - y, { len: 46 + k * 18, amp: 3 + k * 1.7, phase: hash(k + 60) * 3, col: sea[k], foam: k >= 2 && k <= 5 ? A(WHITE, 0.3 + k * 0.08) : false, every: 3 + (k % 2) });
+    }
+    // the lamp's road on the water
+    for (let i = 0; i < 5; i++) {
+      c.fillStyle = A(v.tower ? LANTERN : key, (v.tower ? 0.85 : 0.3) - i * 0.12);
+      const x = v.tower ? tx : G.cold[0];
+      if (hy + 16 + i * i * 4.4 < H) c.fillRect(x - (4 + i * 3), hy + 16 + i * i * 4.4, 8 + i * 6, 3 + i * 0.4);
+    }
+    // the rock and the tower
+    cel(c, poly([[tx - 84, hy + 16], [tx - 58, hy - 8], [tx - 20, hy - 15], [tx + 26, hy - 11], [tx + 62, hy + 4], [tx + 90, hy + 18]]), '#130f48', TL, { off: 7, ink: 3, shadow: '#0a0828', rim: 2.4, rimCol: v.tower ? A(LANTERN, 0.9) : A(key, 0.5) });
+    const w0 = th * 0.17;
+    const w1 = th * 0.115;
+    cel(c, poly([[tx - w0, hy - 8], [tx - w1, top], [tx + w1, top], [tx + w0, hy - 8]]), PAPER, TL, { off: w0 * 0.8, ink: 3, shadow: v.cold ? '#7f8fc4' : '#c79a86',
+      hi: (p) => { p.rect(tx - w0, top + th * 0.18, w0 * 2, th * 0.17); p.rect(tx - w0, top + th * 0.56, w0 * 2, th * 0.17); }, hiCol: v.cold ? '#7a1f48' : CRIMSON });
+    c.fillStyle = INK;
+    c.fillRect(tx - w1 - 6, top - 5, w1 * 2 + 12, 6);
+    c.fillRect(tx - 4, hy - 22, 8, 14);
+    cel(c, box(tx - w1 + 1, top - 30, w1 * 2 - 2, 26, 3), v.tower ? WHITE : '#231d66', TL, { off: 0, ink: 3 });
+    cel(c, poly([[tx - w1 - 4, top - 29], [tx, top - 30 - w1 * 1.5], [tx + w1 + 4, top - 29]]), v.cold ? '#7a1f48' : CRIMSON, TL, { off: 4, ink: 3 });
+  }
+
+  function drawCoast(g, L, now, v) {
+    const { W, H } = L;
+    const G = coastGeom(L, v);
+    g.drawImage(layer(`coast:${v.key}:${L.kind}`, W, H, view.ds, (c) => paintCoast(c, L, v)), 0, 0, W, H);
+    if (v.tower) {
+      // the light: two hard beams that swing, stepped bloom, a white core
+      const [lx, ly] = G.lamp;
+      shaft(g, lx, ly, Math.PI + 0.1 + 0.2 * Math.sin(now / 2600), W, 0.2, LANTERN, 0.34);
+      shaft(g, lx, ly, -0.16 + 0.14 * Math.sin(now / 3100 + 1), W * 0.5, 0.2, LANTERN, 0.34);
+      const r = (G.P ? 56 : 78) * (1 + 0.05 * stepped(Math.sin(now / 400), 2));
+      rings(g, lx, ly, r, [A(LANTERN, 0.16), A(LANTERN, 0.26), A(LANTERN, 0.5)], [1, 0.64, 0.36]);
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.arc(lx, ly, G.P ? 8 : 11, 0, TAU);
+      g.fill();
+      glint(g, lx, ly, r * 0.5, '#ffffff', 1, 0);
+    }
+    // paper lanterns on the water: lit, or carried out dark
+    const n = Math.round((G.P ? 13 : 24) * v.adrift);
+    const lit = !v.cold;
+    const sprite = layer(`adrift:${lit}`, 20, 30, view.ds, (c) => {
+      cel(c, box(3, 4, 14, 18, 5), lit ? LANTERN : '#1c1a55', HUD_L, { off: 3, ink: 2, shadow: lit ? '#d1481c' : '#0e0c34' });
+      if (lit) {
+        c.fillStyle = WHITE;
+        c.fillRect(7.5, 8, 5, 10);
+      }
+      c.fillStyle = INK;
+      c.fillRect(6, 2, 8, 3);
+    });
     for (let i = 0; i < n; i++) {
       const depth = hash(i + 11); // 0 far, 1 near
-      const y = horizon + 6 + depth * depth * (H - horizon - 20);
-      const drift = (now / 1000) * (4 + depth * 10) * (hash(i + 77) > 0.5 ? 1 : -1);
+      const y = G.hy + 26 + depth * depth * (H - G.hy - 70);
+      const drift = (now / 1000) * (3 + depth * 9) * (hash(i + 77) > 0.5 ? 1 : -1);
       const x = mod(hash(i + 23) * W + drift, W + 40) - 20;
-      const s = 1.2 + depth * 5;
-      // lanterns dim toward the edges of the picture, as the sky does
-      const edge = 1 - 0.75 * clamp((Math.hypot(x - W / 2, y - H / 2) / Math.max(W, H) - 0.2) / 0.46, 0, 1);
-      const fl = (0.7 + 0.3 * Math.sin(now / 300 + i)) * edge;
-      glow(g, x, y, s * 6, LANTERN, 0.3 * fl * warm);
-      g.globalAlpha = 0.9 * fl * warm;
-      g.fillRect(x - s * 0.5, y - s * 0.8, s, s * 1.4);
+      const k = 0.45 + depth * 0.9;
+      if (lit) {
+        g.fillStyle = A(LANTERN, 0.55);
+        g.fillRect(x - 8 * k, y + 12 * k + 2, 16 * k, 2.5 * k);
+      }
+      g.drawImage(sprite, x - 10 * k, y - 15 * k + Math.round(Math.sin(now / 700 + i) * 1.5), 20 * k, 30 * k);
     }
-    g.globalAlpha = 1;
   }
 
-  function orreryRings(g, cx, cy, k, now, a) {
-    g.save();
-    g.translate(cx, cy);
-    for (let i = 0; i < 4; i++) {
-      const r = (150 + i * 46) * k;
-      g.strokeStyle = A(BRASS, a * (0.32 - i * 0.05));
-      g.lineWidth = i === 0 ? 2 : 1;
-      g.beginPath();
-      g.ellipse(0, 0, r, r * 0.34, 0, 0, TAU);
-      g.stroke();
-      const ang = now / (2600 + i * 1500) + i * 1.7;
-      const px = Math.cos(ang) * r;
-      const py = Math.sin(ang) * r * 0.34;
-      glow(g, px, py, 14, LANTERN, 0.6 * a);
-      g.fillStyle = A(BRASS_HI, a);
-      g.beginPath();
-      g.arc(px, py, 3.2, 0, TAU);
-      g.fill();
-    }
-    g.restore();
-  }
-
+  // A flat brass rule with a lozenge on it.
   function rule(g, cx, y, half, a) {
     if (!(half > 0)) return;
-    const gr = g.createLinearGradient(cx - half, 0, cx + half, 0);
-    gr.addColorStop(0, A(BRASS, 0));
-    gr.addColorStop(0.5, A(BRASS_HI, a));
-    gr.addColorStop(1, A(BRASS, 0));
-    g.fillStyle = gr;
-    g.fillRect(cx - half, y, half * 2, 1.2);
     g.fillStyle = A(BRASS_HI, a);
-    g.save();
-    g.translate(cx, y + 0.6);
-    g.rotate(Math.PI / 4);
-    g.fillRect(-3.5, -3.5, 7, 7);
-    g.restore();
+    g.fillRect(cx - half, y, half * 2, 2);
+    g.beginPath();
+    poly([[cx, y - 5], [cx + 6, y + 1], [cx, y + 7], [cx - 6, y + 1]])(g);
+    g.fill();
   }
-
-  const TITLE_FILL = [[0, '#fff6dc'], [0.55, '#f0cd83'], [1, '#a87a34']];
 
   function drawTitle(g, L, fx) {
     const now = fx.timeMs;
@@ -3392,25 +3517,25 @@ export function createRenderer(canvas) {
     const P = L.kind === 'portrait';
     const cx = W / 2;
     const safe = safeOf(fx);
-    nightSky(g, L, now, 1);
-    const ty = P ? 330 : 296; // baseline of the first title line
-    orreryRings(g, cx, ty + (P ? 20 : 4), P ? 0.62 : 1, now, 0.8);
-    g.font = `600 ${P ? 11 : 13}px ${SERIF}`;
-    g.fillStyle = A(BRASS, 0.85);
-    spaced(g, 'A TREATY  ·  A LOT  ·  A LEDGER', cx, ty - (P ? 62 : 84), P ? 3 : 5, 'center');
-    const title = { size: P ? 46 : 84, gap: P ? 6 : 14, fill: TITLE_FILL, halo: 'rgba(255,170,70,0.75)', blur: P ? 22 : 38 };
-    litText(g, 'THE LONG', cx, ty, title);
-    litText(g, 'SETTLEMENT', cx, ty + (P ? 52 : 86), title);
-    rule(g, cx, ty + (P ? 74 : 114), P ? 150 : 300, 0.9);
+    drawCoast(g, L, now, COAST.title);
+    const ty = P ? Math.max(214, safe.top + 150) : 196; // baseline of the first title line
+    g.font = `700 ${P ? 11 : 13}px ${SERIF}`;
+    g.fillStyle = BRASS_HI;
+    spaced(g, 'A TREATY  ·  A LOT  ·  A LEDGER', cx, ty - (P ? 66 : 100), P ? 3 : 5, 'center');
+    const title = { size: P ? 48 : 92, gap: P ? 3 : 10, fill: WHITE, lo: BRASS_HI, drop: P ? 4 : 7, dropCol: CRIMSON };
+    inkText(g, 'THE LONG', cx, ty, title);
+    inkText(g, 'SETTLEMENT', cx, ty + (P ? 56 : 100), title);
+    rule(g, cx, ty + (P ? 78 : 130), P ? 150 : 300, 1);
     g.font = `italic ${P ? 17 : 22}px ${SERIF}`;
-    g.fillStyle = A(PAPER, 0.85);
+    g.fillStyle = PAPER;
     g.textAlign = 'center';
-    g.fillText('Every note reads: payable in calm.', cx, ty + (P ? 110 : 156));
+    g.fillText('Every note reads: payable in calm.', cx, ty + (P ? 110 : 170));
     g.textAlign = 'left';
 
-    const p = 0.78 + 0.22 * Math.sin(now / 420);
-    litText(g, view.touch || P ? 'TAP TO OPEN THE ACCOUNT' : 'PRESS ENTER TO OPEN THE ACCOUNT', cx, P ? 660 : 640,
-      { size: P ? 14 : 17, gap: P ? 3 : 4, fill: BRASS_HI, halo: 'rgba(255,180,80,0.8)', blur: 12, alpha: p });
+    const on = Math.floor(now / 520) % 2 === 0;
+    const py = P ? 706 : 628;
+    sticker(g, view.touch || P ? 'TAP TO OPEN THE ACCOUNT' : 'PRESS ENTER TO OPEN THE ACCOUNT', cx, py,
+      { size: P ? 13 : 16, face: SERIF, fill: on ? WHITE : BRASS_HI, col: INK, gap: P ? 2.5 : 3.5, padX: P ? 16 : 22, h: P ? 36 : 42, lineW: 2.8 });
     if (!view.touch && !P) {
       const y = 730;
       let x = cx - 235;
@@ -3419,11 +3544,99 @@ export function createRenderer(canvas) {
       hintRow(g, [['key', 'M'], ['txt', 'mute']], x, y);
     }
     g.font = `italic 13px ${SERIF}`;
-    g.fillStyle = A(PAPER, 0.4);
+    g.fillStyle = A(PAPER, 0.7);
     g.textAlign = 'center';
     g.fillText('A voiced story. Sound on.', cx, H - Math.max(30, safe.bottom + 16));
     g.textAlign = 'left';
     drawMute(g, L.mute, Boolean(fx.muted));
+  }
+
+  // What stands under a chapter's key light on its card, drawn about (0, 0) at scale k.
+  function emblem(g, K, x, y, k) {
+    const L = K.L;
+    g.save();
+    g.translate(x, y);
+    g.scale(k, k);
+    if (K.key === 'harbour') {
+      inkLine(g, 2);
+      g.beginPath();
+      g.moveTo(-150, -86);
+      g.quadraticCurveTo(-40, -30, 0, -58);
+      g.quadraticCurveTo(70, -16, 150, -70);
+      g.stroke();
+      paperLamp(g, -98, -14, 20, K);
+      paperLamp(g, 100, -2, 17, K);
+      paperLamp(g, 0, 6, 56, K);
+    } else if (K.key === 'mine') {
+      bareLamp(g, 44, -66, 9, K, 8);
+      for (const [sx, h, lean, tone] of [[-52, 96, -0.32, 0.2], [48, 78, 0.4, 0.35], [0, 150, 0.04, 0.5]]) {
+        const w = h * 0.3;
+        g.save();
+        g.translate(sx, 84 - h / 2);
+        g.rotate(lean);
+        cel(g, poly([[0, -h / 2], [w, -h / 5], [w * 0.7, h / 2], [-w * 0.7, h / 2], [-w, -h / 5]]), blend(K.pool[2], '#bff0ff', tone), L, { off: w * 0.8, ink: 3, rim: 3, rimCol: '#ffffff',
+          hi: (c) => { poly([[0, -h / 2], [w * 0.2, -h / 5], [w * 0.1, h / 2], [-w * 0.25, h / 2], [-w * 0.3, -h / 5]])(c); }, hiCol: A('#ffffff', 0.35) });
+        g.restore();
+      }
+    } else if (K.key === 'parade') {
+      bareLamp(g, 0, -44, 30, K, 0);
+      g.fillStyle = INK;
+      g.fillRect(-54, -92, 108, 9);
+      g.fillRect(-4, -104, 8, 14);
+      cel(g, poly([[-40, -84], [40, -84], [40, 96], [0, 66], [-40, 96]]), CRIMSON, L, { off: 12, ink: 3, shadow: '#8f1030', rim: 3 });
+      g.fillStyle = BRASS_HI;
+      g.fillRect(-16, -56, 32, 6);
+      g.fillRect(-2.5, -56, 5, 54);
+      g.beginPath();
+      poly([[-13, -4], [13, -4], [13, 22], [0, 50], [-13, 22]])(g);
+      g.fill();
+      inkLine(g, 2);
+      g.stroke();
+    } else if (K.key === 'reef') {
+      rings(g, 0, -6, 70, [A(L.col, 0.14), A(L.col, 0.26)], [1, 0.56]);
+      for (const [rx, ry, r] of [[-86, 66, 40], [84, 72, 34], [0, 92, 58]]) {
+        const pts = [];
+        for (let i = 0; i < 9; i++) {
+          const a = Math.PI + (i / 8) * Math.PI;
+          pts.push([rx + Math.cos(a) * r * (0.8 + 0.3 * hash(i + r)), ry + Math.sin(a) * r * (0.5 + 0.3 * hash(i * 3 + r))]);
+        }
+        cel(g, poly(pts), '#141a40', { ...L, dx: -rx / 120, dy: -0.9 }, { off: 8, ink: 3, shadow: '#070a20', rim: 2.6, rimCol: A(L.col, 0.85) });
+      }
+      // the shuttered lamp: a dark lantern with one slit of fire
+      g.fillStyle = INK;
+      g.fillRect(-9, -62, 18, 12);
+      cel(g, ell(0, -6, 32, 44), '#1c2258', L, { off: 9, ink: 3, shadow: '#0c0f30' });
+      g.fillStyle = INK;
+      g.fillRect(-6, -36, 12, 60);
+      g.fillStyle = L.core;
+      g.fillRect(-2.5, -32, 5, 52);
+      glint(g, 0, -6, 15, L.col, 1, 0);
+    } else if (K.key === 'exchange') {
+      burst(g, 0, 0, 72, 112, 14, 0.1, A(L.col, 0.4), 0);
+      rings(g, 0, 0, 84, [A(L.col, 0.2), A(L.col, 0.36)], [1, 0.6]);
+      g.fillStyle = INK;
+      g.fillRect(-7, -86, 14, 22);
+      cel(g, (c) => { c.moveTo(-62, 54); c.quadraticCurveTo(-36, 34, -34, -30); c.quadraticCurveTo(-30, -70, 0, -72); c.quadraticCurveTo(30, -70, 34, -30); c.quadraticCurveTo(36, 34, 62, 54); c.closePath(); }, BRASS_HI, HUD_L, { off: 12, ink: 3, shadow: '#d1781c', rim: 3, rimCol: '#ffffff' });
+      cel(g, circ(0, 62, 12), WHITE, HUD_L, { off: 3, ink: 3, shadow: BRASS });
+    } else {
+      throw new Error(`render: look '${K.key}' has no emblem`);
+    }
+    g.restore();
+  }
+
+  function paintCard(c, L, K, ex, ey, k) {
+    const { W, H } = L;
+    c.fillStyle = K.night;
+    c.fillRect(0, 0, W, H);
+    const R = Math.hypot(W, H) * 0.66;
+    rings(c, ex, ey, R, K.pool, [1, 0.6, 0.3]);
+    rays(c, ex, ey, 60 * k, R, 12, 0.13, A(K.L.col, 0.08));
+    // the ground the chapter stands on: one hard dark shape, so the foot of the card is night
+    c.fillStyle = A('#04031c', 0.62);
+    c.beginPath();
+    poly([[0, ey + 300 * k], [W, ey + 230 * k], [W, H], [0, H]])(c);
+    c.fill();
+    emblem(c, K, ex, ey, k);
   }
 
   function drawCard(g, L, content, game, fx) {
@@ -3431,43 +3644,50 @@ export function createRenderer(canvas) {
     const { W, H } = L;
     const P = L.kind === 'portrait';
     const cx = W / 2;
-    const cy = P ? 440 : 392;
+    const cy = P ? 452 : 404;
     const safe = safeOf(fx);
     const chapter = chapterOf(content, game);
     const table = tableOf(content, chapter);
+    const K = lookOf(table);
     const t = game.modeT;
     const a1 = clamp(t / 0.8, 0, 1);
     const a2 = clamp((t - 0.5) / 0.9, 0, 1);
     const a3 = clamp((t - 1.2) / 0.9, 0, 1);
-    g.fillStyle = '#040302';
+    const barTop = P ? Math.max(90, safe.top) : 70;
+    const barBot = P ? 150 : 40;
+    const ek = P ? 1 : 1.1;
+    const ey = cy - (P ? 204 : 196);
+    g.fillStyle = '#04031c';
     g.fillRect(0, 0, W, H);
-    glow(g, cx, cy - 12, P ? 420 : 620, table.theme.glow, 0.13 * a1);
-    orreryRings(g, cx, cy, P ? 0.62 : 1, now, 0.35 * a1);
-    g.font = `600 ${P ? 13 : 16}px ${SERIF}`;
-    g.fillStyle = A(BRASS, a1);
-    spaced(g, `CHAPTER ${roman(chapter.number)}`, cx, cy - (P ? 74 : 92), P ? 6 : 9, 'center');
-    rule(g, cx, cy - (P ? 56 : 70), (P ? 120 : 220) * a1, a1);
-    const size = fitFont(g, chapter.title, W - (P ? 44 : 200), P ? 46 : 78, (s) => `600 ${s}px ${SERIF}`);
-    litText(g, chapter.title, cx, cy + (P ? 8 : 20) + (1 - a2) * 10, { size, fill: '#fff3d6', halo: 'rgba(255,170,70,0.6)', blur: P ? 18 : 30, alpha: a2 });
+    g.globalAlpha = a1;
+    g.drawImage(layer(`card:${table.id}:${L.kind}`, W, H, view.ds, (c) => paintCard(c, L, K, cx, ey, ek)), 0, 0, W, H);
+    g.globalAlpha = a1;
+    sticker(g, `CHAPTER ${roman(chapter.number)}`, cx, cy - (P ? 62 : 70), { size: P ? 13 : 16, face: SERIF, fill: BRASS_HI, col: INK, gap: P ? 4 : 6, padX: P ? 16 : 22, h: P ? 28 : 34, lineW: 2.6 });
+    g.globalAlpha = 1;
+    const size = fitFont(g, chapter.title, W - (P ? 56 : 220), P ? 46 : 78, (s) => `700 ${s}px ${SERIF}`);
+    inkText(g, chapter.title, cx, cy + (P ? 10 : 30) + (1 - a2) * 10, { size, fill: WHITE, lo: K.L.rim, drop: P ? 4 : 6, dropCol: CRIMSON, alpha: a2 });
     g.textAlign = 'center';
     g.font = `italic ${P ? 17 : 24}px ${SERIF}`;
-    g.fillStyle = A(PAPER, 0.8 * a3);
-    wrap(g, chapter.subtitle, W - (P ? 60 : 280)).slice(0, 3).forEach((l, i) => g.fillText(l, cx, cy + (P ? 48 : 70) + i * (P ? 23 : 30)));
+    g.fillStyle = A(PAPER, a3);
+    wrap(g, chapter.subtitle, W - (P ? 60 : 280)).slice(0, 3).forEach((l, i) => g.fillText(l, cx, cy + (P ? 50 : 80) + i * (P ? 23 : 30)));
     g.textAlign = 'left';
-    g.font = `600 ${P ? 11 : 12}px ${SERIF}`;
-    g.fillStyle = A(table.theme.accent, 0.8 * a3);
-    spaced(g, String(table.name).toUpperCase(), cx, cy + (P ? 136 : 128), P ? 4 : 6, 'center');
+    g.font = `700 ${P ? 11 : 12}px ${SERIF}`;
+    g.fillStyle = A(K.cap, a3);
+    spaced(g, String(table.name).toUpperCase(), cx, cy + (P ? 138 : 138), P ? 4 : 6, 'center');
     // letterbox bars
-    g.fillStyle = '#000';
-    g.fillRect(0, 0, W, P ? Math.max(90, safe.top) : 70);
-    g.fillRect(0, H - (P ? 150 : 40), W, P ? 150 : 40);
+    g.fillStyle = '#04031c';
+    g.fillRect(0, 0, W, barTop);
+    g.fillRect(0, H - barBot, W, barBot);
+    g.fillStyle = A(BRASS, a1);
+    g.fillRect(0, barTop, W, 2);
+    g.fillRect(0, H - barBot - 2, W, 2);
     if (t > 1.6) {
-      g.globalAlpha = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(now / 420));
+      g.globalAlpha = Math.floor(now / 520) % 2 ? 0.6 : 1;
       if (P) {
-        g.font = `600 13px ${SERIF}`;
+        g.font = `700 13px ${SERIF}`;
         g.fillStyle = BRASS_HI;
         spaced(g, 'TAP TO CONTINUE', cx, H - Math.max(84, safe.bottom + 60), 3, 'center');
-      } else hintRow(g, [['key', view.touch ? 'Tap' : 'Enter'], ['txt', 'continue']], cx - 62, 720);
+      } else hintRow(g, [['key', view.touch ? 'Tap' : 'Enter'], ['txt', 'continue']], cx - 62, 782);
       g.globalAlpha = 1;
     }
   }
@@ -3479,54 +3699,60 @@ export function createRenderer(canvas) {
     const cx = W / 2;
     const safe = safeOf(fx);
     const e = game.econ;
-    nightSky(g, L, now, 0.45);
-    const top = P ? Math.max(120, safe.top + 60) : 150;
-    g.font = `600 ${P ? 11 : 13}px ${SERIF}`;
-    g.fillStyle = A(BRASS, 0.85);
+    for (const f of ['trustEarned', 'loansTaken']) {
+      if (!e || typeof e[f] !== 'number' || !Number.isFinite(e[f])) throw new Error(`render: econ.${f} must be a finite number to weigh, got ${String(e && e[f])}`);
+    }
+    // the coast as the ledger leaves it: the same sum the scales weigh, and no words for it
+    const v = leaning(e) === 'commons' ? COAST.commons : COAST.mint;
+    drawCoast(g, L, now, v);
+    const top = P ? Math.max(120, safe.top + 60) : 110;
+    g.font = `700 ${P ? 11 : 13}px ${SERIF}`;
+    g.fillStyle = v.cold ? '#bfeaff' : BRASS_HI;
     spaced(g, 'THE LONG SETTLEMENT', cx, top, P ? 4 : 6, 'center');
-    litText(g, 'Here the ledger rests.', cx, top + (P ? 54 : 82), { size: P ? 34 : 54, fill: '#fff3d6', halo: 'rgba(255,170,70,0.5)', blur: P ? 16 : 26 });
-    rule(g, cx, top + (P ? 76 : 112), P ? 150 : 280, 0.9);
+    inkText(g, 'Here the ledger rests.', cx, top + (P ? 52 : 76), { size: P ? 33 : 54, fill: WHITE, lo: v.cold ? '#bfeaff' : BRASS_HI, drop: P ? 3 : 5, dropCol: v.cold ? '#2c5fa8' : CRIMSON });
+    rule(g, cx, top + (P ? 72 : 104), P ? 150 : 280, 1);
     g.textAlign = 'center';
     g.font = `italic ${P ? 15 : 20}px ${SERIF}`;
-    g.fillStyle = A(PAPER, 0.75);
-    wrap(g, 'The account is not closed. It is carried forward.', W - 60).forEach((l, i) => g.fillText(l, cx, top + (P ? 108 : 152) + i * 22));
+    g.fillStyle = PAPER;
+    wrap(g, 'The account is not closed. It is carried forward.', W - 60).forEach((l, i) => g.fillText(l, cx, top + (P ? 104 : 142) + i * 22));
 
-    // the page
-    const pw = P ? W - 44 : 520;
+    // the page: parchment, inked
+    const pw = P ? W - 48 : 520;
     const px = cx - pw / 2;
-    const py = top + (P ? 140 : 194);
-    const rowH = P ? 44 : 42;
-    rr(g, px, py, pw, rowH * 5 + 40, 10);
-    g.fillStyle = 'rgba(8,6,4,0.78)';
-    g.fill();
-    g.strokeStyle = A(BRASS, 0.5);
-    g.lineWidth = 1;
-    g.stroke();
+    const py = top + (P ? 130 : 170);
+    const rowH = P ? 42 : 40;
+    const ph = rowH * 5 + 30;
+    g.drawImage(layer(`page:${pw}:${ph}`, pw + 12, ph + 12, view.ds, (c) => {
+      rr(c, 6, 8, pw, ph, 8);
+      c.fillStyle = '#04031c';
+      c.fill();
+      cel(c, box(2, 2, pw, ph, 8), PAPER, HUD_L, { off: 6, shadow: '#dcc089', ink: 3 });
+    }), px - 2, py - 2, pw + 12, ph + 12);
     const rows = [
-      ['Score', fmtInt(e.score), PAPER],
-      ['Marks in hand', fmtInt(e.marks), BRASS_HI],
-      ['Owed to the Mint', e.debt > 0 ? fmtInt(Math.ceil(e.debt)) : 'nothing', e.debt > 0 ? RED : A(PAPER, 0.6)],
-      ['Trust of the Commons', `${Math.round(e.trust)} / 100`, THREADS.commons.color],
-      ['Draws at the Reels', fmtInt(e.spins), PAPER],
+      ['Score', fmtInt(e.score), INK],
+      ['Marks in hand', fmtInt(e.marks), '#9a5a12'],
+      ['Owed to the Mint', e.debt > 0 ? fmtInt(Math.ceil(e.debt)) : 'nothing', e.debt > 0 ? '#b01834' : A(INK, 0.6)],
+      ['Trust of the Commons', `${Math.round(e.trust)} / 100`, '#c2500f'],
+      ['Draws at the Reels', fmtInt(e.spins), INK],
     ];
-    const inset = P ? 20 : 32;
-    rows.forEach(([k, v, col], i) => {
-      const y = py + 46 + i * rowH;
+    const inset = P ? 18 : 30;
+    rows.forEach(([k, val, col], i) => {
+      const y = py + 38 + i * rowH;
       g.textAlign = 'left';
       g.font = `${P ? 16 : 18}px ${SERIF}`;
-      g.fillStyle = A(PAPER, 0.75);
+      g.fillStyle = INK;
       g.fillText(k, px + inset, y);
       g.textAlign = 'right';
-      g.font = `600 ${P ? 17 : 20}px ${MONO}`;
+      g.font = `700 ${P ? 17 : 20}px ${MONO}`;
       g.fillStyle = col;
-      g.fillText(v, px + pw - inset, y);
+      g.fillText(val, px + pw - inset, y);
       if (i < rows.length - 1) {
-        g.fillStyle = A(BRASS, 0.15);
-        g.fillRect(px + inset, y + 14, pw - inset * 2, 1);
+        g.fillStyle = A(INK, 0.2);
+        g.fillRect(px + inset, y + 13, pw - inset * 2, 1.5);
       }
     });
     // How the book stands as it is carried forward: the same wordless scales as the ledger's, larger.
-    const sy = py + rowH * 5 + (P ? 110 : 70);
+    const sy = py + ph + (P ? 98 : 92);
     g.save();
     g.translate(cx, sy);
     g.scale(1.9, 1.9);
@@ -3534,15 +3760,13 @@ export function createRenderer(canvas) {
     g.restore();
     g.textAlign = 'center';
     g.font = `italic ${P ? 14 : 17}px ${SERIF}`;
-    g.fillStyle = A(PAPER, 0.55 + 0.25 * Math.sin(now / 600));
-    wrap(g, `End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W - 60).forEach((l, i) => g.fillText(l, cx, sy + (P ? 84 : 70) + i * 20));
+    g.fillStyle = A(PAPER, 0.85);
+    wrap(g, `End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W - 60).forEach((l, i) => g.fillText(l, cx, py + ph + 30 + i * 20));
     g.textAlign = 'left';
     if (P) {
-      g.font = `600 13px ${SERIF}`;
-      g.fillStyle = A(BRASS_HI, 0.7 + 0.3 * Math.sin(now / 420));
-      spaced(g, 'TAP TO RETURN TO THE TITLE', cx, H - Math.max(60, safe.bottom + 40), 3, 'center');
-    } else if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], cx - 96, 764);
-    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], cx - 150, 764);
+      sticker(g, 'TAP TO RETURN TO THE TITLE', cx, H - Math.max(64, safe.bottom + 44), { size: 13, face: SERIF, fill: Math.floor(now / 520) % 2 ? BRASS_HI : WHITE, col: INK, gap: 2.5, padX: 16, h: 36, lineW: 2.8 });
+    } else if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], cx - 96, 770);
+    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], cx - 150, 770);
     drawMute(g, L.mute, Boolean(fx.muted));
   }
 
