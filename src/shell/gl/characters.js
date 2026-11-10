@@ -67,18 +67,27 @@ function makeHead(R) {
     p[0] *= R[0] * k; p[1] = (y < -0.4 ? -0.4 + (y + 0.4) * 0.84 : y) * R[1]; p[2] *= R[2] * (1 + 0.05 * cheek * (p[2] > 0 ? 1 : 0.4));
     return p;
   };
+  // the surface normal at yaw/pitch, from the shape itself: the skull and every decal on it use this,
+  // so a decal's terminator falls exactly where the skin's does
+  const normalAt = (yaw, pitch) => {
+    const p = at(yaw, pitch), a = at(yaw + 0.6, pitch), b = at(yaw, pitch + 0.6);
+    const u = [a[0] - p[0], a[1] - p[1], a[2] - p[2]], v = [b[0] - p[0], b[1] - p[1], b[2] - p[2]];
+    return norm([u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]);
+  };
   const at = (yaw, pitch, r = 1) => { const a = yaw * DEG, b = pitch * DEG, p = shape([Math.sin(a) * Math.cos(b), Math.sin(b), Math.cos(a) * Math.cos(b)]); p[0] *= r; p[1] *= r; p[2] *= r; return p; };
   /** A decal patch lying on the head: centre yaw/pitch, angular width/height. flipU mirrors the texture. */
   const patch = (yaw, pitch, w, h, lift = 0.014, seg = 6, flipU = false) => {
-    const pos = [], uv = [], idx = [], s = seg + 1;
+    const pos = [], uv = [], idx = [], nrm = [], s = seg + 1;
     for (let j = 0; j <= seg; j++) for (let i = 0; i <= seg; i++) {
-      const p = at(yaw + (i / seg - 0.5) * w, pitch + (0.5 - j / seg) * h, 1 + lift);
-      pos.push(p[0], p[1], p[2]); uv.push(flipU ? 1 - i / seg : i / seg, j / seg);
+      const ya = yaw + (i / seg - 0.5) * w, pi = pitch + (0.5 - j / seg) * h, p = at(ya, pi, 1 + lift);
+      pos.push(p[0], p[1], p[2]); uv.push(flipU ? 1 - i / seg : i / seg, j / seg); nrm.push(...normalAt(ya, pi));
     }
     for (let j = 0; j < seg; j++) for (let i = 0; i < seg; i++) { const a = j * s + i, b = a + 1, c = a + s, e = c + 1; idx.push(a, c, e, a, e, b); }
-    return setOutline(fromArrays(pos, idx, uv, 180), 0);
+    const m = setOutline(fromArrays(pos, idx, uv, 180), 0);
+    m.normals.set(nrm); m.onormals.set(nrm);
+    return m;
   };
-  return { R, shape, at, patch };
+  return { R, shape, at, patch, normalAt };
 }
 
 /**
@@ -378,12 +387,12 @@ export const POSES = {
   // actions
   jabBack: { hips: { r: [2, -14, 0], p: [0, -0.02, -0.03] }, chest: [6, -30, 2], head: [0, 26, 0], armR: [44, 0, -22], foreR: [-108, 0, 0], armL: [-40, 0, 16], foreL: [-66, 0, -20], legL: [-18, 0, 4], legR: [20, 0, -6], shinR: [24, 0, 0], shinL: [14, 0, 0] },
   jabHit: { hips: { r: [8, 16, 0], p: [0, -0.012, 0.05] }, chest: [10, 30, -3], head: [-10, -26, 0], armR: [-92, 0, -4], foreR: [-4, 0, 0], armL: [36, 0, 18], foreL: [-84, 0, 0], legL: [26, 0, 4], shinL: [8, 0, 0], legR: [-34, 0, -4], shinR: [30, 0, 0] },
-  chopUp: { hips: { r: [-6, 0, 0], p: [0, 0.015, -0.02] }, chest: [-14, 8, 0], head: [-8, 0, 0], armL: [-150, 0, 20], foreL: [-28, 0, 0], armR: [-150, 0, -20], foreR: [-28, 0, 0], legL: [-8, 0, 5], legR: [8, 0, -5] },
+  chopUp: { hips: { r: [-6, 0, 0], p: [0, 0.015, -0.02] }, chest: [-14, 8, 0], head: [-8, 0, 0], armL: [-164, 0, 16], foreL: [-24, 0, 0], armR: [-164, 0, -16], foreR: [-24, 0, 0], legL: [-8, 0, 5], legR: [8, 0, -5] },
   chopDown: { hips: { r: [16, 0, 0], p: [0, -0.035, 0.05] }, chest: [22, -6, 0], head: [-16, 0, 0], armL: [-58, 0, 6], foreL: [-12, 0, 0], armR: [-58, 0, -6], foreR: [-12, 0, 0], legL: [-30, 0, 5], shinL: [34, 0, 0], legR: [16, 0, -5], shinR: [20, 0, 0] },
   charge: { hips: { r: [10, -24, 0], p: [0, -0.045, -0.02] }, chest: [10, -26, 0], head: [-8, 40, 0], armR: [50, 0, -34], foreR: [-96, 0, 0], armL: [-58, 0, 22], foreL: [-40, 0, 0], legL: [-34, 10, 8], shinL: [50, 0, 0], legR: [22, -10, -10], shinR: [36, 0, 0] },
   lunge: { hips: { r: [14, 20, 0], p: [0, -0.03, 0.1] }, chest: [10, 32, 0], head: [-16, -36, 0], armR: [-100, 0, 0], foreR: [0, 0, 0], armL: [50, 0, 26], foreL: [-30, 0, 0], legL: [44, 0, 6], shinL: [6, 0, 0], legR: [-50, 0, -4], shinR: [44, 0, 0] },
   recoil: { hips: { r: [-14, 0, 4], p: [0, -0.01, -0.06] }, chest: [-18, 8, 6], head: [-20, -10, 10], armL: [-30, 0, 62], foreL: [-40, 0, 0], armR: [-20, 0, -70], foreR: [-50, 0, 0], legL: [-24, 0, 8], legR: [10, 0, -8], shinR: [20, 0, 0] },
-  cheerUp: { hips: { r: [-4, 0, 0] }, chest: [-10, 0, 0], head: [-14, 0, 0], armL: [-20, 0, 150], foreL: [0, 0, -20], armR: [-20, 0, -150], foreR: [0, 0, 20], legL: [0, 0, 12], legR: [0, 0, -12] },
+  cheerUp: { hips: { r: [-4, 0, 0] }, chest: [-10, 0, 0], head: [-14, 0, 0], armL: [22, 0, 150], foreL: [0, 0, -24], armR: [22, 0, -150], foreR: [0, 0, 24], legL: [0, 0, 12], legR: [0, 0, -12] },
   crouch: { hips: { r: [8, 0, 0], p: [0, -0.05, 0] }, chest: [8, 0, 0], head: [-8, 0, 0], legL: [-36, 0, 8], shinL: [62, 0, 0], legR: [-36, 0, -8], shinR: [62, 0, 0], armL: [16, 0, 22], foreL: [-40, 0, 0], armR: [16, 0, -22], foreR: [-40, 0, 0] },
   stride: { hips: { r: [5, 0, 0] }, legL: [-34, 0, 3], shinL: [22, 0, 0], legR: [26, 0, -3], shinR: [30, 0, 0], armL: [26, 0, 10], armR: [-30, 0, -10], foreR: [-40, 0, 0], foreL: [-30, 0, 0] },
   slump: { hips: { r: [10, 0, 0], p: [0, -0.03, -0.01] }, chest: [22, 0, 0], head: [26, -8, 6], armL: [-6, 0, 5], foreL: [-8, 0, 0], armR: [-6, 0, -5], foreR: [-8, 0, 0], legL: [-14, 0, 4], shinL: [26, 0, 0], legR: [-14, 0, -4], shinR: [26, 0, 0] },
@@ -401,7 +410,7 @@ export const POSES = {
 const EMOTE_BODY = {
   neutral: {},
   smile: { chest: [-3, 0, 0], head: [-5, 0, 4] },
-  grim: { chest: [4, 0, 0], head: [7, 0, 0], armL: [4, 0, 8], armR: [4, 0, -8] },
+  grim: { chest: [2, 0, 0], head: [4, 0, 0], armL: [4, 0, 6], armR: [4, 0, -6] },
   shock: { hips: { r: [-6, 0, 0], p: [0, 0.006, -0.012] }, chest: [-10, 0, 0], head: [-6, 0, 0], armL: [-8, 0, 40], foreL: [-52, 0, 0], armR: [-8, 0, -40], foreR: [-52, 0, 0], handL: [0, 0, 20], handR: [0, 0, -20] },
   tears: { hips: { r: [6, 0, 0] }, chest: [12, 0, 0], head: [14, 0, 7], armL: [-34, 0, 4], foreL: [-118, 0, -34], armR: [-34, 0, -4], foreR: [-118, 0, 34] },
   anger: { hips: { r: [6, 0, 0], p: [0, -0.012, 0.01] }, chest: [8, 0, 0], head: [2, 0, 0], armL: [10, 0, 26], foreL: [-46, 0, 0], armR: [10, 0, -26], foreR: [-46, 0, 0], legL: [0, 0, 6], legR: [0, 0, -6] },
@@ -431,7 +440,7 @@ export const CLIPS = {
   hop: { dur: 0.42, impact: 0.2, keys: [[0, null, 0, 0, 0], [0.1, null, 0, 0, -0.1], [0.22, null, 0, 0.1, 0.09], [0.34, null, 0, 0, -0.07], [0.42, null, 0, 0, 0]] },
   // the team move: start both at the same moment, leader a step ahead of the follower (see teamMove)
   teamLead: { dur: 1.5, impact: 1.02, keys: [[0, null, 0, 0, 0], [0.22, 'teamBrace', 0, 0, -0.08], [0.56, 'teamBrace', 0, 0, -0.1], [0.68, 'teamHeave', 0, 0.06, 0.14], [0.98, 'teamHeave', 0, 0, 0], [1.1, 'jabHit', 0.1, 0, 0], [1.3, 'jabHit', 0.1, 0, 0], [1.5, null, 0, 0, 0]] },
-  teamFollow: { dur: 1.5, impact: 1.02, keys: [[0, null, 0, 0, 0], [0.2, 'crouch', -0.1, 0, -0.12], [0.44, 'stride', 0.2, 0.06, 0.04], [0.58, 'crouch', 0.42, 0.26, -0.06], [0.76, 'teamLeap', 0.7, 1.05, 0.14], [0.9, 'teamDive', 1.0, 0.82, 0.08], [1.02, 'chopDown', 1.3, 0.0, -0.18], [1.2, 'chopDown', 1.3, 0, -0.04], [1.36, 'stride', 0.6, 0.1, 0.04], [1.5, null, 0, 0, 0]] },
+  teamFollow: { dur: 1.5, impact: 1.02, keys: [[0, null, 0, 0, 0], [0.2, 'crouch', -0.1, 0, -0.12], [0.44, 'stride', 0.2, 0.06, 0.04], [0.58, 'crouch', 0.42, 0.26, -0.06], [0.76, 'teamLeap', 0.7, 0.72, 0.14], [0.9, 'teamDive', 1.0, 0.6, 0.08], [1.02, 'chopDown', 1.3, 0.0, -0.18], [1.2, 'chopDown', 1.3, 0, -0.04], [1.36, 'stride', 0.6, 0.1, 0.04], [1.5, null, 0, 0, 0]] },
 };
 
 /** Start the two-character move. Stand `lead` between `follow` and the target, about one height ahead of the follower. */
@@ -452,6 +461,7 @@ let seedCounter = 1;
  *   busy            true while a clip is running (a held clip is not busy)
  *   height          world units, crown of the head (hair excluded)
  *   headPos         Float32Array(3), world position of the head's centre after the last update: look targets, speech ticks
+ *   headRadius      world half-width of the head (hair excluded), for framing portraits
  *   lampPos         Float32Array(3) or null, world position of the lit prop, for a glow sprite
  *   light           the prop's light ({ intensity } to dim it) or null
  *   setLit(on)      lights or puts out the prop
@@ -557,10 +567,16 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
 
   // ---- head: skull, ears, nose, hair
   {
-    const skull = tint(sphere(1, S(24), S(16)), skin), P = skull.positions, p = [0, 0, 0];
+    const skull = sphere(1, S(30), S(20)), P = skull.positions, p = [0, 0, 0], unit = P.slice();
     for (let i = 0; i < P.length; i += 3) { p[0] = P[i]; p[1] = P[i + 1]; p[2] = P[i + 2]; hd.shape(p); P[i] = p[0]; P[i + 1] = p[1]; P[i + 2] = p[2]; }
-    const head = [tint(fromArrays(skull.positions, skull.indices, null, 180), skin)];
-    for (const sx of [-1, 1]) head.push(tint(place(ellipsoid(0.03 * B.head, 0.052 * B.head, 0.04 * B.head, 10, 7), sx * HR[0] * 1.085, -HR[1] * 0.2, -0.012, 0, sx * 24, 0), skin));
+    const sk = tint(fromArrays(skull.positions, skull.indices, null, 180), skin);
+    for (let i = 0; i < unit.length; i += 3) { // exact normals away from the poles (see makeHead.normalAt)
+      if (Math.abs(unit[i + 1]) > 0.985) continue;
+      const n = hd.normalAt(Math.atan2(unit[i], unit[i + 2]) / DEG, Math.asin(unit[i + 1]) / DEG);
+      sk.normals[i] = n[0]; sk.normals[i + 1] = n[1]; sk.normals[i + 2] = n[2];
+    }
+    const head = [sk];
+    for (const sx of [-1, 1]) head.push(tint(place(ellipsoid(0.027 * B.head, 0.044 * B.head, 0.031 * B.head, 10, 7), sx * HR[0] * 1.08, -HR[1] * 0.2, -0.012, 0, sx * 24, 0), skin));
     if (def.face?.nose !== 0) { const np = hd.at(0, -19.5, 0.985); head.push(setOutline(tint(place(ellipsoid(0.017, 0.011, 0.014, 8, 6), np[0], np[1], np[2]), skin), 0)); }
     const hairCol = def.hair?.color || '#b8542a', ctx = { color: hairCol, dark: mixc(hairCol, '#1a1040', 0.35), S };
     for (const piece of def.hair?.pieces || []) {
@@ -610,10 +626,16 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const rr = Math.hypot(...hd.at(browSpec.at[0], browSpec.at[1])) * 1.03, pts = [];
     for (let i = 0; i <= 6; i++) { const u = i / 6 - 0.5, a = u * browSpec.len * DEG, e = (0.25 - u * u) * 9 * DEG; pts.push([Math.sin(a) * Math.cos(e) * rr, Math.sin(e) * rr, Math.cos(a) * Math.cos(e) * rr]); }
     const wf = (t) => browSpec.w * (0.55 + 0.45 * Math.sin(Math.min(1, t * 2.2 + 0.25) * Math.PI / 2)) * (1 - 0.55 * t * t);
-    const m = setOutline(tint(strand(pts, wf, (t) => 0.008 + 0.004 * (1 - t), 6), browSpec.color), 0.55);
-    const cy = dim.headC;
-    node('browL', m, mat, { pos: [0, cy, 0], rot: [-browSpec.at[1], browSpec.at[0], 0], parent: head });
-    node('browR', mirrorX(m), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1], -browSpec.at[0], 0], parent: head });
+    const th = (t) => 0.008 + 0.004 * (1 - t);
+    const whole = () => setOutline(tint(strand(pts, wf, th, 6), browSpec.color), 0.55);
+    // a scar through a brow: the same brow in two pieces with a gap between them
+    const nicked = () => { const k = 4, f = (a, b) => (t) => wf(a + (b - a) * t), g = (a, b) => (t) => th(a + (b - a) * t);
+      const cut = (i0, i1, u) => { const q = pts[i0], r = pts[i1]; return [q[0] + (r[0] - q[0]) * u, q[1] + (r[1] - q[1]) * u, q[2] + (r[2] - q[2]) * u]; };
+      const A = [...pts.slice(0, k), cut(k - 1, k, 0.45)], Bp = [cut(k, k + 1, 0.05), ...pts.slice(k + 1)];
+      return setOutline(tint(merge(strand(A, f(0, 0.57), g(0, 0.57), 6), strand(Bp, f(0.68, 1), g(0.68, 1), 6)), browSpec.color), 0.55); };
+    const cy = dim.headC, nick = def.face?.brow?.nick;
+    node('browL', nick === 'L' ? nicked() : whole(), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1], browSpec.at[0], 0], parent: head });
+    node('browR', mirrorX(nick === 'R' ? nicked() : whole()), mat, { pos: [0, cy, 0], rot: [-browSpec.at[1], -browSpec.at[0], 0], parent: head });
   }
 
   // swinging pieces (hair, braid): spring bones
@@ -676,7 +698,8 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   const stand = poseOf('stand');
   const gestures = (def.gestures || ['talkOpen', 'talkSmall', 'talkBoth']).map(poseOf);
   const clipPoses = {}; // resolved once per clip
-  for (const [name, c] of Object.entries(CLIPS)) clipPoses[name] = c.keys.map((k) => (k[1] ? poseOf(k[1]) : null));
+  const lefty = def.handed === 'L'; // clips are authored right-handed; a left-hander plays their mirror image
+  for (const [name, c] of Object.entries(CLIPS)) clipPoses[name] = c.keys.map((k) => (k[1] ? (lefty ? mirrored(poseOf(k[1])) : poseOf(k[1])) : null));
 
   const height = (dim.hipY + dim.chestY + dim.neckY + dim.headC + HR[1]) * B.height;
   const seed = def.seed ?? seedCounter++;
@@ -699,7 +722,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   }
 
   const ch = {
-    def, root, rig, parts: rig.joints, skin: skinNode, height, headPos, lampPos, light: lampLight ? lampLight.light : null, props: propNodes, busy: false, clip: '',
+    def, root, rig, parts: rig.joints, skin: skinNode, height, headRadius: HR[0] * 1.085 * B.height, headPos, lampPos, light: lampLight ? lampLight.light : null, props: propNodes, busy: false, clip: '',
     stats: { triangles: 0, draws: 0, bones: skinNode ? skinNode.bones.length : 0 },
 
     act(name, { speed = 1 } = {}) {
@@ -717,7 +740,11 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       time += dt;
       // emote: brows and body blend, the decals swap behind a blink
       const want = s.emote || 'neutral';
-      if (want !== emote) { if (!EMOTE[want]) throw new Error(`character ${def.id}: unknown emote "${want}" (have ${EMOTES.join(', ')})`); prevEmote = emote; emote = want; emoteT = 0; blinkHold = 0.09; }
+      if (want !== emote) {
+        if (!EMOTE[want]) throw new Error(`character ${def.id}: unknown emote "${want}" (have ${EMOTES.join(', ')})`);
+        prevEmote = emote; emote = want; emoteT = 0; blinkHold = 0.09;
+        if (want === 'shock' && !clip && !s.snap) ch.act('hop'); // a start
+      }
       emoteT = Math.min(1, emoteT + dt * 6); blinkHold -= dt;
       const snap = !!s.snap; // a cut: land every blend at once
       if (snap) { emoteT = 1; blinkHold = 0; }
@@ -847,6 +874,8 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
 }
 
 const DOWN = [0, -1, 0];
+const MIRRORS = new WeakMap();
+function mirrored(pose) { let m = MIRRORS.get(pose); if (!m) { m = mirrorPose(pose); MIRRORS.set(pose, m); } return m; }
 function rootYaw(root) { const w = root.world; return Math.atan2(w[8], w[10]) / DEG; }
 // tint only the vertices that are still white (pieces that carry their own colours keep them)
 function tintWhite(mesh, color) {
@@ -864,12 +893,13 @@ function defaultMaterial() { return sharedMat || (sharedMat = figureMaterial());
 //   build    { height, head, legs, torso, arms, width, hands, feet, belly }   multipliers, 1 = the standard chibi
 //   hair     { color, brow (colour), pieces: [{ kind, ...spec }] }            kinds: see HAIR
 //   face     { set 'round' | 'lash' | 'old', iris, eyeScale, eyeYaw, eyePitch, mouthScale, mouthPitch,
-//              brow { w, len, at: [yaw, pitch], color }, marks { blush, freckles, laugh, scar 'L'|'R', beauty, stubble }, nose 0 }
+//              brow { w, len, at: [yaw, pitch], color, nick 'L'|'R' (a scar's gap) }, marks { blush, freckles, laugh, scar 'L'|'R', beauty, stubble }, nose 0 }
 //   costume  { top { color, hem (y of the hem below the hip joint: -0.03 a jacket, -0.16 a long coat), flare, trim, placket, lining },
 //              sleeves { color, cuff, flare, ink 'L'|'R' }, legs { color }, shoes { color, sole, cuff, tall },
 //              collar { kind 'stand' | 'flat' | 'scarf', color }, belt { color, buckle }, buttons { color, rows, count, size },
 //              extras [{ kind, ...spec }] }                                    kinds: see EXTRAS
 //   props    [{ kind, hand 'L' | 'R', ...spec }]                               kinds: see PROPS
+//   handed   'L' plays every clip mirrored (strike with the left arm): for figures that face the other way on a stage
 //   poses    { stand, signature, ...any } overlays on / replacements for POSES by name
 //   gestures [pose names] cycled while speaking;  anim { gesture (amount), gesturePeriod };  idle { speed, breath, bob, sway }
 
@@ -897,7 +927,7 @@ export const CAST = {
         ] },
       ],
     },
-    face: { set: 'round', iris: '#3f8fe0', brow: { w: 0.023, len: 25 }, marks: { blush: 0.32, scar: 'L' } },
+    face: { set: 'round', iris: '#3f8fe0', brow: { w: 0.023, len: 25, nick: 'L' }, marks: { blush: 0.32 } },
     costume: {
       top: { color: '#2f5fb8', hem: -0.035, flare: 1.22, trim: '#b9c6da', placket: '#24478f' },
       sleeves: { cuff: '#b9c6da', flare: 1.12 },
@@ -914,7 +944,7 @@ export const CAST = {
         armL: [8, 0, 10], foreL: [-10, 0, 0], armR: [-26, 0, -34], foreR: [-48, 0, 74], handR: [0, 0, 16],
       },
       // listening to the Line: two fingers to the earpiece, eyes away
-      signature: { chest: [2, -10, 5], head: [8, -14, -10], armR: [-20, 0, -78], foreR: [-20, 0, -118], handR: [0, 0, -30], armL: [10, 0, 6] },
+      signature: { chest: [2, -10, 5], head: [8, -16, -12], armR: [-6, 0, -98], foreR: [-8, 0, -146], handR: [0, 0, -20], armL: [10, 0, 6] },
     },
     gestures: ['talkSmall', 'talkChin', 'talkOpen'], anim: { gesture: 0.8, gesturePeriod: 2.8 }, idle: { sway: 0.6, bob: 0.7 },
   },
@@ -959,8 +989,8 @@ export const CAST = {
         legL: [-4, 10, 7], shinL: [8, 0, 0], legR: [2, -6, -4],
         armL: [14, 0, 44], foreL: [-24, 0, -96], handL: [0, 0, -20], armR: [-4, 0, -16], foreR: [-34, 0, 0],
       },
-      // "Point of order!": one arm straight up, finger first
-      signature: { hips: { r: [-3, 10, -6] }, chest: [-8, -6, 6], head: [-10, -6, -6], armR: [-24, 0, -158], foreR: [0, 0, 8], handR: [0, 0, 0], legL: [-6, 10, 9] },
+      // "Point of order!": leaning in behind a pointing arm, the other fist on her hip
+      signature: { hips: { r: [8, 14, -4], p: [0, 0, 0.02] }, chest: [10, 12, 4], head: [-14, -16, -8], armR: [-96, 0, -8], foreR: [-4, 0, 0], handR: [-10, 0, 0], legL: [14, 10, 8], legR: [-16, -6, -4], shinR: [14, 0, 0] },
     },
     gestures: ['talkPoint', 'talkBoth', 'talkOpen', 'talkShrug'], anim: { gesture: 1.15, gesturePeriod: 1.7 }, idle: { speed: 1.25, bob: 1.3, sway: 1.2 },
   },
@@ -992,7 +1022,7 @@ export const CAST = {
     poses: {
       // bent over her own work, looking up at you from under her brows
       stand: {
-        hips: { r: [8, 8, 0], p: [0, -0.006, -0.01] }, chest: [14, -4, 3], head: [-14, -8, 6],
+        hips: { r: [5, 8, 0], p: [0, -0.006, -0.01] }, chest: [11, -4, 3], head: [-13, -8, 6],
         legL: [-6, 8, 4], legR: [-6, -8, -4],
         armL: [-8, 0, 14], foreL: [-46, 0, -18], armR: [-30, 0, -22], foreR: [-58, 10, 0],
       },
@@ -1017,13 +1047,13 @@ export const CAST = {
       collar: { kind: 'stand', color: '#ffd24a' }, belt: { color: '#2a2540', buckle: '#ffd24a' }, buttons: { color: '#ffd24a', rows: 2, count: 3 },
       extras: [{ kind: 'epaulettes', color: '#ffd24a' }, { kind: 'moustache', color: '#6a4a3a' }],
     },
-    props: [{ kind: 'baton', hand: 'R' }],
+    props: [{ kind: 'baton', hand: 'L' }], handed: 'L',
     poses: {
       stand: {
-        hips: { r: [0, 8, -2] }, chest: [-4, -6, 2], head: [6, -8, -3], legL: [0, 8, 7], legR: [0, -8, -7],
-        armL: [12, 0, 30], foreL: [-20, 0, -90], armR: [0, 0, -16], foreR: [-58, 0, 0],
+        hips: { r: [0, -8, 2] }, chest: [-4, 6, -2], head: [6, 8, 3], legL: [0, 8, 7], legR: [0, -8, -7],
+        armR: [12, 0, -30], foreR: [-20, 0, 90], armL: [0, 0, 16], foreL: [-58, 0, 0],
       },
-      signature: { armR: [-70, 0, -14], foreR: [-40, 0, 0], chest: [6, 10, 0], head: [2, -8, 0] },
+      signature: { armL: [-70, 0, 14], foreL: [-40, 0, 0], chest: [6, -10, 0], head: [2, 8, 0] },
     },
     gestures: ['talkPoint', 'talkSmall'], anim: { gesture: 0.9 }, idle: { speed: 0.8, sway: 0.5 },
   },

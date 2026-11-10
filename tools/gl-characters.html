@@ -29,6 +29,7 @@
 //   ?emote=smile  ?pose=signature  ?speak=1  ?look=camera      state for the row, close and stage views
 //   ?act=strike&at=0.27                                          hold a clip at a time (seconds)
 //   ?yaw=30                                                      camera yaw for row / act
+//   ?detail=0.6 (fewer triangles per figure)
 //   ?t=6 (freeze at that time, for screenshots)   ?hud=0   ?dpr=1
 const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glDemo = { error: f.textContent }; };
 window.addEventListener('error', (e) => fatal(e.error || e.message));
@@ -55,7 +56,7 @@ try {
     points: [{ pos: LAMP, color: '#ffb050', radius: 5.2, intensity: lamps }],
     ...(light === 'sunset' ? { key: { dir: [-0.62, 0.36, 0.62] } } : {}),
     // night: a bright moon from the front and a blue shadow that keeps its colour, so faces do not go to slate
-    ...(night ? { key: { dir: [-0.35, 0.6, 0.7], color: '#9db6ff' }, shadow: { tint: '#4a5fd0', lift: 0.16, saturate: 1.3 }, ambient: { amount: 0.2 } } : {}),
+    ...(night ? { key: { dir: [-0.35, 0.6, 0.7], color: '#cdd9ff' }, shadow: { tint: '#4a5fd0', lift: 0.16, saturate: 1.3 }, ambient: { amount: 0.2 } } : {}),
   });
   env.shadow.radius = 3.2; env.shadow.center = [0, 0.4, 0];
   const scene = createScene(env);
@@ -82,8 +83,8 @@ try {
   const figMat = figureMaterial();
   const faces = createFaces({ figure: figMat });
   const ids = ['ren', 'ilse', 'nan', 'bailiff'];
-  const cast = {}; const place3 = { ren: [-0.58, 0, 0.05], ilse: [0.02, 0, 0.3], nan: [0.62, 0, 0.1], bailiff: [1.9, 0, 0.3] }, heading = { ren: 16, ilse: -6, nan: -24, bailiff: -70 };
-  for (const id of ids) { const ch = cast[id] = createCharacter(CAST[id], { faces, material: figMat }); ch.root.setPos(...place3[id]); scene.root.add(ch.root); ch.glow = ch.lampPos ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.8, color: '#ffa63f', alpha: lamps > 0 ? 0.8 : 0.35 }) : null; }
+  const cast = {}; const place3 = { ren: [-0.58, 0, 0.05], ilse: [0.02, 0, 0.3], nan: [0.62, 0, 0.1], bailiff: [1.9, 0, 0.3] }, heading = { ren: 16, ilse: -6, nan: -24, bailiff: -62 };
+  for (const id of ids) { const ch = cast[id] = createCharacter(CAST[id], { faces, material: figMat, detail: Number(q.get('detail') || 1) }); ch.root.setPos(...place3[id]); scene.root.add(ch.root); ch.glow = ch.lampPos ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.8, color: '#ffa63f', alpha: lamps > 0 ? 0.8 : 0.35 }) : null; }
 
   // ---- views: a list of cells, each a rectangle of the canvas with its own camera and its own state for the cast
   const cam = createCamera({ fov: 24, near: 0.2, far: 1200 });
@@ -108,13 +109,13 @@ try {
       ids.forEach((id, i) => { cells.push({ x: 20 + i * 62, y: 24, w: 46, h: 46, show: [id], shot: 'head', of: id, yaw: 22, pitch: 3, margin: 1.5, state: { [id]: { look: 'camera' } } }); tag(20 + i * 62, 74, id + ' 46'); });
       ids.forEach((id, i) => { cells.push({ x: 20 + i * 92, y: 110, w: 80, h: 80, show: [id], shot: 'head', of: id, yaw: -22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera', emote: 'smile' } } }); });
       tag(20, 194, 'stage size: 430 x 220 band, figures about 70 px tall');
-      cells.push({ x: 0, y: 210, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: -14, pitch: 8, state: { bailiff: { emote: 'grim' }, ren: { emote: 'grim' }, ilse: { emote: 'smile' } } });
+      cells.push({ x: 0, y: 210, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: 0, pitch: 8, state: { bailiff: { emote: 'grim', face: -64 }, ren: { emote: 'grim', face: 62 }, ilse: { emote: 'smile', face: 58 }, nan: { face: 50 } } });
       emoteGrid(0, 230 + Math.round(W * 220 / 430), W, H - 240 - Math.round(W * 220 / 430), who, 4);
-    } else if (view === 'stage') cells.push({ x: 0, y: 0, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: -14, pitch: 8, state: {} });
-    else if (view === 'poses') ids.forEach((id, i) => { const x = (i % 2) * W / 2, y = Math.floor(i / 2) * H / 2; cells.push({ x, y, w: W / 2, h: H / 2, show: [id], shot: 'body', of: id, yaw: i % 2 ? -28 : 28, pitch: 6, margin: 1.45, state: { [id]: { pose: 'signature', face: 0, emote: { ren: 'grim', ilse: 'smile', nan: 'soft', bailiff: 'anger' }[id], talk: id === 'ilse' ? 0.8 : 0 } } }); tag(x + 3, y + 3, id + ': signature'); });
+    } else if (view === 'stage') cells.push({ x: 0, y: 0, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: 0, pitch: 8, state: { bailiff: { face: -64 }, ren: { face: 62 }, ilse: { face: 58 }, nan: { face: 50 } } });
+    else if (view === 'poses') ids.forEach((id, i) => { const x = (i % 2) * W / 2, y = Math.floor(i / 2) * H / 2; cells.push({ x, y, w: W / 2, h: H / 2, show: [id], shot: 'body', of: id, yaw: id === 'bailiff' ? 30 : -28, pitch: 6, margin: 1.45, state: { [id]: { pose: 'signature', face: 0, emote: { ren: 'grim', ilse: 'smile', nan: 'soft', bailiff: 'anger' }[id], talk: id === 'ilse' ? 0.8 : 0 } } }); tag(x + 3, y + 3, id + ': signature'); });
     else if (view === 'clips') {
       const list = [['strike', 0.27], ['strike2', 0.2], ['strike2', 0.36], ['windup', 0.42], ['release', 0.16], ['hit', 0.12], ['cheer', 0.3], ['stepF', 0.16], ['yield', 0.7], ['surrender', 0.5], ['teamLead', 0.5], ['teamFollow', 0.78]];
-      list.forEach(([name, at], i) => { const x = (i % 3) * W / 3, y = Math.floor(i / 3) * H / 4; cells.push({ x, y, w: W / 3, h: H / 4, show: [who], shot: 'body', of: who, yaw: 62, pitch: 6, margin: 1.75, act: [name, at], state: { [who]: { face: 0, emote: name === 'hit' ? 'shock' : name === 'cheer' ? 'smile' : name === 'yield' ? 'tears' : 'anger' } } }); tag(x + 3, y + 3, `${name} @${at}`); });
+      list.forEach(([name, at], i) => { const x = (i % 3) * W / 3, y = Math.floor(i / 3) * H / 4; cells.push({ x, y, w: W / 3, h: H / 4, show: [who], shot: 'body', of: who, yaw: who === 'bailiff' ? 62 : -62, pitch: 6, margin: 1.75, act: [name, at], state: { [who]: { face: 0, emote: name === 'hit' ? 'shock' : name === 'cheer' ? 'smile' : name === 'yield' ? 'tears' : 'anger' } } }); tag(x + 3, y + 3, `${name} @${at}`); });
     }
     else if (view === 'act') cells.push({ x: 0, y: 0, w: W, h: H, show: actName === 'team' ? ['ren', 'ilse', 'bailiff'] : [who], shot: q.get('shot') || 'body', of: who, yaw: camYaw + (q.has('shot') ? 0 : 55), pitch: Number(q.get('pitch') || 6), margin: Number(q.get('margin') || 1.9), state: { [who]: { face: 0 } } });
     else { // the contact sheet
@@ -144,8 +145,8 @@ try {
     if (cell.shot === 'stage') { C3[0] = 0.7; C3[1] = 0.62; C3[2] = 0.2; cam.fov = 22; cam.orbit(C3, fit(1.5, 4.6), cell.yaw, cell.pitch); return 3.4; }
     const ch = cast[cell.of], p = ch.root.position;
     if (cell.shot === 'body') { C3[0] = p[0]; C3[1] = ch.height * 0.52; C3[2] = p[2]; cam.fov = 24; cam.orbit(C3, fit(ch.height * cell.margin, ch.height * 0.72 * cell.margin), cell.yaw, cell.pitch); return 1.5; }
-    const hp = ch.headPos, hs = ch.height * 0.46;
-    if (cell.shot === 'head') { C3[0] = hp[0]; C3[1] = hp[1] + hs * 0.05; C3[2] = hp[2]; cam.fov = 20; cam.orbit(C3, fit(hs * cell.margin, hs * 0.82 * cell.margin), cell.yaw, cell.pitch); return 1.2; }
+    const hp = ch.headPos, hs = ch.headRadius * 2.25;
+    if (cell.shot === 'head') { C3[0] = hp[0]; C3[1] = hp[1] + hs * 0.05; C3[2] = hp[2]; cam.fov = 20; cam.orbit(C3, fit(hs * cell.margin, hs * 0.86 * cell.margin), cell.yaw, cell.pitch); return 1.2; }
     // bust: head and shoulders with room below for subtitles, as a portrait phone cutscene frames a speaker
     C3[0] = hp[0]; C3[1] = hp[1] - hs * 0.42; C3[2] = hp[2]; cam.fov = 26; cam.orbit(C3, fit(hs * 3.3 * cell.margin, hs * 1.7 * cell.margin), cell.yaw, cell.pitch); return 1.6;
   }

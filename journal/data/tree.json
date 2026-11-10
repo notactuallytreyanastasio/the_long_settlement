@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 73927,
-  "lines": 1031
+  "bytes": 76412,
+  "lines": 1061
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12651,8 +12651,8 @@
  },
  {
   "path": "tools/gl-characters.html",
-  "bytes": 21004,
-  "lines": 228
+  "bytes": 21257,
+  "lines": 229
  },
  {
   "path": "tools/gl-demo.html",
