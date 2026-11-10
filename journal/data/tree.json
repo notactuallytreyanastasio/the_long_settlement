@@ -12631,8 +12631,8 @@
  },
  {
   "path": "src/shell/gl/sets/cutter-brig.js",
-  "bytes": 19387,
-  "lines": 212
+  "bytes": 20178,
+  "lines": 215
  },
  {
   "path": "src/shell/gl/sets/cutter-deck.js",
@@ -12811,8 +12811,8 @@
  },
  {
   "path": "src/shell/gl/sets/mole-lanterns.js",
-  "bytes": 18712,
-  "lines": 228
+  "bytes": 19366,
+  "lines": 233
  },
  {
   "path": "src/shell/gl/sets/orrery.js",

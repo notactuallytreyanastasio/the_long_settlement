@@ -20,7 +20,7 @@ import { merge, tint, place, box, cylinder, torus, setGlow, setOutline, fromArra
 import { node, group, makeEnv, createScene, mergeStatic, material } from '../scene.js';
 import { createSprites } from '../sprites.js';
 import { PAL, kitMaterials, anchorAt, pickLight, barrel, ropeCoil, planks, crate } from './kit.js';
-import { C7, STD_MARKS, STD_CAMERAS, shell7, dirFrom, norm7, hullSide, deckHead, cellFront, cellBarXs, chalk, numerals, bunk, shipLantern, ladder7, seaChest, wall7, floorPatch, auditSeal, bar } from './kit-ch7.js';
+import { C7, STD_MARKS, STD_CAMERAS, shell7, dirFrom, norm7, hullSide, deckHead, cellFront, cellBarXs, chalk, numerals, bunk, shipLantern, ladder7, seaChest, wall7, floorPatch, tiles, auditSeal, bar } from './kit-ch7.js';
 
 const H = 2.55, SIDE = 3.35, ALLEY = 0.56, FRONT = -0.15, BACK = -3.1, BOW = -4.9, AFT = 17;
 const LAMP_HOOK = [0, H - 0.14, -0.8], LAMP_DROP = 0.5, LAMP_S = 1.6;
@@ -31,7 +31,7 @@ const LIGHTS = {
     env: {
       key: { dir: norm7([0.22, 0.74, 0.62]), color: '#8794f0' },
       shadow: { tint: '#2a30a4', lift: 0.12, saturate: 1.35 },
-      ambient: { sky: '#5068e0', ground: '#3a2c96', amount: 0.19 },
+      ambient: { sky: '#5068e0', ground: '#6a58e0', amount: 0.25 },
       rim: { color: '#ffcf80', amount: 0.85, edge: 0.74 },
       fog: { color: '#2a3aa8', density: 0.006, start: 9, max: 0.4 },
       sky: { zenith: '#0c1a70', mid: '#1c3fb0', midAt: 0.45, horizon: '#4f82e6', below: '#3058c4', sunDir: dirFrom(0, 70), moon: 0, stars: 1 },
@@ -41,7 +41,7 @@ const LIGHTS = {
 };
 
 const CAMERAS = STD_CAMERAS({
-  wide: { target: [0, 1.3, -0.6], dist: 7.9, yaw: 2.5, pitch: 4, fov: 45, shadowCenter: [0, 0, -0.8], shadowRadius: 6 },
+  wide: { target: [0, 1.3, -0.6], dist: 8.4, yaw: 2.5, pitch: 4, fov: 45, shadowCenter: [0, 0, -0.8], shadowRadius: 6 },
   low: { target: [0, 1.5, -0.4], dist: 5.6, yaw: 5, pitch: -9, fov: 54, shadowCenter: [0, 0, -0.8], shadowRadius: 6 },
   stage: { target: [0, 1.0, 0.3], dist: 9.4, yaw: 6, pitch: 6, shadowCenter: [0, 0, -0.5], shadowRadius: 6.5 },
   landscape: { target: [0, 1.25, -0.8], dist: 8.6, yaw: 3, pitch: 4, fov: 40, shadowCenter: [0, 0, -1], shadowRadius: 7 },
@@ -68,7 +68,8 @@ function build(engine = null, { light, low = false } = {}) {
   const sideL = hullSide({ len: zl, h: H, lean: 0.55, bay: 1.45, ports: PORT_Z.map((z) => -(z - zc)) }), sideR = hullSide({ len: zl, h: H, lean: 0.55, bay: 1.45, ports: PORT_Z.map((z) => z - zc) });
   hull.add(node('side-left', sideL, M.wall, { pos: [-SIDE, 0, zc], rot: [0, 90, 0] }), node('side-right', sideR, M.wall, { pos: [SIDE, 0, zc], rot: [0, -90, 0] }));
   const HATCH = [0, -4.0];
-  hull.add(node('deck-head', deckHead({ w: SIDE * 2 + 1.4, d: zl, beams: 7, hatch: [0, HATCH[1] - zc, 1.25, 1.0], plank: '#fff0d4', beam: '#e8452f' }), M.wall, { pos: [0, H, zc] }));
+  hull.add(node('deck-head', deckHead({ w: SIDE * 2 + 1.4, d: zl, beams: 7, hatch: [0, HATCH[1] - zc, 1.25, 1.0], plank: '#aab4f6', beam: '#e8452f' }), M.wall, { pos: [0, H, zc] }));
+  { const carl = []; for (let z = BACK + 0.9; z < 9; z += 1.35) carl.push(tint(place(box(SIDE * 2 + 1.2, 0.13, 0.15), 0, H - 0.065, z), '#ff7a4a')); hull.add(node('carlings', merge(carl), M.wall)); }
   // the bulkhead at the back of the berths, with the way through to the ladder; the bow bulkhead beyond, with the Audit's seal on it
   hull.add(node('bulkhead', wall7({ w: SIDE * 2 + 1.2, h: H, t: 0.16, color: '#4a6ee0', openings: [{ x: 0, w: ALLEY * 2 - 0.1, top: 2.2, arch: true }] }), M.wall, { pos: [0, 0, BACK] }));
   hull.add(node('bulkhead-trim', merge(tint(place(box(SIDE * 2 + 1.2, 0.5, 0.05), 0, 0.25, BACK + 0.03), '#2f4ab8'), tint(place(box(SIDE * 2 + 1.2, 0.09, 0.06), 0, 0.54, BACK + 0.04), C7.brass)), M.wall));
@@ -108,7 +109,6 @@ function build(engine = null, { light, low = false } = {}) {
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
   env.sky.sunDir = norm7(env.sky.sunDir);
-  scene.root.add(mergeStatic(hull, 'hull'), mergeStatic(cells, 'cells'), mergeStatic(fore, 'fore'), mergeStatic(flat, 'flat'));
 
   // ---- what the lamp throws: the bars' shadows, raking out across the deck away from it (one unlined mesh)
   const L0 = [LAMP_HOOK[0], LAMP_HOOK[2]], strips = [];
@@ -120,9 +120,11 @@ function build(engine = null, { light, low = false } = {}) {
     for (const x of cellBarXs(SW, 0.34)) { const fz = (FRONT + BACK) / 2 + sx * x, fx = sx * ALLEY, l = Math.hypot(fx - L0[0], fz - L0[1]); strip(fx, fz, Math.min(3.2, (SIDE - 0.45 - ALLEY) * l / ALLEY)); }
     strip(sx * ALLEY, FRONT, 3.6, 0.09);   // the corner post's, out across the flat toward the cameras
   }
-  const shadowNode = node('bar-shadows', setOutline(tint(merge(strips), '#9a4f9e'), 0), M.flat); shadowNode.castShadow = false; scene.root.add(shadowNode);
+  hull.add(node('bar-shadows', setOutline(tint(merge(strips), '#b8566e'), 0), M.ground, { castShadow: false }));
   // warm light on the deck under the lamp, cold light at the foot of the ladder
-  const pools = node('pools', merge(floorPatch([[-0.5, 0.5], [0.5, 0.5], [0.44, -2.0], [-0.44, -2.0]], { color: '#ffd27a', glow: 0.45 }), floorPatch([[-0.55, BACK - 0.3], [0.55, BACK - 0.3], [0.7, BACK - 1.5], [-0.7, BACK - 1.5]], { color: '#9fc4ff', glow: 0.75, y: 0.01 })), M.flat);
+  const pools = node('pools', merge(floorPatch([[-0.55, BACK - 0.3], [0.55, BACK - 0.3], [0.7, BACK - 1.5], [-0.7, BACK - 1.5]], { color: '#9fc4ff', glow: 0.75, y: 0.01 })), M.flat);
+  // a grating in the flat, over the hold
+  hull.add(node('grating', merge(place(tiles({ w: 1.26, d: 0.98, nx: 9, nz: 7, colors: ['#ffc88a', '#8a4a86'] }), 0, 0.014, 2.75), ...[[1.46, 0.1, 0, 2.21], [1.46, 0.1, 0, 3.29], [0.1, 1.18, -0.68, 2.75], [0.1, 1.18, 0.68, 2.75]].map(([w, d, x, z]) => setOutline(tint(place(box(w, 0.05, d), x, 0.02, z), '#d2643e'), 0))), M.ground, { castShadow: false }));
   pools.castShadow = false; scene.root.add(pools);
 
   // ---- light you can see: the moon down the hatch, and in at each port
@@ -136,14 +138,18 @@ function build(engine = null, { light, low = false } = {}) {
   // ---- the lamp: its own node, swinging; the oilskins and the key swing with the same roll
   const lampMesh = shipLantern({ drop: LAMP_DROP, s: LAMP_S });
   const lampNode = node('lamp', lampMesh, M.lantern, { pos: LAMP_HOOK }); lampNode.castShadow = false; scene.root.add(lampNode);
-  scene.root.add(node('lamp-hook', tint(place(box(0.08, 0.16, 0.08), 0, 0.06, 0), C7.brass), M.prop, { pos: LAMP_HOOK }));
+  hull.add(node('lamp-hook', tint(place(box(0.08, 0.16, 0.08), 0, 0.06, 0), C7.brass), M.wall, { pos: LAMP_HOOK, castShadow: false }));
   const LAMP_LEN = -lampMesh.anchors.lamp[1], lampPos = [LAMP_HOOK[0], LAMP_HOOK[1] - LAMP_LEN, LAMP_HOOK[2]];
+  flat.add(node('oilskin1', oilskin('#ffc94a', 3), M.prop, { pos: [-SIDE + 0.5, 2.05, 2.9], rot: [4, 90, 0] }), node('oilskin2', oilskin('#f4573f', 7), M.prop, { pos: [SIDE - 0.5, 2.0, 1.75], rot: [-5, -90, 0] }));
   const hung = [
-    { node: node('oilskin1', oilskin('#ffc94a', 3), M.prop, { pos: [-SIDE + 0.5, 2.05, 2.9], rot: [0, 90, 0] }), yaw: 90, k: 0.6, ph: 0.4 },
-    { node: node('oilskin2', oilskin('#f4573f', 7), M.prop, { pos: [SIDE - 0.5, 2.0, 1.75], rot: [0, -90, 0] }), yaw: -90, k: 0.7, ph: 1.1 },
     { node: node('keys', merge(tint(place(torus(0.09, 0.014, 8, 3), 0, -0.12, 0.1, 90, 0, 0), C7.brass), tint(place(box(0.03, 0.17, 0.02), -0.03, -0.28, 0.1, 0, 0, 8), C7.brass), tint(place(box(0.03, 0.15, 0.02), 0.04, -0.27, 0.1, 0, 0, -10), C7.brass)), M.prop, { pos: KEY }), yaw: 0, k: 1.3, ph: 2.0 },
   ];
+  // slung from the deck head over the flat: a net of cork floats, a coil of line
+  const floats = []; for (let i = 0; i < 9; i++) floats.push(tint(place(cylinder(0.085, 0.085, 0.1, 6), Math.cos(i * 2.4) * 0.14, -0.3 - (i % 4) * 0.11, Math.sin(i * 2.4) * 0.14, i * 30, 0, i * 50), i % 3 ? C7.cork : '#fff6e4'));
+  hung.push({ node: node('floats', merge(floats, tint(place(cylinder(0.012, 0.012, 0.22, 3), 0, -0.22, 0), PAL.rope)), M.prop, { pos: [-1.75, H - 0.2, 1.95] }), yaw: 0, k: 0.8, ph: 0.9 });
+  flat.add(node('slung-coil', merge(tint(place(torus(0.2, 0.045, 10, 4), 0, -0.42, 0, 90, 0, 0), PAL.rope), tint(place(cylinder(0.012, 0.012, 0.24, 3), 0, -0.24, 0), PAL.rope)), M.prop, { pos: [1.8, H - 0.2, 2.5], rot: [0, 0, 5] }));
   for (const h of hung) { h.node.castShadow = false; scene.root.add(h.node); }
+  scene.root.add(mergeStatic(hull, 'hull'), mergeStatic(cells, 'cells'), mergeStatic(fore, 'fore'), mergeStatic(flat, 'flat'));
 
   // ---- foreground: the after end of the flat, close to the wide camera
   const fg = group('fg');
@@ -180,10 +186,7 @@ function build(engine = null, { light, low = false } = {}) {
     lampGlow.pos[0] = lampCore.pos[0] = lampPos[0]; lampGlow.pos[1] = lampCore.pos[1] = lampPos[1]; lampGlow.pos[2] = lampCore.pos[2] = lampPos[2];
     lampGlow.alpha = 0.6 * on * fl; lampCore.alpha = 0.75 * Math.min(1, on) * fl;
     lampNode.tint[0] = lampNode.tint[1] = lampNode.tint[2] = 0.35 + 0.65 * Math.min(1, on);
-    // the shadows lean with the lamp; the warm pool slides under it
-    shadowNode.position[0] = -Math.sin(az) * 0.28; shadowNode.tint[3] = 1; shadowNode.visible = pw > 0.12;
-    pools.position[0] = Math.sin(az) * 0.3;
-    for (let i = 0; i < hung.length; i++) { const h = hung[i]; if (h.yaw) h.node.setRot(roll * h.k * (h.yaw > 0 ? -0.6 : 0.6), h.yaw, Math.sin(time * 0.92 + h.ph) * 3 * swing); else h.node.setRot(0, 0, roll * h.k); }
+    for (let i = 0; i < hung.length; i++) hung[i].node.setRot(0, 0, roll * hung[i].k);
     const moon = 0.75 + 0.25 * Math.min(1.2, power), sea = 0.8 + 0.2 * Math.sin(time * 1.7);
     for (let i = 0; i < portGlows.length; i++) portGlows[i].alpha = 0.5 * moon * (0.85 + 0.15 * Math.sin(time * 2.3 + i * 1.9));
     hatchGlow.alpha = 0.34 * moon * sea;

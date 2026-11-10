@@ -32,7 +32,7 @@ const LIGHTS = {
   night: {
     preset: 'night', power: 1.2, sun: 0.2, unlit: 0.4, glow: 0.7,
     env: {
-      key: { dir: dirFrom(-150, 42), color: '#86a4f4' },
+      key: { dir: dirFrom(-150, 42), color: '#5f7ce0' },
       shadow: { tint: '#2f44a8', lift: 0.12, saturate: 1.25 },
       ambient: { sky: '#3f5fd0', ground: '#2a3a92', amount: 0.18 },
       rim: { color: '#bcd6ff', amount: 0.6, edge: 0.76 },
@@ -55,7 +55,7 @@ function build(engine = null, { light, low = false } = {}) {
 
   // ---- the mole and the head of the quay it leaves from
   const ground = group('ground'), near = group('near');
-  const mole = moleWall({ len: LEN, w0: 9.5, w1: 4.6, drop: 2.0, bend: BEND, seg: low ? 12 : 18, seed: 4, top: '#e9d8b4' });
+  const mole = moleWall({ len: LEN, w0: 9.5, w1: 4.6, drop: 2.0, bend: BEND, seg: low ? 12 : 18, seed: 4, top: '#ecdcb6' });
   ground.add(node('mole', mole, M.ground, { pos: [0, 0, -1.6] }));
   ground.add(node('head', tint(place(box(60, 2.2, 14), 0, -1.1, 5.4), '#ecdcb6'), M.ground));
   ground.add(node('head-edge', merge(...[-1, 1].map((sx) => tint(place(box(25, 0.24, 0.6), sx * 17.3, 0.02, -1.4), PAL.stone2))), M.ground));
@@ -75,6 +75,11 @@ function build(engine = null, { light, low = false } = {}) {
   const names = lanternString(top0, posts[0].top, { sag: 1.05, count: 12, ends: 0.07 }); wires.push(names.wire);
   strings.push({ hooks: names.hooks, cols: [0, 2, 1, 4, 0, 3, 2, 6, 1, 5, 0, 2], scale: 1.28 });
   for (let i = 0; i < NEAR_SPANS; i++) { const s = lanternString(posts[i].top, posts[i + 1].top, { sag: 0.7, count: low ? 5 : 7, ends: 0.1 }); wires.push(s.wire); strings.push({ hooks: s.hooks, cols: [2, 0, 5, 1, 0, 3, 2].map((c) => (c + i) % 7) }); }
+  // a second tall pole stage left: one string from it over the heads of the stage to the first, one out to the line
+  const POLE1 = [-4.3, 0, 1.9], pole1 = pole({ h: 5.0, seed: 9, knob: PAL.teal }), top1 = anchorAt(pole1, 'top', POLE1);
+  near.add(node('pole1', pole1, M.prop, { pos: POLE1 }));
+  { const s = lanternString(top1, top0, { sag: 1.25, count: 7, ends: 0.08 }); wires.push(s.wire); strings.push({ hooks: s.hooks, cols: [3, 0, 2, 1, 5, 0, 2], scale: 1.35 }); }
+  if (!low) { const s = lanternString(top1, posts[1].top, { sag: 0.9, count: 6, ends: 0.12 }); wires.push(s.wire); strings.push({ hooks: s.hooks, cols: [1, 4, 0, 2, 5, 3], scale: 1.1 }); }
   // every other span is a wire with lights too small to model: they are instanced specks below
   const far = [];
   for (let i = NEAR_SPANS; i < posts.length - 1; i++) {
@@ -99,7 +104,7 @@ function build(engine = null, { light, low = false } = {}) {
   scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(near, 'near'), cutNode);
 
   const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
-  const cobCols = ['#f2e2c0', '#d8c69c', '#ead6ae', '#d2bc90'];
+  const cobCols = ['#f6e6c4', '#d8c49a', '#ecd8b0', '#cdb88c'];
   scatter(cob, low ? 120 : 300, (i) => {
     const col = i % 20, row = Math.floor(i / 20), x = -6.6 + col * 0.7 + (row % 2) * 0.35 + (r() - 0.5) * 0.18, z = -1.0 + row * (low ? 0.9 : 0.42) + (r() - 0.5) * 0.12;
     if (r() < 0.4) return null;
@@ -143,17 +148,17 @@ function build(engine = null, { light, low = false } = {}) {
   // ---- lamps: six fixed lights down the line
   const mid = (i) => { const a = posts[i].top, b = posts[i + 1].top; return [(a[0] + b[0]) / 2, a[1] - 1.2, (a[2] + b[2]) / 2]; };
   const lamps = [
-    { name: 'names', pos: [FOCUS_LAMP[0], FOCUS_LAMP[1] - 0.2, FOCUS_LAMP[2]], color: '#ffb85a', radius: 7.8, base: 1.15 },
-    { name: 'names-left', pos: [nameAt[10][0], nameAt[10][1], nameAt[10][2]], color: '#ffc46a', radius: 5.6, base: 0.95 },
-    { name: 'names-right', pos: [nameAt[1][0], nameAt[1][1], nameAt[1][2]], color: '#ffc46a', radius: 5.6, base: 0.95 },
-    { name: 'span-1', pos: mid(0), color: '#ffb060', radius: 6.5, base: 1.0 },
-    { name: 'span-2', pos: mid(1), color: '#ffb060', radius: 6.5, base: 0.95 },
-    { name: 'crowd', pos: [3.9, 1.5, -2.7], color: '#ffb060', radius: 4.0, base: 0.85 },
+    { name: 'names', pos: [FOCUS_LAMP[0], FOCUS_LAMP[1] - 0.2, FOCUS_LAMP[2]], color: '#ff9a38', radius: 6.2, base: 1.9 },
+    { name: 'names-left', pos: [nameAt[10][0], nameAt[10][1], nameAt[10][2]], color: '#ffb050', radius: 4.6, base: 1.3 },
+    { name: 'names-right', pos: [nameAt[1][0], nameAt[1][1], nameAt[1][2]], color: '#ffb050', radius: 4.6, base: 1.3 },
+    { name: 'span-1', pos: mid(0), color: '#ffa848', radius: 5.2, base: 1.5 },
+    { name: 'span-2', pos: mid(1), color: '#ffa848', radius: 5.2, base: 1.4 },
+    { name: 'front', pos: [-0.4, 3.3, 2.0], color: '#ff9a38', radius: 5.4, base: 1.7 },
   ];
 
   // ---- the answer: two points of blue, far out and low
-  const BLUE = [{ pos: [-40, 3.2, -640], size: 13, col: '#7fd8ff' }, { pos: [-66, 3.0, -380], size: 10, col: '#9fe6ff' }].map((b) => ({
-    ...b, glow: sprites.add({ kind: 'glow', pos: b.pos, size: b.size, color: b.col, alpha: 0 }), star: sprites.add({ kind: 'sparkle', pos: b.pos, size: b.size * 0.9, color: '#eaffff', alpha: 0 }),
+  const BLUE = [{ pos: [58, 4.2, -640], size: 30, col: '#5fc8ff' }, { pos: [44, 3.4, -380], size: 20, col: '#7fd8ff' }].map((b) => ({
+    ...b, glow: sprites.add({ kind: 'glow', pos: b.pos, size: b.size, color: b.col, alpha: 0 }), star: sprites.add({ kind: 'sparkle', pos: b.pos, size: b.size * 0.9, color: '#8fe2ff', alpha: 0 }),
     refl: sprites.add({ kind: 'glow', pos: [b.pos[0], WATER + 0.2, b.pos[2] + 40], size: [b.size * 0.5, b.size * 0.16], color: b.col, alpha: 0 }), now: 0,
   }));
   const cutLamp = anchorAt(cutMesh, 'lamp', CUT, 78), cutGlow = sprites.add({ kind: 'glow', pos: cutLamp, size: 5, color: '#fff0b0', alpha: 0.75 });
