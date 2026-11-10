@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 39974,
-  "lines": 633
+  "bytes": 41559,
+  "lines": 648
  },
  {
   "path": "src/shell/gl/rig.js",

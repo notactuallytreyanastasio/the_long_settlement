@@ -566,6 +566,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "01402d39-7aab-49b8-aaaa-69fa0aa67875",
+   "type": "action",
+   "status": "pending",
+   "title": "Workflow 9: convert chapters 2-8 to 3D (44 sets built; staging for 49 scenes, seven table art passes, full cast, director fixes, performance, switch on per chapter)",
+   "description": null,
+   "created": "2026-11-10T19:13:36.472233Z",
+   "updated": "2026-11-10T19:13:36.472233Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -834,6 +848,13 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T19:04:06.074484Z"
+  },
+  {
+   "from": "147e8063-ac89-446d-84ce-81cb03931ed8",
+   "to": "01402d39-7aab-49b8-aaaa-69fa0aa67875",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T19:13:36.474672Z"
   }
  ]
 }

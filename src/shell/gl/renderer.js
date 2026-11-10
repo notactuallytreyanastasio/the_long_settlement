@@ -70,7 +70,12 @@ export function createRenderer(canvas, opts = {}) {
   let Q = resolveQuality(opts.quality || 'high');
   const ctx = createContext(canvas, { ...opts, antialias: false, dprCap: Math.min(hardDpr, Q.dprCap) }); // antialiasing is ours, so it can change
   const gl = ctx.gl;
-  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0 };
+  const PASSES = ['shadow', 'opaque', 'outline', 'water', 'sky', 'blended', 'beams', 'sprites'];
+  const stats = { drawCalls: 0, triangles: 0, nodes: 0, culled: 0, lights: 0, shadowDraws: 0, shadowTriangles: 0, shadowFresh: false, cpuMs: 0, width: 0, height: 0, pass: {}, figures: { draws: 0, tris: 0 } };
+  for (const k of PASSES) stats.pass[k] = { draws: 0, tris: 0 };
+  let passNow = stats.pass.opaque, overdrawOnly = null;
+  /** Every draw from here on is counted under this pass; a fill measurement of one pass masks the others' colour (they still write depth). */
+  function enter(name) { passNow = stats.pass[name]; if (overdraw && overdrawOnly) { const on = overdrawOnly === name; gl.colorMask(on, on, on, on); } }
 
   // ---- GPU objects (rebuilt after a context loss, programs also after a quality change) ----
   let programs = new Map(), skyVao = null, waterVao = null, spriteVao = null, spriteBuf = null, spriteCap = 0, white = null, nullShadow = null;
@@ -325,7 +330,8 @@ export function createRenderer(canvas, opts = {}) {
     const tris = inst ? geo.triangles * inst.count : geo.triangles;
     if (inst) gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count);
     else gl.drawElements(gl.TRIANGLES, geo.count, geo.indexType, 0);
-    stats.triangles += tris; stats.drawCalls++;
+    stats.triangles += tris; stats.drawCalls++; passNow.draws++; passNow.tris += tris;
+    if (n.bones) { stats.figures.draws++; stats.figures.tris += tris; }
     if (shadowPass) { stats.shadowTriangles += tris; stats.shadowDraws++; }
   }
 
@@ -390,6 +396,8 @@ export function createRenderer(canvas, opts = {}) {
       VY = ctx.height - Math.round(view.y * dpr) - H;
     }
     camera.update(W / H);
+    for (let i = 0; i < PASSES.length; i++) { const ps = stats.pass[PASSES[i]]; ps.draws = 0; ps.tris = 0; }
+    stats.figures.draws = 0; stats.figures.tris = 0;
     stats.drawCalls = 0; stats.triangles = 0; stats.nodes = 0; stats.culled = 0; stats.shadowDraws = 0; stats.shadowTriangles = 0; stats.shadowFresh = false; stats.width = W; stats.height = H;
     frame = frame || {}; frame.env = env; frame.camera = camera; frame.time = time; frame.shadowTexel = 0.01; frame.shadowSize = 16;
     frame.pxUnit = (2 * Math.tan(camera.fov * DEG / 2)) / H; // world units per device pixel at depth 1
@@ -433,6 +441,7 @@ export function createRenderer(canvas, opts = {}) {
         gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, entry.size, entry.size);
         gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.5, 3); gl.clearDepth(1);
         let cleared = false;
+        enter('shadow');
         if (statics.length > 0) {
           // what never moves: drawn once into a map of its own, copied in before the moving things each time
           if (!entry.kept) entry.kept = createShadowTarget(gl, entry.size);
@@ -475,10 +484,12 @@ export function createRenderer(canvas, opts = {}) {
     blend('off');
     setCull(true);
     frameUniforms(prog('toon')); frameUniforms(prog('toon', 'I')); frameUniforms(prog('toon', 'S'));
+    enter('opaque');
     drawToonList(opaque);
 
     // outlines: the same meshes again, pushed out along their smoothed normals, back faces only
     gl.cullFace(gl.FRONT); setCull(true);
+    enter('outline');
     {
       const ref = v3.dist(camera.position, camera.target);
       let p = null, mat = null;
@@ -502,7 +513,7 @@ export function createRenderer(canvas, opts = {}) {
     // water
     const wt = env.water;
     if (wt) {
-      const p = prog('water'), u = p.u; frameUniforms(p); setCull(false);
+      const p = prog('water'), u = p.u; frameUniforms(p); setCull(false); enter('water');
       const half = camera.far * 0.95;
       gl.uniform4f(u.uWaterXform, camera.position[0], wt.level, camera.position[2], half);
       gl.uniform3fv(u.uDeep, wt.deep); gl.uniform3fv(u.uMid, wt.mid); gl.uniform3fv(u.uShallow, wt.shallow); gl.uniform3fv(u.uFoamColor, wt.foam);
@@ -513,12 +524,12 @@ export function createRenderer(canvas, opts = {}) {
       gl.uniform1i(u.uFoamCount, nFoam); if (nFoam > 0) gl.uniform4fv(u.uFoam, foam);
       const bx = wt.box; // one rounded rectangle of shore: [centre x, centre z, half x, half z, corner radius, band width]
       if (bx) { gl.uniform4f(u.uShoreBox, bx[0], bx[1], bx[2], bx[3]); gl.uniform2f(u.uShoreBoxR, bx[4] ?? 0.2, bx[5] ?? 0.2); } else gl.uniform2f(u.uShoreBoxR, 0, 0);
-      gl.bindVertexArray(waterVao); gl.drawArrays(gl.TRIANGLES, 0, 6); stats.drawCalls++; stats.triangles += 2;
+      gl.bindVertexArray(waterVao); gl.drawArrays(gl.TRIANGLES, 0, 6); stats.drawCalls++; stats.triangles += 2; stats.pass.water.draws++; stats.pass.water.tris += 2;
     }
 
     // sky, behind everything
     {
-      const p = prog('sky'), u = p.u, sk = env.sky, sun = sk.sun; frameUniforms(p); setCull(false);
+      const p = prog('sky'), u = p.u, sk = env.sky, sun = sk.sun; frameUniforms(p); setCull(false); enter('sky');
       gl.uniformMatrix4fv(u.uInvViewProj, false, camera.invViewProj);
       gl.uniform3fv(u.uZenith, sk.zenith); gl.uniform4f(u.uSkyMid, sk.mid[0], sk.mid[1], sk.mid[2], sk.midAt); gl.uniform3fv(u.uHorizon, sk.horizon); gl.uniform3fv(u.uBelow, sk.below);
       gl.uniform4f(u.uGlow, sk.glow[0], sk.glow[1], sk.glow[2], sk.glowAmount);
@@ -528,13 +539,14 @@ export function createRenderer(canvas, opts = {}) {
       gl.uniform4f(u.uMoon, sk.moon, 0, 0, sk.moon > 0 ? 1 : 0);
       gl.uniform2f(u.uStars, sk.stars, time);
       gl.depthMask(false);
-      gl.bindVertexArray(skyVao); gl.drawArrays(gl.TRIANGLES, 0, 3); stats.drawCalls++; stats.triangles += 1;
+      gl.bindVertexArray(skyVao); gl.drawArrays(gl.TRIANGLES, 0, 3); stats.drawCalls++; stats.triangles += 1; stats.pass.sky.draws++; stats.pass.sky.tris += 1;
     }
 
     // blended decals (faces, painted clouds), in scene order
     gl.depthMask(false); blend('alpha');
     if (blended.length) {
       gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-1, -2);
+      enter('blended');
       drawToonList(blended);
       gl.disable(gl.POLYGON_OFFSET_FILL);
     }
@@ -543,6 +555,7 @@ export function createRenderer(canvas, opts = {}) {
     if (beams.length) {
       const p = prog('beam'); frameUniforms(p); setCull(false); blend('add');
       let mat = null;
+      enter('beams');
       for (let i = 0; i < beams.length; i++) {
         const n = beams[i];
         if (n.instances) throw new Error(`renderer: beam node "${n.name}" is instanced; beams are drawn one at a time`);
@@ -554,7 +567,7 @@ export function createRenderer(canvas, opts = {}) {
     // sprites: one instanced call; additive kinds write zero alpha under a premultiplied blend
     const sp = scene.sprites;
     if (sp && sp.pack(camera) > 0) {
-      const p = prog('sprite'), u = p.u; frameUniforms(p); setCull(false);
+      const p = prog('sprite'), u = p.u; frameUniforms(p); setCull(false); enter('sprites');
       blend('premul');
       gl.uniform3fv(u.uCamRight, camera.right); gl.uniform3fv(u.uCamUp, camera.upDir);
       const L = env.key.dir; let lx = v3.dot(L, camera.right), ly = v3.dot(L, camera.upDir); const ll = Math.hypot(lx, ly) || 1;
@@ -565,10 +578,10 @@ export function createRenderer(canvas, opts = {}) {
       gl.bindVertexArray(spriteVao.vao); gl.bindBuffer(gl.ARRAY_BUFFER, spriteBuf);
       if (spriteCap < sp.capacity) { gl.bufferData(gl.ARRAY_BUFFER, sp.capacity * SPRITE_FLOATS * 4, gl.DYNAMIC_DRAW); spriteCap = sp.capacity; }
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, sp.data, 0, sp.count * SPRITE_FLOATS);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sp.count); stats.drawCalls++; stats.triangles += sp.count * 2;
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sp.count); stats.drawCalls++; stats.triangles += sp.count * 2; stats.pass.sprites.draws++; stats.pass.sprites.tris += sp.count * 2;
     }
 
-    gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null);
+    gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null); gl.colorMask(true, true, true, true);
 
     // ---- present ----
     if (aa !== 'none') {
@@ -604,11 +617,13 @@ export function createRenderer(canvas, opts = {}) {
      * How many fragments one frame shades: runs drawFn() (which calls render() as a frame does) with every
      * pass set to add one step of red per shaded fragment, and reads the canvas back. Fragments the depth
      * test rejects are not counted, which is what a GPU with early depth testing pays for. The shadow pass
-     * is depth only and is not in the number. Returns { fragments, pixels, perPixel, max }. For tools, not for play.
+     * is depth only and is not in the number. `only` (a pass name: opaque, outline, water, sky, blended, beams, sprites)
+     * counts that pass alone. Returns { fragments, pixels, perPixel, max }. For tools, not for play.
      */
-    measureFill(drawFn) {
+    measureFill(drawFn, only = null) {
+      if (only && !stats.pass[only]) throw new Error(`renderer: measureFill knows the passes ${PASSES.join(', ')}, not ${JSON.stringify(only)}`);
       ctx.resize();
-      overdraw = true;
+      overdraw = true; overdrawOnly = only; gl.colorMask(true, true, true, true);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.disable(gl.SCISSOR_TEST); gl.viewport(0, 0, ctx.width, ctx.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
       let out;
       try {
@@ -617,7 +632,7 @@ export function createRenderer(canvas, opts = {}) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.readPixels(0, 0, ctx.width, ctx.height, gl.RGBA, gl.UNSIGNED_BYTE, px);
         let sum = 0, max = 0; for (let i = 0; i < px.length; i += 4) { sum += px[i]; if (px[i] > max) max = px[i]; }
         out = { fragments: Math.round(sum / 8), pixels: ctx.width * ctx.height, perPixel: +(sum / 8 / (ctx.width * ctx.height)).toFixed(3), max: Math.round(max / 8), saturated: max >= 248 };
-      } finally { overdraw = false; }
+      } finally { overdraw = false; overdrawOnly = null; gl.colorMask(true, true, true, true); }
       return out;
     },
     resize: () => ctx.resize(),
