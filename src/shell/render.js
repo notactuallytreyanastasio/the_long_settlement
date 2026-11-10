@@ -29,8 +29,8 @@
 // the text.
 
 import { REEL_STRIPS } from '../core/slot.js';
-import { currentScene, objectiveProgress, litIds, lineSeconds } from '../core/story.js';
-import { SPIN_COST, LOAN, TRUST_PER_LOAN, leaning } from '../core/economy.js';
+import { currentScene, objectiveProgress, litIds, lineSeconds, endingOf } from '../core/story.js';
+import { SPIN_COST, LOAN, TRUST_PER_LOAN, ledger } from '../core/economy.js';
 import { leverStatus, AID_WAIT } from '../core/game.js';
 import { drawCinema, drawPortrait } from './cinema.js';
 import {
@@ -94,6 +94,15 @@ const LOOKS = [
   // Tallis: the bell lamp over the exchange floor, oxblood and gold
   [/ticker|exchange|price|bell/, look({ key: 'exchange', lamp: [187, 30], light: '#fff0b0', night: '#150a2a', pool: ['#2e1238', '#5a1f3a', '#96402e'], poolR: [800, 500, 230],
     rail: '#ffd24a', bump: '#7a1730', cap: '#ffd24a', dim: '#231040', word: '#7a2f44', flip: '#fff6e0', stripe: '#d6263f' })],
+  // Kedge: the sun coming up behind the cranes, low on the left, and long shadows down the quay
+  [/quay|crane|kedge/, look({ key: 'quay', lamp: [31, 214], light: '#ffb07a', night: '#0c0b2c', pool: ['#181a4c', '#3a2c6e', '#8a4a74'], poolR: [780, 470, 210],
+    rail: '#d9b074', bump: '#2f3a6e', cap: '#ffc68a', dim: '#1b1a4e', word: '#5a3f8a', flip: '#fff6e0', stripe: '#18a79c' })],
+  // Vessery fish dock: a high clear sun where chapter one hung its lantern
+  [/daylight|dock|fish/, look({ key: 'dock', lamp: [62, 58], light: '#fff1b8', night: '#0e2c58', pool: ['#164878', '#1f7ba2', '#62c2b6'], poolR: [820, 520, 250],
+    rail: '#f3e3bb', bump: '#33416e', cap: '#ffd24a', dim: '#143a68', word: '#2c8cae', flip: '#fff6e0', stripe: '#d6263f' })],
+  // Cresset: the Founders' Lamp itself, white, at the head of the field. Its hole is not dark.
+  [/founders|cresset|capital/, look({ key: 'founders', lamp: [199, 162], light: '#f2f6ff', night: '#0a0928', pool: ['#1c1958', '#3c3796', '#9a98e4'], poolR: [720, 430, 170],
+    rail: '#ffd873', bump: '#e0a83a', cap: '#dfe8ff', dim: '#1e1a58', word: '#5650b4', flip: '#ffffff', stripe: '#e0a83a', hole: '#ffffff' })],
 ];
 function lookOf(table) {
   const m = String(table.theme && table.theme.motif).toLowerCase();
@@ -856,6 +865,323 @@ export function createRenderer(canvas) {
       inkLine(g, 1.5);
       g.stroke();
       glint(g, lx, ly + 13, 22, WHITE, 0.95, 0);
+    } else if (K.key === 'quay') {
+      // Kedge at sunrise. The quay is planked; the roads lie beyond its edge on the right with the
+      // colliers at anchor; the sun is low on the left and every crane lays a long jib of shadow.
+      const edge = [[236, 0], [258, 130], [312, 330], [334, 560], [304, TH]];
+      const hop = table.saucers[0];
+      g.save();
+      g.beginPath();
+      poly([[0, 0], ...edge, [0, TH]])(g);
+      g.clip();
+      g.fillStyle = A('#05032a', 0.2);
+      g.beginPath();
+      for (let r = 0; r < 20; r++) if (r % 2) g.rect(0, 30 + r * 40, TW, 40);
+      g.fill();
+      // butt joints, staggered
+      g.fillStyle = A('#05032a', 0.34);
+      for (let r = 0; r < 20; r++) {
+        for (let c = 0; c < 4; c++) g.fillRect(24 + c * 96 + ((r * 37) % 80), 30 + r * 40, 2, 40);
+      }
+      g.restore();
+      // the roads
+      g.save();
+      g.beginPath();
+      poly([...edge, [TW, TH], [TW, 0]])(g);
+      g.clip();
+      g.fillStyle = A('#070b3c', 0.5);
+      g.fillRect(200, 0, 200, TH);
+      for (let k = 0; k < 13; k++) {
+        waves(g, 200, 40 + k * 60, 200, 60, { len: 58 - (k % 3) * 8, amp: 4 + (k % 2) * 2, phase: hash(k + 71) * 2,
+          col: k % 2 ? A('#03062c', 0.3) : A('#ff9a7a', 0.07), foam: A(WHITE, 0.2), every: 3, L });
+      }
+      // hulls at anchor, bows to the weather, each with the sun on one side
+      for (const [x, y, w] of [[352, 196, 26], [318, 300, 30], [356, 372, 24], [342, 498, 34], [372, 600, 26], [336, 688, 30], [370, 96, 20]]) {
+        const h = w * 0.3;
+        cel(g, poly([[x - w * 0.5, y - h * 0.5], [x + w * 0.5, y - h * 0.5], [x + w * 0.36, y + h * 0.5], [x - w * 0.4, y + h * 0.5]]), '#1a1750', L,
+          { off: h * 0.5, ink: 1.6, shadow: '#0c0a30', rim: 1.6, rimCol: A(L.col, 0.75) });
+        g.fillStyle = INK;
+        g.fillRect(x - 1, y - h * 0.5 - w * 0.6, 2, w * 0.6);
+        g.fillRect(x - w * 0.2, y - h * 0.5 - w * 0.44, w * 0.4, 1.6);
+        g.fillStyle = A(L.col, 0.4);
+        g.fillRect(x - w * 0.42, y + h * 0.5 + 2.5, w * 0.84, 1.8);
+      }
+      g.restore();
+      // the quay's stone coping
+      g.beginPath();
+      edge.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
+      inkLine(g, 6);
+      g.stroke();
+      inkLine(g, 2.6, blend(K.rail, K.pool[1], 0.5));
+      g.stroke();
+      rays(g, lx, ly, 30, 900, 9, 0.5, A(L.col, 0.06));
+      // the cranes' jibs, laid down the quay by the low sun
+      for (const b of table.bumpers) {
+        const [x, y] = b.pos;
+        const ux = -L.dx;
+        const uy = -L.dy;
+        g.strokeStyle = A('#04031c', 0.36);
+        g.lineCap = 'butt';
+        g.lineWidth = 2.6;
+        g.beginPath();
+        for (const side of [-1, 1]) {
+          g.moveTo(x + ux * b.r - uy * 7 * side, y + uy * b.r + ux * 7 * side);
+          g.lineTo(x + ux * 150 - uy * 2 * side, y + uy * 150 + ux * 2 * side);
+        }
+        for (let i = 0; i < 8; i++) {
+          const t0 = b.r + i * 16;
+          const w0 = 7 - (i / 8) * 5;
+          const w1 = 7 - ((i + 1) / 8) * 5;
+          const s = i % 2 ? 1 : -1;
+          g.moveTo(x + ux * t0 - uy * w0 * s, y + uy * t0 + ux * w0 * s);
+          g.lineTo(x + ux * (t0 + 16) + uy * w1 * s, y + uy * (t0 + 16) - ux * w1 * s);
+        }
+        g.stroke();
+      }
+      // casks of stillsalt, landed and waiting for a tally
+      for (let i = 0; i < 12; i++) {
+        const x = 40 + hash(i + 610) * 236;
+        const y = 402 + hash(i + 640) * 372;
+        const r = 6 + hash(i + 670) * 2.5;
+        g.save();
+        g.translate(x, y);
+        g.fillStyle = A('#04031c', 0.4);
+        g.beginPath();
+        g.ellipse(-L.dx * r, -L.dy * r, r * 1.1, r * 1.3, 0, 0, TAU);
+        g.fill();
+        g.rotate((hash(i + 700) - 0.5) * 1.2);
+        cel(g, box(-r, -r * 1.3, r * 2, r * 2.6, r * 0.7), blend('#b9824a', K.pool[1], 0.5), L, { off: r * 0.5, ink: 1.4 });
+        g.fillStyle = INK;
+        g.fillRect(-r, -r * 0.62, r * 2, 1.4);
+        g.fillRect(-r, r * 0.5, r * 2, 1.4);
+        g.restore();
+      }
+      // tally marks chalked by the bank, and a coil of rope by the other
+      g.strokeStyle = A(PAPER, 0.3);
+      g.lineWidth = 2;
+      g.lineCap = 'round';
+      g.beginPath();
+      for (let k = 0; k < 4; k++) { g.moveTo(52 + k * 6, 372); g.lineTo(54 + k * 6, 392); }
+      g.moveTo(48, 388); g.lineTo(76, 376);
+      g.stroke();
+      curl(g, 300, 400, 13, 2.6, 1, 4, blend(K.rail, K.pool[0], 0.45), 1.2);
+      // the hopper's hood
+      cel(g, poly([[hop.pos[0] - 24, hop.pos[1] + 20], [hop.pos[0] - 24, hop.pos[1] - 14], [hop.pos[0], hop.pos[1] - 38], [hop.pos[0] + 24, hop.pos[1] - 14], [hop.pos[0] + 24, hop.pos[1] + 20]]),
+        '#2a2c66', L, { off: 9, ink: 0, shadow: '#15143c' });
+      // the sun, just clear of the sea wall
+      rings(g, lx, ly, 104, [A(L.col, 0.14), A(L.col, 0.22), A(L.col, 0.4)], [1, 0.66, 0.4]);
+      g.fillStyle = L.core;
+      g.beginPath();
+      g.arc(lx, ly, 15, 0, TAU);
+      g.fill();
+      glint(g, lx, ly, 30, WHITE, 0.95, 0);
+    } else if (K.key === 'dock') {
+      // The fish dock by day. Cobbles like scales, the hall steps up the left, two trestles of the
+      // morning's catch, gulls, and the drum carried down and opened where anyone can count it.
+      const drum = table.saucers[0];
+      g.strokeStyle = A('#06204a', 0.2);
+      g.lineWidth = 1.6;
+      g.beginPath();
+      for (let r = 0; r < 34; r++) {
+        for (let c = -1; c < 15; c++) {
+          const x = c * 30 + (r % 2) * 15;
+          const y = 96 + r * 22;
+          g.moveTo(x, y);
+          g.arc(x + 15, y, 15, Math.PI, 0, true);
+        }
+      }
+      g.stroke();
+      shaft(g, lx, ly, toMid, 860, 0.5, L.col, 0.1);
+      // the hall steps, and the fourth one
+      const ramp = table.shots.find((s) => s.exit);
+      if (ramp) {
+        for (let i = 0; i < 9; i++) {
+          const y = ramp.a[1] - 22 - i * 19;
+          g.fillStyle = i === 3 ? A(BRASS_HI, 0.6) : i % 2 ? A(PAPER, 0.2) : A(PAPER, 0.1);
+          g.fillRect(8, y, 34 + Math.max(0, 3 - i) * 14, 11);
+          g.fillStyle = A('#04103a', 0.4);
+          g.fillRect(8, y + 11, 34 + Math.max(0, 3 - i) * 14, 3);
+        }
+      }
+      // trestles
+      const fish = (x, y, s, rot, tone) => {
+        g.save();
+        g.translate(x, y);
+        g.rotate(rot);
+        cel(g, (c) => { c.moveTo(-s, 0); c.quadraticCurveTo(-s * 0.2, -s * 0.5, s * 0.6, 0); c.lineTo(s, -s * 0.34); c.lineTo(s, s * 0.34); c.lineTo(s * 0.6, 0); c.quadraticCurveTo(-s * 0.2, s * 0.5, -s, 0); c.closePath(); },
+          tone, L, { off: s * 0.22, ink: 1.1 });
+        g.fillStyle = INK;
+        g.fillRect(-s * 0.72, -1, 1.6, 1.6);
+        g.restore();
+      };
+      for (const [x, y, w, h, rot, n] of [[187, 404, 112, 28, -0.06, 6], [187, 630, 92, 24, 0.05, 5]]) {
+        g.save();
+        g.translate(x, y);
+        g.rotate(rot);
+        g.fillStyle = A('#04103a', 0.4);
+        g.fillRect(-w / 2 - L.dx * 7, -h / 2 - L.dy * 7, w, h);
+        cel(g, box(-w / 2, -h / 2, w, h, 2), blend(PAPER, K.pool[1], 0.5), L, { off: 4, ink: 1.6 });
+        g.fillStyle = A(INK, 0.3);
+        g.fillRect(-w / 2 + 3, -1, w - 6, 1.4);
+        g.restore();
+        for (let i = 0; i < n; i++) {
+          const fx0 = x - w / 2 + 12 + (i + 0.5) * ((w - 24) / n);
+          fish(fx0, y + (i % 2 ? 5 : -5) + rot * (fx0 - x), 8, rot + (i % 2 ? 0.3 : -0.25) + (i % 3 ? 0 : Math.PI), blend('#d6e8ff', K.pool[1], i % 2 ? 0.42 : 0.3));
+        }
+      }
+      // a net hung to dry
+      g.save();
+      g.beginPath();
+      poly([[276, 470], [352, 492], [344, 566], [286, 548]])(g);
+      g.clip();
+      g.strokeStyle = A(PAPER, 0.16);
+      g.lineWidth = 1.2;
+      g.beginPath();
+      for (let k = -8; k < 16; k++) {
+        g.moveTo(260 + k * 10, 460); g.lineTo(260 + k * 10 + 60, 580);
+        g.moveTo(260 + k * 10 + 60, 460); g.lineTo(260 + k * 10, 580);
+      }
+      g.stroke();
+      g.restore();
+      // gulls, and the shadow each one flies over
+      const gull = (x, y, s, rot) => {
+        for (const [ox, oy, col] of [[-L.dx * 16, -L.dy * 16, A('#04103a', 0.36)], [0, 0, blend(WHITE, K.pool[2], 0.25)]]) {
+          g.save();
+          g.translate(x + ox, y + oy);
+          g.rotate(rot);
+          g.fillStyle = col;
+          g.beginPath();
+          g.moveTo(0, -s * 0.5);
+          g.quadraticCurveTo(s * 0.8, -s * 0.9, s * 1.7, -s * 0.1);
+          g.quadraticCurveTo(s * 0.8, -s * 0.3, s * 0.18, s * 0.2);
+          g.lineTo(0, s * 0.9);
+          g.lineTo(-s * 0.18, s * 0.2);
+          g.quadraticCurveTo(-s * 0.8, -s * 0.3, -s * 1.7, -s * 0.1);
+          g.quadraticCurveTo(-s * 0.8, -s * 0.9, 0, -s * 0.5);
+          g.closePath();
+          g.fill();
+          if (!ox) { inkLine(g, 1.1); g.stroke(); }
+          g.restore();
+        }
+      };
+      for (const [x, y, s, rot] of [[150, 134, 8, 0.5], [316, 392, 7, -0.7], [70, 520, 7, 2.4], [250, 716, 8, 0.2], [112, 760, 6, -2], [338, 644, 6, 1.2]]) gull(x, y, s, rot);
+      // the drum, with its plate off and the lots spilled toward the pawls
+      for (let i = 0; i < 9; i++) {
+        g.save();
+        g.translate(drum.pos[0] + 34 + hash(i + 900) * 44, drum.pos[1] - 26 + hash(i + 930) * 62);
+        g.rotate(hash(i + 960) * 3);
+        g.fillStyle = A(PAPER, 0.34);
+        g.fillRect(-5, -3, 10, 6);
+        g.restore();
+      }
+      g.fillStyle = A('#04103a', 0.42);
+      g.beginPath();
+      g.arc(drum.pos[0] - L.dx * 9, drum.pos[1] - L.dy * 9, drum.r + 13, 0, TAU);
+      g.fill();
+      cel(g, circ(drum.pos[0], drum.pos[1], drum.r + 13), blend(BRASS, K.pool[1], 0.2), L, { off: 9, ink: 2.4, rim: 2, rimCol: A(WHITE, 0.8) });
+      g.fillStyle = INK;
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * TAU + 0.2;
+        g.beginPath();
+        g.arc(drum.pos[0] + Math.cos(a) * (drum.r + 8.5), drum.pos[1] + Math.sin(a) * (drum.r + 8.5), 1.6, 0, TAU);
+        g.fill();
+      }
+      // its plate, laid beside it
+      cel(g, circ(drum.pos[0] - 30, drum.pos[1] + 44, 13), blend(BRASS, K.pool[1], 0.36), L, { off: 5, ink: 1.8 });
+      g.fillStyle = INK;
+      g.fillRect(drum.pos[0] - 33, drum.pos[1] + 43, 6, 2);
+      // the sun
+      rings(g, lx, ly, 100, [A(L.col, 0.14), A(L.col, 0.22), A(L.col, 0.4)], [1, 0.66, 0.4]);
+      burst(g, lx, ly, 25, 40, 12, 0.13, A(L.rim, 0.9), 0);
+      g.fillStyle = L.core;
+      g.beginPath();
+      g.arc(lx, ly, 22, 0, TAU);
+      g.fill();
+      glint(g, lx - 6, ly - 7, 22, '#ffffff', 1, 0);
+    } else if (K.key === 'founders') {
+      // Cresset. Everything on the field is laid out round the Founders' Lamp: the paving in rings,
+      // the Assembly's horseshoe of forty seats with twelve of them draped, the mole in dressed stone.
+      const lampS = table.saucers[0];
+      g.save();
+      g.beginPath();
+      g.rect(0, 0, TW, TH);
+      g.clip();
+      g.strokeStyle = A('#05032a', 0.17);
+      g.lineWidth = 24;
+      for (let r = 96; r < 760; r += 48) {
+        g.beginPath();
+        g.arc(lx, ly, r, 0, TAU);
+        g.stroke();
+      }
+      g.restore();
+      rays(g, lx, ly, 46, 900, 14, 0.2, A(L.col, 0.045));
+      // the mole: dressed blocks along the left
+      const ramp = table.shots.find((s) => s.exit);
+      if (ramp) {
+        for (let i = 0; i < 10; i++) {
+          const y = ramp.a[1] - 16 - i * 18;
+          g.fillStyle = i % 2 ? A(L.col, 0.12) : A(L.col, 0.06);
+          g.fillRect(8 + (i % 2) * 3, y, 31 + Math.max(0, 3 - i) * 12, 15);
+        }
+      }
+      // the Bench's dais, behind the three seats
+      g.beginPath();
+      g.moveTo(74, 208);
+      g.quadraticCurveTo(58, 280, 98, 346);
+      g.lineCap = 'round';
+      g.strokeStyle = A('#04031c', 0.4);
+      g.lineWidth = 15;
+      g.stroke();
+      g.strokeStyle = blend(BRASS, K.pool[1], 0.62);
+      g.lineWidth = 10;
+      g.stroke();
+      // a note of the Mint, face up, behind the four letters that every note carries
+      g.save();
+      g.translate(318, 292);
+      g.rotate(-0.34);
+      g.fillStyle = A('#04031c', 0.4);
+      g.fillRect(-14, -34, 32, 74);
+      g.fillStyle = blend(PAPER, K.pool[1], 0.58);
+      g.fillRect(-16, -37, 32, 74);
+      g.strokeStyle = A(INK, 0.5);
+      g.lineWidth = 1.2;
+      g.strokeRect(-12.5, -33.5, 25, 67);
+      g.fillStyle = A(INK, 0.35);
+      for (let k = 0; k < 5; k++) g.fillRect(-8, -24 + k * 11, 16 - (k % 2) * 5, 2);
+      g.restore();
+      // the Assembly: a horseshoe of forty, open toward the flippers
+      {
+        const cx0 = 187;
+        const cy0 = 388;
+        let n = 0;
+        for (const [rad, count] of [[40, 10], [58, 13], [76, 17]]) {
+          for (let i = 0; i < count; i++) {
+            const a = Math.PI * 0.86 + (i / (count - 1)) * Math.PI * 1.28;
+            const draped = n % 10 === 2 || n % 10 === 5 || n % 10 === 8;
+            n++;
+            g.save();
+            g.translate(cx0 + Math.cos(a) * rad, cy0 + Math.sin(a) * rad);
+            g.rotate(a + Math.PI / 2);
+            g.fillStyle = A('#04031c', 0.5);
+            g.fillRect(-4.5, -2.5, 10, 8);
+            g.fillStyle = draped ? blend(PEARL_LO, K.pool[1], 0.45) : blend(CRIMSON, K.pool[1], 0.48);
+            g.fillRect(-5, -3.5, 10, 7);
+            g.restore();
+          }
+        }
+      }
+      // the lamp: white, stepped, with hard rays; the hole itself is its core
+      rings(g, lx, ly, 128, [A(L.col, 0.12), A(L.col, 0.2), A(L.col, 0.36)], [1, 0.62, 0.36]);
+      burst(g, lx, ly, lampS.r + 6, lampS.r + 30, 16, 0.1, A('#ffffff', 0.5), 0);
+      // the brass cap on its chain
+      inkLine(g, 1.4);
+      g.setLineDash([3, 3]);
+      g.beginPath();
+      g.moveTo(lx, ly - 36);
+      g.lineTo(lx, ly - 122);
+      g.stroke();
+      g.setLineDash([]);
+      cel(g, poly([[lx - 27, ly - 15], [lx, ly - 38], [lx + 27, ly - 15], [lx, ly - 24]]), BRASS_HI, HUD_L, { off: 4, ink: 0, shadow: '#c9772e' });
     } else {
       throw new Error(`render: look '${K.key}' has no scene`);
     }
@@ -1043,13 +1369,55 @@ export function createRenderer(canvas) {
     const L = K.L;
     const [x, y] = b.pos;
     const r = b.r;
-    cel(g, circ(x, y, r), K.bump, L, { off: r * 0.36, ink: 2.6, rim: 2.2 });
-    g.fillStyle = INK;
-    for (let k = 0; k < 6; k++) {
-      const a = (k / 6) * TAU + 0.5;
+    if (K.key === 'quay') {
+      // a crane seen from above: its turntable, and a jib swung out over the quay with a block at the end
+      const a = -0.5 - hash(x) * 2.2;
+      const ex = x + Math.cos(a) * (r + 13);
+      const ey = y + Math.sin(a) * (r + 13);
       g.beginPath();
-      g.arc(x + Math.cos(a) * r * 0.82, y + Math.sin(a) * r * 0.82, 1.5, 0, TAU);
-      g.fill();
+      g.moveTo(x, y);
+      g.lineTo(ex, ey);
+      g.lineCap = 'butt';
+      inkLine(g, 9.5);
+      g.lineCap = 'butt';
+      g.stroke();
+      g.strokeStyle = K.rail;
+      g.lineWidth = 5;
+      g.stroke();
+      cel(g, circ(ex, ey, 4.2), K.cap, L, { off: 1.5, ink: 1.8 });
+      cel(g, circ(x, y, r), K.bump, L, { off: r * 0.36, ink: 2.6, rim: 2.2 });
+    } else if (K.key === 'dock') {
+      // a ratchet wheel and the pawl that holds it
+      const teeth = (c) => {
+        const n = 10;
+        for (let k = 0; k < n; k++) {
+          const a0 = (k / n) * TAU + 0.3;
+          const a1 = ((k + 1) / n) * TAU + 0.3;
+          const p = [x + Math.cos(a0) * r, y + Math.sin(a0) * r];
+          const q = [x + Math.cos(a1) * r * 0.8, y + Math.sin(a1) * r * 0.8];
+          if (k) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]);
+          c.lineTo(q[0], q[1]);
+        }
+        c.closePath();
+      };
+      cel(g, poly([[x + r * 0.5, y - r * 1.5], [x + r * 1.02, y - r * 1.3], [x + r * 0.8, y - r * 0.5], [x + r * 0.52, y - r * 0.62]]), K.rail, L, { off: 2, ink: 1.8 });
+      cel(g, teeth, K.bump, L, { off: r * 0.36, ink: 2.6, rim: 2.2 });
+    } else if (K.key === 'founders') {
+      // one ring of the great lamp: brass, grooved, with a white heart
+      cel(g, circ(x, y, r), K.bump, L, { off: r * 0.36, ink: 2.6, rim: 2.2, rimCol: '#ffffff' });
+      g.beginPath();
+      g.arc(x, y, r * 0.84, 0, TAU);
+      inkLine(g, 1.6);
+      g.stroke();
+    } else {
+      cel(g, circ(x, y, r), K.bump, L, { off: r * 0.36, ink: 2.6, rim: 2.2 });
+      g.fillStyle = INK;
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * TAU + 0.5;
+        g.beginPath();
+        g.arc(x + Math.cos(a) * r * 0.82, y + Math.sin(a) * r * 0.82, 1.5, 0, TAU);
+        g.fill();
+      }
     }
     cel(g, circ(x, y, r * 0.64), K.cap, L, { off: r * 0.2, ink: 1.8,
       hi: (c) => { c.ellipse(x + L.dx * r * 0.3, y + L.dy * r * 0.3, r * 0.2, r * 0.1, L.angle + Math.PI / 2, 0, TAU); }, hiCol: WHITE });
@@ -1209,7 +1577,7 @@ export function createRenderer(canvas) {
       const [x, y] = s.pos;
       g.beginPath();
       g.arc(x, y, s.r, 0, TAU);
-      g.fillStyle = '#04031c';
+      g.fillStyle = K.hole || '#04031c';
       g.fill();
       inkLine(g, 6.4);
       g.stroke();
@@ -2650,18 +3018,13 @@ export function createRenderer(canvas) {
     if (!(s.top >= 0) || !(s.bottom >= 0)) throw new Error(`render: fx.safe must be { top, bottom } in logical px, got ${JSON.stringify(s)}`);
     return s;
   }
-  // Which way the book leans: a pair of scales, and no words. The left pan holds every
-  // trust the player has ever earned, the right pan every loan ever taken, weighed at
-  // TRUST_PER_LOAN each: the same sum economy.leaning() does. Level is level; the heavier
-  // pan hangs lower. It names no ending and shows no number.
+  // Which way the book leans: a pair of scales, and no words. The two pans are economy.ledger():
+  // every trust the player has ever earned on the left, and on the right what the loans weigh
+  // (a loan drawn while the hat was going round weighs more than one drawn because nothing
+  // else was on offer). It is the sum economy.leaning() does, so the needle and the ending
+  // cannot disagree. Level is level; the heavier pan hangs lower. It shows no number.
   function drawBalance(g, econ, cx, cy, now, dt) {
-    for (const f of ['trustEarned', 'loansTaken']) {
-      if (typeof econ[f] !== 'number' || !Number.isFinite(econ[f])) {
-        throw new Error(`render: econ.${f} must be a finite number to weigh, got ${String(econ[f])}`);
-      }
-    }
-    const trustW = econ.trustEarned;
-    const loanW = econ.loansTaken * TRUST_PER_LOAN;
+    const { trust: trustW, loans: loanW } = ledger(econ); // throws on a book it cannot weigh
     const diff = ease('lean', trustW - loanW, dt); // > 0: the commons pan is the heavier
     const MAX_TILT = 0.34; // radians
     const tilt = MAX_TILT * Math.tanh(diff / (TRUST_PER_LOAN * 2)) + 0.012 * Math.sin(now / 1100);
@@ -3619,6 +3982,117 @@ export function createRenderer(canvas) {
       g.fillRect(-7, -86, 14, 22);
       cel(g, (c) => { c.moveTo(-62, 54); c.quadraticCurveTo(-36, 34, -34, -30); c.quadraticCurveTo(-30, -70, 0, -72); c.quadraticCurveTo(30, -70, 34, -30); c.quadraticCurveTo(36, 34, 62, 54); c.closePath(); }, BRASS_HI, HUD_L, { off: 12, ink: 3, shadow: '#d1781c', rim: 3, rimCol: '#ffffff' });
       cel(g, circ(0, 62, 12), WHITE, HUD_L, { off: 3, ink: 3, shadow: BRASS });
+    } else if (K.key === 'quay') {
+      // a crane against the sunrise, a cask of stillsalt on its hook
+      g.fillStyle = L.core;
+      g.beginPath();
+      g.arc(-36, 30, 46, 0, TAU);
+      g.fill();
+      g.fillStyle = A(L.col, 0.9);
+      g.fillRect(-90, 52, 108, 5);
+      g.fillRect(-84, 64, 96, 3.5);
+      const iron = '#1c1a58';
+      // quay and bollards
+      cel(g, poly([[-160, 96], [160, 84], [160, 112], [-160, 124]]), iron, L, { off: 5, ink: 3, shadow: '#0c0a30', rim: 2.4, rimCol: A(L.col, 0.9) });
+      // mast, cab, jib
+      cel(g, poly([[30, 92], [40, -64], [58, -64], [68, 92]]), iron, L, { off: 6, ink: 3, shadow: '#0c0a30', rim: 2.6, rimCol: A(L.col, 0.9) });
+      cel(g, box(26, -86, 46, 28, 4), blend(CRIMSON, iron, 0.3), L, { off: 6, ink: 3, rim: 2.4 });
+      cel(g, poly([[34, -82], [-118, -116], [-122, -104], [30, -62]]), iron, L, { off: 4, ink: 3, shadow: '#0c0a30', rim: 2.2, rimCol: A(L.col, 0.9) });
+      inkLine(g, 2);
+      g.beginPath();
+      g.moveTo(49, -86); g.lineTo(60, -112); g.lineTo(-112, -112);
+      g.moveTo(-104, -106); g.lineTo(-104, -22);
+      g.stroke();
+      // the cask
+      cel(g, box(-124, -22, 40, 50, 9), blend('#c9935a', K.pool[2], 0.2), L, { off: 9, ink: 3, rim: 2.6, rimCol: A(WHITE, 0.9) });
+      g.fillStyle = INK;
+      g.fillRect(-125, -10, 42, 3.5);
+      g.fillRect(-125, 13, 42, 3.5);
+      glint(g, -116, -14, 16, WHITE, 1, 0);
+    } else if (K.key === 'dock') {
+      // the drum, opened in daylight; a gull has an opinion
+      bareLamp(g, -104, -72, 15, K, 10);
+      g.fillStyle = INK;
+      g.fillRect(-64, 60, 128, 9);
+      inkLine(g, 5);
+      g.beginPath();
+      g.moveTo(-46, 62); g.lineTo(-70, 104);
+      g.moveTo(46, 62); g.lineTo(70, 104);
+      g.stroke();
+      cel(g, circ(0, 0, 70), BRASS_HI, L, { off: 15, ink: 3, shadow: '#c9772e', rim: 3, rimCol: '#ffffff' });
+      g.fillStyle = INK;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * TAU + 0.26;
+        g.beginPath();
+        g.arc(Math.cos(a) * 60, Math.sin(a) * 60, 2.6, 0, TAU);
+        g.fill();
+      }
+      cel(g, circ(0, 0, 44), '#17123f', L, { off: -9, ink: 3, shadow: '#04031c' });
+      // lots, coming out
+      for (const [sx, sy, r] of [[-14, 6, -0.3], [10, -8, 0.4], [20, 16, 0.1], [56, 40, 0.5], [84, 66, -0.2], [108, 90, 0.3]]) {
+        g.save();
+        g.translate(sx, sy);
+        g.rotate(r);
+        cel(g, box(-11, -7, 22, 14, 2), PAPER, L, { off: 3, ink: 2 });
+        g.fillStyle = A(INK, 0.5);
+        g.fillRect(-6, -1.5, 12, 2);
+        g.restore();
+      }
+      // the plate, swung open on its hinge
+      cel(g, circ(-88, 26, 32), blend(BRASS_HI, '#c9772e', 0.3), L, { off: 9, ink: 3, shadow: '#a85a1c', rim: 2.4, rimCol: '#ffffff' });
+      g.fillStyle = INK;
+      g.fillRect(-60, 20, 12, 12);
+      g.fillRect(-98, 22, 16, 5);
+      // the gull
+      g.fillStyle = WHITE;
+      g.beginPath();
+      g.moveTo(96, -80);
+      g.quadraticCurveTo(116, -104, 146, -88);
+      g.quadraticCurveTo(118, -92, 100, -72);
+      g.quadraticCurveTo(84, -92, 56, -88);
+      g.quadraticCurveTo(82, -104, 96, -80);
+      g.closePath();
+      g.fill();
+      inkLine(g, 2);
+      g.stroke();
+    } else if (K.key === 'founders') {
+      // the Founders' Lamp: three rings round a white flame, and the brass cap waiting on its chain
+      rings(g, 0, 10, 150, [A(L.col, 0.12), A(L.col, 0.2), A(L.col, 0.34)], [1, 0.62, 0.34]);
+      burst(g, 0, 10, 30, 128, 16, 0.1, A('#ffffff', 0.4), 0);
+      const ring = (y, rx, ry, w, front) => {
+        g.beginPath();
+        if (front) g.ellipse(0, y, rx, ry, 0, 0, Math.PI);
+        else g.ellipse(0, y, rx, ry, 0, Math.PI, TAU);
+        g.lineCap = 'butt';
+        inkLine(g, w + 5);
+        g.stroke();
+        g.strokeStyle = front ? BRASS_HI : '#c9772e';
+        g.lineWidth = w;
+        g.stroke();
+        if (front) {
+          g.beginPath();
+          g.ellipse(0, y - w * 0.22, rx, ry, 0, Math.PI * 0.14, Math.PI * 0.86);
+          g.strokeStyle = '#ffffff';
+          g.lineWidth = w * 0.3;
+          g.stroke();
+        }
+      };
+      for (const [y, rx, ry, w] of [[66, 112, 30, 12], [22, 84, 22, 10], [-18, 56, 15, 8]]) ring(y, rx, ry, w, false);
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.arc(0, -4, 20, 0, TAU);
+      g.fill();
+      for (const [y, rx, ry, w] of [[-18, 56, 15, 8], [22, 84, 22, 10], [66, 112, 30, 12]]) ring(y, rx, ry, w, true);
+      glint(g, 0, -6, 60, '#ffffff', 1, 0);
+      // the cap
+      inkLine(g, 2);
+      g.setLineDash([5, 4]);
+      g.beginPath();
+      g.moveTo(0, -150);
+      g.lineTo(0, -104);
+      g.stroke();
+      g.setLineDash([]);
+      cel(g, poly([[-34, -74], [-10, -104], [10, -104], [34, -74]]), BRASS_HI, HUD_L, { off: 8, ink: 3, shadow: '#c9772e', rim: 2.4, rimCol: '#ffffff' });
     } else {
       throw new Error(`render: look '${K.key}' has no emblem`);
     }
@@ -3640,6 +4114,10 @@ export function createRenderer(canvas) {
     emblem(c, K, ex, ey, k);
   }
 
+  // The chapter card. Nothing on it fades: the painting is at full strength from the first
+  // frame behind two shutters that open in three hard steps, and each line of lettering cuts in
+  // whole. (It used to be laid over black at a rising opacity, which showed a grey wash of the
+  // painting for a second before the chapter's name arrived.)
   function drawCard(g, L, content, game, fx) {
     const now = fx.timeMs;
     const { W, H } = L;
@@ -3651,37 +4129,44 @@ export function createRenderer(canvas) {
     const table = tableOf(content, chapter);
     const K = lookOf(table);
     const t = game.modeT;
-    const a1 = clamp(t / 0.8, 0, 1);
-    const a2 = clamp((t - 0.5) / 0.9, 0, 1);
-    const a3 = clamp((t - 1.2) / 0.9, 0, 1);
+    const open = stepped(clamp((t - 0.05) / 0.3, 0, 1), 3);
     const barTop = P ? Math.max(90, safe.top) : 70;
     const barBot = P ? 150 : 40;
     const ek = P ? 1 : 1.1;
     const ey = cy - (P ? 204 : 196);
-    g.fillStyle = '#04031c';
-    g.fillRect(0, 0, W, H);
-    g.globalAlpha = a1;
     g.drawImage(layer(`card:${table.id}:${L.kind}`, W, H, view.ds, (c) => paintCard(c, L, K, cx, ey, ek)), 0, 0, W, H);
-    g.globalAlpha = a1;
-    sticker(g, `CHAPTER ${roman(chapter.number)}`, cx, cy - (P ? 62 : 70), { size: P ? 13 : 16, face: SERIF, fill: BRASS_HI, col: INK, gap: P ? 4 : 6, padX: P ? 16 : 22, h: P ? 28 : 34, lineW: 2.6 });
-    g.globalAlpha = 1;
-    const size = fitFont(g, chapter.title, W - (P ? 56 : 220), P ? 46 : 78, (s) => `700 ${s}px ${SERIF}`);
-    inkText(g, chapter.title, cx, cy + (P ? 10 : 30) + (1 - a2) * 10, { size, fill: WHITE, lo: K.L.rim, drop: P ? 4 : 6, dropCol: CRIMSON, alpha: a2 });
-    g.textAlign = 'center';
-    g.font = `italic ${P ? 17 : 24}px ${SERIF}`;
-    g.fillStyle = A(PAPER, a3);
-    wrap(g, chapter.subtitle, W - (P ? 60 : 280)).slice(0, 3).forEach((l, i) => g.fillText(l, cx, cy + (P ? 50 : 80) + i * (P ? 23 : 30)));
-    g.textAlign = 'left';
-    g.font = `700 ${P ? 11 : 12}px ${SERIF}`;
-    g.fillStyle = A(K.cap, a3);
-    spaced(g, String(table.name).toUpperCase(), cx, cy + (P ? 138 : 138), P ? 4 : 6, 'center');
-    // letterbox bars
+    if (t >= 0.36) {
+      sticker(g, `CHAPTER ${roman(chapter.number)}`, cx, cy - (P ? 62 : 70), { size: P ? 13 : 16, face: SERIF, fill: BRASS_HI, col: INK, gap: P ? 4 : 6, padX: P ? 16 : 22, h: P ? 28 : 34, lineW: 2.6 });
+    }
+    if (t >= 0.6) {
+      const size = fitFont(g, chapter.title, W - (P ? 56 : 220), P ? 46 : 78, (s2) => `700 ${s2}px ${SERIF}`);
+      // it lands: one frame-step high, then home
+      inkText(g, chapter.title, cx, cy + (P ? 10 : 30) - (t < 0.68 ? 6 : 0), { size, fill: WHITE, lo: K.L.rim, drop: P ? 4 : 6, dropCol: CRIMSON });
+    }
+    if (t >= 1.05) {
+      g.textAlign = 'center';
+      g.font = `italic ${P ? 17 : 24}px ${SERIF}`;
+      const lines = wrap(g, chapter.subtitle, W - (P ? 60 : 280)).slice(0, 3);
+      // a hard drop under each line: the painting behind it is not always dark
+      for (const [dx, dy, col] of [[1, 1.5, '#04031c'], [0, 0, PAPER]]) {
+        g.fillStyle = col;
+        lines.forEach((l, i) => g.fillText(l, cx + dx, cy + (P ? 50 : 80) + i * (P ? 23 : 30) + dy));
+      }
+      g.textAlign = 'left';
+      g.font = `700 ${P ? 11 : 12}px ${SERIF}`;
+      g.fillStyle = K.cap;
+      spaced(g, String(table.name).toUpperCase(), cx, cy + (P ? 138 : 138), P ? 4 : 6, 'center');
+    }
+    // letterbox bars: shut, a third open, two thirds, open
+    const mid2 = (barTop + H - barBot) / 2;
+    const topH = barTop + (mid2 - barTop) * (1 - open);
+    const botY = H - barBot - (H - barBot - mid2) * (1 - open);
     g.fillStyle = '#04031c';
-    g.fillRect(0, 0, W, barTop);
-    g.fillRect(0, H - barBot, W, barBot);
-    g.fillStyle = A(BRASS, a1);
-    g.fillRect(0, barTop, W, 2);
-    g.fillRect(0, H - barBot - 2, W, 2);
+    g.fillRect(0, 0, W, topH);
+    g.fillRect(0, botY, W, H - botY);
+    g.fillStyle = BRASS;
+    g.fillRect(0, topH, W, 2);
+    g.fillRect(0, botY - 2, W, 2);
     if (t > 1.6) {
       g.globalAlpha = Math.floor(now / 520) % 2 ? 0.6 : 1;
       if (P) {
@@ -3693,6 +4178,12 @@ export function createRenderer(canvas) {
     }
   }
 
+  // The end. With a last chapter that carries `endings`, the headline is the ending the ledger
+  // was read as (frozen in game.ending, so the coast, the name and the words cannot disagree)
+  // and its closing words are entered at the head of the ledger page. Without one (the game
+  // stops at a chapter that is not the last written) the old headline stands and the page's
+  // foot says how far the account has been carried. All the words are on the parchment or
+  // inked: nothing is lettered straight onto the sky, where the stars and the beam run through it.
   function drawEnd(g, L, content, game, fx, dt) {
     const now = fx.timeMs;
     const { W, H } = L;
@@ -3700,35 +4191,52 @@ export function createRenderer(canvas) {
     const cx = W / 2;
     const safe = safeOf(fx);
     const e = game.econ;
-    for (const f of ['trustEarned', 'loansTaken']) {
-      if (!e || typeof e[f] !== 'number' || !Number.isFinite(e[f])) throw new Error(`render: econ.${f} must be a finite number to weigh, got ${String(e && e[f])}`);
-    }
-    // the coast as the ledger leaves it: the same sum the scales weigh, and no words for it
-    const v = leaning(e) === 'commons' ? COAST.commons : COAST.mint;
+    const end = endingOf(content, game);
+    const told = end.title !== null;
+    const v = end.leaning === 'commons' ? COAST.commons : COAST.mint;
     drawCoast(g, L, now, v);
-    const top = P ? Math.max(120, safe.top + 60) : 110;
+    const top = P ? Math.max(120, safe.top + 60) : told ? 96 : 110;
+    const kick = v.cold ? '#bfeaff' : BRASS_HI;
     g.font = `700 ${P ? 11 : 13}px ${SERIF}`;
-    g.fillStyle = v.cold ? '#bfeaff' : BRASS_HI;
+    g.fillStyle = '#04031c';
+    spaced(g, 'THE LONG SETTLEMENT', cx + 1, top + 1.5, P ? 4 : 6, 'center');
+    g.fillStyle = kick;
     spaced(g, 'THE LONG SETTLEMENT', cx, top, P ? 4 : 6, 'center');
-    inkText(g, 'Here the ledger rests.', cx, top + (P ? 52 : 76), { size: P ? 33 : 54, fill: WHITE, lo: v.cold ? '#bfeaff' : BRASS_HI, drop: P ? 3 : 5, dropCol: v.cold ? '#2c5fa8' : CRIMSON });
-    rule(g, cx, top + (P ? 72 : 104), P ? 150 : 280, 1);
-    g.textAlign = 'center';
-    g.font = `italic ${P ? 15 : 20}px ${SERIF}`;
-    g.fillStyle = PAPER;
-    wrap(g, 'The account is not closed. It is carried forward.', W - 60).forEach((l, i) => g.fillText(l, cx, top + (P ? 104 : 142) + i * 22));
+    const head = told ? end.title : 'Here the ledger rests.';
+    const hs = fitFont(g, head, W - (P ? 44 : 240), told ? (P ? 44 : 64) : (P ? 33 : 54), (s2) => `700 ${s2}px ${SERIF}`);
+    inkText(g, head, cx, top + (P ? 54 : 76), { size: hs, fill: WHITE, lo: kick, drop: P ? 3 : 5, dropCol: v.cold ? '#2c5fa8' : CRIMSON });
+    rule(g, cx, top + (P ? 74 : 104), P ? 150 : 280, 1);
 
     // the page: parchment, inked
-    const pw = P ? W - 48 : 520;
+    const pw = P ? W - 48 : 560;
     const px = cx - pw / 2;
-    const py = top + (P ? 130 : 170);
-    const rowH = P ? 42 : 40;
-    const ph = rowH * 5 + 30;
+    const inset = P ? 18 : 30;
+    const rowH = told ? (P ? 37 : 36) : (P ? 42 : 40);
+    const textSize = P ? 15 : 17;
+    const lineH = P ? 20 : 23;
+    g.font = `italic ${textSize}px ${SERIF}`;
+    const words = told ? wrap(g, end.text, pw - inset * 2) : [];
+    const foot = told ? [] : wrap(g, `End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, pw - inset * 2);
+    const headH = words.length ? words.length * lineH + 22 : 0;
+    const footH = foot.length ? foot.length * lineH + 12 : 0;
+    const py = top + (P ? 96 : 128);
+    const ph = headH + rowH * 5 + 26 + footH;
     g.drawImage(layer(`page:${pw}:${ph}`, pw + 12, ph + 12, view.ds, (c) => {
       rr(c, 6, 8, pw, ph, 8);
       c.fillStyle = '#04031c';
       c.fill();
       cel(c, box(2, 2, pw, ph, 8), PAPER, HUD_L, { off: 6, shadow: '#dcc089', ink: 3 });
     }), px - 2, py - 2, pw + 12, ph + 12);
+    g.textAlign = 'center';
+    g.font = `italic ${textSize}px ${SERIF}`;
+    g.fillStyle = INK;
+    words.forEach((l, i) => g.fillText(l, cx, py + 28 + i * lineH));
+    if (words.length) {
+      g.fillStyle = INK;
+      g.fillRect(px + inset, py + headH + 1, pw - inset * 2, 2);
+      g.fillStyle = A(INK, 0.35);
+      g.fillRect(px + inset, py + headH + 5, pw - inset * 2, 1);
+    }
     const rows = [
       ['Score', fmtInt(e.score), INK],
       ['Marks in hand', fmtInt(e.marks), '#9a5a12'],
@@ -3736,9 +4244,8 @@ export function createRenderer(canvas) {
       ['Trust of the Commons', `${Math.round(e.trust)} / 100`, '#c2500f'],
       ['Draws at the Reels', fmtInt(e.spins), INK],
     ];
-    const inset = P ? 18 : 30;
     rows.forEach(([k, val, col], i) => {
-      const y = py + 38 + i * rowH;
+      const y = py + headH + (told ? 32 : 38) + i * rowH;
       g.textAlign = 'left';
       g.font = `${P ? 16 : 18}px ${SERIF}`;
       g.fillStyle = INK;
@@ -3747,23 +4254,24 @@ export function createRenderer(canvas) {
       g.font = `700 ${P ? 17 : 20}px ${MONO}`;
       g.fillStyle = col;
       g.fillText(val, px + pw - inset, y);
-      if (i < rows.length - 1) {
+      if (i < rows.length - 1 || foot.length) {
         g.fillStyle = A(INK, 0.2);
-        g.fillRect(px + inset, y + 13, pw - inset * 2, 1.5);
+        g.fillRect(px + inset, y + (told ? 11 : 13), pw - inset * 2, 1.5);
       }
     });
-    // How the book stands as it is carried forward: the same wordless scales as the ledger's, larger.
-    const sy = py + ph + (P ? 98 : 92);
+    g.textAlign = 'center';
+    g.font = `italic ${textSize}px ${SERIF}`;
+    g.fillStyle = A(INK, 0.75);
+    foot.forEach((l, i) => g.fillText(l, cx, py + ph - footH + 10 + i * lineH));
+    g.textAlign = 'left';
+    // How the book stands: the same wordless scales as the ledger's, larger.
+    const sy = py + ph + (P ? 78 : 80);
+    const sk = 1.9;
     g.save();
     g.translate(cx, sy);
-    g.scale(1.9, 1.9);
+    g.scale(sk, sk);
     drawBalance(g, e, 0, 0, now, dt);
     g.restore();
-    g.textAlign = 'center';
-    g.font = `italic ${P ? 14 : 17}px ${SERIF}`;
-    g.fillStyle = A(PAPER, 0.85);
-    wrap(g, `End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W - 60).forEach((l, i) => g.fillText(l, cx, py + ph + 30 + i * 20));
-    g.textAlign = 'left';
     if (P) {
       sticker(g, 'TAP TO RETURN TO THE TITLE', cx, H - Math.max(64, safe.bottom + 44), { size: 13, face: SERIF, fill: Math.floor(now / 520) % 2 ? BRASS_HI : WHITE, col: INK, gap: 2.5, padX: 16, h: 36, lineW: 2.8 });
     } else if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], cx - 96, 770);

@@ -9,6 +9,15 @@
 // painting is seen whole: about x 360..920 (all twelve are painted for the default portrait pan, 640) and y 40..215.
 // The lamp that lights each place, and the thing the scene is about, are inside that strip. The wide film shows the
 // rest: the middle between two figures (x 520..760) and both sides, down to about y 560 where the words begin.
+//
+// Six paintings read the id of the line being spoken, in their moving sections only (the still layers never change), as
+// shore-dusk does. If those lines are renumbered the picture falls back to the state named first:
+//   kedge-roads    the roads at dawn; from ch6.s7.c16 the open boat rows out and the cutter lies across the mouth
+//   compact-hall   the meeting; on ch6.s5.c28 and after, the vote by lanterns raised
+//   quarter-flame  the dim flame; on ch6.s7.c01..c03 the lamp still stands white and whole
+//   hall-steps     the Audit's seal on the doors; gone in ch7.s7.*
+//   drum-open      back-plate off, drum in its cradle unsealed; ch7.s4.*: plate still on, drum sealed; ch7.s5.*: drum carried out
+//   mole-lanterns  both blue points in the west; in ch7.s7 the far one from c17, the nearer from c18
 import { TAU, lerp, mod, rnd, fillAll, rect, circ, poly, FONT_SERIF, S, A, X0, XW, sigilScale, chalkLine } from './kit.js';
 import {
   INK, PALETTE as C, light as keyLight, shade, tint, blend, alpha, ink, outline, taperPath, cel, bloom, shaft, glint, bands, rings, curl,
@@ -762,7 +771,7 @@ function dayLantern(ctx, x, y, s, col, L, glow = 0) {
 function bareFrame(ctx, x, y, s) {
   const cy = y + s * 1.3, rx = s * 0.74, ry = s * 0.92, w = Math.max(1.6, s * 0.09);
   stroke(ctx, x, y, x, cy - ry, Math.max(1.4, s * 0.08));
-  for (const [c, lw] of [[INK, w + 2.2], ['#c98a4a', w]]) {
+  for (const [c, lw] of [[INK, w + 1.8], ['#e8a860', w]]) {
     ink(ctx, lw, c); ctx.beginPath();
     ctx.ellipse(x, cy, rx, ry, 0, 0, TAU); ctx.moveTo(x + rx * 0.42, cy); ctx.ellipse(x, cy, rx * 0.42, ry, 0, 0, TAU);
     for (const k of [-0.45, 0.45]) { ctx.moveTo(x + rx * Math.sqrt(1 - k * k), cy + k * ry); ctx.ellipse(x, cy + k * ry, rx * Math.sqrt(1 - k * k), ry * 0.13, 0, 0, TAU); }
@@ -1008,7 +1017,7 @@ def('drum-open', L_DOPEN, (ctx, t, px, info) => {
 
 // ── mole-lanterns: ten thousand lanterns hung along the mole, not floated, night. Key light: that one line of light ──
 const L_MOLE = keyLight('#ffb04a', -Math.PI * 0.3, { depth: 0.88, tint: '#0c1040' });
-const MOLE = { ex: 366, ey: 280 };                                   // where the mole ends, far out
+const MOLE = { ex: 486, ey: 280 };                                   // where the mole ends, far out
 const moleD = (i) => 1 / (1 + 0.42 * i);
 const moleBase = (d) => [MOLE.ex + 900 * d, MOLE.ey + 400 * d];      // the foot of a post, d = 1 nearest
 const moleTop = (d) => [MOLE.ex + 900 * d, MOLE.ey + 400 * d - 700 * d];
@@ -1058,11 +1067,11 @@ def('mole-lanterns', L_MOLE, (ctx, t, px, info) => {
     const a = [t0[0], t0[1] + k * 700 * d0], b = [t1[0], t1[1] + k * 700 * d1], c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 60 * dm], p = quadAt(a, c, b, u);
     swayLantern(ctx, p[0] + o, p[1], 34 * lerp(d0, d1, u), LCOLS[(i * 3 + j * 2 + (k ? 1 : 0)) % LCOLS.length], L, t, sd, 0);
   }
-  shimmer(ctx, 35, 400 + o, 860 + o, hy + 30, hy + 300, 16, '#ffd27a', t);
+  shimmer(ctx, 35, 500 + o, 940 + o, hy + 30, hy + 300, 16, '#ffd27a', t);
   // the dark says it back (ch7.s7.c17): far out, low, a point of blue that keeps time; then a nearer one that flickers on purpose (c18)
   const n = lineNo(lineId(info), 'ch7.s7.c');
-  if (!(n < 17)) { const on = Math.sin(t * 1.9) > 0.2, x = 150 + px * 0.05; if (on) { bloom(ctx, x, hy - 3, 24, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 3, 12, C.white, 1, 0); } else circ(ctx, x, hy - 3, 2, '#7fd8ff'); }
-  if (!(n < 18)) { const on = Math.sin(t * 9.1) + Math.sin(t * 5.3) > -0.4, x = 262 + px * 0.05; if (on) { bloom(ctx, x, hy - 5, 30, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 5, 15, C.white, 1, 0); } else circ(ctx, x, hy - 5, 2.4, '#7fd8ff'); }
+  if (!(n < 17)) { const on = Math.sin(t * 1.9) > 0.2, x = 372 + px * 0.05; if (on) { bloom(ctx, x, hy - 3, 24, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 3, 12, C.white, 1, 0); } else circ(ctx, x, hy - 3, 2, '#7fd8ff'); }
+  if (!(n < 18)) { const on = Math.sin(t * 9.1) + Math.sin(t * 5.3) > -0.4, x = 428 + px * 0.05; if (on) { bloom(ctx, x, hy - 5, 30, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 5, 15, C.white, 1, 0); } else circ(ctx, x, hy - 5, 2.4, '#7fd8ff'); }
 }, (ctx, t, px) => {
   swayLantern(ctx, 84 + px * 1.6, -120, 70, C.crimson, L_MOLE, t, 71, 0);
 });
