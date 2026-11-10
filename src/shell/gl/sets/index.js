@@ -19,8 +19,19 @@ import { drumHall } from './drum-hall.js';
 import { bench } from './bench.js';
 import { mintOffice } from './mint-office.js';
 import { orrery } from './orrery.js';
+// chapter 2 (Saltmere)
+import { causeway } from './causeway.js';
+import { picket } from './picket.js';
+import { commonsHall } from './commons-hall.js';
+import { mineDeep } from './mine-deep.js';
+import { court } from './court.js';
+import { ledgerRoom } from './ledger-room.js';
+import { shoreDusk } from './shore-dusk.js';
 
-const list = [lanternStalls, harborNight, pierRiot, ferryDawn, ledger, line, black, drumHall, bench, mintOffice, orrery];
+const list = [
+  lanternStalls, harborNight, pierRiot, ferryDawn, ledger, line, black, drumHall, bench, mintOffice, orrery,
+  causeway, picket, commonsHall, mineDeep, court, ledgerRoom, shoreDusk,
+];
 
 export const SETS = {};
 for (const s of list) {
