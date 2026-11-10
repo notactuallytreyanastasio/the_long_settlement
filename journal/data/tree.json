@@ -7325,6 +7325,11 @@
   "lines": 3594
  },
  {
+  "path": "src/shell/style.js",
+  "bytes": 28523,
+  "lines": 508
+ },
+ {
   "path": "src/shell/voice.js",
   "bytes": 17273,
   "lines": 435
