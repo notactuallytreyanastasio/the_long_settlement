@@ -708,13 +708,18 @@ export function createRenderer(canvas) {
         // the plumb: a line and a weight
         g.strokeStyle = A(gl, 0.3);
         g.beginPath();
-        g.moveTo(x, y + 10);
-        g.lineTo(x, y + 42);
+        g.moveTo(x - 6, y + 12);
+        g.lineTo(x + 6, y + 12);
+        g.moveTo(x, y + 12);
+        g.lineTo(x, y + 34);
         g.stroke();
+        // a bob, not an arrowhead: square shoulders, then the point
         g.beginPath();
-        g.moveTo(x - 6, y + 42);
-        g.lineTo(x + 6, y + 42);
-        g.lineTo(x, y + 60);
+        g.moveTo(x - 5, y + 34);
+        g.lineTo(x + 5, y + 34);
+        g.lineTo(x + 5, y + 45);
+        g.lineTo(x, y + 58);
+        g.lineTo(x - 5, y + 45);
         g.closePath();
         g.fillStyle = A(gl, 0.22);
         g.fill();
@@ -2514,16 +2519,16 @@ export function createRenderer(canvas) {
     g.textAlign = 'center';
     g.font = `italic 17px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.55 + 0.25 * Math.sin(now / 600));
-    g.fillText(`End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W / 2, 706);
+    g.fillText(`End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W / 2, 724);
     g.textAlign = 'left';
     // How the book stands as it is carried forward: the same wordless scales as the ledger's, larger.
     g.save();
-    g.translate(W / 2, 640);
+    g.translate(W / 2, 654);
     g.scale(1.9, 1.9);
     drawBalance(g, e, 0, 0, now, dt);
     g.restore();
-    if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], W / 2 - 96, 752);
-    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 752);
+    if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], W / 2 - 96, 764);
+    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 764);
   }
 
   // ─────────── entry point ───────────
