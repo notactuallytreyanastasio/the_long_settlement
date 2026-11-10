@@ -22,7 +22,7 @@ import {
 } from './mesh.js';
 import { Node, node, group, material, makeLight, batchFigure, nodeBounds } from './scene.js';
 import { createRig, idle, blink, createSpring, addRot, aimAxis } from './rig.js';
-import { EMOTES, EMOTE, FACE } from './faces.js';
+import { EMOTES, EMOTE, FACE, useCell } from './faces.js';
 
 export { EMOTES };
 
@@ -942,7 +942,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
     const marks = lo ? null : node('marks', wide, fm, { parent: pivot });
     const mouth = node('mouth', hd.patch(0, F.mouthPitch, FACE.mouth.w * mk2, FACE.mouth.h * mk2, 0.014, lo ? 3 : 5), fm, { parent: pivot });
     const fx = lo ? null : node('fx', wide, fm, { parent: pivot, visible: false }); // tears and shock lines are a close-up's business
-    if (marks) { const ms = { skin: headSkin, ...(def.face?.marks || {}) }; marks.uvRect.set(faces.marks(JSON.stringify(ms), ms)); } // keyed by what is drawn, so look-alikes share a cell
+    if (marks) { const ms = { skin: headSkin, ...(def.face?.marks || {}) }; useCell(marks, faces.marks(JSON.stringify(ms), ms)); } // keyed by what is drawn, so look-alikes share a cell
     const table = {};
     for (const e of EMOTES) {
       table[e] = {
@@ -992,6 +992,7 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
   function setEyes(rect, dx, dy) {
     const W = FACE.window, r = face.eyes.uvRect, m = (1 - W) / 2;
     r[0] = rect[0] + rect[2] * (m - dx); r[1] = rect[1] + rect[3] * (m + dy); r[2] = rect[2] * W; r[3] = rect[3] * W;
+    const em = rect.page.eyeMaterial; if (face.eyes.material !== em) face.eyes.material = em; // the cell's page: see faces.js useCell
   }
 
   const ch = {
@@ -1138,10 +1139,10 @@ export function createCharacter(def, { faces = null, material: mat = null, detai
       if (face) {
         const T = face.table[emote];
         const shut = s.eyes === 'shut' || (!snap && s.eyes !== 'open' && (blinkHold > 0 || blink(time, seed) > 0.45));
-        face.lids.uvRect.set(shut ? T.shut : T.open);
+        useCell(face.lids, shut ? T.shut : T.open);
         setEyes(T.eye, eyeX * 0.105, eyeY * 0.08);
-        face.mouth.uvRect.set(T.mouth[mouthLevel < 0.12 ? 0 : mouthLevel < 0.42 ? 1 : mouthLevel < 0.72 ? 2 : 3]);
-        if (face.fx) { if (T.fx) { face.fx.visible = true; face.fx.uvRect.set(T.fx); } else face.fx.visible = false; }
+        useCell(face.mouth, T.mouth[mouthLevel < 0.12 ? 0 : mouthLevel < 0.42 ? 1 : mouthLevel < 0.72 ? 2 : 3]);
+        if (face.fx) { if (T.fx) { face.fx.visible = true; useCell(face.fx, T.fx); } else face.fx.visible = false; }
       }
       if (skinNode) { flash = Math.max(0, flash - dt * 5); skinNode.flash[0] = skinNode.flash[1] = skinNode.flash[2] = 1; skinNode.flash[3] = flash * 0.85; }
     },

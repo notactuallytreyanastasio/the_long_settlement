@@ -12386,8 +12386,8 @@
  },
  {
   "path": "src/content/chapter8.js",
-  "bytes": 83517,
-  "lines": 904
+  "bytes": 96264,
+  "lines": 1047
  },
  {
   "path": "src/content/index.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 152573,
-  "lines": 2038
+  "bytes": 152709,
+  "lines": 2039
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12501,8 +12501,8 @@
  },
  {
   "path": "src/shell/gl/faces.js",
-  "bytes": 26553,
-  "lines": 365
+  "bytes": 29942,
+  "lines": 423
  },
  {
   "path": "src/shell/gl/fx.js",

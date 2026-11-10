@@ -21,6 +21,47 @@ export const chapter8 = {
   // Tobb was put back on the roll in ch7.s5, and has not been forgiven.
   roles: { ren: 'Volunteer, no writ', tobb: 'Actuary of the Mint, on paper' },
 
+  // ───────────────────────── the stage ─────────────────────────
+  // For the 3D stage (src/core/stage.js). sets: every backdrop key this chapter's lines name -> the set built
+  // for it and how it is lit when a cinematic goes there. A scene's own cutscene keeps its encounter's light.
+  // One build per set serves the whole chapter; where the script changes the hour or the state on a set, the
+  // set does it itself on the line (set.cue(lineId)):
+  //   cresset-harbour  built at noon for ch8.pro.02; turns to night on ch8.s3.c15 and ch8.mepi.01 (ch8.pro.* turns it back)
+  //   founders-lamp    burning for ch8.s3; capped and dark on ch8.m6.c20, wound up from c23, alight on c24
+  //   quay-break       in flight on ch8.m6.c04; empty, under the relit lamp, on ch8.m6.c25
+  //   mole-dark        the cap down on ch8.s5.c22, the sea standing by c25; boats out on ch8.s6.c20; the quay empty on ch8.m6.c14
+  //   lane-by-hand     the chain of pans grows from ch8.s6.c09 to c19; the blue relay answers on c16
+  //   assembly         the eye greys on ch8.s5.c21; half the house on ch8.m7.*; the twelve cloths come off on ch8.s7.c13
+  //   carrow-morning   the boat is an hour off until ch8.epi.13, then drawn up
+  // The leaning is read when ch8.s5 clears, and a scene has one encounter: the encounters of s6 and s7 show what
+  // is true in both endings (a city out of its doors; a house tied fourteen to fourteen). What the city does is
+  // the cutscene's to show.
+  stage: {
+    sets: {
+      ledger: { set: 'ledger', light: 'interior' },
+      'cresset-harbour': { set: 'cresset-harbour', light: 'day' },
+      cell: { set: 'cell', light: 'interior' },
+      'full-bench': { set: 'full-bench', light: 'day' },
+      'founders-lamp': { set: 'founders-lamp', light: 'night' },
+      'corvane-study': { set: 'corvane-study', light: 'night' },
+      assembly: { set: 'assembly', light: 'day' },
+      'mole-dark': { set: 'mole-dark', light: 'dusk' },
+      'lane-by-hand': { set: 'lane-by-hand', light: 'night' },
+      'quay-break': { set: 'quay-break', light: 'dusk' },
+      'ferry-dawn': { set: 'ferry-dawn', light: 'dawn' },
+      'hidden-lamp': { set: 'hidden-lamp', light: 'night' },
+      dormitory: { set: 'dormitory', light: 'night' },
+      causeway: { set: 'causeway', light: 'day' },
+      'carrow-morning': { set: 'carrow-morning', light: 'day' },
+      'under-lane': { set: 'under-lane', light: 'night' },
+      'shore-dusk': { set: 'shore-dusk', light: 'dusk' },
+      'lantern-stalls': { set: 'lantern-stalls', light: 'dusk' },
+      'carrow-dusk': { set: 'carrow-dusk', light: 'dusk' },
+    },
+    clerk: 'clerk',
+    townsfolk: 'townsman',
+  },
+
   endings: {
     commons: {
       title: 'The Lane Held',
@@ -78,6 +119,21 @@ export const chapter8 = {
       hint: 'Answer the warrant: hit all three BENCH targets',
       objective: { kind: 'all', ids: ['benchA', 'benchB', 'benchC'] },
       reward: { points: 20000, trust: 15 },
+      // A hearing, not a fight. Sable answers his own warrant from the floor; Ren stands by him in irons. The
+      // opposition is the three magistrates on the bench (the set's own), satisfied one at a time.
+      encounter: {
+        set: 'full-bench', light: 'day', mode: 'talk',
+        party: ['sable', 'ren'],
+        opposition: { kind: 'force', who: ['magistrate', 'magistrate', 'magistrate'], name: 'THE FULL BENCH' },
+        extras: ['steward'],
+        setback: { cue: 'bench-confers', show: 'The three lean together and confer behind a hand. An usher steps out and puts Sable back from the bar; he has to begin the point again.' },
+        beats: [
+          { at: 0, cue: 'all-rise', name: 'All three', show: 'Three magistrates under the high window, none of them looking down. Sable at the bar with the file; Ren a pace behind him, wrists together. The three desk lamps on the bench are dark.' },
+          { at: 1, cue: 'the-log', name: 'The log gives one name', show: 'The first magistrate leans in and nods; the lamp at his place comes up. Sable holds the log open toward the bench.' },
+          { at: 2, cue: 'the-cipher', name: 'The shot was mine', show: 'The second leans in; two lamps burn. Sable has laid the ciphered instruction on the bar. Ren has turned to look at him.' },
+          { at: 3, cue: 'charge-dismissed', name: 'Strike the irons', show: 'All three lamps burn and the slowest of the three has nodded. The bench is lit from end to end under the window.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s1.b01', who: 'crowd', text: "All rise! The Full Bench of Aurelle. All three." },
         { id: 'ch8.s1.b02', who: 'sable', text: "Call my warrant first. I'll answer it myself." },
@@ -155,6 +211,20 @@ export const chapter8 = {
       hint: 'Answer Halcyon: two shots round the ASSEMBLY orbit',
       objective: { kind: 'count', ids: ['assemblyOrbit'], n: 2 },
       reward: { points: 25000 },
+      // An argument won on the law. Counsel for Halcyon is a person (a 'crowd' voice in the script, a robed clerk
+      // on the stage); Maravel stands behind as the witness whose honest answer is against her.
+      encounter: {
+        set: 'full-bench', light: 'dusk', mode: 'talk',
+        party: ['ilse', 'tobb'],
+        opposition: { kind: 'people', who: ['clerk'], name: 'COUNSEL FOR HALCYON' },
+        extras: ['maravel'],
+        setback: { cue: 'counsel-rises', show: 'Counsel rises again, courteous and unhurried, and steps into her argument; Ilse gives ground and Tobb loses his place in the tally.' },
+        beats: [
+          { at: 0, cue: 'the-third-road', name: 'The third road to a lapse', show: 'Afternoon light, long across the floor. Counsel for Halcyon stands easy, stage right; Maravel behind him, called as a witness. Ilse and Tobb face them.' },
+          { at: 1, cue: 'chandlers-case', name: "The Chandlers' case", show: 'Ilse has stepped forward with one finger raised; counsel has gone back a pace and is looking at the bench, not at her.' },
+          { at: 2, cue: 'the-lot-stands', name: 'The lot stands', show: 'Counsel has given way and stands with his papers down. Ilse and Tobb upright; Maravel has not moved.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s2.b01', who: 'crowd', text: "Counsel for Halcyon moves the investiture void." },
         { id: 'ch8.s2.b02', who: 'tobb', text: "No Tribune, no vote. A lapse. It's clean." },
@@ -226,6 +296,18 @@ export const chapter8 = {
       hint: "Up the Founders' Lamp: sink the Plumb in the LAMP twice",
       objective: { kind: 'count', ids: ['lamp'], n: 2 },
       reward: { points: 25000 },
+      // Covert, and nobody is struck: three people time a watch and go up a stair. What they find is a paper.
+      encounter: {
+        set: 'founders-lamp', light: 'night', mode: 'stealth',
+        party: ['ren', 'sable', 'foss'],
+        opposition: { kind: 'force', who: ['watch-round', 'pinned-order'], name: 'THE WATCH AT TWO' },
+        setback: { cue: 'watch-turns', show: "The watchman's lantern swings back across the lamp room; the three drop below its light and wait for it to go round again." },
+        beats: [
+          { at: 0, cue: 'change-of-rounds', name: 'Change of rounds', show: "The white flame, the brass cap hung high above it on its chain. A watchman's lantern burns by the door. Ren, Sable and Foss crouch at the head of the stair, counting." },
+          { at: 1, cue: 'through-the-door', name: 'Through the door, in step', show: "The watch lantern has gone down the stair; the door side is dark. The three are across the floor and under the cap." },
+          { at: 2, cue: 'order-on-the-winch', name: 'Pinned to the winch', show: 'They stand at the winch. The order pinned to it shows pale in the flame, a red seal at its foot. Foss has stepped up to read it.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s3.b01', who: 'sable', text: "Lamp-house. The watch changes at two." },
         { id: 'ch8.s3.b02', who: 'foss', text: "I hold writs. Nobody has asked me to use them." },
@@ -299,6 +381,20 @@ export const chapter8 = {
       hint: 'Go up to the Chancellor: 20 hits on the RING bumpers',
       objective: { kind: 'count', ids: ['ring1', 'ring2', 'ring3'], n: 20 },
       reward: { points: 30000 },
+      // Two people in a room, and the brass model between them. She argues; he has heard every argument but one.
+      encounter: {
+        set: 'corvane-study', light: 'night', mode: 'talk',
+        party: ['ilse'],
+        opposition: { kind: 'people', who: ['corvane'], name: 'THE CHANCELLOR' },
+        setback: { cue: 'general-case', show: 'Corvane turns a hand toward the model, the general case, and comes round the table at her; Ilse is put back a step toward the door.' },
+        beats: [
+          { at: 0, cue: 'the-model', name: 'All of Aurelle in brass', show: 'The model on its plain table, twenty-eight small lamps lit. Corvane stands by it, stage right, at his ease; Ilse has just come in, two papers in her hand.' },
+          { at: 5, cue: 'the-table-read', name: "The Actuary's table", show: "She has put the table in front of him. He reads it standing, and has stopped smiling." },
+          { at: 10, cue: 'in-the-morning', name: 'What did they do, after?', show: 'Ilse has come forward to the middle of the room; he has gone back toward the window and is not looking at the model.' },
+          { at: 15, cue: 'order-on-a-winch', name: 'And then you pinned an order', show: 'She holds up the second paper. He is at the far side of the table with one hand on it.' },
+          { at: 20, cue: 'the-wager', name: 'How to find out', show: 'He has given way: head down, hands open. Neither has won. They have agreed how it will be tried.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s4.b01', who: 'crowd', text: "The Chancellor will see the Tribune. Alone, he asks." },
         { id: 'ch8.s4.b02', who: 'tobb', text: "Take my table. Mind the corners." },
@@ -376,6 +472,21 @@ export const chapter8 = {
       hint: 'Read the sum aloud: roll all three SEAT lanes',
       objective: { kind: 'all', ids: ['seatL', 'seatC', 'seatR'] },
       reward: { points: 35000 },
+      // A report read to a house. The opposition is the horseshoe itself, in three blocks: each block she reaches
+      // gets to its feet to hear the rest.
+      encounter: {
+        set: 'assembly', light: 'day', mode: 'talk',
+        party: ['ilse', 'tobb'],
+        opposition: { kind: 'force', who: ['seat-block', 'seat-block', 'seat-block'], name: 'THE ASSEMBLY' },
+        extras: ['steward'],
+        setback: { cue: 'house-in-uproar', show: 'A block of the house is shouting; an usher comes down the floor at her and Ilse loses her place in the page.' },
+        beats: [
+          { at: 0, cue: 'the-house-sits', name: 'Forty seats, twelve in grey', show: 'The horseshoe under the open eye of sky, white with noon. Twenty-eight delegates sit; twelve seats are under grey cloth. Ilse at the lectern with the record, Tobb at her shoulder.' },
+          { at: 1, cue: 'seven-hearings', name: 'The sum is short', show: 'One block of the house is on its feet, turned toward her. The rest sit.' },
+          { at: 2, cue: 'seats-in-grey', name: 'The seats in grey, by name', show: 'Two blocks stand. The grey cloths show between them like missing teeth.' },
+          { at: 3, cue: 'his-order-read', name: 'His order, read aloud', show: 'The whole house is standing. Nobody is looking at the Chancellor.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s5.b01', who: 'crowd', text: "Order! The Assembly sits. The Tribune of the Lot." },
         { id: 'ch8.s5.b02', who: 'ilse', text: "All of it. Aloud. Then his order." },
@@ -444,6 +555,22 @@ export const chapter8 = {
       hint: 'Get down to the water: shoot the MOLE ramp 3 times',
       objective: { kind: 'count', ids: ['moleRamp'], n: 3 },
       reward: { points: 40000, trust: 35 },
+      // One encounter for both endings (the leaning is read a scene earlier, the encounter is not branched): what
+      // is true in both is that the lamp is out, the sea is getting up, and a whole city has come out of its doors.
+      // They walk down through it to the water. Whether it holds or runs is the cutscene.
+      encounter: {
+        set: 'mole-dark', light: 'dusk', mode: 'walk',
+        party: ['ilse', 'ren', 'tobb'],
+        opposition: { kind: 'force', who: ['quay-lights'], name: 'ELEVEN MINUTES' },
+        extras: ['townsman', 'townswoman'],
+        setback: { cue: 'crowd-crosses', show: 'A man shoulders across their path without seeing them; the three are put back against the wall and wait for a gap.' },
+        beats: [
+          { at: 0, cue: 'cap-down', name: 'The lamp is out', show: 'The tower is a dark shape on the head of the mole and the sea is standing up beyond it. A few people at the back of the quay; one brazier. Ilse, Ren and Tobb at the top of the quay.' },
+          { at: 1, cue: 'out-of-doors', name: 'A city out of its doors', show: 'More of the quay has filled, backs to us, and hand lanterns have begun to show among them. The three are a third of the way down.' },
+          { at: 2, cue: 'the-mint-wall', name: "Past the Mint's wall", show: 'Lanterns the length of the quay now. The three are abreast of the chalked wall.' },
+          { at: 3, cue: 'at-the-water', name: 'At the water', show: 'The whole city is on the quay with whatever lights it owns, and the three are through it, stage right, at the water. Everyone is looking at the sea, and then at each other.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s6.b01', lean: 'commons', who: 'crowd', text: "Nobody's running. Why is nobody running?" },
         { id: 'ch8.s6.b02', lean: 'commons', who: 'tobb', text: "Chalk! Give me that wall. The Mint's wall." },
@@ -581,6 +708,22 @@ export const chapter8 = {
       hint: 'Cast the vote: light C-A-L-M',
       objective: { kind: 'all', ids: ['calmC', 'calmA', 'calmL', 'calmM'] },
       reward: { points: 50000 },
+      // One encounter for both endings: the house comes to order, divides, and ties. The vote itself, and which
+      // way it goes, is the cutscene. (After THE SUM the set seats only half the house: it remembers the run.)
+      encounter: {
+        set: 'assembly', light: 'day', mode: 'talk',
+        party: ['ilse', 'tobb'],
+        opposition: { kind: 'force', who: ['casting-vote'], name: 'FOURTEEN AND FOURTEEN' },
+        extras: ['steward'],
+        setback: { cue: 'gallery-shouts', show: 'Shouting from the gallery; an usher comes down the floor to clear the bar and the count begins again.' },
+        beats: [
+          { at: 0, cue: 'renewal-day', name: 'Renewal Day', show: 'The eye of sky is white again. The delegates are still finding their seats; the treaty lies on the table in the middle of the floor. Ilse and Tobb wait by it.' },
+          { at: 1, cue: 'house-to-order', name: 'The house comes to order', show: 'Everyone who is coming has sat. The twelve grey cloths have not moved.' },
+          { at: 2, cue: 'divide', name: 'Divide', show: 'The ayes are on their feet, one arm of the horseshoe.' },
+          { at: 3, cue: 'house-equal', name: 'The house is equal', show: 'The other arm has risen too: both sides standing, the same number each.' },
+          { at: 4, cue: 'the-casting-vote', name: 'The casting vote is hers', show: 'The house has sat again and turned to the middle of the floor. The treaty is lit on its table, and there is a pen beside it.' },
+        ],
+      },
       briefing: [
         { id: 'ch8.s7.b01', lean: 'commons', who: 'crowd', text: "Renewal Day! The house will come to order." },
         { id: 'ch8.s7.b02', lean: 'commons', who: 'tobb', text: "Fourteen and fourteen. Don't ask me the odds." },

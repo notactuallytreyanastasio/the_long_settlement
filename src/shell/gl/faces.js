@@ -14,8 +14,9 @@
 // Brows are not here: they are small 3D meshes on the head (characters.js), so they stand off the
 // brow in profile and blend smoothly between emotes.
 //
-//   createFaces({ size = 2048 }) -> {
-//     atlas, material,                       one 'blend' material for every face layer of every character
+//   createFaces({ size = 2048, maxPages = 4 }) -> {
+//     pages, stats(),                        2048 pages of cells; one holds the whole game's cast, more open when it fills
+//     useCell(node, rect, eye?)              (an export) show a cell on a decal: its uv rectangle AND its page's material
 //     lid(set, emote, shut) -> rect          set: 'round' | 'lash' | 'old' | 'heavy' | 'sharp' (LID_SETS)
 //     mouthShape(name) -> rect               a closed mouth by name: plain happy softsmile down flat smirk pursed grin wry o wobble grit
 //     eyeball(irisColor, kind) -> rect       kind: 'normal' | 'small' | 'wet'
@@ -62,9 +63,9 @@ export const FACE = {
 };
 
 const LW = 128, LH = 144;   // lid cell
-// Sizes are what lets a whole cast share one 2048 atlas: 45 lid cells and some 25 mouths are shared, and each
-// distinct face then costs three eyeballs (one per iris colour) and one marks cell (one per skin). At these sizes
-// there is room for about 27 distinct faces; the 25 of CAST fit together (tools/gl-characters.html?view=lineup).
+// Sizes are what lets a whole cast share one 2048 page: 45 lid cells and some 25 mouths are shared, and each
+// distinct face then costs three eyeballs (one per iris colour) and one marks cell (one per skin and set of marks).
+// See createFaces for how they are packed and what happens when a page fills.
 const BS = 144;             // eyeball cell
 const MW = 128, MH = 88;    // mouth cell
 const WW = 176, WH = 116;   // marks / fx cell: soft things (blush, freckles, tears), drawn small
@@ -335,17 +336,74 @@ const FX = {
 
 // ------------------------------------------------------------------------------------ the atlas
 
-export function createFaces({ size = 2048, figure = null } = {}) {
-  const atlas = createAtlas(size, { pad: 6 });
-  const cells = new Map();
-  const cell = (name, w, h, draw) => { let r = cells.get(name); if (!r) { r = atlas.add(name, w, h, draw); cells.set(name, r); } return r; };
+/**
+ * One 2048 page of face cells, packed by HEIGHT: every cell of one height goes on shelves of that height, so the four
+ * cell sizes never share a row (the plain shelf packer in atlas.js gives a row the height of its tallest cell, and a
+ * cast whose lids, eyeballs, mouths and marks arrive interleaved wastes a third of the sheet that way).
+ */
+function createPage(size, pad, figure, index) {
+  const atlas = createAtlas(size, { pad });
+  const shelves = []; let bottom = pad;
   // the face is shaded exactly like the skin under it, or the lid mask shows as a rectangle
-  const mat = material({ name: 'face', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: figure ? figure.rim : 1, bands: figure ? figure.bands : 2, bandEdge: figure ? figure.bandEdge : 0, bandSoft: figure ? figure.bandSoft : 0.006, keyLight: figure ? figure.keyLight : null });
-  const emoteOf = (e) => { const E = EMOTE[e]; if (!E) throw new Error(`faces: unknown emote "${e}" (have ${EMOTES.join(', ')})`); return E; };
+  const mat = material({ name: 'face' + (index || ''), map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: figure ? figure.rim : 1, bands: figure ? figure.bands : 2, bandEdge: figure ? figure.bandEdge : 0, bandSoft: figure ? figure.bandSoft : 0.006, keyLight: figure ? figure.keyLight : null });
   // the eyeballs keep some of their own colour in shadow, or the iris goes dead when the face turns from the light
-  const eyeMat = material({ name: 'eyes', map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.5, keyLight: mat.keyLight });
+  const eyeMat = material({ name: 'eyes' + (index || ''), map: atlas.texture, texMode: 'blend', outline: false, receiveShadow: false, rim: 0, bands: mat.bands, bandEdge: mat.bandEdge, bandSoft: mat.bandSoft, emissive: 0.5, keyLight: mat.keyLight });
+  const page = {
+    index, atlas, material: mat, eyeMaterial: eyeMat, cells: 0,
+    /** Reserve and draw a w x h cell; null when this page has no room for it. */
+    add(w, h, draw) {
+      let sh = null;
+      for (let i = 0; i < shelves.length; i++) if (shelves[i].h === h && shelves[i].x + w + pad <= size) { sh = shelves[i]; break; }
+      if (!sh) { if (bottom + h + pad > size) return null; sh = { y: bottom, h, x: pad }; shelves.push(sh); bottom += h + pad; }
+      const x = sh.x, y = sh.y, g = atlas.ctx; sh.x += w + pad;
+      g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.translate(x, y); draw(g, w, h); g.restore();
+      atlas.texture.touch(); page.cells++;
+      const r = new Float32Array([x / size, y / size, w / size, h / size]);
+      r.page = page; // the material a decal showing this cell must be drawn with: see useCell
+      return r;
+    },
+    get used() { return (bottom - pad) / (size - pad * 2); },
+  };
+  return page;
+}
+
+/** Show a cell on a decal node: its uv rectangle, and the material of the page the cell lives on. */
+export function useCell(node, rect, eye = false) {
+  node.uvRect.set(rect);
+  const m = eye ? rect.page.eyeMaterial : rect.page.material;
+  if (node.material !== m) node.material = m;
+}
+
+/**
+ * The face atlas, in pages. Every cell is made once and shared by name: lids by (lid set, emote), mouths by shape,
+ * eyeballs by (iris colour, kind), marks by what is drawn. One 2048 page holds the shared cells (about 45 lids, 25
+ * mouths, 5 overlays) and then 13 eyeballs or 11 marks cells a shelf: 14 iris colours and 55 marks cells, which is the
+ * whole cast of the game with its extras (CAST keeps rank-and-file irises to IRIS_SHARED for this). When a page is
+ * full the next cell opens another page instead of throwing, up to `maxPages`; a returned rectangle carries `.page`,
+ * and a decal must take its material from there (useCell), since two cells of one face may sit on different pages.
+ *   faces.stats() -> { pages, cells, used: [fraction of each page's height taken] }
+ */
+export function createFaces({ size = 2048, figure = null, maxPages = 4 } = {}) {
+  const pages = [createPage(size, 6, figure, 0)];
+  const cells = new Map();
+  const cell = (name, w, h, draw) => {
+    let r = cells.get(name);
+    if (r) return r;
+    for (let i = 0; i < pages.length && !r; i++) r = pages[i].add(w, h, draw);
+    if (!r) {
+      if (pages.length >= maxPages) throw new Error(`faces: no room for "${name}" in ${maxPages} pages of ${size} (${cells.size} cells); raise maxPages or share more faces`);
+      pages.push(createPage(size, 6, figure, pages.length));
+      r = pages[pages.length - 1].add(w, h, draw);
+      if (!r) throw new Error(`faces: cell "${name}" (${w}x${h}) does not fit an empty ${size} page`);
+    }
+    cells.set(name, r);
+    return r;
+  };
+  const mat = pages[0].material, eyeMat = pages[0].eyeMaterial;
+  const emoteOf = (e) => { const E = EMOTE[e]; if (!E) throw new Error(`faces: unknown emote "${e}" (have ${EMOTES.join(', ')})`); return E; };
   return {
-    atlas, material: mat, eyeMaterial: eyeMat,
+    atlas: pages[0].atlas, material: mat, eyeMaterial: eyeMat, pages,
+    stats() { return { pages: pages.length, cells: cells.size, used: pages.map((p) => Math.round(p.used * 1000) / 1000) }; },
     lid(set, emote, shut) {
       if (!LID_SETS.includes(set)) throw new Error(`faces: unknown lid set "${set}" (have ${LID_SETS.join(', ')})`);
       const E = emoteOf(emote);
