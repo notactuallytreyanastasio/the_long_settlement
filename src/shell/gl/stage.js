@@ -685,6 +685,7 @@ function fightOn(S, opts = {}) {
   function target(rotate) {
     const fr = front();
     if (mode.route) return null;
+    if (mode === MODES.talk && S.units.length) return S.units[curUnit()];                                       // the paper on the table: the points land on it, the listeners watch them land
     if (mode === MODES.talk && fr.length) return fr[Math.min(fr.length - 1, Math.floor(frac() * fr.length))];   // the one being won now
     if (mode === MODES.hold && fr.length) return fr[(rotate ? oppTurn++ : oppTurn) % fr.length];
     if (kind === 'people' && opp.length) return opp[0];    // the front of their line takes it; a big blow spills onto the rest
@@ -718,7 +719,7 @@ function fightOn(S, opts = {}) {
   function land(t, by, big) {
     let x, y, z;
     aimOf(t === undefined ? null : t, AIM); x = AIM[0]; y = AIM[1]; z = AIM[2] + 0.15;
-    if (isUnit(t)) t.wob = 1;
+    if (isUnit(t)) { t.wob = 1; if (mode === MODES.talk) for (const o of front()) { feel(o, big ? 'shock' : 'grim', 0.6); if (big && !o.ch.busy && !o.held) o.ch.act('hop'); } }
     else if (t) {
       if (mode === MODES.talk) { feel(t, 'shock', 0.5); if (!t.ch.busy && !t.held) t.ch.act(big ? 'nod' : 'hop'); }
       else {

@@ -38,6 +38,7 @@ import { stepPhysics } from '../../core/physics.js';
 import { litIds, spinIds, currentScene } from '../../core/story.js';
 import { leverStatus, AID_WAIT } from '../../core/game.js';
 import { lerpEnv } from './scene.js';
+import { ART } from './table-art.js';
 
 const S = 0.01;
 const WX = (x) => (x - 200) * S, WZ = (y) => (y - 400) * S;
@@ -387,11 +388,26 @@ function paintKit(g, table, P) {
 function paintFunctional(kit, layout, at = {}) {
   const { g, table, P } = kit;
   // a label is a plate: lettering on the busiest painting still reads at phone size. `at` moves one ({ id: [x, y] }).
+  // Where a ramp's wire will be seen from the player's seat: a point at height h shows about 0.55 h further up the table.
+  const wires = [];
+  for (const s of layout.shots) if (s.exit) for (const p of rampPath(s, 40)) wires.push([p[0], p[1] - p[2] * 55]);
+  const clearOf = (x, y, w, h) => { for (const p of wires) if (Math.abs(p[0] - x) < w / 2 + 13 && Math.abs(p[1] - y) < h / 2 + 5) return false; return true; };
+  // the table's own lettering, as boxes a plate that has to move keeps out of
+  const words = table.decor.map((d) => { const l = d.text.length * d.size * 0.68 + 8, t = d.size * 1.3, up = Math.abs(Math.sin(d.angle || 0)) > 0.7; return [d.pos[0], d.pos[1], up ? t : l, up ? l : t]; });
+  const offWords = (x, y, w, h) => words.every((r) => Math.abs(r[0] - x) > (r[2] + w) / 2 || Math.abs(r[1] - y) > (r[3] + h) / 2);
   const plate = (id, str, x, y, size) => {
-    if (at[id]) { x = at[id][0]; y = at[id][1]; }
-    g.save(); g.translate(x, y); g.font = `${size}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.save(); g.font = `${size}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     if ('letterSpacing' in g) g.letterSpacing = '0.4px';
     const w = g.measureText(str).width + size * 0.95, h = size * 1.5;
+    if (at[id]) { x = at[id][0]; y = at[id][1]; }
+    else if (!clearOf(x, y, w, h)) {
+      // a wire would cross it: step aside, the nearest clear place first
+      for (const [dx, dy] of [[0, 10], [0, -10], [-w * 0.6, 4], [w * 0.6, 4], [0, 20], [-w, 0], [w, 0], [-w, 14], [w, 14], [-w * 1.5, 6], [w * 1.5, 6], [0, 32]]) {
+        const nx = Math.max(12 + w / 2, Math.min(362 - w / 2, x + dx));
+        if (clearOf(nx, y + dy, w, h) && offWords(nx, y + dy, w, h)) { x = nx; y += dy; break; }
+      }
+    }
+    g.translate(x, y);
     g.fillStyle = P.plateEdge; g.beginPath(); rrect(g, -w / 2 - 1.3, -h / 2 - 1.3, w + 2.6, h + 2.6, h * 0.5); g.fill();
     g.fillStyle = P.plate; g.beginPath(); rrect(g, -w / 2, -h / 2, w, h, h * 0.45); g.fill();
     g.fillStyle = P.plateText; g.fillText(str, 0, size * 0.07); g.restore();
@@ -1318,9 +1334,18 @@ export function tableEvents(content, before, msg, after, out = []) {
  *                a lamp with night: true is lit only in the night light (what the dusk sun makes needless).
  *   env, envNight, envDay   overrides of each of the three lighting environments
  *   glints       [[x0, y0, x1, y1], ...] rectangles of open water that sparkle
+ *   light        the light the table stands in until it is told another ('dusk' | 'night' | 'day' | 'dawn')
+ *   envDawn      the fourth environment (without it, dawn takes `env`)
+ *   booth        colours of the reel booth: { awning: [a, b], post: [side, cap], fascia: [side, cap], back, bulbs: [a, b], pillar: [body, cap], deck: [side, cap] }
+ *   head(kit) -> [mesh, ...]   more of the booth, in world units (its roof is y = 0.97 from z = -5.1 to -4.62; the collector stands at [0, 1.32, -4.86])
+ *   labelAt      { id: [x, y] } where an element's name plate goes when its own place will not do
+ *
+ * scenery(kit) and head(kit) are given { table, P, WX, WZ, S, lay, YAW, bollard, prism, stadium, rectPts, capped }.
+ * Vessery's art is below; the other seven tables' is table-art.js.
  */
 export const TABLE_ART = {};
 export function registerTableArt(id, art) { TABLE_ART[id] = art; return art; }
+for (const id of Object.keys(ART)) registerTableArt(id, ART[id]);
 
 // ---- Vessery: the harbour on festival evening
 
@@ -1377,7 +1402,6 @@ registerTableArt('vessery', {
   palette: { sea: ['#2b86dc', '#35b0e6', '#5fdad4'] },
   groups: { lanterns: '#ff9a3d', seals: '#5b8cf0' },
   glints: [[70, 350, 300, 560], [130, 560, 245, 700]],
-  labelAt: { dockOrbit: [256, 470] },   // the pier ramp's wire comes down over where this plate would sit
   paint(k) {
     const { g, P } = k;
     k.sea(P.sea);

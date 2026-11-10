@@ -66,8 +66,8 @@ export function resolveQuality(q = 'high') {
 
 /**
  * createRenderer(canvas, { quality = 'high', dprCap = 2 }) ->
- *   { render(scene, camera, timeSeconds, view = null), stats, quality, setQuality(q), measureFill(drawFn),
- *     ctx, gl, resize(), invalidate(mesh), dispose() }
+ *   { render(scene, camera, timeSeconds, view = null), stats, quality, setQuality(q), measureFill(drawFn, pass),
+ *     release(sceneOrNode, { skip }), memory(), ctx, gl, resize(), invalidate(mesh), dispose() }
  * `view` = { x, y, w, h } in CSS pixels from the canvas's top-left draws into that rectangle only
  * (and sets the camera's aspect from it), so one canvas can hold several scenes: a table and a
  * stage band above it. Each call clears its own rectangle; a view may carry shadowCenter [x, y, z]
@@ -113,8 +113,11 @@ export function createRenderer(canvas, opts = {}) {
   }
   function dropPrograms() { for (const p of programs.values()) gl.deleteProgram(p.program); programs = new Map(); spriteVao = null; }
 
+  const mem = { geometry: 0, textures: 0, shadows: 0, meshes: 0, textureCount: 0 };   // bytes on the GPU; see memory()
+  const shadowLive = [];          // the scenes' shadow entries that hold maps now (see shadowEntry)
   function build() {
     programs = new Map(); colorTarget = null; nullShadow = null; spriteVao = null; spriteBuf = null; spriteCap = 0;
+    mem.geometry = 0; mem.textures = 0; mem.shadows = 0; mem.meshes = 0; mem.textureCount = 0; shadowLive.length = 0;   // a new context starts empty
     const tri = (data) => {
       const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
       const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
@@ -146,25 +149,34 @@ export function createRenderer(canvas, opts = {}) {
   }
 
   // ---- lazily uploaded resources ----
+  // What is on the GPU, in bytes, counted as it is made and dropped (an estimate: drivers pad). Things whose JS owner was
+  // garbage collected without release() stay counted until the context is rebuilt.
+  const geoBytes = (mesh) => (mesh.positions.length / 3) * (48 + (mesh.bones ? 1 : 0)) + mesh.indices.length * (mesh.positions.length / 3 <= 65535 ? 2 : 4);
   function geoOf(mesh, owner) {
     const holder = owner || mesh; // instanced nodes own a private copy, because the instance buffer lives on the VAO
     let c = holder._gpu;
     if (!c || c.gen !== ctx.generation || c.mesh !== mesh) {
       if (c && c.gen === ctx.generation) dropGeo(c.geo);
       c = holder._gpu = { gen: ctx.generation, mesh, geo: createGeometry(gl, mesh) };
+      c.geo.bytes = geoBytes(mesh); mem.geometry += c.geo.bytes; mem.meshes++;
     }
     return c.geo;
   }
-  function dropGeo(geo) { gl.deleteVertexArray(geo.vao); gl.deleteBuffer(geo.vbo); gl.deleteBuffer(geo.ibo); if (geo.instBuf) gl.deleteBuffer(geo.instBuf); if (geo.boneBuf) gl.deleteBuffer(geo.boneBuf); }
+  function dropGeo(geo) { gl.deleteVertexArray(geo.vao); gl.deleteBuffer(geo.vbo); gl.deleteBuffer(geo.ibo); if (geo.instBuf) gl.deleteBuffer(geo.instBuf); if (geo.boneBuf) gl.deleteBuffer(geo.boneBuf); mem.geometry -= (geo.bytes || 0) + geo.instCap * 80; mem.meshes--; }
+  /** Drop the GPU copy a mesh, a node (its private instanced copy) or a run holder owns, if it has one in this context. */
+  function dropHeld(holder) { const c = holder && holder._gpu; if (!c) return 0; holder._gpu = null; if (c.gen !== ctx.generation) return 0; dropGeo(c.geo); return 1; }
+  const texBytes = (t) => { const w = t.source.width || 1, h = t.source.height || 1; return Math.round(w * h * 4 * (t.mips !== false && t.filter !== 'nearest' ? 4 / 3 : 1)); };
   function texOf(t) {
     if (!t) return white;
     let c = t._gpu;
     if (!c || c.gen !== ctx.generation || c.version !== t.version) {
-      if (c && c.gen === ctx.generation) gl.deleteTexture(c.tex);
-      c = t._gpu = { gen: ctx.generation, version: t.version, tex: createTexture(gl, t.source, { filter: t.filter, mips: t.mips }) };
+      if (c && c.gen === ctx.generation) { gl.deleteTexture(c.tex); mem.textures -= c.bytes; mem.textureCount--; }
+      c = t._gpu = { gen: ctx.generation, version: t.version, tex: createTexture(gl, t.source, { filter: t.filter, mips: t.mips }), bytes: texBytes(t) };
+      mem.textures += c.bytes; mem.textureCount++;
     }
     return c.tex;
   }
+  function dropTex(t) { const c = t && t._gpu; if (!c) return 0; t._gpu = null; if (c.gen !== ctx.generation) return 0; gl.deleteTexture(c.tex); mem.textures -= c.bytes; mem.textureCount--; return 1; }
 
   // ---- per-frame scratch ----
   const opaque = [], blended = [], beams = [], casters = [], statics = [];
@@ -360,7 +372,7 @@ export function createRenderer(canvas, opts = {}) {
   function drawNode(p, n, opacity, shadowPass = false, part = 0) {
     const u = p.u, inst = n.instances;
     const geo = geoOf(n.mesh, inst ? n : null);
-    if (inst && (inst.dirty || !geo.instBuf)) { uploadInstances(gl, geo, inst.data, inst.count); inst.dirty = false; }
+    if (inst && (inst.dirty || !geo.instBuf)) { const had = geo.instCap; uploadInstances(gl, geo, inst.data, inst.count); mem.geometry += (geo.instCap - had) * 80; inst.dirty = false; }
     if (n.bones) { const b = n.bones; for (let i = 0; i < b.length; i++) boneMats.set(b[i].world, i * 16); gl.uniformMatrix4fv(u.uBones, false, boneMats); }
     else gl.uniformMatrix4fv(u.uModel, false, n.world);
     if (u.uNormalMat) gl.uniformMatrix3fv(u.uNormalMat, false, m4.normalMat3(nm3, n.world));
@@ -471,7 +483,7 @@ export function createRenderer(canvas, opts = {}) {
   function drawRun(p, list, i, len, opacity, shadowPass) {
     const u = p.u, a = list[i], mesh = a.mesh, geo = geoOf(mesh, mesh._auto || (mesh._auto = {}));
     for (let k = 0; k < len; k++) { const n = list[i + k], o = k * 20; runData.set(n.world, o); runData[o + 16] = n.tint[0]; runData[o + 17] = n.tint[1]; runData[o + 18] = n.tint[2]; runData[o + 19] = 1; }
-    uploadInstances(gl, geo, runData, len);
+    { const had = geo.instCap; uploadInstances(gl, geo, runData, len); mem.geometry += (geo.instCap - had) * 80; }
     gl.uniformMatrix4fv(u.uModel, false, IDENT4);
     if (u.uTint) gl.uniform4f(u.uTint, 1, 1, 1, a.tint[3] * opacity);
     if (u.uUvRect) gl.uniform4fv(u.uUvRect, a.uvRect);
@@ -522,14 +534,24 @@ export function createRenderer(canvas, opts = {}) {
     return texel;
   }
   const sameMat = (a, b) => { for (let i = 0; i < 16; i++) if (a[i] !== b[i]) return false; return true; };
-  function dropShadowTarget(t) { if (t) { gl.deleteFramebuffer(t.fbo); gl.deleteTexture(t.tex); } }
+  function dropShadowTarget(t) { if (t) { gl.deleteFramebuffer(t.fbo); gl.deleteTexture(t.tex); mem.shadows -= t.size * t.size * 2; } }
+  function newShadowTarget(size) { mem.shadows += size * size * 2; return createShadowTarget(gl, size); }
+  // Shadow maps are the largest thing a scene holds on the GPU (two of them a scene: what never moves, and that plus what
+  // does), and every set ever drawn used to keep its pair: 104 MB after chapter 1 was built at 'medium', four times that at
+  // 'high'. Now only the SHADOW_SCENES scenes drawn most recently hold maps (a play frame draws two: the stage and the
+  // table); a scene that comes back gets new ones and draws its kept map again, once.
+  const SHADOW_SCENES = 3;
+  let shadowClock = 0;
+  function emptyEntry(e) { dropShadowTarget(e.target); dropShadowTarget(e.kept); e.target = e.kept = null; e.keptValid = false; e.fresh = true; e.lastTex = null; const at = shadowLive.indexOf(e); if (at >= 0) shadowLive.splice(at, 1); }
   function shadowEntry(scene, size) {
     let e = shadowOf.get(scene);
-    if (!e || e.gen !== ctx.generation || e.size !== size) {
-      if (e && e.gen === ctx.generation) { dropShadowTarget(e.target); dropShadowTarget(e.kept); }
-      e = { gen: ctx.generation, size, target: createShadowTarget(gl, size), kept: null, vp: m4.create(), keptVP: m4.create(), keptHash: 0, keptValid: false, snap: [NaN, NaN, NaN], snapStep: 0, texel: 0.01, tick: 0, slot: e ? e.slot : shadowSlots++, fresh: true };
-      shadowOf.set(scene, e);
+    if (!e || e.gen !== ctx.generation) { e = { gen: ctx.generation, size, target: null, kept: null, vp: m4.create(), keptVP: m4.create(), keptHash: 0, keptValid: false, snap: [NaN, NaN, NaN], snapStep: 0, texel: 0.01, tick: 0, slot: e ? e.slot : shadowSlots++, fresh: true, used: 0, lastTex: null }; shadowOf.set(scene, e); }
+    if (e.size !== size) { emptyEntry(e); e.size = size; }
+    if (shadowLive.indexOf(e) < 0) {
+      while (shadowLive.length >= SHADOW_SCENES) { let old = shadowLive[0]; for (let i = 1; i < shadowLive.length; i++) if (shadowLive[i].used < old.used) old = shadowLive[i]; emptyEntry(old); }
+      shadowLive.push(e);
     }
+    e.used = ++shadowClock;
     return e;
   }
   function drawCasters(list) {
@@ -605,17 +627,18 @@ export function createRenderer(canvas, opts = {}) {
         enter('shadow');
         if (statics.length > 0) {
           // what never moves: drawn once into a map of its own, copied in before the moving things each time
-          if (!entry.kept) entry.kept = createShadowTarget(gl, entry.size);
+          if (!entry.kept) entry.kept = newShadowTarget(entry.size);
           if (!entry.keptValid || entry.keptHash !== staticHash || !sameMat(entry.keptVP, shadowVP)) {
             stats.shadowKept = !entry.keptValid ? 'new' : entry.keptHash !== staticHash ? 'set' : 'moved';   // why the kept map was drawn again
             gl.bindFramebuffer(gl.FRAMEBUFFER, entry.kept.fbo); gl.clear(gl.DEPTH_BUFFER_BIT);
             drawCasters(statics);
             entry.keptValid = true; entry.keptHash = staticHash; entry.keptVP.set(shadowVP);
           }
-          if (casters.length > 0) { copyShadow(gl, entry.kept, entry.target); cleared = true; }
+          if (casters.length > 0) { if (!entry.target) entry.target = newShadowTarget(entry.size); copyShadow(gl, entry.kept, entry.target); cleared = true; }
         }
         if (statics.length > 0 && casters.length === 0) shadowTex = entry.kept.tex; // nothing moves: the kept map is the map
         else {
+          if (!entry.target) entry.target = newShadowTarget(entry.size);
           gl.bindFramebuffer(gl.FRAMEBUFFER, entry.target.fbo);
           if (!cleared) gl.clear(gl.DEPTH_BUFFER_BIT);
           drawCasters(casters);
@@ -800,7 +823,38 @@ export function createRenderer(canvas, opts = {}) {
     },
     resize: () => ctx.resize(),
     /** Call after editing a mesh's arrays in place, so it is uploaded (and measured) again. */
-    invalidate(mesh) { mesh.trim = null; mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; if (mesh._auto && mesh._auto._gpu) { if (mesh._auto._gpu.gen === ctx.generation) dropGeo(mesh._auto._gpu.geo); mesh._auto._gpu = null; } if (mesh._gpu) { if (mesh._gpu.gen === ctx.generation) dropGeo(mesh._gpu.geo); mesh._gpu = null; } },
+    invalidate(mesh) { mesh.trim = null; mesh._bs = null; mesh._bb = null; mesh._boneR = undefined; dropHeld(mesh._auto); dropHeld(mesh); },
+    /**
+     * Free what a scene (or a subtree) holds on the GPU: every mesh's buffers, every material's texture, and for a scene
+     * its shadow maps and sprite sheet. Call it for a set the game has left (a chapter's sets when the next chapter starts)
+     * and then drop your own references to it; nothing else frees GPU memory before the garbage collector gets to it.
+     * `skip` is a list of nodes whose subtrees are left alone: pass [set.actors] while figures of the troupe may still
+     * stand there (they are shared with the next set). Anything released that is drawn again is simply uploaded again.
+     * Returns { meshes, textures, bytes } freed.
+     */
+    release(root, { skip = [] } = {}) {
+      if (ctx.lost || !root) return { meshes: 0, textures: 0, bytes: 0 };
+      const before = mem.geometry + mem.textures + mem.shadows; let meshes = 0, textures = 0;
+      const scene = root.root && root.env ? root : null;
+      const walk = (n) => {
+        if (skip.includes(n)) return;
+        if (n.mesh) { meshes += dropHeld(n.mesh) + dropHeld(n.mesh._auto) + dropHeld(n); }
+        if (n.material && n.material.map) textures += dropTex(n.material.map);
+        for (const c of n.children) walk(c);
+      };
+      walk(scene ? scene.root : root);
+      if (scene) {
+        const e = shadowOf.get(scene);
+        if (e) { if (e.gen === ctx.generation) emptyEntry(e); shadowOf.delete(scene); }
+        if (scene.sprites && scene.sprites.texture) textures += dropTex(scene.sprites.texture);
+      }
+      return { meshes, textures, bytes: before - (mem.geometry + mem.textures + mem.shadows) };
+    },
+    /** GPU memory this renderer holds now, in bytes: { geometry, textures, shadows, target, total, meshes, textureCount }. */
+    memory() {
+      const target = colorTarget ? colorTarget.w * colorTarget.h * (4 + (colorTarget.samples > 1 ? 8 * colorTarget.samples : 4)) : 0;
+      return { geometry: mem.geometry, textures: mem.textures, shadows: mem.shadows, target, total: mem.geometry + mem.textures + mem.shadows + target, meshes: mem.meshes, textureCount: mem.textureCount };
+    },
     dispose() { const ext = gl.getExtension('WEBGL_lose_context'); if (ext) ext.loseContext(); },
   };
   return api;

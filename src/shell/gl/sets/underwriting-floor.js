@@ -210,10 +210,15 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   function send(n = 1) { for (let k = 0; k < n; k++) { const start = Math.floor(rnd() * runs.length); for (let j = 0; j < runs.length; j++) { const q = runs[(start + j) % runs.length]; if (q.t < 0) { q.t = 0; q.dir = rnd() < 0.5 ? 1 : -1; break; } } } }
   const DRAWER_TASK = { pos: [LONG[0], LONG[1], LONG[2] + 0.4], stand: [LONG[0] + 0.5, LONG[2] + 1.2], set(v) { openDrawer(v); } };
   const RET_TASK = { pos: [RET[0], 1.5, RET[2]], stand: [RET[0] + 0.9, RET[2] + 0.4], set(v) { retOn = Math.max(0, Math.min(1, v)); } };
+  // the stationery returns trolley, stage right at the front: where the crossing ends ("filed beside the dullest thing in the room")
+  const TROLLEY = [2.3, 0, 0.3];
+  { const t = node('returns-trolley', merge(cabinet({ w: 0.95, h: 0.9, d: 0.46, rows: 3, cols: 2, color: '#8a7ae0', front: '#a99cf0', seed: 9 }), place(pixelText('RETURNS', { s: 0.085, color: '#fff6d8', glow: 0.5 }), 0, 0.97, 0.2)), M.prop, { pos: TROLLEY, rot: [0, -14, 0] }); scene.root.add(t); }
+  const trolleyGlow = sprites.add({ kind: 'glow', pos: [TROLLEY[0], 0.75, TROLLEY[2] + 0.35], size: 1.5, color: '#fff0a0', alpha: 0 });
+  const TROLLEY_TASK = { pos: [TROLLEY[0], 0.8, TROLLEY[2] + 0.25], stand: [TROLLEY[0] - 0.75, TROLLEY[2] + 0.45], size: 0.6, reach: 'down', set(v) { retOn = Math.max(0, Math.min(1, v)); } };
   // ch3.s4's encounter (between two rounds): the clerk at his lamp is the thing to get past; the tubes tick faster as Ren crosses
   let roundV = 0;
-  const ROUND = { pos: [lampPos[0], lampPos[1] - 0.5, lampPos[2]], stand: [-2.6, 0.75], set(v) { setClerk(true); openDrawer(0); if (Math.floor(v * 6) > Math.floor(roundV * 6)) send(2); roundV = v; } };
-  const task = (type) => (type === 'drawer' || type === 'island-book' ? DRAWER_TASK : type === 'returns' || type === 'schedule' ? RET_TASK : type === 'night-round' ? ROUND : null);
+  const ROUND = { pos: [lampPos[0], lampPos[1] - 0.5, lampPos[2]], stand: [-2.3, 0.75], set(v) { setClerk(true); openDrawer(0); if (Math.floor(v * 6) > Math.floor(roundV * 6)) send(2); roundV = v; } };
+  const task = (type) => (type === 'drawer' || type === 'island-book' ? DRAWER_TASK : type === 'schedule' ? RET_TASK : type === 'returns' ? TROLLEY_TASK : type === 'night-round' ? ROUND : null);
   /** Stage business by script line. */
   function cue(id) {
     switch (id) {
@@ -232,7 +237,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     drawer.position[2] = LONG[2] - 0.02 + openNow * 0.62;
     drawerGlow.alpha = openNow * 0.6; drawerGlow.pos[2] = LONG[2] + 0.3 + openNow * 0.5;
     env.points[4].intensity = openNow * 1.3; env.points[3].intensity = (1 - clerkNow) * 1.2 * Math.min(1.2, 0.5 + pw * 0.5);
-    teaGlow.alpha = (1 - clerkNow) * 0.6; retGlow.alpha = retOn * (0.45 + 0.15 * Math.sin(time * 3));
+    teaGlow.alpha = (1 - clerkNow) * 0.6; retGlow.alpha = 0; trolleyGlow.alpha = retOn * (0.5 + 0.15 * Math.sin(time * 3));
     clerk.visible = clerkNow > 0.03; clerk.scale[0] = clerk.scale[1] = clerk.scale[2] = Math.max(0.001, clerkNow * 1.12);
     clerk.setRot(8 + Math.sin(time * 0.7) * 1.5, DESKS[LIT].yaw + Math.sin(time * 0.31) * 3, 0); // he writes; he does not look up
     bob.setRot(0, WR.yaw, Math.sin(time * 3.1) * 9);

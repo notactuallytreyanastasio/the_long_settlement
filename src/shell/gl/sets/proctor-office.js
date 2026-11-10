@@ -222,7 +222,7 @@ function build(engine = null, { light: lightName = 'dawn', low = false } = {}) {
     extra: { placeFolder, setLine, lightLamp, task },
   });
   // ch3.s5: Thorne waits standing at the corner of her desk
-  built.encounter = () => { built.marks.extras = [{ pos: [1.6, 0, 0.6], face: -58 }]; placeFolder(false); setLine(1); };
+  built.encounter = () => { built.marks.extras = [{ pos: [2.2, 0, 0.6], face: -58 }]; placeFolder(false); setLine(1); };
   return built;
 }
 

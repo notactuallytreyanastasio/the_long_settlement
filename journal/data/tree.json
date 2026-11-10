@@ -12356,13 +12356,13 @@
  },
  {
   "path": "src/content/chapter2.js",
-  "bytes": 55739,
-  "lines": 748
+  "bytes": 55783,
+  "lines": 749
  },
  {
   "path": "src/content/chapter3.js",
-  "bytes": 64601,
-  "lines": 790
+  "bytes": 64606,
+  "lines": 791
  },
  {
   "path": "src/content/chapter4.js",
@@ -12511,7 +12511,7 @@
  },
  {
   "path": "src/shell/gl/gl.js",
-  "bytes": 13871,
+  "bytes": 14022,
   "lines": 218
  },
  {
@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 55890,
-  "lines": 811
+  "bytes": 60889,
+  "lines": 865
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12556,7 +12556,7 @@
  },
  {
   "path": "src/shell/gl/sets/academy-yard.js",
-  "bytes": 28251,
+  "bytes": 28279,
   "lines": 337
  },
  {
@@ -12596,8 +12596,8 @@
  },
  {
   "path": "src/shell/gl/sets/commons-hall.js",
-  "bytes": 22972,
-  "lines": 254
+  "bytes": 23746,
+  "lines": 257
  },
  {
   "path": "src/shell/gl/sets/commons-queue.js",
@@ -12861,8 +12861,8 @@
  },
  {
   "path": "src/shell/gl/sets/underwriting-floor.js",
-  "bytes": 25108,
-  "lines": 270
+  "bytes": 25938,
+  "lines": 275
  },
  {
   "path": "src/shell/gl/sets/wreck-shore.js",
@@ -12881,13 +12881,18 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 107696,
-  "lines": 1467
+  "bytes": 108035,
+  "lines": 1468
+ },
+ {
+  "path": "src/shell/gl/table-art.js",
+  "bytes": 75910,
+  "lines": 788
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 107907,
-  "lines": 1456
+  "bytes": 109987,
+  "lines": 1480
  },
  {
   "path": "src/shell/input.js",
@@ -13006,8 +13011,8 @@
  },
  {
   "path": "tools/gl-perf.html",
-  "bytes": 22264,
-  "lines": 246
+  "bytes": 22585,
+  "lines": 251
  },
  {
   "path": "tools/gl-set.html",

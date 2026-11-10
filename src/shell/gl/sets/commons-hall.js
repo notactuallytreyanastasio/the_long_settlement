@@ -14,7 +14,7 @@
 //   setCrowd(0..1)        how full the hall is (night starts full, day at a quarter); they come and go one by one
 //   setNames(0 | 1 | 2)   MARAVEL I / VASKER R chalked in the IS OWED column (0: not yet)
 //   task('red-notice', i) -> { pos, stand, set(v) } ch2.s2's encounter: three notices on a trestle (night only), each answered at v = 1
-//   task('long-board')    -> { pos, set(v) } ch2.s7's encounter: the hall fills a little and COAL / SALT / A ROOF are chalked up
+//   task('long-board')    -> { pos, stand, set(v) } ch2.s7's encounter: the hall fills a little and COAL / A ROOF / SALT are chalked on the day slate (an easel, day only)
 //   cue(lineId)           ch2.s7.c05 chalks both names; ch2.s7.c01 wipes them; ch2.s2.c16 / c21 thin the hall for the late supper
 // marks: a, b, c, two, party, opposition as everywhere, plus
 //   board { pos, face }: where somebody stands to chalk   table { pos, face }: behind the writing table (Ilse's chair)
@@ -222,9 +222,12 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   const replyV = [0, 0, 0];
   const NOTICES = NX.map((x, i) => ({ pos: [x, NY, NZ + 0.15], stand: [x - 0.62, NZ + 0.42], size: 0.4, set(v) { replyV[i] = v; replyNodes[i].visible = v > 0.97; replyGlows[i].alpha = v > 0.97 ? 0.5 : v * 0.25; } }));
   // ---- ch2.s7's encounter: the town comes in to look at its board, and three fresh entries are chalked on it
-  const entries = [['COAL', -3.3, 0.1], ['A ROOF', 0.9, 0.1], ['SALT', -1.6, -0.35]].map(([s, x, y], i) => { const n = node('entry' + i, pixelText(s, { s: 0.3, color: '#fff0a0', glow: 0.8, align: 'left', jitter: 0.1, seed: i + 11 }), M.flat, { pos: [BOARD[0] + x, BOARD[1] + y, BOARD[2] + 0.02], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
+  const SLATE = [2.05, 0.8, 0.25];
+  scene.root.add(node('day-slate', merge(tint(place(box(1.3, 0.86, 0.05), 0, 0, 0), SM.slate), tint(place(box(1.4, 0.06, 0.08), 0, 0.46, 0), SM.timberRed), tint(place(box(1.4, 0.06, 0.08), 0, -0.46, 0), SM.timberRed), tint(place(box(0.06, 0.98, 0.08), -0.68, 0, 0), SM.timberRed), tint(place(box(0.06, 0.98, 0.08), 0.68, 0, 0), SM.timberRed),
+    tint(place(box(0.06, 1.3, 0.06), -0.5, -0.2, -0.12, 8, 0, 0), SM.timberDark), tint(place(box(0.06, 1.3, 0.06), 0.5, -0.2, -0.12, 8, 0, 0), SM.timberDark), tint(place(box(0.06, 1.3, 0.06), 0, -0.2, -0.42, -18, 0, 0), SM.timberDark)), M.prop, { pos: SLATE, rot: [-6, -12, 0], visible: !night }));
+  const entries = [['COAL', 0.24], ['A ROOF', 0], ['SALT', -0.24]].map(([s, y], i) => { const n = node('entry' + i, pixelText(s, { s: 0.17, color: '#fff0a0', glow: 0.8, align: 'left', jitter: 0.08, seed: i + 11 }), M.flat, { pos: [SLATE[0] - 0.5, SLATE[1] + y - 0.08, SLATE[2] + 0.06], rot: [-6, -12, 0], visible: false }); n.castShadow = false; scene.root.add(n); return n; });
   let boardV = 0;
-  const LONG_BOARD = { pos: [BOARD[0] - 1.5, BOARD[1] - 0.3, BOARD[2] + 0.1], set(v) { const c = 0.25 + 0.35 * v; if (Math.abs(c - want) > 0.004) setCrowd(c); for (let i = 0; i < 3; i++) { const on = v * 3 > i + 0.97; if (on && !entries[i].visible) sprites.sparkle(entries[i].position, { count: 5, size: 0.3, spread: 0.6, life: 0.9, color: '#fff6c0' }); entries[i].visible = on; } boardV = v; } };
+  const LONG_BOARD = { pos: [SLATE[0], SLATE[1] + 0.1, SLATE[2] + 0.1], stand: [SLATE[0] - 1.0, SLATE[2] + 0.5], size: 0.7, set(v) { const c = 0.25 + 0.35 * v; if (Math.abs(c - want) > 0.004) setCrowd(c); for (let i = 0; i < 3; i++) { const on = v * 3 > i + 0.97; if (on && !entries[i].visible) sprites.sparkle(entries[i].position, { count: 5, size: 0.3, spread: 0.6, life: 0.9, color: '#fff6c0' }); entries[i].visible = on; } boardV = v; } };
   const task = (type, i = 0) => (type === 'red-notice' ? NOTICES[i] || null : type === 'long-board' ? LONG_BOARD : null);
   function tick(time, dt, pw, live) {
     folk.update(time, dt, FOLK);

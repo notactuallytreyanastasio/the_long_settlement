@@ -35,6 +35,7 @@ export const chapter2 = {
 
 
 
+
   prologue: [
     { id: 'ch2.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
       text: 'Entered at Saltmere, first city of the Circuit. A town that dug the money out of the ground and could not afford its own light.' },
@@ -564,10 +565,10 @@ export const chapter2 = {
         opposition: { kind: 'force', who: ['long-board'], name: 'GAVE, AND IS OWED' },
         setback: { cue: 'door-blows-open', show: 'The gable door blows open and chalk dust lifts off the board; everyone turns from it to shut the weather out.' },
         beats: [
-          { at: 0, cue: 'the-long-board', name: 'Gave, and is owed', show: 'Daylight through the gable, the hall nearly empty. The chalk board runs the length of the back wall. Hesper has brought Ilse and Ren to stand under it.' },
-          { at: 1, cue: 'weeks-coal', name: 'A week of coal', show: 'A fresh tally is chalked and lit under GAVE. A few of the town have come in to look.' },
-          { at: 2, cue: 'owed-a-roof', name: 'Old Bram is owed a roof', show: 'A second tally. More have come in behind the tables.' },
-          { at: 3, cue: 'never-square', name: 'Nobody is ever square', show: 'Three tallies lit along the board and half the town standing in the hall. The IS OWED column still has room.' },
+          { at: 0, cue: 'the-long-board', name: 'Gave, and is owed', show: 'Daylight through the gable, the hall nearly empty, the long chalk board across the back wall. Hesper has brought Ilse and Ren to the day slate on its easel, stage right; it is blank.' },
+          { at: 1, cue: 'weeks-coal', name: 'A week of coal', show: 'COAL is chalked on the slate. A few of the town have come in behind the tables.' },
+          { at: 2, cue: 'owed-a-roof', name: 'Old Bram is owed a roof', show: 'A ROOF is chalked under it. More have come in.' },
+          { at: 3, cue: 'never-square', name: 'Nobody is ever square', show: 'COAL, A ROOF, SALT: three entries on the slate, and half the town in the hall. The IS OWED column on the long board still has room.' },
         ],
       },
       briefing: [

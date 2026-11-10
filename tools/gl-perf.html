@@ -145,13 +145,18 @@ async function gameMode() {
   if (need.length === 0) { say(`chapter ${chN} has no stage data (chapter.stage and scene.encounter): it draws in 2D. Nothing to measure; use ?set=<file> for its sets.`, 'bad'); return; }
   if (missing.length) { say(`chapter ${chN} draws in 2D: ${missing.length} of its ${need.length} sets are not in sets/index.js: ${missing.join(', ')}. Measure them with ?sets=${missing.join(',')}`, 'bad'); return; }
   W.document.getElementById('begin').click(); await sleep(500);
+  const scenes = q.get('scene') && q.get('scene') !== 'all' ? [num('scene', 1) - 1] : chapter.scenes.map((_, i) => i);
+  const scenes0 = () => scenes[0];
   const load = (scene) => { const g = tls.game(); tls.send({ type: 'load', save: { v: 4, chapter: chN - 1, scene, econ: { ...g.econ, writs: 3, marks: 40 }, seed: 7, reels: { cells: [{ sym: null, spin: 0 }, { sym: null, spin: 0 }, { sym: null, spin: 0 }], source: null, armed: false, charge: 0 }, ending: null } }); };
-  const t0 = performance.now(); load(0);
-  await until(() => app.stats.queued === 0 && tls.game().mode === 'play', 90000, 'the chapter to build');
+  // the app builds ahead only while a card or a cutscene is up, so let the title finish its queue, then load: whatever the
+  // chapter still lacks is built the moment a scene asks for it (the app logs each as a late build)
+  const t0 = performance.now();
+  await until(() => app.stats.queued === 0, 90000, 'the title to finish building');
+  load(scenes0());
+  await until(() => tls.game().mode === 'play', 20000, 'play to start');
   const heap0 = performance.memory ? performance.memory.usedJSHeapSize : 0;
   say(`built ${app.stats.built} things (sets, table, figures) in ${((performance.now() - t0) / 1000).toFixed(1)} s, ${app.stats.urgent} of them late (a long frame); sets are the ${app.stats.lowSets ? 'low' : 'full'} builds` + (heap0 ? `; JS heap ${(heap0 / 1048576).toFixed(0)} MB` : ''), 'dim');
   const P = probe(app.renderer, (scene) => ([...app.tables.values()].some((v) => v.scene === scene) ? 'table' : 'stage'), () => app.draw(content, tls.game(), tls.fx, tls.layout()), W);
-  const scenes = q.get('scene') && q.get('scene') !== 'all' ? [num('scene', 1) - 1] : chapter.scenes.map((_, i) => i);
   for (const s of scenes) {
     if (!chapter.scenes[s]) { say(`no scene ${s + 1}`, 'bad'); continue; }
     load(s); await sleep(SETTLE * 1000);

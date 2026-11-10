@@ -243,7 +243,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
   // (a rank that has wholly fallen out is not drawn at all)
   const settle = (g, goal, k) => { const n = Math.round(goal * g.count); let any = n > 0; for (let i = 0; i < g.count; i++) { const p = g.list[i], d = (i < n ? 1 : 0) - p.here; if (d > 0.004 || d < -0.004) { p.here += d * k; g.write(i); any = true; } } g.node.visible = any; };
   // ch3.s1's encounter (twice round the yard): the ranks fall in over the first lap, the escort of twelve on the second
-  const PARADE = { pos: BOB, set(v) { setRanks(0.3 + 0.7 * Math.min(1, v * 2)); setEscort(v > 0.97); } };
+  const PARADE = { pos: [2.5, 1.0, 0.5], size: 0.6, set(v) { setRanks(0.3 + 0.7 * Math.min(1, v * 2)); setEscort(v > 0.97); } };
   const task = (type) => (type === 'parade' ? PARADE : null);
   /** Stage business by script line. */
   function cue(id) {
@@ -326,7 +326,7 @@ function build(engine = null, { light: lightName = 'morning', low = false } = {}
     lamps, setPower, setRanks, setEscort, task, cue, update,
   };
   // ch3.s1: Thorne and two proctors review the parade from the back of the avenue
-  built.encounter = () => { built.marks.extras = [{ pos: [-0.4, 0, 0.0], face: 8 }, { pos: [0.5, 0, -0.05], face: 0 }, { pos: [1.4, 0, 0.0], face: -8 }]; };
+  built.encounter = () => { built.marks.extras = [{ pos: [-0.9, 0, -0.05], face: 12 }, { pos: [0.1, 0, -0.1], face: 0 }, { pos: [1.1, 0, -0.05], face: -12 }]; };
   return built;
 }
 

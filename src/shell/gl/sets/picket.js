@@ -200,7 +200,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
   }
   const TASK = { pos: [DOOR[0], 1.0, DOOR[2] + 0.2], stand: [DOOR[0] - 0.5, DOOR[2] + 1.2], set: openDoor };
   // ch2.s1's encounter (the walk up the road): the line fills and closes up as the party comes on; the door stays shut
-  const LINE = { pos: [1.5, 1.0, 0.0], size: 0.8, set(v) { openDoor(0); setCrowd(0.25 + 0.75 * v); setMood(0.18 + 0.42 * v); } };
+  const LINE = { pos: [2.0, 1.0, 0.1], size: 0.8, set(v) { openDoor(0); setCrowd(0.25 + 0.75 * v); setMood(0.18 + 0.42 * v); } };
   const task = (type) => (type === 'side-door' ? TASK : type === 'picket-line' ? LINE : null);
   function tick(time, dt, pw, live) {
     doorNow += (door - doorNow) * Math.min(1, dt * 4);
@@ -229,7 +229,7 @@ function build(engine = null, { light: lightName = 'night', low = false } = {}) 
     extra: { openDoor, setCrowd, setMood, cue, task, crowd: folk },
   });
   // ch2.s1: the two miners and Hesper stand the line in front of the gate; the party walks up to them
-  built.encounter = () => { built.marks.extras = [{ pos: [0.7, 0, 0.12], face: -20 }, { pos: [1.5, 0, 0.02], face: -30 }, { pos: [2.35, 0, 0.3], face: -50 }]; };
+  built.encounter = () => { built.marks.extras = [{ pos: [0.2, 0, 0.0], face: -10 }, { pos: [1.2, 0, -0.05], face: -25 }, { pos: [2.2, 0, 0.45], face: -55 }]; };
   return built;
 }
 

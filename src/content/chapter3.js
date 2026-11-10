@@ -36,6 +36,7 @@ export const chapter3 = {
 
 
 
+
   // ───────────────────────── prologue ─────────────────────────
   prologue: [
     { id: 'ch3.pro.01', who: 'narrator', bg: 'ledger', on: [], cam: 'close', music: 'sorrow',
@@ -349,8 +350,8 @@ export const chapter3 = {
         beats: [
           { at: 0, cue: 'change-of-rounds', name: 'Count before you admire', show: 'Moon in three tall windows over a wall of lettered drawers. One lamp burning over the night clerk. Ren low at stage left, by the tube room.' },
           { at: 7, cue: 'nine-minutes', name: 'Nine minutes', show: 'Carriers tick through the brass tubes overhead. Ren is among the high desks.' },
-          { at: 14, cue: 'dullest-thing', name: 'The dullest thing here', show: 'He is across the floor. The stationery returns cabinet has begun to show.' },
-          { at: 20, cue: 'plain-cover', name: 'Stationery returns', show: 'Ren at the returns cabinet, which is lit. The clerk has not looked up.' },
+          { at: 14, cue: 'dullest-thing', name: 'The dullest thing here', show: 'He is across the floor. The returns trolley at stage right has begun to show.' },
+          { at: 20, cue: 'plain-cover', name: 'Stationery returns', show: 'Ren at the returns trolley, which is lit. The clerk has not looked up.' },
         ],
       },
       briefing: [
