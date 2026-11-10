@@ -2483,6 +2483,390 @@ def('shore-dusk', { amb: '#2a1c3a', rim: '#ff9d5c', key: 1 }, (ctx, t, px) => {
   motes(ctx, 23, 30, '#ffb060', t, { x0: 540 + px * 0.9, x1: 750 + px * 0.9, y0: 300, y1: 660, vx: 10, vy: -80, r: 1.8, a: 0.9, tw: 1, wob: 20 });
 });
 
+// ══ BEGIN ch3 ══
+// ───────────────────────── chapter 3: Halcyon Reach ─────────────────────────
+/** Halcyon's emblem: the plumb-weight, a bob hanging true on its line */
+function plumbWeight(ctx, x, y, s, col) {
+  rect(ctx, x - s * 0.5, y - s * 1.6, s, s * 0.1, col);
+  seg(ctx, x, y - s * 1.55, x, y - s * 0.45, col, Math.max(1, s * 0.07));
+  poly(ctx, [[x - s * 0.15, y - s * 0.52], [x + s * 0.15, y - s * 0.52], [x + s * 0.15, y - s * 0.36], [x + s * 0.42, y - s * 0.2], [x + s * 0.42, y + s * 0.12], [x, y + s], [x - s * 0.42, y + s * 0.12], [x - s * 0.42, y - s * 0.2], [x - s * 0.15, y - s * 0.36]], col);
+}
+/** ranks on parade: identical, evenly spaced, and perfectly still */
+function ranks(ctx, x0, x1, y, n, s, col, capCol) {
+  for (let i = 0; i < n; i++) {
+    const x = lerp(x0, x1, n === 1 ? 0.5 : i / (n - 1));
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(x, y, s * 0.4, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - s * 0.82, y + s * 3.8); ctx.lineTo(x - s * 0.82, y + s * 0.95); ctx.quadraticCurveTo(x - s * 0.8, y + s * 0.5, x, y + s * 0.48); ctx.quadraticCurveTo(x + s * 0.8, y + s * 0.5, x + s * 0.82, y + s * 0.95); ctx.lineTo(x + s * 0.82, y + s * 3.8); ctx.fill();
+    rect(ctx, x - s * 0.5, y - s * 0.4, s, s * 0.17, capCol);
+    rect(ctx, x - s * 0.38, y - s * 0.66, s * 0.76, s * 0.28, capCol);
+  }
+}
+/** a banner standing straight out in the wind: (x, y) is the top of the hoist */
+function banner(ctx, x, y, w, h, t, col, colSh, emblem) {
+  const N = 14;
+  const off = (u, k) => Math.sin(u * 7 - t * 5.2 + k) * 9 * u + Math.sin(u * 15 - t * 8) * 3 * u;
+  for (let i = 0; i < N; i++) {
+    const u0 = i / N, u1 = (i + 1) / N;
+    const sh = 0.5 + 0.5 * Math.sin(u0 * 7 - t * 5.2 + 1.2);
+    poly(ctx, [[x + u0 * w, y + off(u0, 0) + u0 * 8], [x + u1 * w + 0.6, y + off(u1, 0) + u1 * 8], [x + u1 * w + 0.6, y + h + off(u1, 0.5) + u1 * 4], [x + u0 * w, y + h + off(u0, 0.5) + u0 * 4]], css(mix(colSh, col, sh)));
+  }
+  emblem(x + w * 0.46, y + h * 0.56 + off(0.46, 0.25) + 3);
+}
+
+// ── academy-yard: the parade ground, under the plumb-weight banner ──
+def('academy-yard', { amb: '#48525e', rim: '#f0f3f4', key: -1 }, (ctx, t, px) => {
+  fillAll(ctx, vgrad(ctx, -180, 470, [[0, '#4c5a6e'], [0.55, '#8f9ca8'], [1, '#cdd2cf']]));
+  for (let i = 0; i < 11; i++) {
+    const x = mod(rnd(i * 3) * 1900 + t * (5 + rnd(i) * 6), 1900) - 300 + px * 0.05, y = -60 + rnd(i * 7) * 250;
+    ctx.fillStyle = `rgba(62,72,90,${0.16 + rnd(i * 5) * 0.16})`; ctx.beginPath(); ctx.ellipse(x, y, 200 + rnd(i * 2) * 220, 20 + rnd(i * 9) * 26, 0, 0, TAU); ctx.fill();
+  }
+  // the sea off the edge of the rock, and the mole the ferry leaves from
+  const ex = 250 + px * 0.2;
+  ctx.fillStyle = vgrad(ctx, 392, 470, [[0, '#8e9aa2'], [1, '#56646e']]); ctx.fillRect(X0, 392, ex - X0 + 4, 80);
+  waterStreaks(ctx, 201, X0, ex, 396, 468, 40, '#e6ecee', t, 0.5);
+  poly(ctx, [[ex, 428], [ex - 330, 420], [ex - 338, 414], [ex - 330, 412], [ex, 416]], '#3c444c');
+  rect(ctx, ex - 334, 388, 4, 26, '#3c444c'); circ(ctx, ex - 332, 386, 5, rgba('#ffe2a0', 0.6 + 0.4 * Math.sin(t * 1.6)));
+  for (let i = 0; i < 4; i++) { // gulls over the mole
+    const x = ex - 300 + mod(i * 97 + t * (14 + i * 3), 360), y = 330 + i * 16 + Math.sin(t * 0.8 + i) * 12, w = 8 + i, fl = Math.sin(t * 5 + i * 2) * 4;
+    ctx.strokeStyle = 'rgba(40,46,56,.8)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(x - w, y - fl); ctx.quadraticCurveTo(x - w * 0.4, y - 4, x, y); ctx.quadraticCurveTo(x + w * 0.4, y - 4, x + w, y - fl); ctx.stroke();
+  }
+  // the Academy: grey and square
+  const ax = ex + 30;
+  ctx.fillStyle = hgrad(ctx, ax, ax + 1300, [[0, '#7c848a'], [1, '#666e76']]); ctx.fillRect(ax, 176, 1400, 300);
+  rect(ctx, ax - 8, 168, 1420, 12, '#535a62'); rect(ctx, ax, 300, 1400, 4, 'rgba(0,0,0,.14)');
+  poly(ctx, [[ax, 176], [ax - 26, 190], [ax - 26, 476], [ax, 476]], '#4a5158');
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 38; c++) {
+    const wx = ax + 22 + c * 36, wy = 196 + r * 62;
+    if (wx > ax + 690 && wx < ax + 800) continue;
+    rect(ctx, wx, wy, 15, 34, '#343c46'); rect(ctx, wx, wy, 15, 3, '#9aa2a8'); rect(ctx, wx + 7, wy, 1, 34, '#59616a');
+  }
+  // one lamp in an east window, at an hour when no lamp is needed
+  rect(ctx, ax + 22 + 36 * 36, 196, 15, 34, rgba('#ffd890', 0.85)); glow(ctx, ax + 29 + 36 * 36, 212, 40, '#ffd890', 0.3);
+  // the gate tower and its clock
+  const tx = ax + 745;
+  rect(ctx, tx - 62, 64, 124, 412, '#727a82'); rect(ctx, tx - 62, 64, 16, 412, '#5a626a');
+  rect(ctx, tx - 70, 56, 140, 12, '#4f565e'); for (let i = 0; i < 5; i++) rect(ctx, tx - 70 + i * 31, 40, 16, 18, '#4f565e');
+  circ(ctx, tx, 124, 34, '#3a4048'); circ(ctx, tx, 124, 29, '#e4e2d6');
+  for (let i = 0; i < 12; i++) seg(ctx, tx + Math.cos(i * 0.5236) * 23, 124 + Math.sin(i * 0.5236) * 23, tx + Math.cos(i * 0.5236) * 27, 124 + Math.sin(i * 0.5236) * 27, '#2a3038', 1.5);
+  seg(ctx, tx, 124, tx + Math.sin(t * 0.02 + 5.3) * 20, 124 - Math.cos(t * 0.02 + 5.3) * 20, '#1c2026', 2.2); seg(ctx, tx, 124, tx + 9, 124 - 11, '#1c2026', 3);
+  ctx.fillStyle = '#2a3038'; ctx.beginPath(); ctx.moveTo(tx - 40, 476); ctx.lineTo(tx - 40, 372); ctx.quadraticCurveTo(tx, 322, tx + 40, 372); ctx.lineTo(tx + 40, 476); ctx.fill();
+  plumbWeight(ctx, tx, 250, 30, '#c9b06a');
+  // the banner
+  const fx = 500 + px * 0.3;
+  rect(ctx, fx - 3, -180, 6, 660, '#30363e'); rect(ctx, fx - 1, -180, 2, 660, '#aab2b8'); rect(ctx, fx - 14, 470, 28, 10, '#30363e');
+  banner(ctx, fx + 3, 74, 330, 128, t, '#2f4f7c', '#1a2f50', (bx, by) => { plumbWeight(ctx, bx, by, 34, '#e0c47a'); });
+  seg(ctx, fx + 3, 74, fx + 3, 204, '#aab2b8', 2);
+  // the ground, and two thousand people on it
+  ctx.fillStyle = vgrad(ctx, 470, 800, [[0, '#9c9c92'], [0.3, '#7c7c74'], [1, '#3e3e3c']]); ctx.fillRect(X0, 470, XW, 520);
+  for (let i = -8; i <= 8; i++) seg(ctx, 640 + i * 46 + px * 0.3, 472, 640 + i * 250 + px, 980, 'rgba(240,240,230,.12)', 2);
+  for (let k = 0; k < 5; k++) {
+    const u = k / 4, y = 446 + u * u * 70 + k * 6, s = 6.5 + u * 15, gap = 46 + u * 110, n = Math.round(30 - u * 16), sx = px * (0.3 + u * 0.3);
+    const col = css(mix('#27384f', '#9aa4ac', 0.5 - u * 0.4)), cap = css(mix('#1a2638', '#9aa4ac', 0.45 - u * 0.4));
+    ranks(ctx, 640 - gap - n * s * 2.3 + sx, 640 - gap + sx, y, n, s, col, cap);
+    ranks(ctx, 640 + gap + sx, 640 + gap + n * s * 2.3 + sx, y, n, s, col, cap);
+  }
+}, (ctx, t, px) => {
+  for (let i = 0; i < 6; i++) { // what is left of the fog, going over the wall
+    const x = mod(rnd(i * 3) * 1900 + t * (16 + i * 3), 1900) - 300 + px;
+    ctx.fillStyle = 'rgba(226,232,236,.06)'; ctx.beginPath(); ctx.ellipse(x, 400 + i * 44, 380, 30, 0, 0, TAU); ctx.fill();
+  }
+});
+
+// ── dormitory: sixty iron bunks ──
+def('dormitory', { amb: '#1c222c', rim: '#ffd9a0', key: 1 }, (ctx, t, px) => {
+  const vy = 300, D = 5.4;
+  const pr = (X, Y, d) => [640 + X / d + px * (0.15 + 0.85 / d), vy + Y / d];
+  const quad = (a, b, c, d2, col) => poly(ctx, [a, b, c, d2], col);
+  fillAll(ctx, '#11151b');
+  // far wall, with the one tall window
+  const [fx0, fy0] = pr(-760, -340, D), [fx1, fy1] = pr(760, 400, D);
+  ctx.fillStyle = vgrad(ctx, fy0, fy1, [[0, '#2a323c'], [0.6, '#343c44'], [1, '#22282e']]); ctx.fillRect(fx0, fy0, fx1 - fx0, fy1 - fy0);
+  const [wx0, wy0] = pr(-150, -260, D), [wx1, wy1] = pr(150, 120, D);
+  ctx.fillStyle = vgrad(ctx, wy0, wy1, [[0, '#2c4470'], [1, '#8a9cc0']]); ctx.fillRect(wx0, wy0, wx1 - wx0, wy1 - wy0);
+  glow(ctx, (wx0 + wx1) / 2, (wy0 + wy1) / 2, 150, '#9fb8e8', 0.3);
+  ctx.strokeStyle = '#161a20'; ctx.lineWidth = 2.5; ctx.strokeRect(wx0, wy0, wx1 - wx0, wy1 - wy0);
+  for (let i = 1; i < 3; i++) seg(ctx, lerp(wx0, wx1, i / 3), wy0, lerp(wx0, wx1, i / 3), wy1, '#161a20', 2);
+  for (let i = 1; i < 4; i++) seg(ctx, wx0, lerp(wy0, wy1, i / 4), wx1, lerp(wy0, wy1, i / 4), '#161a20', 2);
+  { const [dx0, dy0] = pr(420, -80, D), [dx1, dy1] = pr(620, 400, D); rect(ctx, dx0, dy0, dx1 - dx0, dy1 - dy0, '#1a1e24'); circ(ctx, dx0 + 6, (dy0 + dy1) / 2, 1.6, '#c9a85a'); }
+  // walls, ceiling, floor
+  for (const s of [-1, 1]) {
+    quad(pr(s * 760, -340, 0.7), pr(s * 760, -340, D), pr(s * 760, 400, D), pr(s * 760, 400, 0.7), s < 0 ? '#1e242c' : '#252c34');
+    quad(pr(s * 760, 110, 0.7), pr(s * 760, 110, D), pr(s * 760, 400, D), pr(s * 760, 400, 0.7), s < 0 ? '#1a2426' : '#202c2e');
+    const a = pr(s * 760, 110, 0.7), b = pr(s * 760, 110, D); seg(ctx, a[0], a[1], b[0], b[1], '#0e1216', 3);
+  }
+  quad(pr(-760, -340, 0.7), pr(760, -340, 0.7), pr(760, -340, D), pr(-760, -340, D), '#14181e');
+  ctx.fillStyle = vgrad(ctx, fy1, 800, [[0, '#4a4034'], [0.3, '#3a3026'], [1, '#17120e']]);
+  ctx.beginPath(); const fl = [pr(-760, 400, D), pr(760, 400, D), pr(760, 400, 0.6), pr(-760, 400, 0.6)]; fl.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.fill();
+  for (let i = -8; i <= 8; i++) { const a = pr(i * 95, 400, D), b = pr(i * 95, 400, 0.6); seg(ctx, a[0], a[1], b[0], b[1], 'rgba(0,0,0,.28)', 1.2); }
+  { const a = pr(-150, 400, D), b = pr(150, 400, D), c = pr(230, 400, 1.2), d2 = pr(-230, 400, 1.2); quad(a, b, c, d2, 'rgba(150,180,235,.1)'); } // the window, lying on the boards
+  // bunks, far to near: head to the wall, foot to the aisle, a number on every one
+  for (let i = 11; i >= 0; i--) {
+    const d = 1.0 + i * 0.36, dd = 0.2, haze = clamp((d - 1) / 4.6);
+    const iron = css(mix('#0c0e12', '#2a323c', haze)), blanket = css(mix('#5c636c', '#343c46', haze)), top = css(mix('#747c86', '#3a424c', haze)), sheet = css(mix('#d6d2c4', '#4a525c', haze));
+    for (const s of [-1, 1]) {
+      const A = s * 300, B = s * 760, lw = Math.max(1.2, 9 / d);
+      // the far rail of the frame
+      for (const Y of [-60, 30, 240]) { const a = pr(A, Y, d + dd), b = pr(B, Y, d + dd); seg(ctx, a[0], a[1], b[0], b[1], iron, lw * 0.7); }
+      { const a = pr(A, -60, d + dd), b = pr(A, 400, d + dd); seg(ctx, a[0], a[1], b[0], b[1], iron, lw * 0.8); }
+      // kit box under the lower bunk
+      quad(pr(A + s * 30, 330, d), pr(A + s * 200, 330, d), pr(A + s * 200, 400, d), pr(A + s * 30, 400, d), css(mix('#2e2218', '#232a32', haze)));
+      for (const Y of [30, 240]) {
+        quad(pr(A, Y, d), pr(B, Y, d), pr(B, Y, d + dd), pr(A, Y, d + dd), top);               // the made bed, from above
+        quad(pr(A, Y, d), pr(B, Y, d), pr(B, Y + 38, d), pr(A, Y + 38, d), blanket);           // its near edge
+        quad(pr(A, Y + 4, d), pr(A + s * 120, Y + 4, d), pr(A + s * 120, Y + 16, d), pr(A, Y + 16, d), sheet); // sheet turned down, square
+        const a = pr(A, Y + 38, d), b = pr(B, Y + 38, d); seg(ctx, a[0], a[1], b[0], b[1], iron, lw * 0.8);
+      }
+      // the foot of the frame, on the aisle
+      { const a = pr(A, -60, d), b = pr(A, 400, d); seg(ctx, a[0], a[1], b[0], b[1], iron, lw); }
+      for (const Y of [-60, 30, 240]) { const a = pr(A, Y, d), b = pr(A, Y, d + dd); seg(ctx, a[0], a[1], b[0], b[1], iron, lw * 0.8); }
+      if (d < 3.4) {
+        const n = 19 + (s > 0 ? 0 : 1) + i * 2 * (s > 0 ? 1 : 1), c = pr(A, -18, d), r = 15 / d;
+        circ(ctx, c[0], c[1], r, css(mix('#c9a85a', '#3a424c', haze))); circ(ctx, c[0], c[1], r * 0.8, css(mix('#1c160c', '#2a323c', haze)));
+        ctx.fillStyle = css(mix('#e8cc82', '#59616a', haze)); ctx.font = `700 ${Math.round(15 / d)}px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(n), c[0], c[1] + 0.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      }
+      if (i === 0 && s > 0) { // bed nineteen: what is owed, scratched where an inspection does not look
+        for (let k = 0; k < 34; k++) {
+          const g = Math.floor(k / 5), X = A + 44 + g * 46 + (k % 5) * 7, a = pr(X, 76, d), b = pr(X + 2, 98, d);
+          if (k % 5 === 4) { const a2 = pr(X - 32, 94, d), b2 = pr(X + 2, 80, d); seg(ctx, a2[0], a2[1], b2[0], b2[1], k < 20 ? 'rgba(200,196,180,.3)' : 'rgba(236,230,206,.8)', 1.4); } else seg(ctx, a[0], a[1], b[0], b[1], k < 20 ? 'rgba(200,196,180,.3)' : 'rgba(236,230,206,.8)', 1.4);
+        }
+      }
+    }
+  }
+  // gas lamps down the middle of the ceiling, turned low
+  for (const d of [4.2, 3.0, 2.0, 1.25]) {
+    const a = pr(0, -340, d), b = pr(0, -215, d), fl = flick(t, d);
+    seg(ctx, a[0], a[1], b[0], b[1], '#0c0e12', Math.max(1, 3 / d));
+    glow(ctx, b[0], b[1] + 8 / d, 330 / d, '#ffc878', 0.26 * fl + 0.05);
+    poly(ctx, [[b[0] - 34 / d, b[1] + 8 / d], [b[0] + 34 / d, b[1] + 8 / d], [b[0] + 14 / d, b[1] - 16 / d], [b[0] - 14 / d, b[1] - 16 / d]], '#262a2a');
+    circ(ctx, b[0], b[1] + 12 / d, 8 / d, rgba('#fff0c0', 0.9));
+  }
+}, (ctx, t, px) => {
+  motes(ctx, 207, 50, '#ffe6c0', t, { x0: 100 + px, x1: 1180 + px, y0: 60, y1: 620, vx: 3, vy: 4, r: 1.3, a: 0.3, tw: 1, wob: 16 });
+});
+
+// ── proctor-office: the top of the east stair ──
+def('proctor-office', { amb: '#131b1d', rim: '#c6e8dc', key: 1 }, (ctx, t, px) => {
+  fillAll(ctx, vgrad(ctx, -180, 800, [[0, '#0e1517'], [0.5, '#1c282a'], [1, '#0c1112']]));
+  for (let x = X0 + mod(px * 0.2, 150); x < 1540; x += 150) { rect(ctx, x, -180, 2, 660, 'rgba(0,0,0,.25)'); rect(ctx, x + 2, -180, 1, 660, 'rgba(160,200,190,.04)'); }
+  rect(ctx, X0, 478, XW, 6, '#0a0f10'); rect(ctx, X0, 318, XW, 3, 'rgba(0,0,0,.3)');
+  // the east window: the yard below, the mole, the lane going out
+  const wx = 900 + px * 0.25;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(wx, 64, 250, 380); ctx.clip();
+  ctx.fillStyle = vgrad(ctx, 64, 330, [[0, '#1c2c4c'], [0.7, '#5a6c8c'], [1, '#a8aeb8']]); ctx.fillRect(wx, 64, 250, 270);
+  ctx.fillStyle = vgrad(ctx, 330, 444, [[0, '#7c8a98'], [1, '#2c3a48']]); ctx.fillRect(wx, 330, 250, 114);
+  rect(ctx, wx, 332, 250, 5, 'rgba(226,236,244,.4)');
+  waterStreaks(ctx, 211, wx, wx + 250, 336, 400, 16, '#dfe8ee', t, 0.5);
+  for (let i = 0; i < 4; i++) { const x = wx + mod(i * 90 + t * 5 - px * 0.2, 340) - 50; ctx.fillStyle = 'rgba(226,232,236,.2)'; ctx.beginPath(); ctx.ellipse(x, 300 + i * 12, 90, 9, 0, 0, TAU); ctx.fill(); }
+  poly(ctx, [[wx, 444], [wx, 408], [wx + 250, 400], [wx + 250, 444]], '#2a3038');
+  poly(ctx, [[wx + 80, 404], [wx + 250, 372], [wx + 250, 378], [wx + 84, 408]], '#343c46');
+  rect(ctx, wx + 58, 300, 2.5, 110, '#1a1e24');
+  banner(ctx, wx + 60, 302, 46, 20, t, '#2f4f7c', '#1a2f50', () => {});
+  ctx.restore();
+  ctx.strokeStyle = '#0a0f10'; ctx.lineWidth = 9; ctx.strokeRect(wx, 64, 250, 380);
+  seg(ctx, wx + 125, 64, wx + 125, 444, '#0a0f10', 6); seg(ctx, wx, 250, wx + 250, 250, '#0a0f10', 6);
+  rect(ctx, wx - 14, 444, 278, 12, '#1a2426');
+  poly(ctx, [[wx, 64], [wx + 250, 64], [wx - 330, 980], [wx - 900, 980]], 'rgba(170,200,230,.05)');
+  glow(ctx, wx + 125, 250, 300, '#9fb8e0', 0.12);
+  // every class she has passed out, in rows. One frame has been taken down.
+  const gx = 96 + px * 0.2;
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 6; c++) {
+    const x = gx + c * 76, y = 84 + r * 76;
+    if (r === 2 && c === 4) { rect(ctx, x + 2, y + 2, 56, 62, 'rgba(160,200,190,.06)'); circ(ctx, x + 30, y - 4, 2, '#0a0f10'); continue; }
+    rect(ctx, x, y, 60, 66, '#0c1112'); rect(ctx, x + 4, y + 4, 52, 58, '#3a3a34');
+    rect(ctx, x + 7, y + 7, 46, 52, css(mix('#b4a888', '#3a4a48', 0.3 + rnd(r * 7 + c) * 0.3)));
+    for (let k = 0; k < 3; k++) for (let j = 0; j < 7 - k; j++) { // a class photograph: rows of small heads
+      const hx = x + 12 + j * 6.2 + k * 3, hy = y + 24 + k * 10;
+      circ(ctx, hx, hy, 2, 'rgba(30,30,28,.75)'); rect(ctx, hx - 2.4, hy + 2, 4.8, 7, 'rgba(30,30,28,.75)');
+    }
+  }
+  // the regulator clock
+  const kx = 620 + px * 0.2;
+  rect(ctx, kx - 34, 70, 68, 220, '#0c1112'); rect(ctx, kx - 28, 76, 56, 208, '#1a1410');
+  circ(ctx, kx, 112, 24, '#e6e2d2'); seg(ctx, kx, 112, kx + Math.sin(t * 0.105) * 18, 112 - Math.cos(t * 0.105) * 18, '#14100c', 1.6); seg(ctx, kx, 112, kx - 9, 112 + 7, '#14100c', 2.4);
+  { const a = Math.sin(t * Math.PI) * 0.17; seg(ctx, kx, 146, kx + Math.sin(a) * 110, 146 + Math.cos(a) * 110, '#c9a85a', 2); circ(ctx, kx + Math.sin(a) * 110, 146 + Math.cos(a) * 110, 12, '#d8b866'); }
+  // the Line: her end of it
+  const sx = 760 + px * 0.25;
+  rect(ctx, sx - 70, 330, 140, 150, '#0c1112'); rect(ctx, sx - 76, 324, 152, 9, '#22302e');
+  rect(ctx, sx - 58, 218, 116, 108, '#2a2418'); ctx.strokeStyle = '#b08a3e'; ctx.lineWidth = 2; ctx.strokeRect(sx - 58, 218, 116, 108);
+  circ(ctx, sx - 16, 262, 30, '#04171a'); glow(ctx, sx - 16, 262, 60, '#5fe0c8', 0.26 + 0.1 * Math.sin(t * 2.1));
+  ctx.strokeStyle = '#b08a3e'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(sx - 16, 262, 30, 0, TAU); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.arc(sx - 16, 262, 27, 0, TAU); ctx.clip(); waveform(ctx, sx - 46, sx + 14, 262, 16, 0.25 + 0.2 * Math.sin(t * 0.9), t * 1000, 'rgba(110,245,220,.9)', 1.6); ctx.restore();
+  for (let i = 0; i < 3; i++) { circ(ctx, sx + 34, 238 + i * 24, 6, '#b08a3e'); circ(ctx, sx + 34, 238 + i * 24, 3, i === 0 && mod(t, 1.2) < 0.7 ? '#ff5a4a' : '#3a2a10'); }
+  ctx.strokeStyle = '#caa24a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(sx + 58, 300); ctx.bezierCurveTo(sx + 100, 330, sx + 86, 250, sx + 96, 214); ctx.stroke();
+  circ(ctx, sx + 96, 210, 5, '#caa24a'); seg(ctx, sx + 96, 196, sx + 96, 206, '#22302e', 3); rect(ctx, sx + 84, 192, 24, 5, '#22302e');
+  ctx.fillStyle = 'rgba(110,245,220,.7)'; ctx.font = `600 9px ${FONT_MONO}`; ctx.textAlign = 'center'; ctx.fillText('THE LINE', sx, 320); ctx.textAlign = 'left';
+  plumbWeight(ctx, sx, 172, 24, '#c9b06a');
+  // cadet files, by year
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) {
+    const x = gx - 6 + c * 78, y = 326 + r * 38;
+    rect(ctx, x, y, 74, 34, '#172022'); rect(ctx, x + 1, y + 1, 72, 1.5, 'rgba(160,200,190,.08)');
+    rect(ctx, x + 24, y + 8, 26, 10, '#cdc6ae'); rect(ctx, x + 30, y + 22, 14, 4, '#b08a3e');
+  }
+  // floor, and her desk: a green-shaded lamp, and nothing on it that is not square to the edge
+  ctx.fillStyle = vgrad(ctx, 484, 800, [[0, '#1a1c18'], [1, '#080a09']]); ctx.fillRect(X0, 484, XW, 500);
+  const dx = px * 0.9, dy = 596;
+  ctx.fillStyle = vgrad(ctx, dy, 800, [[0, '#2a1e16'], [0.2, '#16100c'], [1, '#080605']]); ctx.fillRect(X0, dy, XW, 400);
+  rect(ctx, X0, dy - 4, XW, 6, '#4a3626');
+  const lx = 150 + dx;
+  glow(ctx, lx, dy - 60, 300, '#ffe0a0', 0.2 * flick(t, 3) + 0.08);
+  seg(ctx, lx, dy, lx, dy - 84, '#b08a3e', 5); rect(ctx, lx - 30, dy - 8, 60, 8, '#8a6a2e');
+  ctx.fillStyle = hgrad(ctx, lx - 58, lx + 58, [[0, '#0e3a2a'], [0.4, '#2f8a66'], [1, '#0e3a2a']]);
+  ctx.beginPath(); ctx.moveTo(lx - 58, dy - 84); ctx.quadraticCurveTo(lx, dy - 132, lx + 58, dy - 84); ctx.closePath(); ctx.fill();
+  rect(ctx, lx - 54, dy - 86, 108, 4, '#fff0c0');
+  poly(ctx, [[lx + 90, dy - 2], [lx + 210, dy - 2], [lx + 222, dy - 14], [lx + 100, dy - 14]], '#d9cba6');
+  rect(ctx, 1060 + dx, dy - 30, 120, 28, '#22302e'); rect(ctx, 1064 + dx, dy - 36, 112, 7, '#cdc6ae');
+}, (ctx, t, px) => {
+  motes(ctx, 213, 36, '#cfe4f0', t, { x0: 500 + px, x1: 1180 + px, y0: 60, y1: 600, vx: -3, vy: 4, r: 1.3, a: 0.32, tw: 1, wob: 14 });
+});
+
+// ── hearing-hall: a company auditorium, every seat filled, nobody speaking ──
+def('hearing-hall', { amb: '#1e1b24', rim: '#ffe8c4', key: -1 }, (ctx, t, px) => {
+  fillAll(ctx, vgrad(ctx, -180, 800, [[0, '#0c0a10'], [0.4, '#1e1a22'], [1, '#0a080c']]));
+  const bx = px * 0.15;
+  // the back wall: three doors, shut on the minute
+  rect(ctx, X0, 40, XW, 250, '#231e28');
+  for (let i = 0; i < 3; i++) {
+    const x = 250 + i * 390 + bx;
+    rect(ctx, x - 44, 262, 88, 110, '#120e14'); rect(ctx, x - 1, 262, 2, 110, '#2a2430');
+    rect(ctx, x - 20, 248, 40, 10, rgba('#8fe0a0', 0.5 + 0.1 * Math.sin(t * 0.7 + i))); glow(ctx, x, 252, 46, '#8fe0a0', 0.14);
+  }
+  // company colours either side
+  for (const x of [430, 850]) {
+    const hx = x + bx;
+    ctx.fillStyle = hgrad(ctx, hx - 44, hx + 44, [[0, '#1a2f50'], [0.5, '#2f4f7c'], [1, '#1a2f50']]);
+    ctx.beginPath(); ctx.moveTo(hx - 44, 30); ctx.lineTo(hx + 44, 30); ctx.lineTo(hx + 44, 160); ctx.lineTo(hx, 144); ctx.lineTo(hx - 44, 160); ctx.fill();
+    plumbWeight(ctx, hx, 96, 24, '#e0c47a');
+  }
+  // the gallery, where children are put
+  const gy = 176, gpx = px * 0.2;
+  rect(ctx, X0, gy - 70, XW, 76, '#17131b');
+  for (let r = 0; r < 3; r++) {
+    const y = gy - 50 + r * 18, s = 7 + r * 1.2, n = 82 - r * 6;
+    for (let i = 0; i < n; i++) {
+      const x = X0 + 20 + (i + (r % 2) * 0.5) * ((XW - 40) / n) + gpx, look = rnd(i * 3.7 + r * 91) < 0.05 ? Math.sin(t * 0.5 + i) * s * 0.2 : 0;
+      ctx.fillStyle = css(mix('#27384f', '#0e0c12', 0.25 + (2 - r) * 0.2)); ctx.beginPath(); ctx.ellipse(x, y + s * 1.25, s * 0.86, s * 0.8, 0, 0, TAU); ctx.fill();
+      circ(ctx, x + look, y, s * 0.42, css(mix(['#c8a078', '#a87c58', '#dcb894', '#8a6040'][Math.floor(rnd(i * 9.1 + r) * 4)], '#0e0c12', 0.45 + (2 - r) * 0.12)));
+      ctx.fillStyle = css(mix(['#1a1410', '#3a2a1c', '#6a4a2a', '#0c0a0a'][Math.floor(rnd(i * 5.3 + r * 3) * 4)], '#0e0c12', 0.4)); ctx.beginPath(); ctx.arc(x + look, y - s * 0.06, s * 0.44, Math.PI, 0); ctx.fill();
+    }
+  }
+  ctx.fillStyle = vgrad(ctx, gy, gy + 46, [[0, '#4a3828'], [1, '#22180f']]); ctx.fillRect(X0, gy, XW, 46);
+  rect(ctx, X0, gy - 4, XW, 6, '#c9a85a'); rect(ctx, X0, gy + 46, XW, 5, '#0c0a0c');
+  for (let x = X0 + mod(gpx, 120); x < 1540; x += 120) { ctx.strokeStyle = 'rgba(201,168,90,.35)'; ctx.lineWidth = 1.2; ctx.strokeRect(x + 10, gy + 9, 100, 28); }
+  { const cx = 640 + gpx; circ(ctx, cx, gy + 23, 19, '#1a1410'); circ(ctx, cx, gy + 23, 15, '#e6e2d2'); seg(ctx, cx, gy + 23, cx, gy + 11, '#14100c', 1.5); seg(ctx, cx, gy + 23, cx + 7, gy + 23, '#14100c', 2); }
+  for (let x = X0 + 90 + mod(gpx, 300); x < 1540; x += 300) rect(ctx, x, gy + 51, 16, 250, '#141018'); // the posts that carry it
+  ctx.fillStyle = vgrad(ctx, gy + 51, gy + 130, [[0, 'rgba(0,0,0,.6)'], [1, 'rgba(0,0,0,0)']]); ctx.fillRect(X0, gy + 51, XW, 80);
+  // two thousand people, in rows, breathing
+  const skins = ['#c8a078', '#a87c58', '#dcb894', '#8a6040', '#e6c8a8'], hairs = ['#1a1410', '#3a2a1c', '#6a4a2a', '#0c0a0a', '#8a8a8e', '#a8733a'];
+  for (let r = 0; r < 11; r++) {
+    const u = r / 10, y = lerp(292, 470, Math.pow(u, 1.25)), s = lerp(8.5, 25, u), n = Math.round(lerp(74, 26, u)), rpx = px * (0.25 + 0.45 * u), dim = 0.55 - u * 0.45;
+    const span = XW + 200;
+    rect(ctx, X0, y + s * 1.5, XW, s * 3, css(mix('#3c1a1e', '#0c0a0e', 0.3 + dim * 0.6)));   // the row of seat backs they sit against
+    for (let i = 0; i < n; i++) {
+      const x = X0 - 100 + (i + (r % 2) * 0.5) * (span / n) + rpx, a1 = Math.abs(x - rpx - (640 - 250 - u * 170)), a2 = Math.abs(x - rpx - (640 + 250 + u * 170));
+      if (a1 < s * 1.5 || a2 < s * 1.5) continue;   // the aisles
+      const h = rnd(i * 3.7 + r * 17), breathe = Math.sin(t * 1.1 + h * 40) * s * 0.025, look = h < 0.04 ? Math.sin(t * 0.45 + i) * s * 0.22 : 0;
+      const yy = y + (rnd(i * 1.3 + r * 7) - 0.5) * s * 0.3 + breathe;
+      ctx.fillStyle = css(mix(h > 0.7 ? '#3a4048' : '#27384f', '#0c0a0e', 0.12 + dim)); ctx.beginPath(); ctx.ellipse(x, yy + s * 1.3, s * 0.9, s * 0.85, 0, 0, TAU); ctx.fill();
+      ctx.fillRect(x - s * 0.9, yy + s * 1.3, s * 1.8, s * 1.4);
+      circ(ctx, x + look, yy, s * 0.43, css(mix(skins[Math.floor(rnd(i * 9.1 + r * 3) * 5)], '#0c0a0e', 0.16 + dim)));
+      ctx.fillStyle = css(mix(hairs[Math.floor(rnd(i * 5.3 + r * 11) * 6)], '#0c0a0e', 0.1 + dim)); ctx.beginPath(); ctx.arc(x + look, yy - s * 0.07, s * 0.45, Math.PI * 0.96, Math.PI * 2.04); ctx.fill();
+      if (s > 14) { rect(ctx, x + look - s * 0.24, yy + s * 0.02, s * 0.16, s * 0.045, 'rgba(20,10,10,.5)'); rect(ctx, x + look + s * 0.08, yy + s * 0.02, s * 0.16, s * 0.045, 'rgba(20,10,10,.5)'); } // eyes, down
+    }
+  }
+  // the house lights, left up
+  for (let i = 0; i < 5; i++) {
+    const x = 80 + i * 280 + px * 0.5, fl = flick(t, i);
+    seg(ctx, x, -180, x, 70, '#0a080c', 2);
+    glow(ctx, x, 86, 240, '#ffe2b0', 0.2 * fl + 0.05);
+    circ(ctx, x, 86, 15, rgba('#fff2d0', 0.92)); rect(ctx, x - 9, 66, 18, 8, '#3a2c1c');
+  }
+  // the lip of the stage she is standing on
+  ctx.fillStyle = vgrad(ctx, 640, 800, [[0, '#3e2c1c'], [1, '#120c08']]); ctx.fillRect(X0, 646, XW, 340);
+  rect(ctx, X0, 640, XW, 7, '#6a4c30');
+}, (ctx, t, px) => {
+  motes(ctx, 217, 60, '#ffeccc', t, { x0: -60 + px, x1: 1340 + px, y0: 60, y1: 520, vx: 2, vy: 3, r: 1.3, a: 0.3, tw: 1, wob: 16 });
+});
+
+// ── underwriting-floor: a night-lit hall of ledgers and pneumatic tubes ──
+/** a run of brass tube with a carrier going through it: pts is a polyline */
+function tubeRun(ctx, pts, w, t, speed, phase) {
+  ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+  const path = () => { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); };
+  ctx.strokeStyle = '#3a2a0e'; ctx.lineWidth = w + 2; path(); ctx.stroke();
+  ctx.strokeStyle = '#a8842e'; ctx.lineWidth = w; path(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(244,224,160,.55)'; ctx.lineWidth = Math.max(1, w * 0.22); path(); ctx.stroke();
+  let len = 0; const segs = [];
+  for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); segs.push(l); len += l; }
+  for (let i = 1; i < pts.length - 1; i++) { ctx.fillStyle = '#6a4e18'; ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], w * 0.85, 0, TAU); ctx.fill(); } // collars at the bends
+  // the carrier: gone dark for most of the cycle, then through in a second
+  const cyc = len + 1500, at = mod(t * speed + phase * cyc, cyc);
+  if (at < len) {
+    let d = at, i = 0; while (d > segs[i]) { d -= segs[i]; i++; }
+    const u = d / segs[i], x = lerp(pts[i][0], pts[i + 1][0], u), y = lerp(pts[i][1], pts[i + 1][1], u);
+    glow(ctx, x, y, w * 3.4, '#fff0b8', 0.6);
+    ctx.fillStyle = '#fff6d6'; ctx.beginPath(); ctx.ellipse(x, y, w * 0.9, w * 0.5, Math.atan2(pts[i + 1][1] - pts[i][1], pts[i + 1][0] - pts[i][0]), 0, TAU); ctx.fill();
+  }
+}
+function bankersLamp(ctx, x, y, s, lit, t, seed) {
+  if (lit) glow(ctx, x, y - s * 0.4, s * 5, '#b8f0c0', 0.22 * flick(t, seed) + 0.06);
+  seg(ctx, x, y, x, y - s * 1.1, '#b08a3e', Math.max(1.5, s * 0.14)); rect(ctx, x - s * 0.5, y - s * 0.12, s, s * 0.12, '#8a6a2e');
+  ctx.fillStyle = lit ? hgrad(ctx, x - s, x + s, [[0, '#145238'], [0.45, '#49c088'], [1, '#145238']]) : '#0e2a20';
+  ctx.beginPath(); ctx.moveTo(x - s, y - s * 1.1); ctx.quadraticCurveTo(x, y - s * 1.9, x + s, y - s * 1.1); ctx.closePath(); ctx.fill();
+  if (lit) { rect(ctx, x - s * 0.9, y - s * 1.12, s * 1.8, Math.max(1.5, s * 0.08), '#fff6d0'); poly(ctx, [[x - s * 0.9, y - s * 1.05], [x + s * 0.9, y - s * 1.05], [x + s * 2.2, y], [x - s * 2.2, y]], 'rgba(255,240,190,.1)'); }
+}
+def('underwriting-floor', { amb: '#0b1917', rim: '#c2ecd0', key: -1 }, (ctx, t, px) => {
+  fillAll(ctx, vgrad(ctx, -180, 800, [[0, '#04090a'], [0.5, '#0d1a19'], [1, '#050909']]));
+  // the wall of drawers, lettered: every island, every indenture
+  const wx = px * 0.2;
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVW';
+  for (let c = -3; c < 24; c++) {
+    const x = c * 64 + wx;
+    for (let r = 0; r < 9; r++) {
+      const y = 132 + r * 38;
+      rect(ctx, x, y, 61, 35, css(mix('#16221f', '#0a1211', rnd(c * 7 + r) * 0.6)));
+      rect(ctx, x + 19, y + 7, 23, 9, rgba('#cdc6ae', 0.3 + rnd(c + r * 13) * 0.3)); rect(ctx, x + 25, y + 22, 11, 3.5, '#8a6a2e');
+    }
+    rect(ctx, x, 104, 61, 24, '#1c2a27');
+    if (c >= 0 && c < letters.length) { ctx.fillStyle = 'rgba(224,196,122,.75)'; ctx.font = `700 15px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(letters[c], x + 30, 122); ctx.textAlign = 'left'; }
+  }
+  rect(ctx, X0, 474, XW, 8, '#070c0c');
+  { const lx = 1104 + wx; seg(ctx, lx, 476, lx + 34, 100, '#3a2c1c', 6); seg(ctx, lx + 58, 476, lx + 92, 100, '#3a2c1c', 6); for (let i = 0; i < 9; i++) seg(ctx, lx + 3 + i * 3.6, 440 - i * 40, lx + 61 + i * 3.6, 440 - i * 40, '#3a2c1c', 4); }
+  // the clock that the night clerk signs against
+  { const cx = 640 + wx; circ(ctx, cx, 64, 34, '#0a1211'); circ(ctx, cx, 64, 28, '#d6dccc'); seg(ctx, cx, 64, cx + Math.sin(t * 0.05 + 0.4) * 22, 64 - Math.cos(t * 0.05 + 0.4) * 22, '#0c1412', 2); seg(ctx, cx, 64, cx + 6, 64 + 14, '#0c1412', 3); glow(ctx, cx, 64, 70, '#c2ecd0', 0.1); }
+  // the tubes: paper going between people who will never meet
+  const tp = px * 0.45;
+  tubeRun(ctx, [[X0, 30], [220 + tp, 30], [220 + tp, 392]], 9, t, 520, 0.1);
+  tubeRun(ctx, [[X0 + XW, 16], [470 + tp, 16], [470 + tp, 392]], 9, t, 600, 0.55);
+  tubeRun(ctx, [[X0, 2], [820 + tp, 2], [820 + tp, 392]], 9, t, 480, 0.8);
+  tubeRun(ctx, [[X0 + XW, 44], [1080 + tp, 44], [1080 + tp, 392]], 9, t, 560, 0.3);
+  tubeRun(ctx, [[X0, 88], [640 + tp, 88], [640 + tp, 60 - 240]], 6, t, 420, 0.65);
+  for (const x of [220, 470, 820, 1080]) { rect(ctx, x - 20 + tp, 388, 40, 26, '#6a4e18'); rect(ctx, x - 14 + tp, 396, 28, 12, '#12100a'); circ(ctx, x + tp, 384, 3, mod(t * 0.7 + x, 3) < 0.25 ? '#ff5a4a' : '#3a1410'); }
+  // floor
+  ctx.fillStyle = vgrad(ctx, 480, 800, [[0, '#10201d'], [1, '#040707']]); ctx.fillRect(X0, 480, XW, 500);
+  // rows of desks: most lamps out, a few left burning over an open book
+  for (let r = 0; r < 3; r++) {
+    const y = 452 + r * r * 22 + r * 24, s = 15 + r * 9, gap = 150 + r * 70, dpx = px * (0.4 + r * 0.25);
+    for (let i = -2; i < 13; i++) {
+      const x = i * gap + (r % 2) * gap * 0.5 + dpx, lit = rnd(i * 7.7 + r * 31) < 0.32;
+      ctx.fillStyle = vgrad(ctx, y, y + s * 3.4, [[0, '#2a2016'], [1, '#0c0907']]); ctx.fillRect(x - gap * 0.36, y, gap * 0.72, s * 3.4);
+      rect(ctx, x - gap * 0.38, y - s * 0.2, gap * 0.76, s * 0.24, '#463422');
+      poly(ctx, [[x - gap * 0.36, y - s * 0.2], [x + gap * 0.36, y - s * 0.2], [x + gap * 0.3, y - s * 0.75], [x - gap * 0.3, y - s * 0.75]], '#1c1610'); // the slope of the desk
+      if (lit) { poly(ctx, [[x - s * 1.5, y - s * 0.28], [x - s * 0.1, y - s * 0.3], [x - s * 0.1, y - s * 0.7], [x - s * 1.3, y - s * 0.66]], '#d9d2b4'); poly(ctx, [[x - s * 0.1, y - s * 0.3], [x + s * 1.3, y - s * 0.28], [x + s * 1.1, y - s * 0.66], [x - s * 0.1, y - s * 0.7]], '#c6be9e'); }
+      bankersLamp(ctx, x + gap * 0.2, y - s * 0.74, s * 0.8, lit, t, i + r * 5);
+      if (lit) { ctx.fillStyle = 'rgba(184,240,192,.06)'; ctx.beginPath(); ctx.ellipse(x, y + s * 3.6, gap * 0.5, s * 0.6, 0, 0, TAU); ctx.fill(); }
+    }
+  }
+  // one night clerk, far down the room, who does not look up
+  { const x = 228 + px * 0.4, y = 418; const nod = Math.sin(t * 0.4) * 1.2; ctx.fillStyle = '#060b0b'; ctx.beginPath(); ctx.arc(x, y + nod, 8, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 16, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(184,240,192,.5)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y + nod, 8, -0.4, 1.2); ctx.stroke(); }
+}, (ctx, t, px) => {
+  motes(ctx, 219, 44, '#d4f4dc', t, { x0: -60 + px, x1: 1340 + px, y0: 100, y1: 620, vx: 3, vy: 3, r: 1.3, a: 0.26, tw: 1, wob: 16 });
+});
+// ══ END ch3 ══
+
 /** every backdrop key this renderer implements */
 export const BACKDROPS = Object.keys(P);
 

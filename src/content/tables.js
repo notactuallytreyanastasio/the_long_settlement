@@ -147,7 +147,7 @@ function vessery() {
   const lo = lower({
     divX: 31, divTop: 592, elbow: 660, pivot: [120, 698],
     sling: [[72, 574], [72, 648], [108, 664]], slingKick: 330,
-    flipLen: 56, rest: 0.5, active: 0.62, guard: [14, 14], guardY: 552,
+    flipLen: 56, rest: 0.5, active: 0.62, guard: [11, 11], guardY: 552,
   });
   const pier = sideLane(250, 330, 430, 34, 70);        // left: the pier ramp
   const dock = mirrorLane(pier);                       // right: the dock orbit
@@ -248,7 +248,7 @@ function saltmere() {
     flipLen: 57, rest: 0.52, active: 0.62, guard: [3, 18], guardY: 558,
   });
   const cause = sideLane(270, 360, 452, 32, 66);                   // left: the causeway ramp
-  const court = mirrorLane(sideLane(240, 350, 440, 30, 64));       // right: the court orbit, narrower
+  const court = mirrorLane(sideLane(170, 350, 440, 30, 64));       // right: the court orbit, narrower and longer
 
   // The gallery to the Orrery leans seven degrees and has no flare at its mouth. It sits
   // between the two angles a flipper gives easily (the near-side shot off the base, the
@@ -273,8 +273,6 @@ function saltmere() {
     // the Orrery gallery, with a peaked roof so nothing rests on it
     ...poly(galL), ...poly(galR),
     ...poly([[174.5, 138], [191.5, 120], [208.5, 138]]),
-    // the picket line: a loose rail on the left flats
-    { a: [58, 196], b: [100, 232] },
   ];
 
   return {
@@ -294,8 +292,8 @@ function saltmere() {
     ],
     slings: lo.slings,
     targets: [
-      ...bank(['strikeA', 'strikeB', 'strikeC'], [152.3, 290], [162.9, 206], 'strike'),
-      ...bank(['lienL', 'lienI', 'lienE', 'lienN'], [mx(41), 246], [mx(41), 330], 'lien'),
+      ...bank(['strikeA', 'strikeB', 'strikeC'], [66, 292], [122, 240], 'strike', 0.06),
+      ...bank(['lienL', 'lienI', 'lienE', 'lienN'], [mx(41), 178], [mx(41), 282], 'lien', 0.06),
     ],
     rollovers: [
       { id: 'saltL', pos: [253, 96], r: 10, group: 'salt' },
@@ -362,9 +360,9 @@ function halcyon() {
   const walls = [
     ...sh.walls, ...lo.walls,
     // ceiling, and a chamfered bastion for the top-left corner
-    { a: sh.arcEnd, b: [104, 8] },
-    { a: [104, 8], b: [L, 118] },
-    { a: [L, 118], b: gallery.outer[0] }, ...poly(gallery.outer), { a: gallery.outer[2], b: [L, 800] },
+    { a: sh.arcEnd, b: [116, 8] },
+    { a: [116, 8], b: [L, 124] },
+    { a: [L, 124], b: gallery.outer[0] }, ...poly(gallery.outer), { a: gallery.outer[2], b: [L, 800] },
     ...poly(gallery.inner),
     ...poly(parade.outer), ...poly(parade.inner),
     // the pediment's left wall stops the launch; its right wall is the one-way door below
@@ -393,8 +391,8 @@ function halcyon() {
     ],
     slings: lo.slings,
     targets: [
-      ...bank(['dormA', 'dormB', 'dormC'], [84, 356], [84, 282], 'dorm'),
-      ...bank(['bondB', 'bondO', 'bondN', 'bondD'], [mx(84), 278], [mx(84), 360], 'bond', 0.06),
+      ...bank(['dormA', 'dormB', 'dormC'], [94, 346], [94, 272], 'dorm'),
+      ...bank(['bondB', 'bondO', 'bondN', 'bondD'], [mx(94), 266], [mx(94), 348], 'bond', 0.06),
     ],
     rollovers: [...oaths.rollovers, ...lo.rollovers],
     shots: [
@@ -448,16 +446,16 @@ function brand() {
     flipLen: 55, rest: 0.5, active: 0.6, guard: [16, 9], guardY: 562,
   });
   const breakwater = sideLane(300, 372, 462, 36, 74);               // left: the breakwater ramp, low and long
-  const under = mirrorLane(sideLane(284, 340, 428, 34, 62));        // right: the under-lane orbit
-  const tides = topLanes(['tideL', 'tideC', 'tideR'], [46, 84, 122, 160], 84, 130, 'tides');
+  const under = mirrorLane(sideLane(284, 340, 428, 34, 70));        // right: the under-lane orbit
+  const tides = topLanes(['tideL', 'tideC', 'tideR'], [58, 98, 138, 178], 84, 130, 'tides');
 
   const walls = [
     ...sh.walls, ...lo.walls,
     // ceiling; the cliff fills the top-left corner, stops the launch and stands the tide lanes
-    { a: sh.arcEnd, b: [54, 8] },
-    { a: [54, 8], b: [46, 84], bounce: 0.3 },
-    ...poly([[46, 130], [L, 176]]),
-    { a: [L, 176], b: breakwater.outer[0] }, ...poly(breakwater.outer), { a: breakwater.outer[2], b: [L, 800] },
+    { a: sh.arcEnd, b: [66, 8] },
+    { a: [66, 8], b: [58, 84], bounce: 0.6 },
+    ...poly([[58, 130], [L, 190]]),
+    { a: [L, 190], b: breakwater.outer[0] }, ...poly(breakwater.outer), { a: breakwater.outer[2], b: [L, 800] },
     ...poly(breakwater.inner),
     ...poly(under.outer), ...poly(under.inner),
     ...tides.walls,
@@ -476,7 +474,7 @@ function brand() {
     oneWays: [sh.gate],
     flippers: lo.flippers,
     bumpers: [
-      { id: 'reef1', pos: [112, 232], r: 19, kick: 430 },
+      { id: 'reef1', pos: [118, 198], r: 19, kick: 430 },
       { id: 'reef2', pos: [246, 168], r: 21, kick: 430 },
       { id: 'reef3', pos: [200, 312], r: 17, kick: 430 },
     ],
@@ -547,10 +545,10 @@ function tallis() {
     ...poly(steps.inner),
     ...poly(clearing.outer), ...poly(clearing.inner),
     // the bell tower: stops the launch over the bell lanes
-    { a: [146, 8], b: [134, 92], bounce: 0.3 },
+    { a: [146, 8], b: [134, 92], bounce: 0.6 },
     ...bells.walls,
     // the strongroom's hood: a roof and a back wall, open toward the pits
-    ...poly([[126, 150], [70, 162], [70, 214]]),
+    ...poly([[124, 160], [70, 172], [70, 222]]),
   ];
 
   return {
@@ -580,7 +578,7 @@ function tallis() {
       { id: 'clearingOrbit', a: clearing.gate(414)[0], b: clearing.gate(414)[1], dir: [0, -1] },
     ],
     saucers: [
-      { id: 'strongroom', pos: [92, 186], r: 13, eject: [230, 40], holdMs: 1200 },
+      { id: 'strongroom', pos: [92, 196], r: 13, eject: [220, 90], holdMs: 1200 },
     ],
     plunger: { pos: [379, 770], maxSpeed: 2050 },
     drainY: 792,
@@ -595,7 +593,7 @@ function tallis() {
       { text: 'PRICES MADE BY BELL', pos: [187, 520], size: 10 },
       { text: 'STEPS', pos: [25, 304], size: 10, angle: -1.5708 },
       { text: 'CLEARING HOUSE', pos: [mx(23), 286], size: 8, angle: 1.5708 },
-      { text: 'STRONGROOM', pos: [98, 146], size: 7, angle: -0.21 },
+      { text: 'STRONGROOM', pos: [96, 156], size: 7, angle: -0.21 },
       { text: 'PAYABLE ON DEMAND', pos: [187, 570], size: 8 },
     ],
     labels: {
