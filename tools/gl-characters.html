@@ -22,26 +22,28 @@
 <div id="bar"><button id="bLight">light</button><button id="bView">view</button><button id="bWho">who</button></div>
 <pre id="fatal" hidden></pre>
 <script type="module">
-// The cast on a quay. Query string:
-//   ?view=sheet (default: everything on one page) | row | emotes | turn | close | icon | stage | act
-//         | poses (the four signature poses) | clips (every clip of ?who at the moment it lands)
-//   ?light=sunset | night | day      ?who=ren | ilse | nan | bailiff (for emotes / turn / act)
-//   ?emote=smile  ?pose=signature  ?speak=1  ?look=camera      state for the row, close and stage views
-//   ?act=strike&at=0.27                                          hold a clip at a time (seconds)
-//   ?yaw=30                                                      camera yaw for row / act
-//   ?detail=0.6 (fewer triangles per figure)
-//   ?t=6 (freeze at that time, for screenshots)   ?hud=0   ?dpr=1
+// The cast on a quay: contact sheets for the character artist. Query string:
+//   ?view=sheet (default)  one row per character: body, four emotes close up, and the stage-size figure (lod 'stage').
+//                          ?page=0.. (8 rows a page)  ?ids=ren,ilse,... (default: all of CAST)
+//        =lineup           every id at stage size, in 430 x 220 bands as the live view draws them (lod 'stage')
+//        =close            ?who alone, head and shoulders, full detail      =turn  ?who from four sides
+//        =emotes           ?who, all seven emotes and talking               =poses ?ids, signature poses
+//        =clips            every clip of ?who at the moment it lands        =act   ?who playing ?act (or cycling)
+//        =strip            ?who over time, ?n frames ?step seconds apart: ?act=clip | ?emote=a,b (switches halfway) | ?speak=1 | ?wind=1 | ?turn=1
+//        =crowd            createCrowd: ?count=28 ?mood=idle|cheer|angry|still  (add &strip=1 for six frames of it)
+//   ?light=sunset | night | day      ?who=<id>      ?emote= ?pose=signature ?speak=1 ?look=camera
+//   ?lod=full|stage (close, turn, emotes, strip)    ?yaw=30    ?t=6 (freeze)    ?hud=0    ?dpr=1
 const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glDemo = { error: f.textContent }; };
 window.addEventListener('error', (e) => fatal(e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
 try {
   const GL = await import('../src/shell/gl/index.js');
   const { createFaces } = await import('../src/shell/gl/faces.js');
-  const { createCharacter, CAST, CLIPS, EMOTES, figureMaterial, teamMove } = await import('../src/shell/gl/characters.js');
+  const { createCharacter, createCrowd, castVariant, CAST, CLIPS, EMOTES, figureMaterial, teamMove } = await import('../src/shell/gl/characters.js');
   const { createRenderer, createCamera, createScene, makeEnv, material, node, group, mergeStatic, createSprites, createClouds, merge, tint, place, roundedBox, cylinder, lathe, sphere, blob, setGlow, rng, DEG } = GL;
 
   const q = new URLSearchParams(location.search);
-  const LIGHTS = ['sunset', 'night', 'day'], VIEWS = ['sheet', 'row', 'emotes', 'turn', 'close', 'icon', 'stage', 'act', 'poses', 'clips'];
+  const LIGHTS = ['sunset', 'night', 'day'], VIEWS = ['sheet', 'lineup', 'close', 'turn', 'emotes', 'poses', 'clips', 'act', 'strip', 'crowd'];
   const light = q.get('light') || 'sunset', view = q.get('view') || 'sheet', who = q.get('who') || 'ilse';
   if (!LIGHTS.includes(light)) throw new Error(`unknown light "${light}" (have ${LIGHTS.join(', ')})`);
   if (!VIEWS.includes(view)) throw new Error(`unknown view "${view}" (have ${VIEWS.join(', ')})`);
@@ -79,99 +81,118 @@ try {
   const sprites = scene.sprites = createSprites(128);
   if (lamps > 0) sprites.add({ kind: 'glow', pos: [LAMP[0], LAMP[1], LAMP[2]], size: 2.0, color: '#ffa63f', alpha: 0.75 });
 
-  // ---- the cast
-  const figMat = figureMaterial();
+  // ---- the cast. Figures are lit as the game lights them: a key that follows the camera (stage.js createTroupe.aim)
+  const keyLight = new Float32Array([-0.4, 0.55, 0.73]);
+  const figMat = figureMaterial({ keyLight });
   const faces = createFaces({ figure: figMat });
-  const ids = ['ren', 'ilse', 'nan', 'bailiff'];
-  const cast = {}; const place3 = { ren: [-0.58, 0, 0.05], ilse: [0.02, 0, 0.3], nan: [0.62, 0, 0.1], bailiff: [1.9, 0, 0.3] }, heading = { ren: 16, ilse: -6, nan: -24, bailiff: -62 };
-  for (const id of ids) { const ch = cast[id] = createCharacter(CAST[id], { faces, material: figMat, detail: Number(q.get('detail') || 1) }); ch.root.setPos(...place3[id]); scene.root.add(ch.root); ch.glow = ch.lampPos ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.8, color: '#ffa63f', alpha: lamps > 0 ? 0.8 : 0.35 }) : null; }
+  const ALL = Object.keys(CAST).filter((id) => id !== 'crowd');
+  const want = q.get('ids') ? q.get('ids').split(',') : null;
+  const lodQ = q.get('lod') || 'full', PAGE = 8, page = Number(q.get('page') || 0);
+  let ids, lods;
+  if (view === 'sheet') { ids = (want || ALL).slice(page * PAGE, page * PAGE + PAGE); lods = ['full', 'stage']; }
+  else if (view === 'lineup') { ids = want || ALL; lods = ['stage']; }
+  else if (view === 'poses') { ids = want || ['ren', 'ilse', 'nan', 'bailiff']; lods = ['full']; }
+  else if (view === 'crowd') { ids = []; lods = []; }
+  else if (view === 'act' && q.get('act') === 'team') { ids = ['ren', 'ilse', 'bailiff']; lods = [lodQ]; }
+  else { ids = [who]; lods = [lodQ]; }
+  const defOf = (id) => { const [base, k] = id.split('#'); if (!CAST[base]) throw new Error(`no cast member "${base}" (have ${Object.keys(CAST).join(', ')})`); return castVariant(base, Number(k || 0)); };
+  const cast = {}, keys = [];
+  for (const id of ids) for (const lod of lods) {
+    const key = lods.length > 1 ? `${id}@${lod}` : id;
+    const ch = cast[key] = createCharacter(defOf(id), { faces, material: figMat, detail: Number(q.get('detail') || 1), lod });
+    scene.root.add(ch.root); keys.push(key);
+    ch.glow = ch.lampPos ? sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.8, color: '#ffa63f', alpha: lamps > 0 ? 0.8 : 0.35 }) : null;
+  }
+  const crowd = view === 'crowd' ? createCrowd({ count: Number(q.get('count') || 28), seed: Number(q.get('seed') || 3), area: { x0: -2.4, x1: 2.4, z0: -1.4, z1: 0.9 }, face: 0, material: figMat }) : null;
+  if (crowd) scene.root.add(crowd.root);
 
   // ---- views: a list of cells, each a rectangle of the canvas with its own camera and its own state for the cast
   const cam = createCamera({ fov: 24, near: 0.2, far: 1200 });
   const tags = document.getElementById('tags');
   const tag = (x, y, text) => { const d = document.createElement('div'); d.className = 'tag'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.textContent = text; tags.appendChild(d); };
-  const base = { emote: q.get('emote') || 'neutral', pose: q.get('pose') || 'stand', speaking: q.get('speak') === '1', look: q.get('look') === 'camera' ? 'camera' : null };
-  const camYaw = Number(q.get('yaw') || 0);
-  /** cell: { x, y, w, h, show: [ids], shot: 'body' | 'head' | 'bust' | 'group', of: id, yaw, pitch, margin, state: { id: {...} }, label } */
+  const base = { emote: (q.get('emote') || 'neutral').split(',')[0], pose: q.get('pose') || 'stand', speaking: q.get('speak') === '1', look: q.get('look') === 'camera' ? 'camera' : null };
+  const camYaw = Number(q.get('yaw') || 0), stripN = Number(q.get('n') || 8), stripStep = Number(q.get('step') || 0.1);
+  /** cell: { x, y, w, h, show: [keys], at: { key: [x, z] }, shot: 'body' | 'head' | 'bust' | 'band' | 'wide', of: key, yaw, pitch, margin, state: { key: {...} }, act: [clip, at], advance: seconds } */
   function layout(W, H) {
     tags.textContent = ''; const cells = [];
-    const emoteGrid = (x0, y0, w, h, id, cols) => {
-      const all = [...EMOTES, 'talk'], rows = Math.ceil(all.length / cols), cw = w / cols, chh = h / rows;
-      all.forEach((e, i) => { const x = x0 + (i % cols) * cw, y = y0 + Math.floor(i / cols) * chh;
-        cells.push({ x, y, w: cw, h: chh, show: [id], shot: 'head', of: id, yaw: (i % 2 ? -1 : 1) * 24, pitch: 3, margin: 1.5, state: { [id]: e === 'talk' ? { emote: 'smile', talk: 0.8, look: 'camera' } : { emote: e, look: 'camera' } } }); tag(x + 3, y + 3, e); });
-    };
-    const turn = (x0, y0, w, h, id, yaws) => yaws.forEach((yw, i) => { cells.push({ x: x0 + i * w / yaws.length, y: y0, w: w / yaws.length, h, show: [id], shot: 'body', of: id, yaw: yw, pitch: 6, margin: 1.22, state: { [id]: { face: 0 } } }); });
-    if (view === 'row') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'group', yaw: camYaw - 8, pitch: 7, margin: 1.12, state: {} });
-    else if (view === 'emotes') emoteGrid(0, 0, W, H, who, 2);
-    else if (view === 'turn') { turn(0, 0, W, H / 2, who, [0, 35]); turn(0, H / 2, W, H / 2, who, [90, 150]); }
-    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: ['ren', 'ilse', 'nan'], shot: 'bust', of: who, yaw: camYaw + (who === 'ren' ? -12 : 14), pitch: 4, margin: 1.0, state: { ren: { look: who === 'ren' ? 'camera' : cast.ilse.headPos, face: 24 }, ilse: { look: who === 'ilse' ? 'camera' : cast.ren.headPos, face: -18 }, nan: { look: who === 'nan' ? 'camera' : cast.ilse.headPos, face: -30 } } });
-    else if (view === 'icon') {
-      ids.forEach((id, i) => { cells.push({ x: 20 + i * 62, y: 24, w: 46, h: 46, show: [id], shot: 'head', of: id, yaw: 22, pitch: 3, margin: 1.5, state: { [id]: { look: 'camera' } } }); tag(20 + i * 62, 74, id + ' 46'); });
-      ids.forEach((id, i) => { cells.push({ x: 20 + i * 92, y: 110, w: 80, h: 80, show: [id], shot: 'head', of: id, yaw: -22, pitch: 3, margin: 1.32, state: { [id]: { look: 'camera', emote: 'smile' } } }); });
-      tag(20, 194, 'stage size: 430 x 220 band, figures about 70 px tall');
-      cells.push({ x: 0, y: 210, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: 0, pitch: 8, state: { bailiff: { emote: 'grim', face: -64 }, ren: { emote: 'grim', face: 62 }, ilse: { emote: 'smile', face: 58 }, nan: { face: 50 } } });
-      emoteGrid(0, 230 + Math.round(W * 220 / 430), W, H - 240 - Math.round(W * 220 / 430), who, 4);
-    } else if (view === 'stage') cells.push({ x: 0, y: 0, w: W, h: Math.round(W * 220 / 430), show: ids, shot: 'stage', yaw: 0, pitch: 8, state: { bailiff: { face: -64 }, ren: { face: 62 }, ilse: { face: 58 }, nan: { face: 50 } } });
-    else if (view === 'poses') ids.forEach((id, i) => { const x = (i % 2) * W / 2, y = Math.floor(i / 2) * H / 2; cells.push({ x, y, w: W / 2, h: H / 2, show: [id], shot: 'body', of: id, yaw: id === 'bailiff' ? 30 : -28, pitch: 6, margin: 1.45, state: { [id]: { pose: 'signature', face: 0, emote: { ren: 'grim', ilse: 'smile', nan: 'soft', bailiff: 'anger' }[id], talk: id === 'ilse' ? 0.8 : 0 } } }); tag(x + 3, y + 3, id + ': signature'); });
+    const FOUR = ['neutral', 'smile', 'anger', 'shock'];
+    if (view === 'sheet') {
+      const rh = Math.floor(H / PAGE), bw = Math.round(W * 0.2), sw = Math.round(W * 0.19), ew = (W - bw - sw) / 4;
+      ids.forEach((id, r) => { const y = r * rh, F = `${id}@full`, S = `${id}@stage`;
+        cells.push({ x: 0, y, w: bw, h: rh, show: [F], shot: 'body', of: F, yaw: r % 2 ? 24 : -24, pitch: 6, margin: 1.16, state: { [F]: { face: 0 } } });
+        FOUR.forEach((e, i) => cells.push({ x: bw + i * ew, y, w: ew, h: rh, show: [F], shot: 'head', of: F, yaw: i % 2 ? -20 : 20, pitch: 3, margin: 1.36, state: { [F]: { emote: e, look: 'camera', face: 0, talk: e === 'smile' ? 0.8 : 0 } } }));
+        // the stage-size figure: 76 px tall, as the live band draws it
+        cells.push({ x: bw + 4 * ew, y, w: sw, h: rh, show: [S], shot: 'body', of: S, yaw: 28, pitch: 8, margin: rh / 76, thin: true, state: { [S]: { face: 0 } } });
+        tag(2, y + 2, `${id}  ${cast[F].stats.triangles} / ${cast[S].stats.triangles} tris`); });
+      FOUR.forEach((e, i) => tag(bw + i * ew + 2, H - 12, e)); tag(bw + 4 * ew + 2, H - 12, 'stage 76px');
+    } else if (view === 'lineup') {
+      const bh = Math.round(W * 220 / 430), per = 7;
+      for (let b = 0; b * per < ids.length; b++) { const row = ids.slice(b * per, b * per + per), at = {}, st = {};
+        row.forEach((id, i) => { at[id] = [(i - (row.length - 1) / 2) * 0.82, (i % 2) * 0.25]; st[id] = { face: i < row.length / 2 ? 50 : -50, emote: ['neutral', 'smile', 'grim', 'anger'][(i + b) % 4] }; });
+        cells.push({ x: 0, y: b * (bh + 12), w: W, h: bh, show: row, at, shot: 'band', yaw: 0, pitch: 8, state: st, thin: true }); tag(2, b * (bh + 12) + 2, row.join('  ')); }
+    } else if (view === 'emotes') {
+      const all = [...EMOTES, 'talk'], cols = 2, rows = 4, cw = W / cols, chh = H / rows;
+      all.forEach((e, i) => { const x = (i % cols) * cw, y = Math.floor(i / cols) * chh;
+        cells.push({ x, y, w: cw, h: chh, show: [who], shot: 'head', of: who, yaw: (i % 2 ? -1 : 1) * 22, pitch: 3, margin: 1.45, state: { [who]: e === 'talk' ? { emote: 'smile', talk: 0.8, look: 'camera', face: 0 } : { emote: e, look: 'camera', face: 0 } } }); tag(x + 3, y + 3, e); });
+    } else if (view === 'turn') { [0, 40, 90, 150, 180, -60].forEach((yw, i) => { cells.push({ x: (i % 3) * W / 3, y: Math.floor(i / 3) * H / 2, w: W / 3, h: H / 2, show: [who], shot: i === 4 ? 'head' : 'body', of: who, yaw: yw, pitch: 6, margin: i === 4 ? 1.5 : 1.25, state: { [who]: { face: 0 } } }); }); }
+    else if (view === 'close') cells.push({ x: 0, y: 0, w: W, h: H, show: [who], shot: 'bust', of: who, yaw: camYaw + 16, pitch: 4, margin: 1.0, state: { [who]: { look: 'camera', face: 0 } } });
+    else if (view === 'poses') ids.forEach((id, i) => { const n = Math.ceil(ids.length / 2), x = (i % 2) * W / 2, y = Math.floor(i / 2) * H / n; cells.push({ x, y, w: W / 2, h: H / n, show: [id], shot: 'body', of: id, yaw: i % 2 ? 26 : -26, pitch: 6, margin: 1.4, state: { [id]: { pose: 'signature', face: 0, emote: 'smile' } } }); tag(x + 3, y + 3, id + ': signature'); });
     else if (view === 'clips') {
       const list = [['strike', 0.27], ['strike2', 0.2], ['strike2', 0.36], ['windup', 0.42], ['release', 0.16], ['hit', 0.12], ['cheer', 0.3], ['stepF', 0.16], ['yield', 0.7], ['surrender', 0.5], ['teamLead', 0.5], ['teamFollow', 0.78]];
-      list.forEach(([name, at], i) => { const x = (i % 3) * W / 3, y = Math.floor(i / 3) * H / 4; cells.push({ x, y, w: W / 3, h: H / 4, show: [who], shot: 'body', of: who, yaw: who === 'bailiff' ? 62 : -62, pitch: 6, margin: 1.75, act: [name, at], state: { [who]: { face: 0, emote: name === 'hit' ? 'shock' : name === 'cheer' ? 'smile' : name === 'yield' ? 'tears' : 'anger' } } }); tag(x + 3, y + 3, `${name} @${at}`); });
-    }
-    else if (view === 'act') cells.push({ x: 0, y: 0, w: W, h: H, show: actName === 'team' ? ['ren', 'ilse', 'bailiff'] : [who], shot: q.get('shot') || 'body', of: who, yaw: camYaw + (q.has('shot') ? 0 : 55), pitch: Number(q.get('pitch') || 6), margin: Number(q.get('margin') || 1.9), state: { [who]: { face: 0 } } });
-    else { // the contact sheet
-      const rowH = Math.round(H * 0.25);
-      cells.push({ x: 0, y: 0, w: W, h: rowH, show: ['ren', 'ilse', 'nan'], shot: 'group', yaw: -8, pitch: 7, margin: 1.1, state: {} });
-      const eh = Math.round(H * 0.105);
-      ['ren', 'ilse', 'nan'].forEach((id, k) => { const y = rowH + k * eh; EMOTES.forEach((e, i) => { const cw = W / 7; cells.push({ x: i * cw, y, w: cw, h: eh, show: [id], shot: 'head', of: id, yaw: (k + i) % 2 ? -22 : 22, pitch: 3, margin: 1.42, state: { [id]: { emote: e, look: 'camera', talk: e === 'smile' || e === 'shock' || e === 'anger' ? 0.8 : 0 } } }); if (k === 0) tag(i * cw + 2, y + 2, e); }); });
-      const ty = rowH + 3 * eh, th = Math.round(H * 0.15);
-      ['ren', 'ilse', 'nan'].forEach((id, k) => turn(k * W / 3, ty, W / 3, th, id, [0, 40, 90]));
-      tag(2, ty + 2, 'front / three-quarter / side');
-      const cy = ty + th, chh = H - cy;
-      cells.push({ x: 0, y: cy, w: Math.round(W * 0.6), h: chh, show: ['ren', 'ilse', 'nan'], shot: 'bust', of: 'ilse', yaw: 24, pitch: 4, margin: 1.0, state: { ilse: { look: 'camera', emote: 'smile', talk: 0.6 }, ren: { look: cast.ilse.headPos }, nan: { look: cast.ilse.headPos, emote: 'soft' } } });
-      tag(2, cy + 2, 'cutscene close-up');
-      const ix = Math.round(W * 0.6) + 10;
-      ['ren', 'ilse', 'nan', 'bailiff'].forEach((id, i) => { cells.push({ x: ix + (i % 2) * 60, y: cy + 16 + Math.floor(i / 2) * 60, w: 46, h: 46, show: [id], shot: 'head', of: id, yaw: 22, pitch: 3, margin: 1.5, state: { [id]: { look: 'camera' } } }); });
-      tag(ix, cy + 4, '46 px icons');
-      cells.push({ x: Math.round(W * 0.6), y: cy + 140, w: W - Math.round(W * 0.6), h: chh - 140, show: ['nan'], shot: 'body', of: 'nan', yaw: -30, pitch: 6, margin: 1.3, state: { nan: { pose: 'signature', emote: 'smile', face: 0 } } });
-      tag(ix, cy + 144, 'signature pose');
+      list.forEach(([name, at], i) => { const x = (i % 3) * W / 3, y = Math.floor(i / 3) * H / 4; cells.push({ x, y, w: W / 3, h: H / 4, show: [who], shot: 'body', of: who, yaw: -62, pitch: 6, margin: 1.75, act: [name, at], state: { [who]: { face: 0, emote: name === 'hit' ? 'shock' : name === 'cheer' ? 'smile' : name === 'yield' ? 'tears' : 'anger' } } }); tag(x + 3, y + 3, `${name} @${at}`); });
+    } else if (view === 'act') cells.push({ x: 0, y: 0, w: W, h: H, show: ids, at: ids.length > 1 ? { ren: [-0.3, 0], ilse: [-1.2, 0], bailiff: [1.2, 0] } : null, shot: ids.length > 1 ? 'band' : 'body', of: who, yaw: camYaw + 55, pitch: 6, margin: 1.9, state: ids.length > 1 ? { ren: { face: 90 }, ilse: { face: 90 }, bailiff: { face: -90 } } : { [who]: { face: 0 } } });
+    else if (view === 'strip') { // frames of one figure over time, read left to right, top to bottom
+      const cols = Math.min(4, stripN), rows = Math.ceil(stripN / cols), cw = W / cols, chh = Math.min(H / rows, cw * 1.5), shot = q.get('shot') || 'body';
+      for (let i = 0; i < stripN; i++) { cells.push({ x: (i % cols) * cw, y: Math.floor(i / cols) * chh, w: cw, h: chh, show: [who], shot, of: who, yaw: camYaw + (shot === 'body' ? -30 : 18), pitch: 5, margin: shot === 'body' ? 1.5 : 1.5, advance: i === 0 ? 0 : stripStep, frame: i, state: {} }); tag((i % cols) * cw + 3, Math.floor(i / cols) * chh + 3, `+${(i * stripStep).toFixed(2)}s`); }
+    } else if (view === 'crowd') {
+      if (q.get('strip') === '1') { for (let i = 0; i < 6; i++) cells.push({ x: (i % 2) * W / 2, y: Math.floor(i / 2) * H / 3, w: W / 2, h: H / 3, show: [], shot: 'wide', yaw: camYaw, pitch: 12, advance: i === 0 ? 0 : stripStep, frame: i, state: {}, thin: true }); }
+      else { cells.push({ x: 0, y: 0, w: W, h: Math.round(W * 220 / 430), show: [], shot: 'wide', yaw: camYaw, pitch: 10, state: {}, thin: true }); cells.push({ x: 0, y: Math.round(W * 220 / 430) + 10, w: W, h: H - Math.round(W * 220 / 430) - 10, show: [], shot: 'wide', near: true, yaw: camYaw + 20, pitch: 14, state: {} }); }
     }
     return cells;
   }
   let cells = [], lw = 0, lh = 0;
-  const C3 = [0, 0, 0], LOOKTMP = [0, 0, 0];
+  const C3 = [0, 0, 0];
   function aim(cell) {
     const aspect = cell.w / cell.h, tv = Math.tan(cam.fov * DEG / 2), fit = (hgt, wid) => Math.max(hgt / 2 / tv, wid / 2 / (tv * aspect));
-    if (cell.shot === 'group') { C3[0] = 0.02; C3[1] = 0.56; C3[2] = 0.15; cam.fov = 24; cam.orbit(C3, fit(1.3 * cell.margin, 1.8 * cell.margin), cell.yaw, cell.pitch); return 2.4; }
-    if (cell.shot === 'stage') { C3[0] = 0.7; C3[1] = 0.62; C3[2] = 0.2; cam.fov = 22; cam.orbit(C3, fit(1.5, 4.6), cell.yaw, cell.pitch); return 3.4; }
+    if (cell.shot === 'band') { C3[0] = 0; C3[1] = 0.62; C3[2] = 0.2; cam.fov = 22; cam.orbit(C3, fit(1.5, 6.2), cell.yaw, cell.pitch); return 3.6; }
+    if (cell.shot === 'wide') { C3[0] = 0; C3[1] = 0.5; C3[2] = -0.2; cam.fov = 24; cam.orbit(C3, cell.near ? fit(2.2, 3.0) : fit(1.6, 5.6), cell.yaw, cell.pitch); return 3.6; }
     const ch = cast[cell.of], p = ch.root.position;
-    if (cell.shot === 'body') { C3[0] = p[0]; C3[1] = ch.height * 0.52; C3[2] = p[2]; cam.fov = 24; cam.orbit(C3, fit(ch.height * cell.margin, ch.height * 0.72 * cell.margin), cell.yaw, cell.pitch); return 1.5; }
+    if (cell.shot === 'body') { C3[0] = p[0]; C3[1] = ch.height * 0.54; C3[2] = p[2]; cam.fov = 24; cam.orbit(C3, fit(ch.height * cell.margin, ch.height * 0.8 * cell.margin), cell.yaw, cell.pitch); return 1.5; }
     const hp = ch.headPos, hs = ch.headRadius * 2.25;
-    if (cell.shot === 'head') { C3[0] = hp[0]; C3[1] = hp[1] + hs * 0.05; C3[2] = hp[2]; cam.fov = 20; cam.orbit(C3, fit(hs * cell.margin, hs * 0.86 * cell.margin), cell.yaw, cell.pitch); return 1.2; }
+    if (cell.shot === 'head') { C3[0] = hp[0]; C3[1] = hp[1] + hs * 0.05; C3[2] = hp[2]; cam.fov = 20; cam.orbit(C3, fit(hs * cell.margin, hs * 0.9 * cell.margin), cell.yaw, cell.pitch); return 1.2; }
     // bust: head and shoulders with room below for subtitles, as a portrait phone cutscene frames a speaker
     C3[0] = hp[0]; C3[1] = hp[1] - hs * 0.42; C3[2] = hp[2]; cam.fov = 26; cam.orbit(C3, fit(hs * 3.3 * cell.margin, hs * 1.7 * cell.margin), cell.yaw, cell.pitch); return 1.6;
   }
+  // the character light, as createTroupe.aim does it
+  function aimKey(side = -1, lift = 0.4, across = 0.45) {
+    let bx = cam.position[0] - cam.target[0], bz = cam.position[2] - cam.target[2]; const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl;
+    const rx = bz, rz = -bx, x = bx * 0.72 + rx * across * side, y = lift, z = bz * 0.72 + rz * across * side, l = Math.hypot(x, y, z);
+    keyLight[0] = x / l; keyLight[1] = y / l; keyLight[2] = z / l;
+  }
 
   // ---- time
-  const actName = q.get('act'), actAt = q.has('at') ? Number(q.get('at')) : null;
-  const windOf = (t) => { WIND[0] = 0.5 + Math.sin(t * 0.9) * 0.9; WIND[2] = Math.sin(t * 1.3) * 0.5; return WIND; }, WIND = [0, 0, 0];
-  const live = {}; for (const id of ids) live[id] = { ...base };
-  let cycle = -1;
+  const actName = q.get('act'), actAt = q.has('at') ? Number(q.get('at')) : null, emoteSeq = (q.get('emote') || '').split(',');
+  const WIND = [0, 0, 0], windOn = q.get('wind') === '1' || view === 'sheet' || view === 'lineup';
+  const windOf = (t) => { if (!windOn) { WIND[0] = WIND[2] = 0; return WIND; } WIND[0] = 0.5 + Math.sin(t * 0.9) * 0.9; WIND[2] = Math.sin(t * 1.3) * 0.5; return WIND; };
+  const live = {}; for (const k of keys) live[k] = { ...base };
+  let simT = 0;
   function tick(t, dt) { // advance everyone once with the view's default state
-    clouds.update(t); sprites.update(dt);
-    if (view !== 'sheet' && view !== 'icon' && !q.has('emote') && fixedT === null) { const c = Math.floor(t / 2.6) % EMOTES.length; if (c !== cycle) { cycle = c; for (const id of ids) { live[id].emote = EMOTES[(c + ids.indexOf(id)) % EMOTES.length]; live[id].speaking = (c + ids.indexOf(id)) % 3 === 0; } } }
-    for (const id of ids) { const s = live[id]; s.wind = windOf(t + ids.indexOf(id)); s.camera = cam; if (s.face == null) s.face = heading[id]; cast[id].update(dt, s); }
+    simT = t; clouds.update(t); sprites.update(dt);
+    keys.forEach((k, i) => { const s = live[k]; s.wind = windOf(t + i); s.camera = cam; if (q.get('turn') === '1') s.face = Math.sin(t * 2.2) * 70; cast[k].update(dt, s); });
+    if (crowd) crowd.update(dt, { mood: q.get('mood') || 'idle', energy: Number(q.get('energy') || 1) });
   }
   const cellState = {};
   function applyCell(cell) { // re-pose the cast for one cell without advancing time
-    for (const id of ids) {
-      const ch = cast[id]; ch.root.visible = cell.show.includes(id);
+    for (const k of keys) {
+      const ch = cast[k]; ch.root.visible = cell.show.includes(k);
       if (!ch.root.visible) continue;
-      const o = cell.state[id], s = cellState[id] || (cellState[id] = {});
-      Object.assign(s, live[id]); s.talk = undefined; if (o) Object.assign(s, o); s.camera = cam; s.snap = true;
-      if (cell.act && id === cell.of) { ch.release(); ch.act(cell.act[0]); ch.update(cell.act[1], s); ch.update(0, s); } else ch.update(0, s);
-      if (ch.glow) { ch.glow.pos[0] = ch.lampPos[0]; ch.glow.pos[1] = ch.lampPos[1]; ch.glow.pos[2] = ch.lampPos[2]; ch.glow.visible = true; }
+      const at = cell.at && cell.at[k]; ch.root.setPos(at ? at[0] : 0, 0, at ? at[1] : 0);
+      if (cell.advance != null) continue; // a strip: the figure is as tick() left it
+      const o = cell.state[k], s = cellState[k] || (cellState[k] = {});
+      Object.assign(s, live[k]); s.talk = undefined; s.face = undefined; if (o) Object.assign(s, o); s.camera = cam; s.snap = true;
+      if (cell.act && k === cell.of) { ch.release(); ch.act(cell.act[0]); ch.update(cell.act[1], s); ch.update(0, s); } else ch.update(0, s);
     }
-    for (const id of ids) if (!cast[id].root.visible && cast[id].glow) cast[id].glow.visible = false;
+    for (const k of keys) { const ch = cast[k]; if (!ch.glow) continue; ch.glow.visible = ch.root.visible; if (ch.root.visible) { ch.glow.pos[0] = ch.lampPos[0]; ch.glow.pos[1] = ch.lampPos[1]; ch.glow.pos[2] = ch.lampPos[2]; } }
   }
 
   const hud = document.getElementById('hud');
@@ -179,46 +200,61 @@ try {
   const go = (k, list, cur) => () => { q.set(k, list[(list.indexOf(cur) + 1) % list.length]); location.search = q.toString(); };
   document.getElementById('bLight').onclick = go('light', LIGHTS, light);
   document.getElementById('bView').onclick = go('view', VIEWS, view);
-  document.getElementById('bWho').onclick = go('who', ids, who);
+  document.getElementById('bWho').onclick = go('who', ALL, who);
 
-  if (fixedT !== null) for (let t = Math.max(0, fixedT - 3); t < fixedT; t += 1 / 60) tick(t, 1 / 60);
-  if (actName) { if (actName === 'team') teamMove(cast.ren, cast.ilse); else cast[who].act(actName); if (actAt !== null) for (let t = 0; t < actAt; t += 1 / 120) for (const id of ids) cast[id].update(1 / 120, live[id]); }
-  let last = performance.now(), t = fixedT ?? 0, avg = 0, upd = 0, frames = 0, draws = 0, tris = 0, nextAct = 3;
+  const pre = fixedT ?? (view === 'strip' ? 3 : null);
+  if (pre !== null) for (let t = Math.max(0, pre - 3); t < pre; t += 1 / 60) tick(t, 1 / 60);
+  if (actName && view !== 'strip') { if (actName === 'team') teamMove(cast.ren, cast.ilse); else cast[who].act(actName); if (actAt !== null) for (let t = 0; t < actAt; t += 1 / 120) for (const k of keys) cast[k].update(1 / 120, live[k]); }
+  let last = performance.now(), t = pre ?? 0, avg = 0, upd = 0, frames = 0, draws = 0, tris = 0, nextAct = 3, stripDone = false;
+  const frozen = fixedT !== null || actAt !== null;
+  function drawCell(cell) {
+    const rad = aim(cell); cam.update(cell.w / cell.h); aimKey();
+    // ink stays a constant width in pixels, which is far too heavy on a 70 px figure: thin it by how big a head is on screen
+    const headPx = 0.46 * cell.h / (2 * Math.tan(cam.fov * DEG / 2) * Math.hypot(cam.position[0] - cam.target[0], cam.position[1] - cam.target[1], cam.position[2] - cam.target[2]));
+    env.outline.width = cell.thin ? 0.7 : Math.max(0.42, Math.min(1, headPx / 150));
+    applyCell(cell);
+    const s = renderer.render(scene, cam, t, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, shadowCenter: cam.target, shadowRadius: rad });
+    draws += s.drawCalls; tris += s.triangles; return s.cpuMs;
+  }
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     const W = canvas.clientWidth, H = canvas.clientHeight;
-    if (W !== lw || H !== lh) { lw = W; lh = H; cells = layout(W, H); }
+    if (W !== lw || H !== lh) { lw = W; lh = H; cells = layout(W, H); stripDone = false; }
+    const isStrip = cells.length && cells[0].advance != null;
+    if (isStrip) { // each cell is the next moment: advance the simulation between cells, once
+      if (!stripDone) {
+        stripDone = true; draws = 0; tris = 0;
+        cells.forEach((cell, i) => {
+          if (i === 0 && view === 'strip') { if (actName) cast[who].act(actName); if (emoteSeq.length > 1) live[who].emote = emoteSeq[0]; }
+          if (view === 'strip' && emoteSeq.length > 1 && i === Math.floor(cells.length / 3)) live[who].emote = emoteSeq[1];
+          for (let k = 0, n = Math.round(cell.advance * 120); k < n; k++) { t += 1 / 120; tick(t, 1 / 120); }
+          drawCell(cell);
+        });
+      }
+      frames++; window.glDemo.frames = frames; requestAnimationFrame(frame); return;
+    }
     const u0 = performance.now();
-    if (fixedT === null && actAt === null) { t += dt; tick(t, dt); if (view === 'act' && !actName && t > nextAct) { const names = Object.keys(CLIPS); cast[who].release(); cast[who].act(names[Math.floor(t / 2.2) % names.length]); nextAct = t + 2.2; } }
+    if (!frozen) { t += dt; tick(t, dt); if (view === 'act' && !actName && t > nextAct) { const names = Object.keys(CLIPS); cast[who].release(); cast[who].act(names[Math.floor(t / 2.2) % names.length]); nextAct = t + 2.2; } }
     upd += (performance.now() - u0 - upd) * 0.05;
     let cost = 0; draws = 0; tris = 0;
-    for (let i = 0; i < cells.length; i++) {
-      const cell = cells[i];
-      const rad = aim(cell); cam.update(cell.w / cell.h);
-      // ink stays a constant width in pixels, which is far too heavy on a 70 px figure: thin it by how big a head is on screen
-      const headPx = 0.46 * cell.h / (2 * Math.tan(cam.fov * DEG / 2) * Math.hypot(cam.position[0] - cam.target[0], cam.position[1] - cam.target[1], cam.position[2] - cam.target[2]));
-      env.outline.width = Math.max(0.42, Math.min(1, headPx / 150));
-      applyCell(cell);
-      const s = renderer.render(scene, cam, t, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, shadowCenter: cam.target, shadowRadius: rad });
-      cost += s.cpuMs; draws += s.drawCalls; tris += s.triangles;
-    }
+    for (let i = 0; i < cells.length; i++) cost += drawCell(cells[i]);
     avg += (cost - avg) * 0.05; frames++;
-    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${light} / ${view}${view === 'sheet' || view === 'row' ? '' : ' / ' + who}  ${cells.length} views\n${draws} draws  ${(tris / 1000).toFixed(1)}k tris\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms`;
+    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${light} / ${view}  ${cells.length} views\n${draws} draws  ${(tris / 1000).toFixed(1)}k tris\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms`;
     window.glDemo.frames = frames;
     requestAnimationFrame(frame);
   }
   window.glDemo = {
-    renderer, cast, scene, faces, frames: 0,
-    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), draws, tris, views: cells.length, cast: Object.fromEntries(ids.map((id) => [id, cast[id].stats])) }; },
-    /** Time n frames of animating all four characters, and of drawing the current view. */
+    renderer, cast, scene, faces, crowd, frames: 0,
+    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), draws, tris, views: cells.length, crowd: crowd ? crowd.stats : undefined, cast: Object.fromEntries(keys.map((k) => [k, cast[k].stats])) }; },
+    /** Time n frames of animating every figure on the page, and of drawing the current view. */
     bench(n = 300, finish = false) {
       const gl = renderer.gl; let tu = 0, tr = 0, tt = t; const st = { emote: 'smile', speaking: true, look: 'camera', camera: cam, wind: WIND };
       for (let i = 0; i < n; i++) {
-        tt += 1 / 60; const a = performance.now(); for (const id of ids) cast[id].update(1 / 60, st); const b2 = performance.now();
+        tt += 1 / 60; const a = performance.now(); for (const k of keys) cast[k].update(1 / 60, st); if (crowd) crowd.update(1 / 60, { mood: 'cheer' }); const b2 = performance.now();
         for (const cell of cells) { aim(cell); cam.update(cell.w / cell.h); renderer.render(scene, cam, tt, { x: cell.x, y: cell.y, w: cell.w, h: cell.h }); }
         if (finish) gl.finish(); tu += b2 - a; tr += performance.now() - b2;
       }
-      return { frames: n, updateMsPerCharacter: tu / n / ids.length, renderMs: tr / n, finish, views: cells.length };
+      return { frames: n, updateMsPerCharacter: tu / n / Math.max(1, keys.length), updateMsAll: tu / n, renderMs: tr / n, finish, views: cells.length };
     },
   };
   requestAnimationFrame(frame);

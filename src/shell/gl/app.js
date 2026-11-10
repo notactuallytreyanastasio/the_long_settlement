@@ -24,14 +24,15 @@
 // (one long frame, logged). Each new set is drawn once into a few pixels so its buffers are on the GPU before the
 // frame that needs them.
 //
-// QUALITY. Three tiers. With no ?q= the app starts at 'high' (a mouse) or 'mid' (a finger) and steps down whenever
-// 120 frames of play or cinematic average more than BUDGET_MS apart. It never steps back up.
+// QUALITY. Three tiers. With no ?q= the app starts at 'high' and steps down whenever 120 frames of play or
+// cinematic average more than BUDGET_MS apart. It never steps back up. The first cinematic is the whole canvas of
+// stage, the heaviest thing there is, so a phone that cannot hold 'high' has usually left it before the first ball.
 
 import * as GL from './index.js';
 import { stageState, setsNeeded } from '../../core/stage.js';
 import { currentChapter } from '../../core/story.js';
 import { SETS } from './sets/index.js';
-import { drawHud } from './hud.js';
+import { drawHud, HUD_BAND_HEAD, HUD_BAND_FOOT } from './hud.js';
 
 /**
  * TEMPORARY, for the integrator to delete: chapter 1's sets that did not exist when this was written are stood in
@@ -77,6 +78,23 @@ function lightFor(def, light) {
   return def.lights.includes(light) ? light : def.lights[0];
 }
 
+/** Every figure a chapter puts on the stage: parties, people in the way, extras, whoever a cinematic shows, the clerk and the townsfolk. */
+function chapterCast(chapter) {
+  const ids = new Set();
+  const lines = (ls) => { for (const l of ls) if (l.on) for (const id of l.on) ids.add(id); };
+  lines(chapter.prologue); lines(chapter.epilogue);
+  for (const s of chapter.scenes) {
+    lines(s.cutscene);
+    const e = s.encounter; if (!e) continue;
+    for (const id of e.party) ids.add(id);
+    if (e.opposition.kind === 'people') for (const id of e.opposition.who) ids.add(id);
+    for (const id of e.extras || []) ids.add(id);
+  }
+  if (chapter.stage.clerk) ids.add(chapter.stage.clerk);
+  if (chapter.stage.townsfolk) ids.add(chapter.stage.townsfolk);
+  return [...ids];
+}
+
 /** Every (set key, light) a chapter uses, in first-use order. */
 function chapterPairs(chapter) {
   const out = [], seen = new Set();
@@ -96,10 +114,9 @@ function chapterPairs(chapter) {
  * @param {{quality?: 'low'|'mid'|'high'|null}} [opts]
  */
 export function createGlApp(glCanvas, hudCanvas, opts = {}) {
-  const win = glCanvas.ownerDocument.defaultView;
   const pinned = opts.quality && TIERS[opts.quality] ? opts.quality : null;
   if (opts.quality && !pinned) throw new Error(`gl/app: unknown quality ${JSON.stringify(opts.quality)} (have ${Object.keys(TIERS).join(', ')})`);
-  let tierName = pinned || (win.matchMedia && win.matchMedia('(pointer: coarse)').matches ? 'mid' : 'high');
+  let tierName = pinned || 'high';
 
   let renderer;
   try {
@@ -130,7 +147,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const troupe = GL.createTroupe({ detail: 1 });
   const built = new Map();        // 'key|light' -> set
   const tables = new Map();       // table id -> table view
-  const queue = [];               // { kind: 'set', key, light } | { kind: 'table', id }, in the order they will be wanted
+  const queue = [];               // { kind: 'set', key, light } | { kind: 'table', id } | { kind: 'cast', ids }, in the order they will be wanted
   let planned = -1, total = 0, sincePump = 0, settle = SETTLE;
   const warmCam = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
 
@@ -169,6 +186,8 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
       if (k && !built.has(k) && !seen.has(k)) { seen.add(k); queue.push({ kind: 'set', key: p.set, light: p.light }); }
       if (i === 0 && !tables.has(chapter.tableId)) queue.push({ kind: 'table', id: chapter.tableId });
     });
+    // the cast, if the director can build figures ahead of the scene that needs them (it returns true when all are ready)
+    if (typeof director.castReady === 'function') queue.splice(Math.min(2, queue.length), 0, { kind: 'cast', ids: chapterCast(chapter) });
     total = queue.length;
   }
 
@@ -179,8 +198,11 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (mode === 'play' || moving) return false;
     if (++sincePump < PUMP_EVERY) return false;
     sincePump = 0;
-    const item = queue.shift();
-    if (item.kind === 'table') { if (!tables.has(item.id)) tableNow(content, item.id); } else buildSet(item.key, item.light);
+    const item = queue[0];
+    if (item.kind === 'cast') { if (!director.castReady(item.ids)) return true; }      // not all yet: it stays at the head of the queue
+    else if (item.kind === 'table') { if (!tables.has(item.id)) tableNow(content, item.id); }
+    else buildSet(item.key, item.light);
+    queue.shift();
     return true;
   }
 
@@ -222,7 +244,9 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   const titleCam = GL.createCamera({ fov: 40, near: 0.3, far: 1500 });
   const frameEvents = [], tickEvents = [];
   const bandCss = { x: 0, y: 0, w: 0, h: 0 }, bandLogical = { x: 0, y: 0, w: 0, h: 0 };
-  const F = { content: null, game: null, stage: null, camera: stageCam, rect: bandCss, voice: null, hit, events: frameEvents, cine: 0, quality: tierName };
+  // what the director is handed each frame. Beyond its own list: events (this frame's table events), cine (0..1, how far
+  // the band has grown), pad (CSS px at the head and foot of the rect that the HUD covers in play), quality
+  const F = { content: null, game: null, stage: null, camera: stageCam, rect: bandCss, voice: null, hit, events: frameEvents, cine: 0, pad: { top: 0, bottom: 0 }, quality: tierName };
   const voice = { who: '', level: 0, line: null };
   const hudFx = {};
   const anchors = {}, anchorPool = [], P2 = [0, 0];
@@ -317,6 +341,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
 
     if (fx.speaking) { voice.who = fx.speaking.who; voice.level = fx.voiceLevel; voice.line = fx.speaking; F.voice = voice; } else F.voice = null;
     F.content = content; F.game = game; F.stage = stage; F.cine = e; F.quality = tierName;
+    F.pad.top = HUD_BAND_HEAD * k * (1 - e); F.pad.bottom = HUD_BAND_FOOT * k * (1 - e);
     director.update(dt, time, F);
 
     clearAll(INK);

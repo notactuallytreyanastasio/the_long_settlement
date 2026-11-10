@@ -214,7 +214,7 @@
  *
  * @typedef {Object} Encounter       the scene as something watched while it is played (src/core/stage.js)
  * @property {string} set            set id: the backdrop key of the place. Must equal the first `bg` of the scene's cutscene
- * @property {'dusk'|'night'|'dawn'|'day'|'interior'} light
+ * @property {'dusk'|'night'|'predawn'|'dawn'|'day'|'interior'} light
  * @property {'fight'|'work'|'stealth'|'hold'|'talk'|'walk'} mode
  *        the family of actions table events become. Only 'fight' strikes people; in the others a bumper is a small
  *        act of the task, a lit shot the big one

@@ -150,7 +150,7 @@ export function pushRecent(log, entry) {
 export const ENCOUNTER_KINDS = Object.freeze(['people', 'force']);
 /** What the party is doing to the opposition: the family of actions the stage plays for table events. */
 export const ENCOUNTER_MODES = Object.freeze(['fight', 'work', 'stealth', 'hold', 'talk', 'walk']);
-export const LIGHTS = Object.freeze(['dusk', 'night', 'dawn', 'day', 'interior']);
+export const LIGHTS = Object.freeze(['dusk', 'night', 'predawn', 'dawn', 'day', 'interior']);
 
 /** Index of the beat an encounter is in when `done` of its objective is done: the last beat with at <= done. */
 export function beatAt(encounter, done) {

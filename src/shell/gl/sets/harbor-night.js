@@ -14,13 +14,16 @@
 //                         'predawn' at 1. The first to arrive stand along the pier, the rest fill the quay.
 //   setMood(0..1)         0.25 a vigil, 1 a march (how much the crowd bobs and shoves)
 //   setLantern(i, lit), lanternCount     one paper lantern on the strings
-//   cue(lineId)           stage business keyed to script lines (the march fills the quay; Cast Off calms it)
+//   setDawn(0..1)         eases the sky, sea and fog from 'night' to 'predawn' while the scene runs (lamps stay as built)
+//   task('lantern-line')  the director's hook for ch1.s7: { pos, set(v) } lights the lanterns on the pier's mooring
+//                         posts pair by pair from the quay outward (v = 0: all dark). Other types: null
+//   cue(lineId)           stage business keyed to script lines (the march fills the quay; Cast Off calms it and brings the dawn)
 //   marks.focus           the great lantern;  marks.gangway: where the ferry is boarded (on the pier)
 // low: true drops the far town's glows, half the floating lights, a third of the crowd and one lantern string.
 
 import * as GL0 from '../index.js';
 import {
-  m4, rng, DEG, rgb,
+  m4, rng, DEG, rgb, lerpEnv,
   merge, tint, place, plane, box, tube, curve, cylinder, sphere, setGlow,
   node, group, makeEnv, createScene, mergeStatic, createSprites, rayMesh, rayMaterial,
 } from '../index.js';
@@ -44,7 +47,7 @@ const LIGHTS = {
       key: { dir: dirFrom(-30, 40), color: '#7f9ef0' },
       shadow: { tint: '#2f44a8', lift: 0.12, saturate: 1.25 },
       ambient: { sky: '#3f5fd0', ground: '#2a3a92', amount: 0.17 },
-      fog: { density: 0.0036, start: 18, max: 0.86 },
+      fog: { color: '#4f82e6', density: 0.0036, start: 18, max: 0.86 },
       sky: { zenith: '#0b176c', mid: '#1c3fb0', midAt: 0.42, horizon: '#4f82e6', below: '#3058c4', sunDir: dirFrom(3.6, 12.6), moon: 0.72, stars: 1, sun: { size: 2.3 } },
       water: { deep: '#122a88', mid: '#1e45ae', shallow: '#3478d6', glint: '#ffd9a0', glintDensity: 0.2 },
     },
@@ -86,10 +89,10 @@ const MARKS = {
 
 // what the script asks this set to do, by line id
 const CUES = {
-  'ch1.pro.08': { crowd: 0.4, mood: 0.3 },
-  'ch1.s3.c13': { crowd: 1, mood: 1 }, 'ch1.s3.c15': { crowd: 1, mood: 0.8 },
-  'ch1.s5.c10': { crowd: 0.12, mood: 0.15 },
-  'ch1.s7.c01': { crowd: 1, mood: 0.22 }, 'ch1.s7.c04': { crowd: 1, mood: 0.6 }, 'ch1.s7.c06': { crowd: 1, mood: 0.7 }, 'ch1.s7.c08': { crowd: 1, mood: 0.25 },
+  'ch1.pro.08': { crowd: 0.4, mood: 0.3, dawn: 0 },
+  'ch1.s3.c13': { crowd: 1, mood: 1, dawn: 0 }, 'ch1.s3.c15': { crowd: 1, mood: 0.8 },
+  'ch1.s5.c10': { crowd: 0.12, mood: 0.15, dawn: 0 },
+  'ch1.s7.c01': { crowd: 1, mood: 0.22, dawn: 1 }, 'ch1.s7.c04': { crowd: 1, mood: 0.6 }, 'ch1.s7.c06': { crowd: 1, mood: 0.7 }, 'ch1.s7.c08': { crowd: 1, mood: 0.25 },
 };
 
 // ------------------------------------------------------------------------------------ build
@@ -119,8 +122,8 @@ function build(engine = GL0, { light, low = false } = {}) {
   const posts = [{ pos: [PIER_X - PIER_W / 2 - 0.75, 0, QUAY_Z + 0.55], yaw: 0 }, { pos: [PIER_X + PIER_W / 2 + 0.75, 0, QUAY_Z + 0.55], yaw: 180 }].map((p) => { const m = lampPost({ h: 2.8, arm: 0.55 }); near.add(node('post', m, M.prop, { pos: p.pos, rot: [0, p.yaw, 0] })); return { ...p, mesh: m }; });
   near.add(node('bollard1', bollard({ s: 1.15 }), M.prop, { pos: [2.3, 0, QUAY_Z + 0.6] }), node('bollard2', bollard({ s: 1.15 }), M.prop, { pos: [-4.4, 0, QUAY_Z + 0.6] }));
   const clutter = [
-    [crate({ s: 0.58, seed: 1 }), [-3.7, 0, -0.5], 14], [crate({ s: 0.46, seed: 2, color: PAL.wood2 }), [-3.68, 0.59, -0.55], -12], [barrel({}), [-4.35, 0, -1.3], 0],
-    [barrel({ r: 0.3, h: 0.74 }), [3.75, 0, -0.9], 0], [sack({ seed: 2 }), [3.5, 0, -0.3], 30], [crate({ s: 0.5, seed: 4 }), [4.4, 0, -0.5], 24], [ropeCoil({}), [1.7, 0, QUAY_Z + 0.95], 0],
+    [crate({ s: 0.58, seed: 1 }), [-4.9, 0, -0.9], 14], [crate({ s: 0.46, seed: 2, color: PAL.wood2 }), [-4.88, 0.59, -0.95], -12], [barrel({}), [-5.5, 0, -1.6], 0],
+    [barrel({ r: 0.3, h: 0.74 }), [4.9, 0, -1.2], 0], [sack({ seed: 2 }), [4.75, 0, -0.65], 30], [crate({ s: 0.5, seed: 4 }), [5.5, 0, -0.9], 24], [ropeCoil({}), [1.7, 0, QUAY_Z + 0.95], 0],
   ];
   clutter.forEach(([m, p, yaw], i) => (low && i % 3 === 1) || near.add(node('clutter' + i, m, M.prop, { pos: p, rot: [0, yaw, 0] })));
   // paper lights waiting on the quay edge to be set afloat
@@ -129,6 +132,12 @@ function build(engine = GL0, { light, low = false } = {}) {
   // the pier, the ferry alongside it, the way aboard
   const pierMesh = pier({ len: PIER_LEN, w: PIER_W, drop: 0.6, seed: 4 });
   mid.add(node('pier', pierMesh, M.prop, { pos: [PIER_X, 0, QUAY_Z + 0.25] }));
+  // every mooring post carries a crook with a paper lantern: the "lantern line" Cast Off lights down the pier
+  const pierHooks = anchorAt(pierMesh, 'posts', [PIER_X, 0, QUAY_Z + 0.25]).sort((a, b) => b[2] - a[2]).map((p) => {
+    const inward = p[0] < PIER_X ? 1 : -1, hook = [p[0] + inward * 0.3, p[1] + 1.2, p[2]];
+    mid.add(node('crook', tint(tube(curve([[p[0], p[1] - 0.05, p[2]], [p[0] - inward * 0.04, p[1] + 0.8, p[2]], [p[0] + inward * 0.1, p[1] + 1.26, p[2]], [hook[0], hook[1] + 0.02, hook[2]]], 8), 0.028, 5, { crease: 180 }), PAL.iron), M.prop));
+    return hook;
+  });
   const ferryMesh = ferry({ len: 11, seed: 2 });
   mid.add(node('ferry', ferryMesh, M.prop, { pos: FERRY, rot: [0, FERRY_YAW, 0] }));
   const fA = (name) => anchorAt(ferryMesh, name, FERRY, FERRY_YAW);
@@ -150,6 +159,7 @@ function build(engine = GL0, { light, low = false } = {}) {
   addString(mast, fA('stern'), { sag: 0.5, count: 4, ends: 0.14 }, [3, 0, 5, 2]);
   if (!low) addString(topL, greatTop, { sag: 0.8, count: 5, ends: 0.12 }, [5, 1, 0, 3, 2]);
   near.add(node('wires', merge(wires), M.flat));
+  strings.push({ hooks: pierHooks, cols: [0, 2, 4, 6, 1, 0, 2], scale: 0.9 }); // last, so they are the tail of lines.list
   if (!low) near.add(node('bunting', bunting(topL, [-9.5, 3.4, -3.2], { sag: 0.5, count: 9, seed: 3 }), M.prop), node('bunting2', bunting(topR, [7.5, 3.6, -2.6], { sag: 0.6, count: 10, seed: 5 }), M.prop));
 
   // far: the lighthouse on its headland, and the town climbing the far arm of the bay
@@ -167,8 +177,8 @@ function build(engine = GL0, { light, low = false } = {}) {
   if (!low) far.add(node('sailboat', boat({ len: 3.4, hull: PAL.cream, keel: PAL.teal, pennant: PAL.red, seed: 3 }), FAR, { pos: [-7.5, WATER, -34], rot: [0, 115, 0] }));
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
-  if (env.sky.sunDir) env.sky.sunDir = norm(env.sky.sunDir);
-  env.water.level = WATER;
+  const envA = makeEnv(LIGHTS.night.preset, LIGHTS.night.env), envB = makeEnv(LIGHTS.predawn.preset, LIGHTS.predawn.env); // the two ends setDawn() blends between
+  for (const e of [env, envA, envB]) { e.sky.sunDir = norm(e.sky.sunDir); e.water.level = WATER; }
   env.water.shores = [[0, QUAY_Z + 0.1 + 900, 900, 0.75], [FERRY[0], FERRY[2] + 2.6, 2.2, 0.6], [FERRY[0], FERRY[2] - 2.6, 2.2, 0.6], [BOAT[0], BOAT[2], 0.95, 0.5], [-9.5, -17, 1.2, 0.6], [11.5, -22, 1.5, 0.7], [-50, -128, 46, 1.6], [TOWN[0], TOWN[2] + 3, 24, 1.4]];
   scene.root.add(mergeStatic(ground, 'ground'), mergeStatic(near, 'near'), mergeStatic(mid, 'mid'), mergeStatic(far, 'far'));
 
@@ -265,17 +275,27 @@ function build(engine = GL0, { light, low = false } = {}) {
   const actors = group('actors'); scene.root.add(actors);
 
   // ---- per-frame state (allocation-free)
-  let power = 1, mood = L.mood, moodNow = L.mood;
+  let power = 1, mood = L.mood, moodNow = L.mood, dawn = light === 'predawn' ? 1 : 0, dawnNow = dawn;
+  const lineStart = lines.count - pierHooks.length;
+  const lanternLine = { pos: [PIER_X, 1.3, QUAY_Z - 2.6], set(v) { for (let i = 0; i < pierHooks.length; i++) lines.setLit(lineStart + i, Math.max(0, Math.min(1, v * Math.ceil(pierHooks.length / 2) - Math.floor(i / 2)))); } };
+  const task = (type) => (type === 'lantern-line' ? lanternLine : null);
+  const setDawn = (d) => { dawn = Math.max(0, Math.min(1, d)); };
+  function applyDawn() { // everything lerpEnv would reset is put back: the lamp list, the shores, this frame's shadow fit and ink
+    const pts = env.points, sh = env.water.shores, c = env.shadow.center, rad = env.shadow.radius, ow = env.outline.width;
+    lerpEnv(env, envA, envB, dawnNow);
+    env.points = pts; env.water.shores = sh; env.water.level = WATER; env.shadow.center = c; env.shadow.radius = rad; env.outline.width = ow; env.sky.sunDir = norm(env.sky.sunDir);
+  }
   const P = [0, 0, 0], V = [0, 0, 0], rnd = rng(77);
   let nextSpark = 0, nextEmber = 0, nextGust = 1.2, nextRing = 0.8, lastT = -1;
 
   const setPower = (p) => { power = Math.max(0, Math.min(1.5, p)); };
   const setCrowd = (a) => folk.setAmount(a);
   const setMood = (m) => { mood = Math.max(0, Math.min(1, m)); };
-  function cue(lineId) { const c = CUES[lineId]; if (!c) return false; if (c.crowd != null) setCrowd(c.crowd); if (c.mood != null) setMood(c.mood); return true; }
+  function cue(lineId) { const c = CUES[lineId]; if (!c) return false; if (c.crowd != null) setCrowd(c.crowd); if (c.mood != null) setMood(c.mood); if (c.dawn != null) setDawn(c.dawn); return true; }
 
   function update(time, dt = 0) {
     const pw = L.power * power, on = Math.min(1, pw);
+    if (Math.abs(dawn - dawnNow) > 0.002) { dawnNow += (dawn - dawnNow) * Math.min(1, dt * 0.5 + (dt === 0 ? 1 : 0)); applyDawn(); }
     lines.update(time, { on, pw, unlit: L.unlit, glow: L.glow });
     moodNow += (mood - moodNow) * Math.min(1, dt * 2 + (dt === 0 ? 1 : 0));
     folk.update(time, dt, { lit: pw, lively: moodNow });
@@ -316,7 +336,7 @@ function build(engine = GL0, { light, low = false } = {}) {
     id: 'harbor-night', light, low, scene, env, actors, foreground,
     cameras: CAMERAS, frame: rig.frame, view: rig.view,
     marks: { ...MARKS, focus: FOCUS, gangway: { pos: [gx - 0.6, 0, gate[2]], face: 90 } },
-    lamps, setPower, setCrowd, setMood, cue, setLantern: lines.setLit, lanternCount: lines.count,
+    lamps, setPower, setCrowd, setMood, setDawn, task, cue, setLantern: lines.setLit, lanternCount: lines.count,
     update,
   };
 }

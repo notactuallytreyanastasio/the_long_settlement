@@ -353,8 +353,9 @@ function drawScore(g, x, y, score) {
 
 /** The opposition: its name on a pill and, under it, what is left of it. Returns { bottom, left } of the block. */
 function drawOpposition(g, right, y, stage, now, maxW) {
-  const opp = stage.opposition;
-  if (!opp || typeof opp.name !== 'string') throw new Error(`hud: stage.opposition must have a name, got ${JSON.stringify(opp)}`);
+  // a scene with no encounter has no opposition: the bar is then just the objective's
+  const opp = stage.opposition || { name: 'Objective', kind: 'force' };
+  if (typeof opp.name !== 'string') throw new Error(`hud: stage.opposition must have a name, got ${JSON.stringify(opp)}`);
   const pr = stage.progress;
   if (!pr || !(pr.total > 0) || !(pr.done >= 0)) throw new Error(`hud: stage.progress must be { done, total > 0 }, got ${JSON.stringify(pr)}`);
   const name = opp.name.toUpperCase();

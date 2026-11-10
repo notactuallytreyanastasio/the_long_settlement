@@ -8,6 +8,10 @@
 // screen is showing and layout() where the on-screen buttons are, in logical pixels
 // (see layout.js); a pointer is brought into that space with toLogical.
 //
+// layout() is whichever layout is being drawn: computeLayout's under the 2D renderer, computeGlLayout's under
+// the 3D one. Both carry launch, mute, skip and cine.mute, which is all this file reads, so nothing here knows
+// which renderer is up. `canvas` is #stage in both cases: under the 3D renderer it is the HUD, on top of #gl.
+//
 // Keys:   left flipper   ArrowLeft, Z, left Shift        right flipper  ArrowRight, /, right Shift
 //         launch/lever   Space (hold, release)           confirm        Enter
 //         skip a scene   S                               mute           M

@@ -62,7 +62,8 @@ function paintCloud(g, w, h, seed, col, shade) {
   scallop(base - h * 0.2, h * 0.09, mid); scallop(base - h * 0.085, h * 0.05, belly);
   // light catching the upper left of every bump
   g.fillStyle = hi;
-  for (const b of bumps.slice().sort((p, q) => p[1] - p[2] - (q[1] - q[2])).slice(0, 3)) { // the three that stand highest g.beginPath(); g.arc(b[0], b[1], b[2], Math.PI * 0.95, Math.PI * 1.75); g.arc(b[0] + b[2] * 0.16, b[1] + b[2] * 0.2, b[2] * 0.98, Math.PI * 1.75, Math.PI * 0.95, true); g.closePath(); g.fill(); }
+  // (only the three that stand highest)
+  for (const b of bumps.slice().sort((p, q) => p[1] - p[2] - (q[1] - q[2])).slice(0, 3)) { g.beginPath(); g.arc(b[0], b[1], b[2], Math.PI * 0.95, Math.PI * 1.75); g.arc(b[0] + b[2] * 0.16, b[1] + b[2] * 0.2, b[2] * 0.98, Math.PI * 1.75, Math.PI * 0.95, true); g.closePath(); g.fill(); }
   // two or three curls: the hand of whoever drew it
   g.strokeStyle = mid; g.lineCap = 'round'; g.lineWidth = h * 0.028;
   for (let i = 0; i < 2 + (seed % 2); i++) {

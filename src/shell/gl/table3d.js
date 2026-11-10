@@ -667,7 +667,7 @@ export function createTableView(content, tableId, opts = {}) {
       for (const l of it.lamps || []) {
         const pos = [WX(l.at[0]), l.h, WZ(l.at[1])];
         const sp = sprites.add({ kind: 'glow', pos, size: l.size || 0.5, color: l.color || '#ffb347', alpha: l.alpha ?? 0.6 });
-        lampSprites.push({ sp, size: l.size || 0.5, seed: lampSprites.length * 1.7 });
+        lampSprites.push({ sp, size: l.size || 0.5, alpha: l.alpha ?? 0.6, seed: lampSprites.length * 1.7 });
         if (l.light) artLamps.push({ pos, color: rgb(l.color || '#ffb347'), radius: l.light, seed: artLamps.length * 2.3 });
       }
       for (const b of it.beams || []) beams.push(b);
@@ -694,7 +694,7 @@ export function createTableView(content, tableId, opts = {}) {
 
   // ---- moving parts: every one a bone of a single skinned mesh
   const flippers = table.flippers.map((f) => ({ f, node: node(f.id, plainUv(flipperMesh(f.length * S, f.radius * S, P), blank), mechMat, { pos: [WX(f.pivot[0]), 0, WZ(f.pivot[1])], parent: mech }) }));
-  const drums = DX.map((x, i) => ({ node: node('reel' + i, drumMesh(DR, DW, P, atlas), mechMat, { pos: [x, DY, DZ], parent: mech }), angle: 0, pop: 0, was: 0 }));
+  const drums = DX.map((x, i) => ({ node: node('reel' + i, drumMesh(DR, DW, P, atlas), mechMat, { pos: [x, DY, DZ], parent: mech }), angle: 0, pop: 0, lock: 0, was: 0 }));
   const bumpers = table.bumpers.map((b) => ({ b, s: 0, v: 0, flash: 0, node: node(b.id, plainUvExcept(bumperMesh(b.r * S, P, atlas.rect('bumper')), blank), mechMat, { pos: [WX(b.pos[0]), 0, WZ(b.pos[1])], parent: mech }) }));
   const slings = table.slings.map((s) => {
     const mx = (s.a[0] + s.b[0]) / 2, my = (s.a[1] + s.b[1]) / 2, dx = s.b[0] - s.a[0], dy = s.b[1] - s.a[1], l = Math.hypot(dx, dy) || 1;
@@ -783,7 +783,7 @@ export function createTableView(content, tableId, opts = {}) {
         for (let k = 0; k < 26; k++) { tz = (a + b) / 2; place3(d, tz, pt); if (projectWorld(-2, 0, 4, prj)[1] > foot) a = tz; else b = tz; }
         if (projectWorld(-2, 0, 4, prj)[0] < left) d0 = d; else d1 = d; // too wide: step back
       }
-      return Math.min(projectWorld(0, HEAD_TOP + 0.06, -5.16, prj)[1], projectWorld(0, HEAD_TOP + 0.06, -4.62, prj)[1]);
+      return Math.min(projectWorld(0, HEAD_TOP + 0.06, -5.16, prj)[1], projectWorld(0, HEAD_TOP + 0.06, -4.62, prj)[1], projectWorld(0, PORT[1] + 0.2, PORT[2], prj)[1]);
     };
     if (opts.pitch) solve(pitch);
     else { let a = 40, b = 86; for (let i = 0; i < 22; i++) { pitch = (a + b) / 2; if (solve(pitch) > top) a = pitch; else b = pitch; } solve(pitch); }
@@ -809,7 +809,40 @@ export function createTableView(content, tableId, opts = {}) {
   const glints = art.glints || [[60, 360, 320, 720]];
   const camFacing = () => pitch;
   const symFace = (sym) => { const k = SYM_FACES.indexOf(sym); if (k < 0) throw new Error(`table3d: the reels show an unknown symbol ${JSON.stringify(sym)}`); return k; };
-  const C = { want: rgb(P.want), spin: rgb(P.spin), done: rgb(P.done), lot: rgb(P.lot), white: [1, 1, 1], flash: rgb('#fff6c0') };
+  const C = { want: rgb(P.want), spin: rgb(P.spin), done: rgb(P.done), lot: rgb(P.lot), white: [1, 1, 1], flash: rgb('#fff6c0'), power: rgb(P.power), save: rgb(P.save), loan: rgb(P.loan), credit: rgb(P.credit), hot: rgb(P.powerHot) };
+  // lamp tones: 0 wanted, 1 spin, 2 done, 3 lot, 4 flash, 5 power, 6 save, 7 loan, 8 credit, 9 white-hot, 10.. the multiball colours
+  const MULTI = ['#ff7ad1', '#7df2ff', '#ffd24a', '#6dffb0'].map(rgb);
+  const TONES = [C.want, C.spin, C.done, C.lot, C.flash, C.power, C.save, C.loan, C.credit, C.hot, ...MULTI];
+  const HALO = { target: 0.3, rail: 0.5, port: 0.75, face: 0.55, save: 0.6, lever: 0.6 };
+  const STRENGTH = { bumper: 0.35, sling: 0.2, target: 0.5, rollover: 0.35, saucer: 0.7, shot: 1, payout: 1, kickback: 0.5, save: 0.5 };
+  const LEVER_SIGN = turned(90, 0, [0, 1, 0])[2] > 0 ? 1 : -1; // +1: a positive pitch tips +Y toward +Z (the player)
+  let power = 0, ownPower = 0, portFlash = 0, saveFlash = 0, multi = false, liveBalls = 0, onEnergy = null, lastCells = null, lastPaying = false;
+  const hits = [], hitPool = [], S2 = [0, 0];
+  const bolts = []; for (let i = 0; i < BOLTS; i++) { const head = sprites.add({ kind: 'glow', pos: [0, 0, 0], size: 0.3, color: '#ffffff', alpha: 0 }); head.visible = false; bolts.push({ on: false, t: 0, dur: 0.34, a: [0, 0, 0], c: [0, 0, 0], b: [0, 0, 0], prev: [0, 0, 0], col: C.power, type: '', id: '', strength: 0, reel: -1, port: false, head }); }
+  /** Send a bolt of energy from a world point to another. toPort: it is one of the power lines (it reports its arrival). */
+  function throwBolt(x, y, z, tx, ty, tz, col, dur, type = '', id = '', strength = 0.3, toPort = false, reel = -1) {
+    let b = null; for (let i = 0; i < BOLTS; i++) if (!bolts[i].on) { b = bolts[i]; break; }
+    if (!b) return;
+    b.on = true; b.t = 0; b.dur = dur; b.col = col; b.type = type; b.id = id; b.strength = strength; b.port = toPort; b.reel = reel;
+    b.a[0] = x; b.a[1] = y; b.a[2] = z; b.b[0] = tx; b.b[1] = ty; b.b[2] = tz; b.prev[0] = x; b.prev[1] = y; b.prev[2] = z;
+    // the line rises off the field and leans away from the straight path, so two hits at once do not draw one line
+    const lift = 0.45 + 0.12 * Math.hypot(tx - x, tz - z), side = (x < tx ? -1 : 1) * 0.35;
+    b.c[0] = (x + tx) / 2 + side; b.c[1] = Math.max(y, ty) + lift; b.c[2] = (z + tz) / 2;
+  }
+  /** A scoring hit at table (x, y): it is listed for whoever watches, and its bolt leaves for the collector. */
+  function hit(type, id, x, y, h, strength, col = C.power) {
+    const e = hitPool.pop() || { type: '', id: '', x: 0, y: 0, strength: 0 };
+    projectWorld(WX(x), h, WZ(y), S2); e.type = type; e.id = id || ''; e.x = S2[0]; e.y = S2[1]; e.strength = strength; hits.push(e);
+    throwBolt(WX(x), h, WZ(y), PORT[0], PORT[1], PORT[2], col, 0.34, type, id || '', strength, true);
+  }
+  function leverState(game) {
+    if (game.mode !== 'play' || !game.phys) return 'idle';
+    if (game.phys.balls.some((b) => b.state === 'plunger')) return 'launch';
+    const st = leverStatus(content, game);
+    if (st === null) return 'idle';
+    if (st === 'wait') return game.reels.cells.some((c) => c.spin > 0) ? 'busy' : 'idle';
+    return st === 'pull' ? 'lever' : st;
+  }
 
   function burst(x, y, h, n, colour, size = 0.3, spread = 0.3) { P3[0] = WX(x); P3[1] = h; P3[2] = WZ(y); sprites.sparkle(P3, { count: n, color: colour, size, spread, life: 0.55 }); }
   function ring(x, y, size, colour) { P3[0] = WX(x); P3[1] = 0.02; P3[2] = WZ(y); sprites.spawn({ kind: 'ring', pos: P3, size: size * 0.3, endSize: size, life: 0.45, color: colour }); }
@@ -827,27 +860,41 @@ export function createTableView(content, tableId, opts = {}) {
       const b = bumpers.find((q) => q.b.id === e.id); if (!b) return;
       b.v = -9 - Math.min(5, e.speed / 200); b.flash = 1; punch = Math.max(punch, 0.35);
       stars(b.b.pos[0], b.b.pos[1], 0.36, 5, '#fff2a0'); ring(b.b.pos[0], b.b.pos[1], b.b.r * S * 4.2, '#ffffff');
+      hit('bumper', e.id, b.b.pos[0], b.b.pos[1], 0.4, STRENGTH.bumper);
     } else if (e.type === 'sling') {
       const s = slings.find((q) => q.s.id === e.id); if (!s) return;
       s.kick = 1; stars(s.mid[0] + s.n[0] * 10, s.mid[1] + s.n[1] * 10, 0.15, 3, '#ffffff', 1.1);
+      hit('sling', e.id, s.mid[0], s.mid[1], 0.15, STRENGTH.sling);
     } else if (e.type === 'target') {
       const t = targets.find((q) => q.t.id === e.id); if (!t) return;
       t.vel = 520; stars(t.t.mid[0], t.t.mid[1], 0.25, 4, '#ffe27a', 1.2); ring(t.t.mid[0], t.t.mid[1], 0.5, '#fff2c0');
-    } else if (e.type === 'rollover' && at) { ring(at[0], at[1], 0.42, '#fff2c0'); burst(at[0], at[1], 0.1, 2, '#fff2c0', 0.22, 0.2); }
-    else if (e.type === 'saucer' && at) { ring(at[0], at[1], 0.8, '#ffffff'); stars(at[0], at[1], 0.15, 6, '#ffe27a'); }
+      hit('target', e.id, t.t.mid[0], t.t.mid[1], 0.25, STRENGTH.target);
+    } else if (e.type === 'rollover' && at) { ring(at[0], at[1], 0.42, '#fff2c0'); burst(at[0], at[1], 0.1, 2, '#fff2c0', 0.22, 0.2); hit('rollover', e.id, at[0], at[1], 0.05, STRENGTH.rollover); }
+    else if (e.type === 'saucer' && at) { ring(at[0], at[1], 0.8, '#ffffff'); stars(at[0], at[1], 0.15, 6, '#ffe27a'); hit('saucer', e.id, at[0], at[1], 0.1, STRENGTH.saucer, C.hot); }
     else if (e.type === 'eject' && at) { P3[0] = WX(at[0]); P3[1] = 0.12; P3[2] = WZ(at[1]); sprites.puff(P3, { count: 2, size: 0.2, rise: 0.4, spread: 0.1, life: 0.6 }); }
     else if (e.type === 'shot' && at) {
       stars(at[0], at[1], 0.2, 7, '#ffffff'); punch = Math.max(punch, 0.6);
+      hit('shot', e.id, at[0], at[1], 0.2, STRENGTH.shot, C.hot);
       if (ramps[e.id]) { let k = rampId.indexOf(e.ballId); if (k < 0) k = rampId.indexOf(-1); if (k < 0) k = 0; rampId[k] = e.ballId; rampT[k] = 0; rampPts[k] = ramps[e.id]; }
     } else if (e.type === 'launch') { P3[0] = WX(table.plunger.pos[0]); P3[1] = 0.1; P3[2] = WZ(table.plunger.pos[1]) + 0.1; sprites.puff(P3, { count: 3, size: 0.22, rise: 0.3, spread: 0.12, life: 0.7 }); }
     else if (e.type === 'drain') {
       let x = 187; for (let i = 0; i < prevN; i++) if (prevId[i] === e.ballId) x = prevX[i];
       P3[0] = WX(x); P3[1] = 0.03; P3[2] = WZ(table.drainY - 6); sprites.splash(P3, { size: 0.6, spray: 7 }); punch = Math.max(punch, 0.5);
-    } else if (e.type === 'reelStop') { const d = drums[e.reel]; if (d) { d.pop = 1; P3[0] = DX[e.reel]; P3[1] = DY + 0.5; P3[2] = DZ + 0.4; sprites.sparkle(P3, { count: 4, size: 0.3, spread: 0.5 }); } }
+      ownPower = Math.max(0, ownPower - 0.2);
+    } else if (e.type === 'reelStart') {
+      // a lane filled this reel: the lane's lamp throws its mark up to the drum, which is where the eye should go next
+      const L = fillLamp[e.reel];
+      if (game.reels.source === 'lanes' && L) throwBolt(L.pos[0], 0.1, L.pos[2], DX[e.reel], DY + 0.4, DZ + 0.4, C.lot, 0.24, 'fill', L.id, 0.3, false, e.reel);
+    } else if (e.type === 'reelStop') {
+      const d = drums[e.reel];
+      if (d) { d.pop = 1; d.lock = 1; P3[0] = DX[e.reel]; P3[1] = DY + 0.42; P3[2] = DZ + 0.5; sprites.sparkle(P3, { count: 5, size: 0.34, spread: 0.55 }); V3[0] = 0; V3[1] = 0; V3[2] = 0; sprites.spawn({ kind: 'glow', pos: P3, vel: V3, size: 1.5, endSize: 0.5, life: 0.28, color: '#fff6c0', alpha: 0.8 }); punch = Math.max(punch, 0.25); }
+    }
     else if (e.type === 'payout') {
       const big = e.kind === 'jackpot' ? 2 : e.kind === 'bust' ? 0 : 1;
       if (big === 0) return;
       celebrate = big === 2 ? 2.4 : 1.3; punch = 1;
+      for (let i = 0; i < 3; i++) throwBolt(DX[i], DY + 0.5, DZ + 0.3, PORT[0], PORT[1], PORT[2], C.lot, 0.2 + i * 0.07, i === 1 ? 'payout' : '', '', i === 1 ? STRENGTH.payout * big : 0, i === 1);
+      { const e2 = hitPool.pop() || { type: '', id: '', x: 0, y: 0, strength: 0 }; projectWorld(DX[1], DY + 0.5, DZ + 0.3, S2); e2.type = 'payout'; e2.id = e.kind; e2.x = S2[0]; e2.y = S2[1]; e2.strength = STRENGTH.payout * big; hits.push(e2); }
       for (let i = 0; i < 16 * big; i++) {
         P3[0] = DX[i % 3] + (Math.random() - 0.5) * 0.4; P3[1] = DY + 0.5; P3[2] = DZ + 0.3;
         V3[0] = (Math.random() - 0.5) * 3; V3[1] = 2.5 + Math.random() * 2.5; V3[2] = 0.6 + Math.random() * 2.6;
@@ -856,14 +903,41 @@ export function createTableView(content, tableId, opts = {}) {
       for (const b of bumpers) b.flash = 1;
     } else if (e.type === 'armed') { armedFlash = 1; for (const id of table.reels.spin) { const p = where.get(id); if (p) stars(p[0], p[1], 0.15, 5, P.spin); } }
     else if (e.type === 'sceneClear') { celebrate = 2.4; punch = 1; for (let i = 0; i < 12; i++) stars(40 + Math.random() * 300, 150 + Math.random() * 520, 0.3, 3, i % 2 ? '#ffe27a' : '#ffffff'); }
+    else if (e.type === 'kickback') {
+      // which outlane: the ball that was nearest one a moment ago. It is lifted over the post to the inlane beside it.
+      let best = null, bd = 1e9;
+      for (const [o, inn] of [['outL', 'inL'], ['outR', 'inR']]) { const po = where.get(o); if (!po) continue; for (let i = 0; i < prevN; i++) { const d = Math.hypot(prevX[i] - po[0], prevY[i] - po[1]); if (d < bd) { bd = d; best = [po, where.get(inn) || po, o]; } } }
+      if (best) {
+        const [po, pi, id] = best;
+        ring(po[0], po[1], 0.9, P.save); stars(po[0], po[1], 0.15, 8, P.save, 1.8);
+        P3[0] = WX(po[0]); P3[1] = 0.1; P3[2] = WZ(po[1]); sprites.puff(P3, { count: 3, size: 0.2, rise: 0.5, spread: 0.12, life: 0.6 });
+        throwBolt(WX(po[0]), 0.1, WZ(po[1]), WX(pi[0]), 0.1, WZ(pi[1]), C.save, 0.22);
+        hit('kickback', id, po[0], po[1], 0.1, STRENGTH.kickback, C.save);
+      }
+      punch = Math.max(punch, 0.6);
+    } else if (e.type === 'save') {
+      // the hammock under the flippers catches it and the ball is handed back to the plunger
+      saveFlash = 1; ring(187, table.drainY - 20, 1.3, P.save); stars(187, table.drainY - 24, 0.1, 10, P.save, 2);
+      throwBolt(WX(187), 0.1, WZ(table.drainY - 20), WX(table.plunger.pos[0]), 0.15, WZ(table.plunger.pos[1]), C.save, 0.4);
+      hit('save', '', 187, table.drainY - 20, 0.1, STRENGTH.save, C.save);
+    } else if (e.type === 'multiball') {
+      celebrate = Math.max(celebrate, 1.6); punch = 1;
+      for (let i = 0; i < 4; i++) stars(table.plunger.pos[0], table.plunger.pos[1] - 60 - i * 90, 0.2, 5, i % 2 ? P.spin : P.power, 2);
+    }
   }
 
   function setLamp(L, level, tone) { if (level > L.level) { L.level = level; L.tone = tone; } }
 
-  /** Pose the whole table from a Game. `events` is this frame's tableEvents() output (may be empty or null). */
-  function update(game, events, dt) {
+  /**
+   * Pose the whole table from a Game. `events` is this frame's tableEvents() output (may be empty or null).
+   * `stage` (optional) is the stage's state: { power } 0..1 fills the rail lamps; without it the table keeps its own.
+   */
+  function update(game, events, dt, stage = null) {
     time += dt;
     const phys = game.phys;
+    if (lightT < 1) { lightT = lightDur > 0 ? Math.min(1, lightT + dt / lightDur) : 1; applyLight(); }
+    for (let i = 0; i < hits.length; i++) hitPool.push(hits[i]);
+    hits.length = 0;
     if (events) for (let i = 0; i < events.length; i++) onEvent(events[i], game);
 
     // what the story and the reels want lit: recomputed only when the game values they read change
@@ -873,49 +947,127 @@ export function createTableView(content, tableId, opts = {}) {
       lit = playing ? litIds(content, game) : []; spin = playing ? spinIds(content, game) : [];
       const sc = playing ? currentScene(content, game) : null; objIds = sc ? sc.objective.ids : [];
     }
+    liveBalls = 0; if (phys) for (let i = 0; i < phys.balls.length; i++) if (phys.balls[i].state !== 'plunger') liveBalls++;
+    multi = liveBalls > 1 || game.multiQueue > 0;
+
+    // power: the stage's when it gives one, else the table's own, which every bolt that lands tops up and time drains
+    ownPower = Math.max(0, Math.min(1, ownPower - dt * (liveBalls > 0 ? 0.035 : 0.12)));
+    const wantPower = stage && typeof stage.power === 'number' ? Math.max(0, Math.min(1, stage.power)) : ownPower;
+    power += (wantPower - power) * Math.min(1, dt * 5);
+    portFlash = Math.max(0, portFlash - dt * 3.2); saveFlash = Math.max(0, saveFlash - dt * 2.5);
+
     const pulse = 0.62 + 0.38 * Math.sin(time * 7), chase = 0.55 + 0.45 * Math.sin(time * 11);
     for (let i = 0; i < lamps.length; i++) lamps[i].level = 0;
     for (let i = 0; i < objIds.length; i++) { const L = lampById.get(objIds[i]); if (L && L.kind !== 'bumper' && game.hits[objIds[i]] > 0) setLamp(L, 0.8, 2); }
     for (let i = 0; i < spin.length; i++) { const L = lampById.get(spin[i]); if (L) setLamp(L, 0.55 + 0.45 * Math.sin(time * 11 - i * 2.1), 1); }
     for (let i = 0; i < lit.length; i++) { const L = lampById.get(lit[i]); if (L) setLamp(L, L.kind === 'bumper' ? pulse * 0.6 : pulse, 0); }
-    const cells = game.reels.cells, paying = game.reels.phase === 'paying';
+
+    // the reels: empty, turning, holding a symbol, paying
+    const cells = game.reels.cells, paying = game.reels.phase === 'paying', armed = game.reels.armed;
+    lastCells = cells; lastPaying = paying;
+    const hot = game.reels.source === 'lanes' ? 3 : 1; // a lane's reel turns gold, a lit shot's or the lever's turns pink
     for (let i = 0; i < 3; i++) {
-      const on = cells[i].sym !== null && cells[i].spin <= 0;
-      if (fillLamp[i] && on) setLamp(fillLamp[i], 0.9, 3);
-      if (on) setLamp(reelLamps[i], paying ? 0.5 + 0.5 * Math.sin(time * 22) : 0.9, 3); else if (cells[i].spin > 0) setLamp(reelLamps[i], chase * 0.7, 3);
+      const c = cells[i], d = drums[i], held = c.sym !== null && c.spin <= 0;
+      d.lock = Math.max(0, d.lock - dt * 2.2);
+      if (fillLamp[i] && held) setLamp(fillLamp[i], 0.9, 3);
+      if (paying && held) { const k = 0.5 + 0.5 * Math.sin(time * 20 - i * 2.1); setLamp(reelLamps[i], k, k > 0.5 ? 4 : 3); setLamp(faceLamps[i], 0.45 + 0.55 * k, k > 0.5 ? 9 : 3); }
+      else if (held) { setLamp(reelLamps[i], 0.9, 3); setLamp(faceLamps[i], 0.22 + 0.78 * d.lock, d.lock > 0.3 ? 9 : 3); }
+      else if (c.spin > 0) { setLamp(reelLamps[i], 0.5 + 0.5 * Math.sin(time * 26 + i * 2), hot); setLamp(faceLamps[i], 0.3 + 0.2 * Math.sin(time * 31 + i), hot); }
+      else if (armed) setLamp(faceLamps[i], 0.16 + 0.12 * Math.sin(time * 4 - i * 0.9), 1); // waiting for the lit shot: the empty faces breathe
     }
-    if (game.boons.kickback > 0) for (let i = 0; i < kickLamps.length; i++) setLamp(kickLamps[i], 0.85, 3);
-    if (game.reels.armed) for (let i = 0; i < armLamps.length; i++) setLamp(armLamps[i], chase, 1);
-    { const n = Math.floor((game.reels.charge / (game.reels.need || 1)) * 9 + 1e-6); for (let i = 0; i < 9; i++) if (i < n) setLamp(chargeLamps[i], game.reels.armed ? chase : 0.8, 1); }
-    if (celebrate > 0) { celebrate -= dt; for (let i = 0; i < lamps.length; i++) { const L = lamps[i]; if (L.kind !== 'charge' && L.level < 0.5) setLamp(L, 0.5 + 0.5 * Math.sin(time * 18 + i * 1.3), (i % 2) ? 3 : 4); } }
+    if (game.boons.kickback > 0) for (let i = 0; i < kickLamps.length; i++) setLamp(kickLamps[i], 0.7 + 0.3 * Math.sin(time * 6 + i * 3.1), 6);
+    if (armed) for (let i = 0; i < armLamps.length; i++) setLamp(armLamps[i], chase, 1);
+    { const n = Math.floor((game.reels.charge / (game.reels.need || 1)) * 9 + 1e-6); for (let i = 0; i < 9; i++) if (i < n) setLamp(chargeLamps[i], armed ? 0.55 + 0.45 * Math.sin(time * 11 - i * 0.8) : 0.8, 1); }
+
+    // the power lines: lit from the foot of each rail up to `power`, with a pulse running up them into the collector
+    {
+      const n = power * RAIL_LAMPS, run = (time * (2.2 + 7 * power)) % (RAIL_LAMPS + 4);
+      for (let i = 0; i < RAIL_LAMPS; i++) {
+        const fill = Math.max(0, Math.min(1, n - i)), near = Math.max(0, 1 - Math.abs(run - i) / 1.4);
+        const lv = fill * (0.5 + 0.5 * near) + (multi ? 0.35 * near : 0);
+        if (lv > 0.05) for (let k = 0; k < 2; k++) setLamp(railLamps[k][i], lv, multi ? 10 + ((i + (time * 6 | 0)) & 3) : near > 0.6 && fill > 0.5 ? 9 : 5);
+      }
+      setLamp(portLamp, Math.min(1, 0.12 + 0.6 * power + portFlash), portFlash > 0.35 ? 9 : 5);
+    }
+    // ball save: the hammock is up while the save runs, and blinks through its last two and a half seconds
+    if (game.boons.ballSave > 0 || saveFlash > 0) {
+      const left = game.boons.ballSave, on = left > 2.5 || Math.sin(time * 16) > -0.2 || saveFlash > 0;
+      if (on) for (let i = 0; i < saveLamps.length; i++) setLamp(saveLamps[i], saveFlash > 0 ? 1 : 0.55 + 0.35 * Math.sin(time * 5 - i * 0.8), saveFlash > 0.3 ? 9 : 6);
+    }
+    // the lever on the rail
+    {
+      const st = leverState(game); lever.state = st;
+      const pulled = st === 'busy' && game.reels.source === 'lever' ? 1 : 0;
+      lever.pull += (pulled - lever.pull) * Math.min(1, dt * (pulled ? 26 : 5));
+      const ready = st === 'free' || st === 'lever' || st === 'credit' || st === 'loan';
+      const ang = lever.pull * 68 + (ready ? Math.sin(time * 5.2) * 5 : 0) - 8;
+      lever.node.setRot(ang * LEVER_SIGN, 0, 0);
+      const ar = ang * DEG, ky = Math.cos(ar) * 0.54, kz = Math.sin(ar) * 0.54;
+      leverLamp.base[12] = LEVER[0]; leverLamp.base[13] = LEVER[1] + 0.08 + ky; leverLamp.base[14] = LEVER[2] + kz;
+      leverLamp.pos[1] = leverLamp.base[13]; leverLamp.pos[2] = leverLamp.base[14];
+      if (leverLamp.halo) { leverLamp.halo.pos[1] = leverLamp.base[13]; leverLamp.halo.pos[2] = leverLamp.base[14]; }
+      if (st === 'free') setLamp(leverLamp, 0.6 + 0.4 * Math.sin(time * 9), 3);
+      else if (st === 'lever') setLamp(leverLamp, 0.6 + 0.4 * Math.sin(time * 7), 1);
+      else if (st === 'credit') setLamp(leverLamp, 0.3 + 0.7 * Math.min(1, (game.emptyT || 0) / AID_WAIT), 8); // the hat going round: it fills
+      else if (st === 'loan') setLamp(leverLamp, Math.sin(time * 4) > 0 ? 0.95 : 0.25, 7);
+      else if (st === 'busy') setLamp(leverLamp, 0.5 + 0.5 * lever.pull, 9);
+    }
+    if (celebrate > 0) { celebrate -= dt; for (let i = 0; i < lamps.length; i++) { const L = lamps[i]; if (L.kind !== 'charge' && L.kind !== 'face' && L.kind !== 'save' && L.kind !== 'lever' && L.level < 0.5) setLamp(L, 0.5 + 0.5 * Math.sin(time * 18 + i * 1.3), (i % 2) ? 3 : 4); } }
     for (let i = 0; i < bumpers.length; i++) { const b = bumpers[i]; if (b.flash > 0) { setLamp(b.lamp, b.flash, 4); b.flash = Math.max(0, b.flash - dt * 5); } }
     if (phys) for (let i = 0; i < phys.balls.length; i++) { const ins = phys.balls[i].inside; for (let k = 0; k < ins.length; k++) { const L = lampById.get(ins[k]); if (L) setLamp(L, 1, 4); } }
 
     // lamps -> instances, halos, and the eight point lights (flashes first, then what the player should shoot)
+    // By night a lamp is most of the light there is: halos and reach both grow.
+    const nightK = 1 + 0.45 * nightAmount, glowK = (0.8 + 0.3 * power) * (1 + 0.35 * nightAmount);
     const inst = lampNode.instances, D = inst.data; let n = 0, np = 0;
     for (let pass = 0; pass < 3 && np < POINTS; pass++) {
       for (let i = 0; i < lamps.length && np < POINTS; i++) {
         const L = lamps[i]; if (L.light <= 0 || L.level < 0.08) continue;
         const pr = L.kind === 'bumper' ? 0 : L.tone <= 1 ? 1 : 2; if (pr !== pass || (celebrate > 0 && pr > 0)) continue;
-        const c = L.tone === 0 ? C.want : L.tone === 1 ? C.spin : L.tone === 2 ? C.done : L.tone === 3 ? C.lot : C.flash, p = points[np++];
-        p.pos[0] = L.pos[0]; p.pos[1] = Math.max(L.pos[1], 0.16) + 0.1; p.pos[2] = L.pos[2]; p.color = c; p.radius = L.light; p.intensity = L.level * 1.15;
+        const c = TONES[L.tone], p = points[np++];
+        p.pos[0] = L.pos[0]; p.pos[1] = Math.max(L.pos[1], 0.16) + 0.1; p.pos[2] = L.pos[2]; p.color = c; p.radius = L.light * nightK; p.intensity = L.level * 1.15;
       }
     }
-    for (let i = 0; i < artLamps.length && np < POINTS; i++) { const a = artLamps[i], p = points[np++]; p.pos[0] = a.pos[0]; p.pos[1] = a.pos[1]; p.pos[2] = a.pos[2]; p.color = a.color; p.radius = a.radius; p.intensity = 0.9 + 0.1 * Math.sin(time * 9 + a.seed) * Math.sin(time * 5.3 + a.seed); }
-    for (let i = 0; i < bumpers.length && np < POINTS; i++) { const b = bumpers[i]; if (b.lamp.level >= 0.08) continue; const p = points[np++]; p.pos[0] = b.lamp.pos[0]; p.pos[1] = 0.3; p.pos[2] = b.lamp.pos[2]; p.color = C.done; p.radius = 0.62; p.intensity = 0.75; }
+    for (let i = 0; i < artLamps.length && np < POINTS; i++) { const a = artLamps[i], p = points[np++]; p.pos[0] = a.pos[0]; p.pos[1] = a.pos[1]; p.pos[2] = a.pos[2]; p.color = a.color; p.radius = a.radius * nightK; p.intensity = 0.9 + 0.1 * Math.sin(time * 9 + a.seed) * Math.sin(time * 5.3 + a.seed); }
+    for (let i = 0; i < bumpers.length && np < POINTS; i++) { const b = bumpers[i]; if (b.lamp.level >= 0.08) continue; const p = points[np++]; p.pos[0] = b.lamp.pos[0]; p.pos[1] = 0.3; p.pos[2] = b.lamp.pos[2]; p.color = C.done; p.radius = 0.62 * nightK; p.intensity = 0.75; }
     for (; np < POINTS; np++) points[np].intensity = 0;
     for (let i = 0; i < lamps.length; i++) {
       const L = lamps[i], lv = L.level;
       if (L.halo) { L.halo.visible = lv > 0.05; }
       if (lv <= 0.05) continue;
-      if (L.kind === 'bumper' && L.tone !== 4) { L.halo.color = C.want; L.halo.alpha = 0.55 * lv; L.halo.size[0] = L.halo.size[1] = L.haloSize; continue; }
-      const c = L.tone === 0 ? C.want : L.tone === 1 ? C.spin : L.tone === 2 ? C.done : L.tone === 3 ? C.lot : C.flash;
+      if (L.kind === 'bumper' && L.tone !== 4) { L.halo.color = C.want; L.halo.alpha = 0.55 * lv * glowK; L.halo.size[0] = L.halo.size[1] = L.haloSize; continue; }
+      const c = TONES[L.tone];
+      if (L.halo) { L.halo.color = c; L.halo.alpha = Math.min(1, (HALO[L.kind] || 0.5) * lv * glowK); L.halo.size[0] = L.halo.size[1] = L.haloSize * (0.8 + 0.3 * lv); }
+      if (L.kind === 'face') continue; // a glow only
       const o = n++ * 20, k = 0.55 + 0.6 * lv;
       D.set(L.base, o); D[o + 16] = c[0] * k; D[o + 17] = c[1] * k; D[o + 18] = c[2] * k; D[o + 19] = 1;
-      if (L.halo) { L.halo.color = c; L.halo.alpha = (L.kind === 'target' ? 0.3 : 0.5) * lv; L.halo.size[0] = L.halo.size[1] = L.haloSize * (0.8 + 0.3 * lv); }
     }
     inst.count = n; inst.dirty = true;
-    for (let i = 0; i < lampSprites.length; i++) { const l = lampSprites[i], f = 0.93 + 0.07 * Math.sin(time * 9 + l.seed) * Math.sin(time * 5.3 + l.seed); l.sp.size[0] = l.sp.size[1] = l.size * f; }
+    for (let i = 0; i < lampSprites.length; i++) { const l = lampSprites[i], f = 0.93 + 0.07 * Math.sin(time * 9 + l.seed) * Math.sin(time * 5.3 + l.seed); l.sp.size[0] = l.sp.size[1] = l.size * f * (1 + 0.25 * nightAmount); l.sp.alpha = Math.min(1, l.alpha * (1 + 0.5 * nightAmount)); }
+
+    // bolts: each one a bright head on a bent path, shedding a line of light that fades behind it
+    for (let i = 0; i < BOLTS; i++) {
+      const b = bolts[i]; if (!b.on) continue;
+      b.t += dt / b.dur;
+      const u = Math.min(1, b.t), e = u * u * (3 - 2 * u), q = 1 - e;
+      const x = q * q * b.a[0] + 2 * q * e * b.c[0] + e * e * b.b[0], y = q * q * b.a[1] + 2 * q * e * b.c[1] + e * e * b.b[1], z = q * q * b.a[2] + 2 * q * e * b.c[2] + e * e * b.b[2];
+      if (dt > 0) {
+        const steps = Math.max(1, Math.min(6, Math.ceil(Math.hypot(x - b.prev[0], y - b.prev[1], z - b.prev[2]) / 0.11)));
+        V3[0] = 0; V3[1] = 0; V3[2] = 0;
+        for (let k = 1; k <= steps; k++) { const f = k / steps; P3[0] = b.prev[0] + (x - b.prev[0]) * f; P3[1] = b.prev[1] + (y - b.prev[1]) * f; P3[2] = b.prev[2] + (z - b.prev[2]) * f; sprites.spawn({ kind: 'glow', pos: P3, vel: V3, size: 0.2 + 0.16 * b.strength, endSize: 0.04, life: 0.22 + 0.1 * b.strength, color: b.col, alpha: 0.9 }); }
+      }
+      b.prev[0] = x; b.prev[1] = y; b.prev[2] = z;
+      b.head.visible = true; b.head.pos[0] = x; b.head.pos[1] = y; b.head.pos[2] = z; b.head.color = C.hot; b.head.alpha = 0.95; b.head.size[0] = b.head.size[1] = 0.34 + 0.3 * b.strength;
+      if (b.t >= 1) {
+        b.on = false; b.head.visible = false;
+        if (b.reel >= 0) { drums[b.reel].pop = Math.max(drums[b.reel].pop, 0.6); }
+        if (b.port) {
+          portFlash = 1; ownPower = Math.min(1, ownPower + 0.05 + 0.09 * b.strength);
+          P3[0] = PORT[0]; P3[1] = PORT[1]; P3[2] = PORT[2]; sprites.sparkle(P3, { count: 2 + Math.round(b.strength * 3), size: 0.3, spread: 0.3, color: '#dffcff' });
+          if (onEnergy) { projectWorld(PORT[0], PORT[1], PORT[2], S2); ARRIVAL.x = S2[0]; ARRIVAL.y = S2[1]; ARRIVAL.type = b.type; ARRIVAL.id = b.id; ARRIVAL.strength = b.strength; onEnergy(ARRIVAL); }
+        }
+      }
+    }
 
     // flippers, plunger
     if (phys) {
@@ -939,20 +1091,27 @@ export function createTableView(content, tableId, opts = {}) {
       t.vel += (-t.wob * 420 - t.vel * 9) * dt; t.wob += t.vel * dt;
       t.node.setRot(t.wob, t.yaw, 0);
     }
-    // reel drums: turning, locking with a pop, or resting on the blank face
+    // reel drums: turning (with streaks falling across the face, since a spinning octagon alone reads as a flicker),
+    // locking with a pop and a squash, or resting on the blank face
     for (let i = 0; i < 3; i++) {
       const d = drums[i], c = cells[i], want = (c.sym === null ? 4 : symFace(c.sym)) * 45 - camFacing();
-      if (c.spin > 0) d.angle = want + c.spin * 900 + Math.sin(c.spin * 30) * 2;
-      else { let diff = ((want - d.angle + 540) % 360) - 180; const stepA = 900 * dt; d.angle += Math.abs(diff) < stepA ? diff : Math.sign(diff) * stepA; }
+      if (c.spin > 0) {
+        d.angle = want + c.spin * 900 + Math.sin(c.spin * 30) * 2;
+        if (dt > 0) for (let k = 0; k < 2; k++) {
+          P3[0] = DX[i] + (Math.random() - 0.5) * DW * 0.8; P3[1] = DY + 0.62; P3[2] = DZ + 0.3; V3[0] = 0; V3[1] = -1.7; V3[2] = 1.5;
+          sprites.spawn({ kind: 'dot', pos: P3, vel: V3, size: 0.2, endSize: 0.12, aspect: 0.16, life: 0.13, color: hot === 3 ? '#fff3c0' : '#ffd0f0', alpha: 0.85 });
+        }
+      } else { let diff = ((want - d.angle + 540) % 360) - 180; const stepA = 900 * dt; d.angle += Math.abs(diff) < stepA ? diff : Math.sign(diff) * stepA; }
       d.pop = Math.max(0, d.pop - dt * 4);
-      const pop = 1 + Math.sin(d.pop * Math.PI) * 0.14 + (paying ? 0.05 * Math.sin(time * 22 + i) : 0);
-      d.node.setRot(d.angle * PITCH_SIGN, 0, 0); d.node.setScale(1, pop, pop);
+      const pop = 1 + Math.sin(d.pop * Math.PI) * 0.16 + (paying ? 0.06 * Math.sin(time * 20 - i * 2.1) : 0);
+      d.node.setRot(d.angle * PITCH_SIGN, 0, 0); d.node.setScale(1 + Math.sin(d.pop * Math.PI) * 0.05, pop, pop);
     }
-    for (let i = 0; i < beamNodes.length; i++) beamNodes[i].pivot.setRot(0, time * beamNodes[i].speed, 0);
+    for (let i = 0; i < beamNodes.length; i++) beamNodes[i].pivot.setRot(0, time * beamNodes[i].speed * (multi ? 2.6 : 1), 0);
 
     // balls
     const bi = ballNode.instances, B = bi.data; let nb = 0;
     for (let k = 0; k < rampId.length; k++) if (rampId[k] >= 0) { rampT[k] += dt / 0.3; if (rampT[k] >= 1) rampId[k] = -1; }
+    for (let i = 0; i < BALLS; i++) ballGlow[i].visible = false;
     if (phys) {
       for (let i = 0; i < phys.balls.length && nb < BALLS; i++) {
         const b = phys.balls[i];
@@ -969,15 +1128,18 @@ export function createTableView(content, tableId, opts = {}) {
         B[o] = 1; B[o + 1] = 0; B[o + 2] = 0; B[o + 3] = 0; B[o + 4] = 0; B[o + 5] = 1; B[o + 6] = 0; B[o + 7] = 0; B[o + 8] = 0; B[o + 9] = 0; B[o + 10] = 1; B[o + 11] = 0;
         B[o + 12] = x; B[o + 13] = y; B[o + 14] = z; B[o + 15] = 1; B[o + 16] = 1; B[o + 17] = 1; B[o + 18] = 1; B[o + 19] = 1;
         prevId[nb] = b.id; prevX[nb] = b.pos[0]; prevY[nb] = b.pos[1];
+        // multiball: every ball wears its own colour, as a glow and in its trail. By night a lone ball keeps a faint glow so it is never lost.
+        const mc = multi && b.state !== 'plunger' ? MULTI[b.id & 3] : null;
+        if (mc || (nightAmount > 0.05 && b.state === 'live')) { const g = ballGlow[nb]; g.visible = true; g.pos[0] = x; g.pos[1] = y + R * 0.5; g.pos[2] = z; g.color = mc || C.white; g.alpha = mc ? 0.7 : 0.3 * nightAmount; }
         // a short trail of shrinking dots behind a fast ball: one every nine table units, gone within sixty
         const sp = Math.hypot(b.vel[0], b.vel[1]);
-        if (b.state === 'live' && sp > 240 && dt > 0) {
+        if (b.state === 'live' && sp > (mc ? 120 : 240) && dt > 0) {
           trailT[nb] += sp * dt;
           let back = 0;
           while (trailT[nb] >= 9 && back < 4) {
             trailT[nb] -= 9; const k = (trailT[nb] / sp);
             P3[0] = x - b.vel[0] * k * S; P3[1] = y; P3[2] = z - b.vel[1] * k * S; V3[0] = 0; V3[1] = 0; V3[2] = 0;
-            sprites.spawn({ kind: 'dot', pos: P3, vel: V3, size: R * 1.7, endSize: R * 0.3, life: Math.min(0.22, 70 / sp), color: game.boons.mult > 1 ? '#ffd24a' : '#ffffff', alpha: 0.55 });
+            sprites.spawn({ kind: 'dot', pos: P3, vel: V3, size: R * 1.7, endSize: R * 0.3, life: Math.min(mc ? 0.3 : 0.22, 70 / sp), color: mc || (game.boons.mult > 1 ? '#ffd24a' : '#ffffff'), alpha: mc ? 0.8 : 0.55 });
             back++;
           }
           if (trailT[nb] > 9) trailT[nb] = 0;
@@ -991,19 +1153,38 @@ export function createTableView(content, tableId, opts = {}) {
     if (dt > 0 && time > nextGlint) {
       nextGlint = time + 0.16; const a = glints[(Math.random() * glints.length) | 0];
       P3[0] = WX(a[0] + Math.random() * (a[2] - a[0])); P3[1] = 0.03; P3[2] = WZ(a[1] + Math.random() * (a[3] - a[1])); V3[0] = 0; V3[1] = 0.05; V3[2] = 0;
-      sprites.spawn({ kind: 'sparkle', pos: P3, vel: V3, size: 0.1 + Math.random() * 0.12, life: 0.7, color: '#fff8d8' });
+      sprites.spawn({ kind: 'sparkle', pos: P3, vel: V3, size: 0.1 + Math.random() * 0.12, life: 0.7, color: nightAmount > 0.5 ? '#cfe0ff' : '#fff8d8' });
     }
-    if (dt > 0 && time > nextGust) { nextGust = time + 5 + Math.random() * 4; P3[0] = -2.6; P3[1] = 0.7; P3[2] = -3 + Math.random() * 5; V3[0] = 1.6; V3[1] = 0; V3[2] = 0.2; sprites.gust(P3, { vel: V3, size: 0.55, life: 2.4, alpha: 0.75 }); }
+    if (dt > 0 && time > nextGust) { nextGust = time + 5 + Math.random() * 4; P3[0] = -2.2; P3[1] = 0.7; P3[2] = -3 + Math.random() * 5; V3[0] = 1.3; V3[1] = 0; V3[2] = 0.2; sprites.gust(P3, { vel: V3, size: 0.8, life: 2.4, alpha: 0.8 }); }
     punch = Math.max(0, punch - dt * 3.5);
     if (dt > 0) sprites.update(dt);
   }
 
   function render(renderer, t = time) { return renderer.render(scene, camera, t, rect); }
 
+  const ARRIVAL = { x: 0, y: 0, type: '', id: '', strength: 0 };
+  /** CSS px of where an event from tableEvents() happened, or null when it has no one place. */
+  function screenOf(e, out = [0, 0]) {
+    if (e.id !== undefined && where.has(e.id)) { const p = where.get(e.id); return project(p[0], p[1], 12, out); }
+    if (e.type === 'reelStart' || e.type === 'reelStop') return projectWorld(DX[e.reel], DY + DR, DZ, out);
+    if (e.type === 'payout' || e.type === 'armed') return projectWorld(DX[1], DY + DR, DZ, out);
+    if (e.type === 'launch') return project(table.plunger.pos[0], table.plunger.pos[1], 8, out);
+    if (e.type === 'drain' || e.type === 'save') { let x = 187; for (let i = 0; i < prevN; i++) if (prevId[i] === e.ballId) x = prevX[i]; return project(x, table.drainY - 6, 0, out); }
+    if (e.type === 'loan' || e.type === 'aid' || e.type === 'multiball') return projectWorld(LEVER[0], LEVER[1] + 0.6, LEVER[2], out);
+    return null;
+  }
   const view = {
-    table, scene, camera, env, rect, pitch, fit, update, render, project, unproject,
+    table, scene, camera, env, rect, pitch, fit, update, render, project, unproject, setLight, screenOf, hits,
+    energyTime: 0.34,
     where: (id) => where.get(id) || null,
     reelPos: (i, out = [0, 0]) => projectWorld(DX[i], DY + DR, DZ, out),
+    port: (out = [0, 0]) => projectWorld(PORT[0], PORT[1], PORT[2], out),
+    reelState: (i) => { const c = lastCells && lastCells[i]; return !c ? 'empty' : c.spin > 0 ? 'spin' : c.sym === null ? 'empty' : lastPaying ? 'paying' : 'held'; },
+    get onEnergy() { return onEnergy; }, set onEnergy(fn) { onEnergy = fn; },
+    get light() { return lightName; },
+    get power() { return power; },
+    get lever() { return lever.state; },
+    get armed() { return litArmed === true; },
     /** 0..1, decaying: how hard the last event hit. A shell may shake the canvas by it. */
     get punch() { return punch; },
   };

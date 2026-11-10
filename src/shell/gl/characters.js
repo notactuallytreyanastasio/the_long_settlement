@@ -14,7 +14,7 @@
 import { v3, m4, quat, DEG, rgb, rng } from './math.js';
 import {
   sphere, ellipsoid, superellipsoid, blob, cylinder, cone, lathe, limb, torus, roundedBox, curve, fromArrays,
-  merge, tint, place, setGlow, setOutline, mirrorX, scale as scaleMesh, vertexCount,
+  merge, tint, paint, place, setGlow, setOutline, mirrorX, scale as scaleMesh, vertexCount,
 } from './mesh.js';
 import { Node, node, group, material, makeLight, batchFigure, nodeBounds } from './scene.js';
 import { createRig, idle, blink, createSpring, addRot, aimAxis } from './rig.js';
@@ -242,7 +242,7 @@ export const HAIR = {
       const y = low + (1 - low) * ((i + 0.5) / n) ** 0.8, pitch = Math.asin(Math.min(1, y)) / DEG, yaw = (i * 137.5 + (s.turn ?? 20)) % 360 - 180, size = (s.size ?? 0.07) * (0.8 + r() * 0.5);
       if (Math.abs(yaw) < clear && pitch < (s.brow ?? 40)) continue;
       const c = hd.at(yaw, pitch, 1 + (s.out ?? 0.3) * size / hd.R[0]);
-      fixed.push(place(blob({ rx: size, ry: size * 0.9, rz: size, lumps: 0.25, seed: i + 1, seg: ctx.S(10), rings: ctx.S(7) }), c[0], c[1], c[2]));
+      fixed.push(place(size < 0.035 ? ellipsoid(size, size * 0.8, size, 5, 3) : blob({ rx: size, ry: size * 0.9, rz: size, lumps: 0.25, seed: i + 1, seg: ctx.S(10), rings: ctx.S(7) }), c[0], c[1], c[2]));
     }
     return { fixed };
   },
@@ -1878,4 +1878,120 @@ export function castVariant(id, k = 0) {
     d.costume.extras = ex;
   }
   return d;
+}
+
+// ------------------------------------------------------------------------------------ the crowd
+
+const CROWD_COATS = ['#3f6fa8', '#c9803f', '#2f9a86', '#8a5aa8', '#b8504a', '#5a8a4a', '#d9a03a', '#4a5a7a', '#a86a8a', '#e8603f', '#3f9ad0', '#7a6a5a'];
+const CROWD_SKINS = ['#f0c6a0', '#e2b490', '#d2a07c', '#c98e6e', '#b07a62', '#9a6a4c', '#f4d2b6'];
+const CROWD_HAIR = ['#4a3a30', '#7a4a2a', '#2e2630', '#c97a2a', '#9a9aa4', '#5a2c22', '#d9b264', '#f1ede4'];
+const CROWD_HATS = ['#7c8094', '#b8743a', '#4f8a5a', '#5a4a6a', '#e8483f', '#3f7a8a', '#f2c14e'];
+
+// one cheap townsperson, about 330 triangles: a bell of a coat, a ball of a head, a hat, two dots for eyes.
+// Returns { body, arms } meshes in the member's own space (feet on the origin, about 1 unit tall, facing +Z);
+// arms hang from [0, CROWD_SHOULDER, 0] and are a separate mesh so that they can be thrown up.
+const CROWD_SHOULDER = 0.5;
+function crowdMember(r, P, { kid = false, lantern = false } = {}) {
+  const pick = (list) => list[Math.floor(r() * list.length) % list.length];
+  const coat = pick(P.coats), skin = pick(P.skins), hair = pick(P.hair), hatC = pick(P.hats), dark = mixc(coat, '#1a1040', 0.34);
+  const fat = 0.9 + r() * 0.35, skirt = r() < 0.45, hat = Math.floor(r() * 4), parts = [];
+  // coat or dress
+  const hem = skirt ? 0.07 : 0.2, prof = [[0.001, hem + 0.02], [0.17 * fat * (skirt ? 1.12 : 1), hem], [0.135 * fat, 0.37], [0.14 * fat, 0.5], [0.07, 0.575], [0.001, 0.58]];
+  const bell = scaleMesh(lathe(prof, 7, { crease: 180 }), 1, 1, 0.82);
+  parts.push(paint(tint(bell, coat), (x, y) => (y < hem + 0.045 ? dark : null)));
+  // legs, or the feet under a skirt
+  const legC = skirt ? pick(['#5a3a2a', '#3a2c24', '#7a4a2a']) : pick(['#6a5444', '#4a5a7a', '#3a3a44', '#5a4a3a']);
+  for (const sx of [-1, 1]) parts.push(tint(place(blob({ rx: 0.062, ry: skirt ? 0.05 : 0.12, rz: 0.085, flatBottom: 0.3, seg: 5, rings: 3 }), sx * 0.07, skirt ? 0.04 : 0.1, 0.02), legC));
+  if (r() < 0.4) parts.push(tint(place(scaleMesh(torus(0.085, 0.036, 7, 4), 1, 0.8, 0.9), 0, 0.565, 0), pick(['#f2c14e', '#e8483f', '#3f9ad0', '#fff1d6'])));
+  // head, eyes, hair or hat
+  const hy = 0.74, hr = [0.2, 0.18, 0.19];
+  parts.push(tint(place(ellipsoid(hr[0], hr[1], hr[2], 9, 6), 0, hy, 0), skin));
+  for (const sx of [-1, 1]) parts.push(setOutline(tint(place(ellipsoid(0.024, 0.034, 0.012, 5, 3), sx * 0.075, hy - 0.012, hr[2] * 0.93), '#2a1f3a'), 0));
+  const dome = (k, low, col) => tint(place(scaleMesh(lathe([[1, low], [0.92, 0.4], [0.62, 0.8], [0.001, 1]], 8, { crease: 180 }), hr[0] * k, hr[1] * k, hr[2] * k), 0, hy, -0.008), col);
+  if (hat === 0) { parts.push(dome(1.08, 0.12, hair)); if (r() < 0.5) parts.push(tint(place(sphere(0.07, 6, 4), 0, hy + 0.15, -0.1), hair)); }
+  else if (hat === 1) { parts.push(dome(1.06, 0.1, hair)); parts.push(tint(place(blob({ rx: 0.225, ry: 0.07, rz: 0.24, flatBottom: 0.5, seg: 8, rings: 4 }), 0, hy + 0.13, 0.03, 9, 0, 0), hatC)); }
+  else if (hat === 2) { parts.push(dome(1.1, -0.25, hatC)); parts.push(tint(place(sphere(0.04, 5, 3), 0, hy - 0.08, -0.2), hatC)); }
+  else { parts.push(dome(1.08, 0.05, hair)); for (const sx of [-1, 1]) if (kid) parts.push(tint(place(sphere(0.06, 5, 3), sx * 0.2, hy + 0.02, -0.02), hair)); }
+  // arms: mitten hands, and perhaps a lit paper lantern in one of them
+  const arms = [];
+  for (const sx of [-1, 1]) {
+    arms.push(tint(place(limb(0.046, 0.04, 0.2, 5, 1), sx * 0.15 * fat, 0, 0, 0, 0, sx * 9), coat));
+    arms.push(tint(place(sphere(0.045, 5, 3), sx * (0.15 * fat + 0.035), -0.235, 0), skin));
+  }
+  if (lantern) arms.push(setGlow(tint(place(ellipsoid(0.055, 0.065, 0.055, 6, 4), -(0.15 * fat + 0.035), -0.32, 0.02), '#ffd070'), 1));
+  return { body: merge(parts), arms: merge(arms) };
+}
+
+/**
+ * A crowd for a full hall, a riot, a pier lined with people: 20 to 40 cheap townsfolk that sway, cheer and shake fists.
+ *
+ *   const crowd = createCrowd({ count: 28, seed: 3, area: { x0, x1, z0, z1 }, face: 0, material: troupe.figMat });
+ *   set.actors.add(crowd.root);            // or anywhere in the scene
+ *   crowd.update(dt, { mood: 'idle' | 'cheer' | 'angry' | 'still', energy: 0..1 });   every frame
+ *   crowd.cheer(1.2);                      // a burst of cheering for that many seconds, whatever the mood
+ *
+ * opts: count; seed; area (members are scattered in rows over it, front row at z1) or spots [[x, z, yawDeg?]...];
+ *   face: yaw in degrees or a point [x, y, z] everyone turns toward; kids 0..1 (share of children);
+ *   lanterns 0..1 (share carrying a lit paper lantern); arms 0..1 (share whose arms can move; the rest cost one bone, not two);
+ *   scale (1 = the cast's size); shadow: false to keep them out of the shadow map; palette { coats, skins, hair, hats }.
+ * Cost: like a figure, a crowd is batched 32 bones to a draw: 28 people with moving arms are 2 draws (+ outline + shadow each),
+ * about 330 triangles a head. Every colour is baked per vertex, so no two need look alike. No faces beyond two eye dots:
+ * this is for the back of a set, 30 to 50 px tall, never for a close-up.
+ * crowd.members[i] = { node, x, z, yaw, scale, kid }; crowd.stats { members, triangles, draws, bones }.
+ */
+export function createCrowd({ count = 24, seed = 1, area = null, spots = null, face = 0, material: mat = null, kids = 0.15, lanterns = 0, arms = 1, scale = 1, shadow = true, palette = null } = {}) {
+  mat = mat || defaultMaterial();
+  const r = rng(seed * 977 + 13), root = group('crowd');
+  const P = { coats: CROWD_COATS, skins: CROWD_SKINS, hair: CROWD_HAIR, hats: CROWD_HATS, ...(palette || {}) };
+  const A = area || { x0: -2, x1: 2, z0: -1, z1: 0 };
+  let where = spots ? spots.slice(0, count).map((s) => ({ x: s[0], z: s[1], yaw: s[2] })) : null;
+  if (!where) {
+    const w = A.x1 - A.x0, d = Math.max(0.01, A.z1 - A.z0), cols = Math.max(1, Math.ceil(Math.sqrt(count * w / Math.max(0.3, d) * 0.45))), rows = Math.ceil(count / cols);
+    where = [];
+    for (let i = 0; i < count; i++) { const row = Math.floor(i / cols), col = i % cols, inRow = row === rows - 1 ? count - row * cols : cols;
+      where.push({ x: A.x0 + ((col + 0.5 + (r() - 0.5) * 0.55) / inRow) * w, z: A.z1 - ((row + 0.5 + (r() - 0.5) * 0.6) / rows) * d }); }
+  }
+  const members = [];
+  let chunk = null, used = 0, tris = 0;
+  const chunks = [];
+  where.forEach((p, i) => {
+    const kid = r() < kids, moves = r() < arms, s = scale * (kid ? 0.56 + r() * 0.1 : 0.88 + r() * 0.2), need = moves ? 2 : 1;
+    if (!chunk || used + need > 32) { chunk = group('crowd' + chunks.length, { parent: root }); chunks.push(chunk); used = 0; }
+    used += need;
+    const m = crowdMember(r, P, { kid, lantern: moves && r() < lanterns });
+    let yaw = p.yaw; if (yaw == null) yaw = (typeof face === 'number' ? face : Math.atan2(face[0] - p.x, face[2] - p.z) / DEG) + (r() - 0.5) * 26;
+    const body = node('m' + i, moves ? m.body : merge(m.body, place(m.arms, 0, CROWD_SHOULDER, 0)), mat, { pos: [p.x, 0, p.z], rot: [0, yaw, 0], scale: s, parent: chunk });
+    const armNode = moves ? node('a' + i, m.arms, mat, { pos: [0, CROWD_SHOULDER, 0], parent: body }) : null;
+    tris += (m.body.indices.length + m.arms.indices.length) / 3;
+    members.push({ node: body, arms: armNode, x: p.x, z: p.z, yaw, scale: s, kid, ph: r() * 6.283, sp: 0.8 + r() * 0.5, lag: r(), cheer: 0, angry: 0, live: 1 });
+  });
+  const skins = [];
+  for (const c of chunks) for (const sk of batchFigure(c)) { sk.castShadow = shadow; skins.push(sk); }
+  let time = 0, burst = 0;
+  const crowd = {
+    root, members, skins,
+    stats: { members: members.length, triangles: tris, draws: skins.length * (shadow ? 3 : 2), bones: skins.reduce((a, sk) => a + sk.bones.length, 0) },
+    /** Cheer for `seconds`, then go back to the mood update() is given. */
+    cheer(seconds = 1.2) { burst = Math.max(burst, seconds); },
+    update(dt, { mood = 'idle', energy = 1 } = {}) {
+      if (mood !== 'idle' && mood !== 'cheer' && mood !== 'angry' && mood !== 'still') throw new Error(`crowd: unknown mood "${mood}" (have idle, cheer, angry, still)`);
+      time += dt; burst = Math.max(0, burst - dt);
+      const wantCheer = mood === 'cheer' || burst > 0 ? 1 : 0, wantAngry = !wantCheer && mood === 'angry' ? 1 : 0, wantLive = mood === 'still' && !wantCheer ? 0.25 : 1;
+      for (let i = 0; i < members.length; i++) {
+        const m = members[i], k = Math.min(1, dt * (2.5 + m.lag * 5)); // each catches the mood at their own speed: it ripples
+        m.cheer += (wantCheer - m.cheer) * k; m.angry += (wantAngry - m.angry) * k; m.live += (wantLive - m.live) * k;
+        const t = time * m.sp + m.ph, c = m.cheer * energy, a = m.angry * energy, e = m.live;
+        const hop = Math.max(0, Math.sin(t * 6.2)), hop2 = Math.max(0, Math.sin(t * 9.5 + 1));
+        const y = (hop * hop * 0.11 * c + hop2 * hop2 * 0.035 * a) * m.scale;
+        const sq = 1 + Math.sin(t * 2.1) * 0.012 * e + (hop - 0.35) * 0.07 * c;
+        const n = m.node;
+        n.position[0] = m.x + Math.sin(t * 7.3) * 0.018 * a; n.position[1] = y; n.position[2] = m.z + Math.sin(t * 5.1 + 2) * 0.014 * a;
+        n.setRot(7 * a + Math.sin(t * 1.3) * 1.2 * e - 4 * c, m.yaw + Math.sin(t * 0.43 + m.ph) * 9 * e, Math.sin(t * 0.9) * 2.6 * e + Math.sin(t * 6.2) * 4 * c);
+        n.scale[1] = m.scale * sq; n.scale[0] = n.scale[2] = m.scale / Math.sqrt(sq);
+        if (m.arms) m.arms.setRot(Math.sin(t * 2.1) * 4 * e * (1 - c) * (1 - a) - (158 + Math.sin(t * 12.4) * 12) * c - (96 + Math.sin(t * 9.5 + 1) * 40) * a * (1 - c), 0, Math.sin(t * 6.2 + 1) * 10 * c);
+      }
+    },
+  };
+  crowd.update(0, {});
+  return crowd;
 }

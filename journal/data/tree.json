@@ -12351,7 +12351,7 @@
  },
  {
   "path": "src/content/chapter1.js",
-  "bytes": 57062,
+  "bytes": 57064,
   "lines": 787
  },
  {
@@ -12426,7 +12426,7 @@
  },
  {
   "path": "src/core/stage.js",
-  "bytes": 19821,
+  "bytes": 19832,
   "lines": 335
  },
  {
@@ -12436,7 +12436,7 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 31088,
+  "bytes": 31098,
   "lines": 448
  },
  {
@@ -12481,8 +12481,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 27437,
-  "lines": 521
+  "bytes": 29045,
+  "lines": 546
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/characters.js",
-  "bytes": 138239,
-  "lines": 1882
+  "bytes": 147898,
+  "lines": 1998
  },
  {
   "path": "src/shell/gl/demo.js",
@@ -12506,8 +12506,8 @@
  },
  {
   "path": "src/shell/gl/fx.js",
-  "bytes": 10669,
-  "lines": 148
+  "bytes": 10678,
+  "lines": 149
  },
  {
   "path": "src/shell/gl/gl.js",
@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 61629,
-  "lines": 1657
+  "bytes": 61748,
+  "lines": 1658
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12561,18 +12561,18 @@
  },
  {
   "path": "src/shell/gl/sets/harbor-night.js",
-  "bytes": 25688,
-  "lines": 329
+  "bytes": 28132,
+  "lines": 349
  },
  {
   "path": "src/shell/gl/sets/index.js",
-  "bytes": 1068,
-  "lines": 25
+  "bytes": 1121,
+  "lines": 26
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
-  "bytes": 56899,
-  "lines": 738
+  "bytes": 59353,
+  "lines": 773
  },
  {
   "path": "src/shell/gl/sets/kit.js",
@@ -12583,6 +12583,11 @@
   "path": "src/shell/gl/sets/lantern-stalls.js",
   "bytes": 31007,
   "lines": 390
+ },
+ {
+  "path": "src/shell/gl/sets/pier-riot.js",
+  "bytes": 24813,
+  "lines": 310
  },
  {
   "path": "src/shell/gl/shaders.js",
@@ -12596,18 +12601,18 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 74872,
+  "bytes": 74880,
   "lines": 1067
  },
  {
   "path": "src/shell/gl/table3d.js",
-  "bytes": 86847,
-  "lines": 1219
+  "bytes": 102177,
+  "lines": 1400
  },
  {
   "path": "src/shell/input.js",
-  "bytes": 7462,
-  "lines": 161
+  "bytes": 7799,
+  "lines": 165
  },
  {
   "path": "src/shell/layout.js",
@@ -12706,8 +12711,8 @@
  },
  {
   "path": "tools/gl-characters.html",
-  "bytes": 21257,
-  "lines": 229
+  "bytes": 24135,
+  "lines": 265
  },
  {
   "path": "tools/gl-demo.html",

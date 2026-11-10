@@ -543,9 +543,9 @@ export const MODES = {
   talk:    { jab: '', chop: '', reach: 0, hold: 'stand', team: false, poses: ['talkPoint', 'talkBoth', 'talkOpen'] },
   walk:    { jab: 'hop', chop: 'hop', reach: 0, hold: 'stand', team: false },
 };
-const PARTY_SLOT = [[-0.95, 0.8], [-1.85, 0.28], [-2.7, 0.98]];
-const OPP_SLOT = [[0.95, 0.8], [1.85, 0.28], [2.7, 0.98]];
-const BACK_R = [[1.35, 0.02], [2.3, -0.06], [3.15, 0.1]], BACK_L = [[-3.25, 0.02], [-2.4, -0.06], [-1.45, 0.06]];
+const PARTY_SLOT = [[-0.9, 0.8], [-1.7, 0.3], [-2.45, 0.95]];
+const OPP_SLOT = [[0.9, 0.8], [1.7, 0.3], [2.45, 0.95]];
+const BACK_R = [[1.3, 0.02], [2.1, -0.06], [2.85, 0.1]], BACK_L = [[-2.95, 0.02], [-2.2, -0.06], [-1.4, 0.06]];
 const LAG = 0.16;      // seconds between a table hit and the stage answering: the time the energy takes to climb
 const MAX_FOLK = 3;
 // scheduled steps
@@ -576,7 +576,7 @@ function fightOn(S, opts = {}) {
   const chestY = (a) => a.ch.height * 0.58;
   /** The thing a hit goes to: a person of the opposition, the task unit in hand, or (holding a line) whoever is pressing. */
   function target() {
-    if (kind === 'people' && opp.length) { oppTurn++; return opp[oppTurn % 3 === 2 && opp.length > 1 ? 1 : 0]; }
+    if (kind === 'people' && opp.length) return opp[0];    // the front of their line takes it; a big blow spills onto the rest
     if (mode === MODES.hold && extras.length) return extras[oppTurn++ % extras.length];
     if (S.units.length) { const i = Math.min(S.units.length - 1, Math.floor(done * S.units.length / Math.max(1, total))); return S.units[i]; }
     return null;
@@ -607,7 +607,7 @@ function fightOn(S, opts = {}) {
     }
     if (sprites) {
       burst(sprites, x, y, z, big ? 9 : 5, big ? 0.5 : 0.3, big ? '#ffe27a' : '#ffffff', big ? 2.2 : 1.4);
-      particle(sprites, K_PUFF, x, y, z, 0, 0.3, 0, big ? 0.34 : 0.2, big ? 0.62 : 0.36, big ? 0.5 : 0.34, '#fff6e0', 0, 1);
+      particle(sprites, K_PUFF, x, y, z, 0, 0.3, 0, big ? 0.2 : 0.14, big ? 0.34 : 0.24, big ? 0.4 : 0.3, '#fff6e0', 0, 1);
       if (big) particle(sprites, K_RING, x, 0.03, z, 0, 0, 0, 0.3, 2.2, 0.5, '#fff6e0');
     }
     punch = Math.max(punch, big ? 1 : 0.3);

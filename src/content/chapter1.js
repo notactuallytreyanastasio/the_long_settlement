@@ -606,7 +606,7 @@ export const chapter1 = {
       // Not a fight. The same dockers, the same pier; this time they have brought lights. The work is the
       // walk to the gangway and reading which way the crowd leans.
       encounter: {
-        set: 'harbor-night', light: 'night', mode: 'walk',
+        set: 'harbor-night', light: 'predawn', mode: 'walk',
         party: ['ren', 'ilse'],
         opposition: { kind: 'force', who: ['lantern-line'], name: 'THE WALK TO THE FERRY' },
         extras: ['nan', 'docker', 'docker'],

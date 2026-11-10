@@ -18,7 +18,8 @@
 //   checker(opts), boards(opts) floors;  wainscot(opts) panelling;  cornice(opts)
 //   rug(opts), banner(opts), curtain(opts)
 //   dais(opts)                 a stepped platform (steps on three sides)
-//   column(opts), doorway(opts) (anchors: light, behind the open leaf)
+//   column(opts), doorway(opts) (anchors: light, behind the open leaf), doorLeaf(opts) (a leaf that can swing)
+//   wing(side, ...)            where a splayed side wall goes;  lightOf(id, LIGHTS, name)
 //   desk(opts), chair(opts), pew(opts), stool(), bookshelf(opts), fileStack(opts), paperPile(opts), scroll()
 //   clerkCounter(opts)         a counter with a brass grille, a hatch and a bell
 //   hangingLamp(opts), deskLamp(opts), sconce(opts), chandelier(opts), candle()   anchors: lamp
@@ -299,20 +300,54 @@ export function column({ h = 4.5, r = 0.3, color = '#fff0d4', band = KB.brass, s
 }
 
 /**
- * A doorway to stand in a wall opening `w` wide, `h` to the top: frame, a fanlight, and a door leaf swung
- * open into the room by `open` degrees (hinged on the left jamb as seen from the room; side: -1 hinges right).
- * Origin: centre of the threshold, facing +Z. anchors: light (a pace behind the wall: put a warm lamp there), knob
+ * A door leaf on its own, so it can swing: origin at the foot of the hinge edge, the leaf runs toward +X and
+ * faces +Z. `glass`: null, or a colour: the upper panel is a glowing pane (a lit corridor behind it).
  */
-export function doorway({ w = 1.3, h = 2.5, open = 55, color = KB.teal, frame = KB.parchment, knob = KB.brass, side = 1, panels = 2 } = {}) {
+export function doorLeaf({ w = 1.3, h = 2.5, color = KB.teal, knob = KB.brass, panels = 2, glass = null, glow = 0.8 } = {}) {
+  const hw = w / 2, leaf = [rb(w, h - 0.04, 0.08, 0.02, hw, h / 2, 0, color)], hi = rgb(color).map((c) => Math.min(1, c * 1.14));
+  for (let i = 0; i < panels; i++) {
+    const ph = (h - 0.5) / panels, y = 0.25 + ph * (i + 0.5), top = i === panels - 1 && glass;
+    for (const sz of [-1, 1]) leaf.push(top ? setGlow(bx(w - 0.34, ph - 0.2, 0.03, hw, y, sz * 0.035, glass), glow) : rb(w - 0.3, ph - 0.14, 0.04, 0.02, hw, y, sz * 0.045, hi));
+    if (top) leaf.push(bx(0.05, ph - 0.2, 0.1, hw, y, 0, color), bx(w - 0.34, 0.05, 0.1, hw, y, 0, color));
+  }
+  for (const sz of [-1, 1]) leaf.push(tint(place(sphere(0.06, 8, 5), w - 0.14, h * 0.45, sz * 0.09), knob));
+  return merge(leaf);
+}
+
+/**
+ * A doorway to stand in a wall opening `w` wide, `h` to the top: frame and lintel, and (unless leaf: false)
+ * a door leaf swung into the room by `open` degrees, hinged on the left jamb as seen from the room
+ * (side: -1 hinges right). Origin: centre of the threshold, facing +Z.
+ * anchors: light (a pace behind the wall: put a warm lamp there), knob, hinge (where a separate doorLeaf goes)
+ */
+export function doorway({ w = 1.3, h = 2.5, open = 55, color = KB.teal, frame = KB.parchment, knob = KB.brass, side = 1, panels = 2, leaf = true, glass = null } = {}) {
   const hw = w / 2, parts = [], t = 0.12;
   for (const sx of [-1, 1]) parts.push(rb(t, h, 0.4, 0.03, sx * (hw + t / 2), h / 2, -0.12, frame));
   parts.push(rb(w + t * 2 + 0.16, t * 1.2, 0.46, 0.03, 0, h + t * 0.5, -0.12, frame));
-  const leaf = [rb(w, h - 0.04, 0.08, 0.02, hw, h / 2, 0, color)];
-  for (let i = 0; i < panels; i++) { const ph = (h - 0.5) / panels; leaf.push(rb(w - 0.3, ph - 0.14, 0.04, 0.02, hw, 0.25 + ph * (i + 0.5), 0.045, rgb(color).map((c) => Math.min(1, c * 1.14)))); }
-  leaf.push(tint(place(sphere(0.06, 8, 5), w - 0.14, h * 0.45, 0.09), knob));
-  const lm = place(merge(leaf), -hw, 0, 0, 0, -open, 0);
-  parts.push(side > 0 ? lm : mirrorX(lm));
-  return keep(merge(parts), { light: [0, h * 0.62, -1.3], knob: [side * (-hw + Math.cos(open * DEG) * (w - 0.14)), h * 0.45, Math.sin(open * DEG) * (w - 0.14)] });
+  if (leaf) { const lm = place(doorLeaf({ w, h, color, knob, panels, glass }), -hw, 0, 0, 0, -open, 0); parts.push(side > 0 ? lm : mirrorX(lm)); }
+  return keep(merge(parts), { light: [0, h * 0.62, -1.3], hinge: [-hw * side, 0, 0], knob: [side * (-hw + Math.cos(open * DEG) * (w - 0.14)), h * 0.45, Math.sin(open * DEG) * (w - 0.14)] });
+}
+
+/**
+ * Side walls splayed like stage flats, so what hangs on them faces the audience. Given the back wall's
+ * half width at z = backZ and the half width the room has opened to at z = frontZ, returns for side -1 / +1:
+ *   { len, pos [x, 0, z] (the wall's middle), yaw (degrees, for a node holding a wall() or anything flat),
+ *     at(localX, out = 0, y = 0) -> [x, y, z] (localX runs along the wall, + toward the back on the left wing
+ *     and toward the front on the right; `out` is distance into the room) }
+ */
+export function wing(side, backHalf, backZ, frontHalf, frontZ) {
+  const dx = (frontHalf - backHalf), dz = frontZ - backZ, len = Math.hypot(dx, dz);
+  const n = [-side * dz / len, dx / len], yaw = Math.atan2(n[0], n[1]) / DEG;
+  const pos = [side * (backHalf + frontHalf) / 2, 0, (backZ + frontZ) / 2], c = Math.cos(yaw * DEG), sn = Math.sin(yaw * DEG);
+  return { len, pos, yaw, normal: [n[0], 0, n[1]], at: (lx, out = 0, y = 0) => [pos[0] + lx * c + out * sn, y, pos[2] - lx * sn + out * c] };
+}
+
+/** A set's light state by name; an unknown name warns and gives the first (an encounter's `light` must never crash a chapter). */
+export function lightOf(id, LIGHTS, name) {
+  if (LIGHTS[name]) return [name, LIGHTS[name]];
+  const first = Object.keys(LIGHTS)[0];
+  if (name != null && typeof console !== 'undefined') console.warn(`${id}: no light "${name}" (have ${Object.keys(LIGHTS).join(', ')}); using "${first}"`);
+  return [first, LIGHTS[first]];
 }
 
 // ------------------------------------------------------------------------------------ furniture
