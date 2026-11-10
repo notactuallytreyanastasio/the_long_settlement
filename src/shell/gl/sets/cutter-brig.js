@@ -68,8 +68,8 @@ function build(engine = null, { light, low = false } = {}) {
   const sideL = hullSide({ len: zl, h: H, lean: 0.55, bay: 1.45, ports: PORT_Z.map((z) => -(z - zc)) }), sideR = hullSide({ len: zl, h: H, lean: 0.55, bay: 1.45, ports: PORT_Z.map((z) => z - zc) });
   hull.add(node('side-left', sideL, M.wall, { pos: [-SIDE, 0, zc], rot: [0, 90, 0] }), node('side-right', sideR, M.wall, { pos: [SIDE, 0, zc], rot: [0, -90, 0] }));
   const HATCH = [0, -4.0];
-  hull.add(node('deck-head', deckHead({ w: SIDE * 2 + 1.4, d: zl, beams: 7, hatch: [0, HATCH[1] - zc, 1.25, 1.0], plank: '#aab4f6', beam: '#e8452f' }), M.wall, { pos: [0, H, zc] }));
-  { const carl = []; for (let z = BACK + 0.9; z < 9; z += 1.35) carl.push(tint(place(box(SIDE * 2 + 1.2, 0.13, 0.15), 0, H - 0.065, z), '#ff7a4a')); hull.add(node('carlings', merge(carl), M.wall)); }
+  hull.add(node('deck-head', deckHead({ w: SIDE * 2 + 7, d: zl, beams: 13, hatch: [0, HATCH[1] - zc, 1.25, 1.0], plank: '#aab4f6', beam: '#fff0d4' }), M.wall, { pos: [0, H, zc] }));
+  { const carl = []; for (let z = BACK + 0.9; z < 15; z += 1.35) carl.push(tint(place(box(SIDE * 2 + 7, 0.13, 0.15), 0, H - 0.065, z), '#ffd9a8')); hull.add(node('carlings', merge(carl), M.wall)); }
   // the bulkhead at the back of the berths, with the way through to the ladder; the bow bulkhead beyond, with the Audit's seal on it
   hull.add(node('bulkhead', wall7({ w: SIDE * 2 + 1.2, h: H, t: 0.16, color: '#4a6ee0', openings: [{ x: 0, w: ALLEY * 2 - 0.1, top: 2.2, arch: true }] }), M.wall, { pos: [0, 0, BACK] }));
   hull.add(node('bulkhead-trim', merge(tint(place(box(SIDE * 2 + 1.2, 0.5, 0.05), 0, 0.25, BACK + 0.03), '#2f4ab8'), tint(place(box(SIDE * 2 + 1.2, 0.09, 0.06), 0, 0.54, BACK + 0.04), C7.brass)), M.wall));
@@ -167,6 +167,7 @@ function build(engine = null, { light, low = false } = {}) {
     { name: 'lamp', pos: lampPos, color: '#ffb45a', radius: 9.0, base: 1.5, flicker: 0.07 },
     { name: 'moon-hatch', pos: [HATCH[0], 1.5, HATCH[1] + 0.2], color: '#7fb0ff', radius: 4.4, base: 1.0, flicker: 0 },
     { name: 'port-left', pos: [portsL[0][0] + 0.5, portsL[0][1] - 0.1, portsL[0][2]], color: '#6fa0ff', radius: 3.0, base: 0.75, flicker: 0 },
+    { name: 'watch-aft', pos: [0.4, 1.5, 5.6], color: '#ff9a50', radius: 9.5, base: 0.95, flicker: 0.04 },   // the watch's own lantern, aft of every camera mark
     { name: 'port-right', pos: [portsR[0][0] - 0.5, portsR[0][1] - 0.1, portsR[0][2]], color: '#6fa0ff', radius: 3.0, base: 0.75, flicker: 0 },
   ];
   const actors = group('actors'); scene.root.add(actors);
