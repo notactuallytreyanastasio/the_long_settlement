@@ -877,6 +877,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "323e4f39-3319-413b-bf3e-210a7ef1b273",
+   "type": "goal",
+   "status": "active",
+   "title": "A wave-survival hack-and-slash game inside the game, entered from pinball",
+   "description": null,
+   "created": "2026-11-10T23:50:33.024532Z",
+   "updated": "2026-11-10T23:50:33.024532Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "Now build out a game inside the game where you go from pinball to turn based combat that’s hack and slash survival of waves with upgrades and weapons centralized around mowing down lots of enemies",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
