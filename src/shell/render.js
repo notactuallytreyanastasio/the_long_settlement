@@ -1634,7 +1634,7 @@ export function createRenderer(canvas) {
     if (state.kind === 'lever') return [`No writ. ${press}: ${fmtInt(SPIN_COST)} marks a pull`, BRASS_HI];
     if (state.kind === 'free') return [`No writ. ${press}: this pull is yours`, BRASS_HI];
     if (state.kind === 'loan') return [`No marks. ${press}: the Mint lends ${fmtInt(LOAN.marks)}`, RED];
-    if (state.kind === 'credit') return ['The town is passing the hat. Wait for it.', THREADS.commons.color];
+    if (state.kind === 'credit') return ['The hat is coming round. Wait, or press to borrow', THREADS.commons.color];
     if (state.kind === 'busy') return ['The reels turn. By lot, and by law.', PAPER];
     if (state.kind === 'idle') return null;
     throw new Error(`render: no prompt for launch state '${state.kind}'`);
@@ -3247,7 +3247,7 @@ export function createRenderer(canvas) {
     g.fillStyle = PAPER;
     const heading = {
       launch: 'A ball is waiting.', idle: 'The Plumb is in play.', busy: 'The reels turn.',
-      lever: 'No writ, no ball.', free: 'The Reels are yours tonight.', loan: 'No writ, and no marks.', aid: 'The town will cover this one.',
+      lever: 'No writ, no ball.', free: 'The Reels are yours tonight.', loan: 'No writ, and no marks.', credit: 'The town will cover this one.',
     }[state.kind];
     if (!heading) throw new Error(`render: no heading for launch state '${state.kind}'`);
     g.fillText(heading, X + 16, by + 62);
