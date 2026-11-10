@@ -35,6 +35,19 @@
 //   mannequin(opts)                  a stand-in chibi figure, for judging scale and light before the cast arrives
 //   kitMaterials()                   the handful of materials a set needs
 //   scatter(node, capacity, fn)      fill a node's instances from a callback
+//
+// Round two (chapter 1 sets)
+//   pickLight(id, LIGHTS, name)      a set's light state by name; an unknown name falls back to the first, loudly in the console
+//   setRig(id, CAMERAS, env)         { frame(camera, name, time), view(name) }: the camera-mark half of every set
+//   planks(opts), pier(opts)         a planked deck; a pier on pilings running out toward -Z
+//   crane(opts)                      a crooked timber dock crane with a hanging hook and lamp
+//   ferry(opts)                      the lane ferry: tubby hull, deckhouse, paddle box, mast with a brass lane lamp
+//   gangway(opts), railing(opts), lifeRing(opts), steps(opts)
+//   townsfolk(opts)                  a low-poly bystander holding up a light, white-coated for instance tinting
+//   flame(opts), brazier(opts), wreck(opts)   fire: a teardrop to scale per frame, an iron fire basket, a burning heap
+//   townBank(opts)                   a hillside of small lit houses as one far mesh
+//   floatLight()                     a paper light on a wooden float, for instancing on water
+//   desk(opts), ledgerBook(opts), candle(opts), inkwell(), quill(), bookshelf(opts), archWindow(opts)
 
 import {
   m4, rng, DEG, rgb,
@@ -590,4 +603,3 @@ export function mannequin({ h = 1.1, coat = PAL.yellow, skin = '#ffd8b0', hair =
   return scaleMesh(m, k);
 }
 
-export { plane, clone };
