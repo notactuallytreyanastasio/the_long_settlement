@@ -246,6 +246,8 @@ export const cast = {
     look: {
       skin: '#c8956c', hair: '#77777d', hairStyle: 'bun',
       coat: '#8a8272', trim: '#8fae7a', build: 'slim', age: 'mid',
+      // faceOf and eyes are read by figures.js: Ren's proportions and Ren's iris, so the likeness is literal
+      faceOf: 'ren', eyes: '#6fa8dc',
       mark: "her son's brow and jaw; dark hair gone grey, up in a kelp-cutter's knot; undyed goat-wool shawl over a patched work dress; lamp-black to the right elbow; says little, and is usually holding a bowl out to somebody",
     },
   },

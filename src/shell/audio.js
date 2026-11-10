@@ -959,7 +959,7 @@ export function createAudio() {
     // with one chord in four. Every other time round the brass tries the last
     // phrase of the lullaby and stops a note short of home.
     capital: {
-      bpm: 84, div: 4, len: 128, vol: 0.85, send: 0.5,
+      bpm: 84, div: 4, len: 128, vol: 0.68, send: 0.5,     // measured at the music output: -23.4 dBFS rms over 30 s, beside march (-24.1) and dread (-23.3)
       step(k, t, s, I, n) {
         const bar = k >> 4, b = k & 15;
         const ground = [38, 36, 34, 33, 38, 36, 31, 33][bar];          // D C Bb A | D C G A

@@ -216,7 +216,11 @@ test('chapters name a real table and every objective id is an element of it', ()
       assert.ok(sc.objective.ids.length > 0, `${sc.id}: objective has no ids`);
       for (const id of sc.objective.ids) assert.ok(ids.has(id), `${sc.id}: objective id ${id} is not on table ${table.id}`);
       if (sc.objective.kind === 'count') assert.ok(Number.isInteger(sc.objective.n) && sc.objective.n > 0, `${sc.id}: count n`);
-      assert.ok(sc.briefing.length >= 1 && sc.briefing.length <= 3, `${sc.id}: ${sc.briefing.length} briefing lines`);
+      // (counted as heard: a briefing that branches is one to three lines in each ending)
+      for (const lean of LEANINGS) {
+        const heard = spokenLines(sc.briefing, lean).length;
+        assert.ok(heard >= 1 && heard <= 3, `${sc.id}: ${heard} briefing lines${heard === sc.briefing.length ? '' : ` when the ledger leans ${lean}`}`);
+      }
       assert.ok(sc.reward.points > 0, `${sc.id}: reward`);
     });
     for (const key of BARK_KEYS) assert.ok(Array.isArray(ch.barks[key]) && ch.barks[key].length > 0, `${ch.id}: no barks for ${key}`);

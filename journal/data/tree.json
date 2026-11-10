@@ -7201,8 +7201,8 @@
  },
  {
   "path": "src/content/cast.js",
-  "bytes": 10302,
-  "lines": 268
+  "bytes": 10450,
+  "lines": 270
  },
  {
   "path": "src/content/chapter1.js",
@@ -7291,7 +7291,7 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 62600,
+  "bytes": 62702,
   "lines": 1278
  },
  {
@@ -7366,8 +7366,8 @@
  },
  {
   "path": "test/content.test.js",
-  "bytes": 20824,
-  "lines": 344
+  "bytes": 21055,
+  "lines": 348
  },
  {
   "path": "test/economy.test.js",
