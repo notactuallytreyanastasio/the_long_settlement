@@ -13,6 +13,7 @@
 //   lampTower(opts)            the Founders' Lamp from outside: { body, glass } + anchors lamp, top, door
 //   cressetFar(opts)           the capital's geography, shared by the four harbour sets: the mole, the tower on its
 //                              head, the town and the Assembly dome: { nodes[], glass (a node), anchors }
+//   harbourBase(opts)          the quay the four harbour sets stand on, with cressetFar beyond it and the lamp's light
 //   mole(opts), dome(opts)     the breakwater; the Assembly dome
 //   seaWall(opts)              the sea standing up: a long curling wall of water (materials8().sea)
 //   skiff(opts)                a tubby open boat with a fire pan on a bow post, pale so an instance colour paints it
@@ -33,8 +34,9 @@ import {
   sphere, ellipsoid, blob, cylinder, lathe, torus, box, roundedBox, extrude, tube, curve, plane, fromArrays,
   merge, tint, place, setGlow, setOutline, gradientY, deform, flip, scale as scaleMesh,
 } from '../mesh.js';
-import { node, group, material } from '../scene.js';
-import { PAL, kitMaterials, wonk, townBank } from './kit.js';
+import { node, group, material, mergeStatic } from '../scene.js';
+import { rayMesh, rayMaterial } from '../fx.js';
+import { PAL, kitMaterials, wonk, townBank, quayEdge, cobble, scatter, cloudBank } from './kit.js';
 
 /** Chapter 8 colours: white capital stone, oxblood and brass, the cold white of the great lamp, kelp-flame violet. */
 export const C8 = {
@@ -202,7 +204,7 @@ export function dome({ r = 6, drum = 4, seg = 14 } = {}) {
  * the Assembly dome. Returns { nodes (far statics, unmerged, to add to a far group), glass (a node: the lamp room's
  * panes, for putting the lamp out), anchors: { lamp, top, dome, windows[], moleZ } }.
  */
-export function cressetFar({ M, low = false, tower = [3.4, -1.2, -44], h = 17, moleZ = -44, water = -0.5, town = [-17, -0.5, -40], townYaw = 62, lit = 0.8, seed = 3 } = {}) {
+export function cressetFar({ M, low = false, tower = [3.4, -1.2, -52], h = 16, moleZ = -52, water = -0.5, town = [-17, -0.5, -40], townYaw = 62, lit = 0.8, seed = 3 } = {}) {
   const FAR = low ? M.farFlat : M.far, nodes = [];
   const moleY = water + 1.9;
   nodes.push(node('mole', mole({ len: 110, w: 4, drop: 2.6, parapet: 1.3, seed, block: 3.2, arches: !low }), FAR, { pos: [tower[0] - 52, moleY, moleZ] }));
@@ -218,6 +220,48 @@ export function cressetFar({ M, low = false, tower = [3.4, -1.2, -44], h = 17, m
   nodes.push(node('town-foot', bx(52, 2.6, 3, 0, -0.6, 1.2, C8.marble2), FAR, { pos: town, rot: [0, townYaw, 0] }));
   const wins = (bank.anchors.windows || []).map(at);
   return { nodes, glass, anchors: { lamp: [TP[0], TP[1] + T.body.anchors.lamp[1], TP[2]], top: [TP[0], TP[1] + T.body.anchors.top[1], TP[2]], foot: TP, dome: [DP[0], DP[1] + dm.anchors.top[1], DP[2]], windows: wins, moleZ, moleY } };
+}
+
+/**
+ * The ground the four harbour sets share: a cobbled quay ending at z = quayZ, the water, cressetFar() beyond, a cloud bank.
+ * Adds all of it to scene.root (static geometry merged) and fills env.water. The scene must have its sprites already.
+ * Returns { F (the cressetFar result), quayZ, water, clouds, lamp: { set(k 0..1), update(time) } }: lamp.set puts the
+ * Founders' Lamp out or on (its panes, a big white halo, two turning beams).
+ */
+export function harbourBase({ scene, M, low = false, seed = 5, quayZ = -5.6, water = -0.5, ground = '#f2e6cc', cobbles = ['#fff6e0', '#eadcc0', '#f8ecd2', '#e4d4ba', '#fff0d8'], far = {}, cloud = {}, beam = 0.2, halo = '#dff0ff', haloSize = 20, quayLen = 30 } = {}) {
+  const env = scene.env, r = rng(seed * 131 + 7), g = group('ground');
+  g.add(node('ground', tint(place(plane(90, 22, 1, 1), 0, 0, quayZ + 0.3 + 11), ground), M.ground));
+  g.add(node('quay', quayEdge({ len: low ? 22 : quayLen, drop: 1.7, seed }), M.ground, { pos: [0, 0, quayZ] }));
+  for (const sx of [-1, 1]) g.add(node('quay-far', bx(32, 1.9, 0.5, sx * (low ? 27 : 31), -0.95, quayZ + 0.3, PAL.stone2), M.ground));
+  g.traverse((n) => { n.castShadow = false; });
+  scene.root.add(mergeStatic(g, 'ground'));
+  const cob = node('cobbles', cobble(), M.flat); cob.castShadow = false;
+  scatter(cob, low ? 150 : 420, (i) => {
+    const col = i % 20, row = Math.floor(i / 20), x = -6.4 + col * 0.66 + (row % 2) * 0.33 + (r() - 0.5) * 0.16, z = quayZ + 0.95 + row * (low ? 0.95 : 0.42) + (r() - 0.5) * 0.12;
+    if (r() < 0.42) return null;
+    const sc = 0.2 + r() * 0.09; return { m: m4.trs(x, 0.002, z, 0, r() * 360, 0, sc * 1.25, 1, sc * 0.9), color: cobbles[Math.floor(r() * cobbles.length)] };
+  });
+  scene.root.add(cob);
+  const F = cressetFar({ M, low, water, seed, ...far }), fg = group('far');
+  F.nodes.forEach((n) => fg.add(n)); scene.root.add(mergeStatic(fg, 'far'), F.glass);
+  env.water.level = water;
+  env.water.shores = [[0, quayZ + 0.1 + 900, 900, 0.75], [F.anchors.foot[0], F.anchors.foot[2], 6.0, 1.0]];
+  const clouds = cloudBank({ style: low ? 'painted' : 'solid', count: 8, seed: seed + 6, arc: [156, 206], radius: [260, 430], height: [30, 150], size: [0.7, 1.5], speed: 0.05, ...cloud });
+  scene.root.add(clouds.node);
+  const A = F.anchors.lamp, glow = scene.sprites.add({ kind: 'glow', pos: A, size: haloSize, color: halo, alpha: 0 }), core = scene.sprites.add({ kind: 'glow', pos: A, size: haloSize * 0.36, color: '#ffffff', alpha: 0 });
+  const beams = group('lamp-beams', { pos: A });
+  { const one = () => tint(rayMesh(80, 0.8, 9, low ? 8 : 14), '#eef6ff'); beams.add(node('beams', merge(place(one(), 0, 0, 0, 0, 0, 85), place(one(), 0, 0, 0, 0, 0, -85)), rayMaterial({ power: 1.3, near: beam, far: 0 }))); }
+  scene.root.add(beams);
+  let k = 1;
+  const lamp = {
+    set(v) { k = Math.max(0, Math.min(1, v)); },
+    get level() { return k; },
+    update(time) {
+      const t = F.glass.tint; t[0] = 0.2 + 0.8 * k; t[1] = 0.26 + 0.74 * k; t[2] = 0.55 + 0.45 * k; F.glass.glow = k;
+      glow.alpha = k * (0.42 + 0.14 * Math.pow(Math.abs(Math.cos(time * 14 * DEG)), 6)); core.alpha = k * 0.9; beams.visible = k > 0.4 && beam > 0; beams.setRot(0, time * 14, 0);
+    },
+  };
+  return { F, quayZ, water, clouds, lamp };
 }
 
 /**

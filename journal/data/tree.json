@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 62952,
-  "lines": 1684
+  "bytes": 62892,
+  "lines": 1681
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12560,14 +12560,39 @@
   "lines": 229
  },
  {
+  "path": "src/shell/gl/sets/commons-hall.js",
+  "bytes": 19954,
+  "lines": 237
+ },
+ {
+  "path": "src/shell/gl/sets/compact-hall.js",
+  "bytes": 21973,
+  "lines": 235
+ },
+ {
+  "path": "src/shell/gl/sets/court.js",
+  "bytes": 15145,
+  "lines": 197
+ },
+ {
+  "path": "src/shell/gl/sets/cresset-harbour.js",
+  "bytes": 12875,
+  "lines": 150
+ },
+ {
+  "path": "src/shell/gl/sets/dark-village.js",
+  "bytes": 23433,
+  "lines": 229
+ },
+ {
   "path": "src/shell/gl/sets/drum-hall.js",
   "bytes": 21159,
   "lines": 269
  },
  {
   "path": "src/shell/gl/sets/exchange-steps.js",
-  "bytes": 23744,
-  "lines": 284
+  "bytes": 24312,
+  "lines": 285
  },
  {
   "path": "src/shell/gl/sets/ferry-dawn.js",
@@ -12586,8 +12611,8 @@
  },
  {
   "path": "src/shell/gl/sets/hearing-hall.js",
-  "bytes": 24441,
-  "lines": 269
+  "bytes": 27089,
+  "lines": 281
  },
  {
   "path": "src/shell/gl/sets/hidden-lamp.js",
@@ -12601,8 +12626,8 @@
  },
  {
   "path": "src/shell/gl/sets/kedge-roads.js",
-  "bytes": 24365,
-  "lines": 299
+  "bytes": 24870,
+  "lines": 302
  },
  {
   "path": "src/shell/gl/sets/kit-b.js",
@@ -12611,13 +12636,13 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch2.js",
-  "bytes": 76424,
+  "bytes": 76504,
   "lines": 942
  },
  {
   "path": "src/shell/gl/sets/kit-ch3.js",
-  "bytes": 35918,
-  "lines": 424
+  "bytes": 37258,
+  "lines": 437
  },
  {
   "path": "src/shell/gl/sets/kit-ch4.js",
@@ -12626,8 +12651,8 @@
  },
  {
   "path": "src/shell/gl/sets/kit-ch5.js",
-  "bytes": 45063,
-  "lines": 566
+  "bytes": 45150,
+  "lines": 567
  },
  {
   "path": "src/shell/gl/sets/kit-ch6.js",
@@ -12635,9 +12660,14 @@
   "lines": 658
  },
  {
+  "path": "src/shell/gl/sets/kit-ch7.js",
+  "bytes": 63912,
+  "lines": 796
+ },
+ {
   "path": "src/shell/gl/sets/kit-ch8.js",
-  "bytes": 52826,
-  "lines": 584
+  "bytes": 56313,
+  "lines": 628
  },
  {
   "path": "src/shell/gl/sets/kit.js",
@@ -12651,7 +12681,7 @@
  },
  {
   "path": "src/shell/gl/sets/ledger.js",
-  "bytes": 19311,
+  "bytes": 19313,
   "lines": 239
  },
  {
@@ -12681,7 +12711,7 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 78237,
+  "bytes": 78238,
   "lines": 1096
  },
  {

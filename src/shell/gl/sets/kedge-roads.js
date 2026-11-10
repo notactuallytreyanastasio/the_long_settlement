@@ -90,6 +90,7 @@ function build(engine = null, { light, low = false } = {}) {
   const stacks = [[-2.5, -2.9, 0], [-3.15, -2.7, 0], [-2.8, -2.75, 0.72], [-3.4, -3.5, 0], [2.6, -3.3, 0], [3.25, -3.0, 0], [2.95, -3.1, 0.72], [-6.2, -2.4, 0], [-6.8, -2.0, 0], [-6.5, -2.2, 0.72], [6.3, -1.6, 0], [5.7, -2.1, 0]];
   const cm = cask({});
   stacks.forEach(([x, z, y], i) => set.add(node('cask' + i, cm, M.prop, { pos: [x, y, z], rot: [0, i * 47, 0] })));
+  set.add(node('cask-lantern', merge(tint(place(cylinder(0.09, 0.07, 0.06, 8), 0, 0, 0), K6.brass), setGlow(tint(place(cylinder(0.07, 0.085, 0.2, 8), 0, 0.06, 0), '#ffe9a0'), 1), tint(place(cylinder(0.1, 0.02, 0.09, 8), 0, 0.26, 0), K6.brass)), M.prop, { pos: [-2.8, 1.44, -2.75] }));
   set.add(node('cask-side', cask({}), M.prop, { pos: [3.9, 0.3, -2.4], rot: [90, 30, 0] }));
   set.add(node('crate1', crate({ s: 0.6, seed: 3, color: K6.timber2 }), M.prop, { pos: [-4.3, 0, -3.3], rot: [0, 14, 0] }), node('sack1', sack({ seed: 4, color: K6.salt }), M.prop, { pos: [4.6, 0, -3.2], rot: [0, 40, 0] }), node('sack2', sack({ seed: 7, s: 0.3, color: K6.salt }), M.prop, { pos: [5.1, 0, -2.7] }));
   set.add(node('bollard1', bollard({ s: 1.2 }), M.prop, { pos: [-1.3, 0, QUAY_Z + 0.6] }), node('bollard2', bollard({ s: 1.2 }), M.prop, { pos: [3.6, 0, QUAY_Z + 0.6] }), node('bollard3', bollard({ s: 1.2 }), M.prop, { pos: [-6.4, 0, QUAY_Z + 0.6] }));
@@ -151,9 +152,9 @@ function build(engine = null, { light, low = false } = {}) {
   });
   // the sea beyond the half-mile, stood up: a long grey-violet wall with a pale crest
   if (L.wall) {
-    const wave = deform(box(420, 1, 30), (p) => { const u = p[0] / 210; if (p[1] > 0) { p[1] = 11 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6; p[2] *= 0.25; } else p[1] = -1; }, 60);
-    far.add(node('sea-wall', gradientY(wave, dark ? '#2a48b8' : '#6f7cd8', dark ? '#7f9cf0' : '#dcd8ff', 0, 11), FAR, { pos: [0, WATER, -210] }));
-    far.add(node('sea-crest', tint(place(tube(curve(Array.from({ length: 15 }, (_, i) => { const u = (i - 7) / 7; return [u * 210, 11.2 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6, -206]; }), 60), 0.7, 4, { crease: 180 }), 0, WATER, 0), '#ffffff'), FAR));
+    const wave = deform(box(420, 1, 30), (p) => { const u = p[0] / 210; if (p[1] > 0) { p[1] = 16 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6; p[2] *= 0.25; } else p[1] = -1; }, 60);
+    far.add(node('sea-wall', gradientY(wave, dark ? '#20389c' : '#4a58c0', dark ? '#5f7ce8' : '#8f9cf0', 0, 16), FAR, { pos: [0, WATER, -170] }));
+    far.add(node('sea-crest', tint(place(tube(curve(Array.from({ length: 15 }, (_, i) => { const u = (i - 7) / 7; return [u * 210, 16.2 + Math.sin(u * 17) * 1.2 + Math.sin(u * 5.3 + 1) * 1.6, -166]; }), 60), 0.8, 4, { crease: 180 }), 0, WATER, 0), '#ffffff'), FAR));
   }
 
   const scene = createScene(makeEnv(L.preset, L.env)), env = scene.env;
@@ -204,15 +205,17 @@ function build(engine = null, { light, low = false } = {}) {
   }
   const postLamp = anchorAt(post, 'lamp', POST, 180);
   const lamps = [
-    { name: 'quay-post', pos: postLamp, color: '#ffc870', radius: 5.6, base: 1.1 },
+    { name: 'quay-post', pos: postLamp, color: '#ffc870', radius: 8.5, base: 1.6 },
+    { name: 'casks', pos: [-1.7, 2.3, -1.0], color: '#ffb458', radius: 7.2, base: 1.5 },
     { name: 'collier', pos: [-6.6, 2.3, -7.4], color: '#ffb860', radius: 5, base: 0.8 },
     { name: 'crane-cab', pos: anchorAt(quayCrane, 'lamp', QC, QC_YAW), color: '#ffc060', radius: 4.6, base: 0.9 },
   ];
   const glows = [{ sprite: sprites.add({ kind: 'glow', pos: postLamp, size: 1.9, color: '#ffb450', alpha: 0 }), base: 0.5 }];
-  glows.push({ sprite: sprites.add({ kind: 'glow', pos: LAMP, size: L.flame === 'white' ? 26 : 13, color: L.lampGlow, alpha: 0 }), base: L.flame === 'white' ? 0.5 / L.power : 0.45 / L.power, fixed: true });
+  glows.push({ sprite: sprites.add({ kind: 'glow', pos: LAMP, size: L.flame === 'white' ? 26 : 20, color: L.lampGlow, alpha: 0 }), base: L.flame === 'white' ? 0.5 / L.power : 0.6 / L.power, fixed: true });
   const lampStar = sprites.add({ kind: 'sparkle', pos: LAMP, size: L.flame === 'white' ? 12 : 5, color: L.flame === 'white' ? '#ffffff' : '#e0d4ff', alpha: 0.9 });
   for (const p of cabWins) glows.push({ sprite: sprites.add({ kind: 'glow', pos: p, size: 3.4, color: '#ffc860', alpha: 0 }), base: 0.34 / L.power, fixed: true });
   if (!low || dark) for (let i = 0; i < ridingLights.length; i += dark ? 1 : 3) glows.push({ sprite: sprites.add({ kind: 'glow', pos: ridingLights[i], size: dark ? 2.4 : 1.6, color: '#ffe9a0', alpha: 0 }), base: (dark ? 0.6 : 0.3) / L.power, fixed: true });
+  glows.push({ sprite: sprites.add({ kind: 'glow', pos: [-2.8, 1.6, -2.75], size: 1.5, color: '#ffb450', alpha: 0 }), base: 0.5 });
   const cutterGlow = sprites.add({ kind: 'glow', pos: [MOUTH_POS[0], WATER + 9.5, MOUTH_POS[2]], size: 7, color: '#ffffff', alpha: L.cutter ? 0.5 : 0 });
 
   // ---- sky

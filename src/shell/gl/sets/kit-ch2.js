@@ -332,9 +332,9 @@ export function stove({ w = 2.6, h = 0.95, d = 0.95, flue = 4.4, color = SM.iron
 /**
  * The Commons' account: a slate the length of the hall in a timber frame, two columns headed GAVE and IS OWED, chalk
  * rows of names (a long stroke and a few ticks) under each, a ledge with chalk ends and a rag. Faces +Z; origin bottom centre.
- * anchors: credit [2] (where the next two names go, left ends of two free rows in the IS OWED column), row (row height), col (width of a name)
+ * anchors: credit [2] (where the next two names go: left ends of two double-height lines kept free at the foot of the IS OWED column), row (row height), col (width of a name)
  */
-export function chalkboard({ w = 9, h = 2.0, rows = 8, seed = 1, frame = SM.timberRed, slate = SM.slate, slate2 = SM.slateDark, chalk = SM.chalk, free = 2, headX = null, headS = 0.3 } = {}) {
+export function chalkboard({ w = 9, h = 2.0, rows = 8, seed = 1, frame = SM.timberRed, slate = SM.slate, slate2 = SM.slateDark, chalk = SM.chalk, free = 4, headX = null, headS = 0.3 } = {}) {
   const r = R(seed), parts = [], t = 0.14;
   parts.push(rb(w + t * 2, h + t * 2, 0.1, 0.03, 0, h / 2, -0.05, frame));
   parts.push(setOutline(bx(w, h, 0.02, 0, h / 2, 0.012, slate), 0));
@@ -348,7 +348,7 @@ export function chalkboard({ w = 9, h = 2.0, rows = 8, seed = 1, frame = SM.timb
   const cols = 3, cw = (w / 2 - 0.4) / cols;
   for (const side of [-1, 1]) for (let c = 0; c < cols; c++) for (let k = 0; k < rows; k++) {
     const x = (side < 0 ? -w / 2 + 0.22 : 0.2) + c * cw, y = head - 0.36 - rowH * (k + 0.5) + (r() - 0.5) * 0.03;
-    if (side > 0 && c === 0 && k >= rows - free) { credit.push([x, y, 0.03]); continue; }
+    if (side > 0 && c < 2 && k >= rows - free) { if (c === 0 && (rows - k) % 2 === 0) credit.push([x, y - rowH * 0.5, 0.03]); continue; }
     if (r() < 0.12) continue;
     const nl = cw * (0.36 + r() * 0.26), col = r() < 0.16 ? '#ffe9a0' : r() < 0.1 ? '#ffc8d8' : chalk;
     // a name: two or three strokes of different lengths, then tally ticks

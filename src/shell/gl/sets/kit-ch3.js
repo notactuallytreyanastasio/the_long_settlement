@@ -9,8 +9,8 @@
 //   plumb(opts)                 the Company's device: a plumb weight on its line, as a fat gold solid
 //   gonfalon(opts)              a hanging banner with the plumb on it; anchors: foot (where a real bob can hang)
 //   pixelText(str, opts)        digits and A..Z in a 3x5 block face, flat, facing +Z (bed numbers, drawer letters)
-//   people(opts)                NOT a mesh: a crowd as three instanced draws (coat, head, hair/cap), each person
-//                               placed, tinted, lifted and hidden on its own. For ranks, audiences, a dormitory.
+//   people(opts)                NOT a mesh: a crowd as a few instanced draws (coats + head variants, or one baked uniform),
+//                               each person placed, tinted, lifted and hidden on its own. For ranks, audiences, a dormitory.
 //   bunk(opts)                  an iron double bunk, foot to +Z, with its number plate; anchors: plate, lower, upper, under
 //   academyBlock(opts)          a long square barrack front: rows of identical windows; anchors: windows (lit ones), ridge
 //   gateTower(opts)             the Academy's gate tower: arch, clock, one lit window; anchors: clock, lamp, top, gate
@@ -55,7 +55,7 @@ const flatQ = (w, h, x, y, z, c) => setOutline(tint(place(quad(w, h), x, y, z), 
 // ------------------------------------------------------------------------------------ the device
 
 /** A plumb weight on its line. Origin: the top of the line; hangs `s` down. Faces +Z, `depth` thick. */
-export function plumb({ s = 1, color = H3.gold, line = H3.silver, depth = 0.5, seg = 8 } = {}) {
+export function plumb({ s = 1, color = H3.gold, line = H3.silver, depth = 0.5, seg = 6 } = {}) {
   const bob = lathe([[0, -1], [0.06, -0.92], [0.2, -0.62], [0.22, -0.5], [0.16, -0.42], [0.07, -0.4], [0.07, -0.34], [0, -0.34]], seg, { crease: 50 });
   return scaleMesh(merge(tint(place(bob, 0, 0, 0, 0, 0, 0, 1, 1, depth), color), tint(place(box(0.03, 0.36, 0.03 * depth), 0, -0.18, 0), line)), s);
 }
@@ -103,61 +103,74 @@ export function pixelText(str, { s = 0.2, color = H3.navy, glow = 0 } = {}) {
 
 // ------------------------------------------------------------------------------------ people
 
-const HAIR_COLS = ['#7a4630', '#3b3560', '#c8643a', '#f0e6d6', '#59402e', '#e0b060', '#2f2a48'];
 const SKINS = ['#ffe2c8', '#f6cfae', '#e8b48e', '#c98e6a', '#a8704e', '#ffd8b8'];
+const PALE = ['#ffffff', '#fff0e4', '#f2e2d6', '#e6d2c6', '#fff6ee'];
+/** Head variants for people(): a hair shape and its colour (the instance's skin tone tints both). */
+export const HEADS = [{ shape: 'short', hair: '#7a5038' }, { shape: 'bun', hair: '#e07a40' }, { shape: 'flat', hair: '#4a4478', cap: '#3a4a9a' }, { shape: 'short', hair: '#fff6e6' }, { shape: 'bun', hair: '#4a4478' }];
 
-function personBody() { return tint(lathe([[0, 0], [0.21, 0], [0.17, 0.32], [0.185, 0.44], [0, 0.56]], 6, { crease: 180 }), '#ffffff'); }
-function personHead(paper) {
-  const parts = [tint(place(sphere(0.2, 6, 4), 0, 0.72, 0), '#ffffff')];
+function coatMesh(lod, color = '#ffffff') { return tint(lathe(lod ? [[0, 0], [0.21, 0], [0.18, 0.4], [0, 0.56]] : [[0, 0], [0.21, 0], [0.17, 0.32], [0.185, 0.44], [0, 0.56]], lod ? 5 : 6, { crease: 180 }), color); }
+function faceParts(lod, skin, paper) {
+  const parts = [tint(place(lod ? sphere(0.2, 5, 3) : sphere(0.2, 6, 4), 0, 0.72, 0), skin)];
   for (const sx of [-1, 1]) parts.push(setOutline(tint(place(quad(0.04, 0.06), sx * 0.075, 0.71, 0.19), '#30264a'), 0));
   if (paper) { // both hands up in front, holding a sheet
-    for (const sx of [-1, 1]) parts.push(tint(place(sphere(0.05, 5, 3), sx * 0.12, 0.36, 0.2), '#ffffff'));
-    parts.push(setGlow(tint(place(box(0.3, 0.36, 0.015), 0, 0.42, 0.23, -24, 0, 0), '#fffdf0'), 0.25));
+    for (const sx of [-1, 1]) parts.push(tint(place(sphere(0.05, 5, 3), sx * 0.12, 0.36, 0.2), skin));
+    parts.push(setGlow(tint(place(box(0.3, 0.36, 0.015), 0, 0.42, 0.23, -24, 0, 0), '#fffdf0'), 0.3));
   }
+  return parts;
+}
+function hairParts(v, lod) {
+  const cap = tint(place(deform(lod ? sphere(1, 5, 3) : sphere(1, 6, 3), (p) => { if (p[1] < 0.12 && p[2] > -0.25) p[1] = 0.12 + (p[1] - 0.12) * 0.05; }), 0, 0.735, -0.02, 0, 0, 0, 0.218, 0.2, 0.212), v.hair), parts = [cap];
+  if (v.shape === 'bun') parts.push(tint(place(sphere(0.085, 5, 3), 0, 0.93, -0.06), v.hair));
+  if (v.shape === 'flat') parts.push(tint(place(cylinder(0.21, 0.15, 0.09, lod ? 5 : 6), 0, 0.85, 0, -8, 0, 0), v.cap || H3.navy));
+  return parts;
+}
+/** One figure in the Company's uniform, every colour baked: coat, belt, collar, a shako with its band. */
+function uniformMesh({ coat = H3.cadet, cap = H3.tealDark, band = H3.silver, skin = '#ffdcc0', lod = 0, paper = false } = {}) {
+  const seg = lod ? 5 : 6, parts = [coatMesh(lod, coat), ...faceParts(lod, skin, paper)];
+  parts.push(tint(place(cylinder(0.2, 0.19, 0.05, seg, { caps: false }), 0, 0.2, 0), band));
+  if (!lod) { parts.push(tint(place(cylinder(0.13, 0.11, 0.05, seg), 0, 0.5, 0), band)); for (const y of [0.3, 0.4]) parts.push(setOutline(tint(place(quad(0.04, 0.04), 0, y, 0.185), H3.gold), 0)); }
+  parts.push(tint(place(cylinder(0.19, 0.16, 0.2, seg), 0, 0.82, -0.01), cap), tint(place(cylinder(0.195, 0.19, 0.05, seg, { caps: false }), 0, 0.84, -0.01), band));
+  if (!lod) parts.push(tint(place(cylinder(0.225, 0.21, 0.035, seg), 0, 0.8, 0.03), cap), setOutline(tint(place(quad(0.06, 0.07), 0, 0.93, 0.17), H3.gold), 0));
   return merge(parts);
 }
-function personHair(kind) {
-  const capMesh = () => place(deform(sphere(1, 6, 3), (p) => { if (p[1] < 0.12 && p[2] > -0.25) p[1] = 0.12 + (p[1] - 0.12) * 0.05; }), 0, 0.735, -0.02, 0, 0, 0, 0.218, 0.2, 0.212);
-  if (kind === 'bun') return tint(merge(capMesh(), place(sphere(0.085, 5, 3), 0, 0.93, -0.06)), '#ffffff');
-  if (kind === 'shako') return tint(merge(place(cylinder(0.19, 0.16, 0.2, 6), 0, 0.82, -0.01), place(cylinder(0.22, 0.21, 0.035, 6), 0, 0.8, 0.03)), '#ffffff'); // a cadet's cap: tint it with the Company's colour
-  if (kind === 'flat') return tint(merge(capMesh(), place(cylinder(0.21, 0.15, 0.09, 6), 0, 0.85, 0, -8, 0, 0)), '#ffffff');
-  return tint(capMesh(), '#ffffff');
-}
-function personArm() { return merge(tint(place(ellipsoid(0.05, 0.17, 0.05, 5, 3), 0, 0.15, 0), '#ffffff'), tint(place(sphere(0.055, 5, 3), 0, 0.34, 0), [1.6, 1.4, 1.25])); }
+function armMesh(color) { return merge(tint(place(ellipsoid(0.05, 0.17, 0.05, 5, 3), 0, 0.15, 0), color), tint(place(sphere(0.055, 5, 3), 0, 0.34, 0), '#ffdcc0')); }
 
 /**
- * A crowd that costs three instanced draws however many are in it (four with `arms`): coats, heads, hair or caps.
- *   spots     [{ pos [x, y, z] (feet; a seated person's pos is their floor, see `sit`), yaw (degrees), s, coat, skin, hair, kind (index into `kinds`), sit }]
- *             coat / skin / hair default to a seeded pick; `sit` lowers the figure by that much (0.22 behind a seat back)
- *   kinds     hair meshes to share out: 'short' | 'bun' | 'flat' | 'shako'
+ * A crowd in a handful of instanced draws, however many are in it:
+ *   townsfolk (default): one draw of coats (each tinted its own colour) and one per head variant (tinted a skin tone);
+ *   uniform: { coat, cap, band }: everyone in the same baked uniform, ONE draw (ranks of cadets).
+ *   spots     [{ pos [x, y, z] (where the figure's hem is: the floor, or a seat), yaw (degrees), s, coat, skin, head (variant index) }]
+ *   heads     head variants to share out (see HEADS)      lod 1: far figures, about 60 triangles each
  *   paper     everyone holds a sheet in both hands (the dormitory, with its contracts)
- *   arms      add a right arm each that raise(i, 0..1) lifts (a show of hands)
+ *   arms      a right arm each, one more draw, that list[i].hand 0..1 raises (a show of hands)
  * Returns { node, list, write(i), writeAll(), count }. list[i] = { pos, yaw, s, lift, lean, here (0 hides), hand } is yours to
  * change; call write(i) after. Nothing here allocates after the build.
  */
-export function people({ spots, material, kinds = ['short', 'bun', 'flat'], seed = 1, paper = false, arms = false, coats = null }) {
-  const r = R(seed), n = spots.length, root = group('people');
+export function people({ spots, material, heads = HEADS.slice(0, 3), lod = 0, seed = 1, paper = false, arms = false, coats = null, uniform = null }) {
+  const r = R(seed), n = spots.length, root = group('people'), V = uniform ? 1 : heads.length, cols = coats || PAL.lanterns;
   const mk = (name, mesh, cap) => { const k = node(name, mesh, material); k.castShadow = false; k.instances = makeInstances(Math.max(1, cap)); k.instances.count = cap; root.add(k); return k; };
-  const list = spots.map((sp, i) => ({
-    pos: [sp.pos[0], sp.pos[1] - (sp.sit || 0), sp.pos[2]], yaw: sp.yaw || 0, s: sp.s || 0.9 + r() * 0.2, lift: 0, lean: 0, here: 1, hand: 0,
-    coat: rgb(sp.coat || (coats || PAL.lanterns)[Math.floor(r() * (coats || PAL.lanterns).length)]), skin: rgb(sp.skin || SKINS[Math.floor(r() * SKINS.length)]), hair: rgb(sp.hair || HAIR_COLS[Math.floor(r() * HAIR_COLS.length)]),
-    kind: (sp.kind ?? Math.floor(r() * kinds.length)) % kinds.length, slot: 0, ph: r() * 6.283,
+  const list = spots.map((sp) => ({
+    pos: [sp.pos[0], sp.pos[1], sp.pos[2]], yaw: sp.yaw || 0, s: sp.s || 0.9 + r() * 0.2, lift: 0, lean: 0, here: 1, hand: 0,
+    coat: rgb(sp.coat || cols[Math.floor(r() * cols.length)]), skin: rgb(sp.skin || (uniform ? PALE : SKINS)[Math.floor(r() * (uniform ? PALE : SKINS).length)]),
+    head: (sp.head ?? Math.floor(r() * V)) % V, slot: 0, ph: r() * 6.283,
   }));
-  const per = kinds.map(() => 0); for (const p of list) p.slot = per[p.kind]++;
-  const body = mk('people-coat', personBody(), n), head = mk('people-head', personHead(paper), n), hair = kinds.map((k, i) => mk('people-' + k, personHair(k), per[i]));
-  const arm = arms ? mk('people-arm', personArm(), n) : null;
-  const Q = quat.create(), S3 = [1, 1, 1], P = [0, 0, 0], Mx = m4.create();
+  const per = new Array(V).fill(0); for (const p of list) p.slot = per[p.head]++;
+  const coat = uniform ? null : mk('people-coat', coatMesh(lod), n);
+  const head = uniform ? [mk('people-uniform', uniformMesh({ ...uniform, lod, paper }), n)] : heads.map((v, i) => mk('people-head' + i, merge(...faceParts(lod, '#ffffff', paper), ...hairParts(v, lod)), per[i]));
+  const arm = arms ? mk('people-arm', armMesh(uniform ? uniform.coat || H3.cadet : '#ffffff'), n) : null;
+  const Q = quat.create(), S3 = [1, 1, 1], P = [0, 0, 0], Mx = m4.create(), WHITE = [1, 1, 1];
   const put = (inst, slot, col) => { const d = inst.data, o = slot * 20; d.set(Mx, o); d[o + 16] = col[0]; d[o + 17] = col[1]; d[o + 18] = col[2]; d[o + 19] = 1; inst.dirty = true; };
   function write(i) {
     const p = list[i], s = p.s * p.here;
     P[0] = p.pos[0]; P[1] = p.pos[1] + p.lift; P[2] = p.pos[2];
     quat.fromEuler(Q, 0, p.yaw * DEG, p.lean * DEG); S3[0] = S3[1] = S3[2] = s;
     m4.fromTRS(Mx, P, Q, S3);
-    put(body.instances, i, p.coat); put(head.instances, i, p.skin); put(hair[p.kind].instances, p.slot, p.hair);
+    if (coat) put(coat.instances, i, p.coat);
+    put(head[p.head].instances, p.slot, p.skin);
     if (arm) { // the right shoulder; the arm swings from hanging to straight up
       const c = Math.cos(p.yaw * DEG), sn = Math.sin(p.yaw * DEG), ax = -0.2 * s, ay = 0.42 * s;
       P[0] = p.pos[0] + ax * c; P[1] = p.pos[1] + p.lift + ay; P[2] = p.pos[2] - ax * sn;
-      quat.fromEuler(Q, 0, p.yaw * DEG, (180 - p.hand * 172) * DEG); m4.fromTRS(Mx, P, Q, S3); put(arm.instances, i, p.coat);
+      quat.fromEuler(Q, 0, p.yaw * DEG, (180 - p.hand * 172) * DEG); m4.fromTRS(Mx, P, Q, S3); put(arm.instances, i, uniform ? WHITE : p.coat);
     }
   }
   function writeAll() { for (let i = 0; i < n; i++) write(i); }
@@ -350,8 +363,8 @@ export function clerkDesk({ w = 1.5, color = H3.woodDark, top = H3.wood, cloth =
 /** A run of `n` theatre seats facing +Z on a common rail. Origin: floor, centre. `up`: the seats are turned up (an empty hall). */
 export function seatRow({ n = 8, pitch = 0.62, color = H3.velvet, dark = H3.velvetDark, frame = H3.brassDark, up = false, arm = H3.gold, plain = false } = {}) {
   const parts = [], w = n * pitch;
-  if (plain) { // a full house: only the backs and the row ends show
-    for (let i = 0; i < n; i++) parts.push(bx(pitch - 0.07, 0.56, 0.1, -w / 2 + pitch * (i + 0.5), 0.52, -0.2, color, -7, 0, 0));
+  if (plain) { // a full house: only a run of backs and the row ends show
+    parts.push(bx(w - 0.04, 0.56, 0.1, 0, 0.52, -0.2, color, -7, 0, 0), bx(w - 0.04, 0.07, 0.12, 0, 0.82, -0.235, dark, -7, 0, 0));
     for (const sx of [-1, 1]) parts.push(bx(0.07, 0.5, 0.4, sx * w / 2, 0.3, -0.03, frame), tint(place(sphere(0.06, 5, 3), sx * w / 2, 0.58, 0.14), arm));
     return merge(parts);
   }
@@ -368,8 +381,8 @@ export function seatRow({ n = 8, pitch = 0.62, color = H3.velvet, dark = H3.velv
 
 /** A shell footlight for the lip of a stage: the shell hides the flame from the house and throws it on the players (toward +Z). anchors: lamp */
 export function footlight({ s = 1, metal = H3.brass, glass = '#fff0b0' } = {}) {
-  const shell = place(lathe([[0, 0], [0.16, 0.02], [0.2, 0.12], [0.16, 0.24], [0, 0.28]], 8, { crease: 180 }), 0, 0.02, -0.03, 0, 0, 0, 1, 1, 0.5);
-  return keep(scaleMesh(merge(tint(shell, metal), cyl(0.1, 0.12, 0.04, 8, 0, 0, 0, H3.brassDark), setGlow(tint(place(ellipsoid(0.07, 0.09, 0.05, 6, 4), 0, 0.14, 0.05), glass), 1)), s), { lamp: [0, 0.14 * s, 0.08 * s] });
+  const shell = place(lathe([[0, 0], [0.17, 0.04], [0.2, 0.14], [0, 0.28]], 6, { crease: 180 }), 0, 0.02, -0.03, 0, 0, 0, 1, 1, 0.5);
+  return keep(scaleMesh(merge(tint(shell, metal), setGlow(tint(place(ellipsoid(0.07, 0.09, 0.05, 5, 3), 0, 0.14, 0.05), glass), 1)), s), { lamp: [0, 0.14 * s, 0.08 * s] });
 }
 
 // ------------------------------------------------------------------------------------ the Proctor's office

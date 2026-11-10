@@ -260,10 +260,11 @@ export function rain(sprites, b, { rate = 60, color = '#cfe0ff', len = 0.5, spee
  * A tall, narrow Tallis merchant's house. Origin: the middle of its foot; the gabled front faces +Z.
  *   gable 'step' | 'point' | 'bell';  floors x cols windows on the front, `lit` the chance one is lit
  *   shut  0..1 chance a window is shuttered instead (a house that has read the news)
+ *   dark  the colour of an unlit pane (pale sky by day, deep blue at night)
  *   door  true | 'bolted' (a bar across it) | false;  awning: colour or null
  * anchors: windows (centres of the lit ones), top, door
  */
-export function gableHouse({ w = 2.6, h = 5, d = 2.6, floors = 3, cols = 2, wall = TL.cream, roof = TL.copper, trim = TL.slateDark, gable = 'step', lit = 0.5, shut = 0, shutter = TL.teal, door = true, awning = null, seed = 1, lean = 0.02, bulge = 0.05, glow = 0.9 } = {}) {
+export function gableHouse({ w = 2.6, h = 5, d = 2.6, floors = 3, cols = 2, wall = TL.cream, roof = TL.copper, trim = TL.slateDark, gable = 'step', lit = 0.5, shut = 0, shutter = TL.teal, door = true, awning = null, seed = 1, lean = 0.02, bulge = 0.05, glow = 0.9, dark = TL.glassOff } = {}) {
   const r = R(seed), parts = [], hw = w / 2, wins = [];
   parts.push(bx(w, h, d, 0, h / 2, 0, wall));
   const gh = w * (gable === 'point' ? 0.62 : 0.72);
@@ -281,10 +282,10 @@ export function gableHouse({ w = 2.6, h = 5, d = 2.6, floors = 3, cols = 2, wall
     const x = (c - (cols - 1) / 2) * (w - 0.5) / cols * 1.0, y = 0.95 + f * fh + fh * 0.5, shutIt = r() < shut, on = !shutIt && r() < lit;
     parts.push(bx(ww + 0.14, wh + 0.14, 0.08, x, y, d / 2 + 0.03, trim));
     if (shutIt) parts.push(bx(ww, wh, 0.06, x, y, d / 2 + 0.07, shutter));
-    else { parts.push(setGlow(bx(ww, wh, 0.05, x, y, d / 2 + 0.06, on ? TL.glass : TL.glassOff), on ? glow : 0.12)); if (on) wins.push([x, y, d / 2 + 0.1]); parts.push(bx(ww + 0.2, 0.07, 0.16, x, y - wh / 2 - 0.07, d / 2 + 0.07, wall)); }
+    else { parts.push(setGlow(bx(ww, wh, 0.05, x, y, d / 2 + 0.06, on ? TL.glass : dark), on ? glow : 0.12)); if (on) wins.push([x, y, d / 2 + 0.1]); parts.push(bx(ww + 0.2, 0.07, 0.16, x, y - wh / 2 - 0.07, d / 2 + 0.07, wall)); }
   }
   // a round window in the gable
-  parts.push(tint(place(cylinder(0.26, 0.26, 0.08, 8), 0, h + gh * 0.36, d / 2 + 0.03, 90, 0, 0), trim), setGlow(tint(place(cylinder(0.19, 0.19, 0.05, 8), 0, h + gh * 0.36, d / 2 + 0.08, 90, 0, 0), lit > 0 ? TL.glass : TL.glassOff), lit > 0 ? glow * 0.7 : 0.1));
+  parts.push(tint(place(cylinder(0.26, 0.26, 0.08, 8), 0, h + gh * 0.36, d / 2 + 0.03, 90, 0, 0), trim), setGlow(tint(place(cylinder(0.19, 0.19, 0.05, 8), 0, h + gh * 0.36, d / 2 + 0.08, 90, 0, 0), lit > 0.3 ? TL.glass : dark), lit > 0.3 ? glow * 0.7 : 0.1));
   const dx = cols % 2 === 1 ? 0 : (r() > 0.5 ? 1 : -1) * w * 0.22;
   if (door) {
     parts.push(bx(0.74, 1.24, 0.1, dx, 0.96, d / 2 + 0.03, trim), bx(0.58, 1.1, 0.08, dx, 0.9, d / 2 + 0.07, door === 'bolted' ? TL.brassDark : shutter));

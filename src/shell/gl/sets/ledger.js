@@ -47,7 +47,7 @@ const LIGHTS = {
 const CAMERAS = {
   wide: { target: [0, 1.45, -1.5], dist: 6.4, yaw: 5, pitch: 8, fov: 44, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 4.5 },
   two: { target: [0.05, 1.12, -1.3], dist: 4.2, yaw: 30, pitch: 13, fov: 36, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 3.2 },
-  close: { target: [-0.1, 1.2, -1.42], dist: 4.5, yaw: -6, pitch: 31, fov: 31, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 2.4 },
+  close: { target: [-0.05, 0.92, -1.42], dist: 6.3, yaw: -6, pitch: 27, fov: 31, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 2.4 },
   low: { target: [0, 1.38, -1.7], dist: 3.3, yaw: -12, pitch: -7, fov: 52, aspect: 0.46, shadowCenter: [0, 0, -1.4], shadowRadius: 3.6 },
   stage: { target: [0, 1.08, -0.6], dist: 8.4, yaw: -10, pitch: 7, fov: 24, aspect: 1.95, shadowCenter: [0, 0, -1.0], shadowRadius: 6, outline: 0.7 },
   landscape: { target: [0, 1.4, -1.5], dist: 6.6, yaw: 4, pitch: 8, fov: 40, aspect: 1.6, shadowCenter: [0, 0, -1.4], shadowRadius: 6 },

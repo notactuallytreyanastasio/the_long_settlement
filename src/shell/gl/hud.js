@@ -360,76 +360,71 @@ function drawOpposition(g, right, y, stage, now, maxW) {
   if (!pr || !(pr.total > 0) || !(pr.done >= 0)) throw new Error(`hud: stage.progress must be { done, total > 0 }, got ${JSON.stringify(pr)}`);
   const name = opp.name.toUpperCase();
   const force = opp.kind === 'force';
-  const size = fit(g, name, maxW - 40, 13, MIN_TYPE, 800);
+  // one row, so the head of the band costs the stage as little height as it can: the name and the count on a pill,
+  // and along the pill's foot the bar of what the objective has not yet taken
+  const leftOf = clamp(1 - pr.done / pr.total, 0, 1);
+  const won = stage.phase === 'resolve' || pr.done >= pr.total;
+  const count = won ? 'DONE' : `${pr.done}/${pr.total}`;
+  g.font = font(12, 800);
+  const cw = g.measureText(count).width;
+  const size = fit(g, name, maxW - 48 - cw, 12.5, MIN_TYPE, 800);
   const tw = g.measureText(name).width;
-  const w = Math.max(132, tw + 40);
+  const w = Math.max(138, tw + 48 + cw);
   const x = right - w;
-  panel(g, x, y, w, 26);
+  const h = 31;
+  panel(g, x, y, w, h, { r: 13 });
   // people: a peaked cap. a force (weather, a crowd's panic, a debt): a gust
   g.strokeStyle = CORAL;
   g.fillStyle = CORAL;
-  g.lineWidth = 2.6;
+  g.lineWidth = 2.4;
   g.lineCap = 'round';
   if (force) {
     g.beginPath();
-    g.moveTo(x + 9, y + 10);
-    g.quadraticCurveTo(x + 15, y + 5, x + 20, y + 10);
-    g.moveTo(x + 9, y + 17);
-    g.quadraticCurveTo(x + 15, y + 12, x + 22, y + 17);
+    g.moveTo(x + 9, y + 9);
+    g.quadraticCurveTo(x + 14, y + 4.5, x + 19, y + 9);
+    g.moveTo(x + 9, y + 15);
+    g.quadraticCurveTo(x + 14, y + 10.5, x + 21, y + 15);
     g.stroke();
   } else {
     g.beginPath();
-    g.arc(x + 15, y + 15, 6, Math.PI, 0);
+    g.arc(x + 15, y + 13, 5.5, Math.PI, 0);
     g.closePath();
     g.fill();
-    g.fillRect(x + 8, y + 15, 15, 3);
+    g.fillRect(x + 8.5, y + 13, 14, 2.6);
   }
   g.lineCap = 'butt';
   g.font = font(size, 800);
   g.fillStyle = NAVY;
   g.textAlign = 'left';
-  g.fillText(name, x + 29, y + 13 + size * 0.36);
-
-  // the bar: what the objective has not yet taken
-  const by = y + 33;
-  const bh = 14;
-  const leftOf = clamp(1 - pr.done / pr.total, 0, 1);
-  const won = stage.phase === 'resolve' || pr.done >= pr.total;
-  const count = won ? 'DONE' : `${pr.done}/${pr.total}`;
+  g.fillText(name, x + 27, y + 11 + size * 0.36);
   g.font = font(12, 800);
-  const cw = g.measureText(count).width + 14;
-  const bx = x + cw + 4;
-  const bw = w - cw - 4;
-  panel(g, x, by - 2, cw, bh + 4, { r: 9, fill: won ? GOLD : CREAM });
-  g.fillStyle = NAVY;
-  g.textAlign = 'center';
-  g.fillText(count, x + cw / 2, by + 11.5);
-  panel(g, bx, by, bw, bh, { r: 8, fill: NAVY_HI });
-  if (leftOf > 0) {
+  g.textAlign = 'right';
+  g.fillStyle = won ? GOLD_LO : NAVY;
+  g.fillText(count, x + w - 10, y + 15.5);
+  const bx = x + 9;
+  const by = y + 20;
+  const bw = w - 18;
+  const bh = 6.5;
+  rr(g, bx, by, bw, bh, 3.2);
+  g.fillStyle = won ? (Math.floor(now / 120) % 2 === 0 ? GOLD : CREAM_LO) : NAVY_HI;
+  g.fill();
+  if (leftOf > 0 && !won) {
     g.save();
-    rr(g, bx + 1.2, by + 1.2, bw - 2.4, bh - 2.4, 6.5);
+    rr(g, bx, by, bw, bh, 3.2);
     g.clip();
-    const fw = Math.max(6, (bw - 2.4) * leftOf);
+    const fw = Math.max(5, bw * leftOf);
     g.fillStyle = CORAL;
-    g.fillRect(bx + 1.2, by, fw, bh);
+    g.fillRect(bx, by, fw, bh);
     g.fillStyle = CORAL_HI;
-    g.fillRect(bx + 1.2, by + 1.2, fw, 4);
-    g.fillStyle = NAVY;
-    g.fillRect(bx + 1.2 + fw, by, 2.2, bh);
+    g.fillRect(bx, by, fw, 2.2);
     g.restore();
   }
-  if (pr.total > 1 && pr.total <= 12) {
-    g.fillStyle = 'rgba(29,42,92,0.55)';
-    for (let i = 1; i < pr.total; i++) g.fillRect(bx + (bw * i) / pr.total - 0.75, by + 2, 1.5, bh - 4);
-  }
-  if (won) {
-    const on = Math.floor(now / 120) % 2 === 0;
-    g.font = font(11, 800, true);
-    g.textAlign = 'center';
-    inked(g, 'SETTLED!', bx + bw / 2, by + 11, { fill: on ? GOLD : WHITE, lw: 3, drop: 0 });
+  if (pr.total > 1 && pr.total <= 12 && !won) {
+    g.fillStyle = CREAM;
+    for (let i = 1; i < pr.total; i++) g.fillRect(bx + (bw * i) / pr.total - 0.75, by, 1.5, bh);
   }
   g.textAlign = 'left';
-  return { bottom: by + bh + 3, left: x };
+  return { bottom: y + h + 3, left: x };
 }
 
 function drawBoons(g, right, y, boons) {
@@ -858,14 +853,6 @@ function drawToasts(g, toasts, cx, y, maxW, hidePlateKinds) {
 }
 
 /** The objective line: the scene's hint, standing on the picture at the foot of the band. */
-function drawHint(g, cx, base, text, maxW) {
-  g.textAlign = 'center';
-  fit(g, text, maxW, 13.5, 12, 800);
-  const lines = g.measureText(text).width <= maxW ? [text] : wrap(g, text, maxW).slice(0, 2);
-  lines.forEach((l, i) => inked(g, l, cx, base - (lines.length - 1 - i) * 16, { fill: CREAM, lw: 4, drop: 1.5 }));
-  g.textAlign = 'left';
-}
-
 // When each bark was first drawn, so a long one can turn its pages. A cache of the clock, not of the game.
 const barkSeen = { id: null, since: 0 };
 
@@ -981,6 +968,20 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
     g.textAlign = 'left';
     g.globalAlpha = 1 - out;
   }
+  // the objective, for a player with no ball to watch: on the table, under the drums, and gone while a ball is live
+  const liveBall = Boolean(game.phys && game.phys.balls.some((b) => b.state === 'live'));
+  if (scene && !liveBall && !plateUp) {
+    const hy = rects.reels.y + rects.reels.h + 30;
+    g.font = font(12.5, 800);
+    const hl = wrap(g, scene.hint, Math.min(300, T.w - 60)).slice(0, 2);
+    const hw = Math.max(...hl.map((l) => g.measureText(l).width)) + 26;
+    const hh = 12 + hl.length * 16;
+    panel(g, cx - hw / 2, hy, hw, hh, { r: 12, fill: CREAM, drop: 2.5 });
+    g.fillStyle = NAVY;
+    g.textAlign = 'center';
+    hl.forEach((l, i) => g.fillText(l, cx, hy + 19 + i * 16));
+    g.textAlign = 'left';
+  }
   drawLaunch(g, rects.launch, state, now);
   g.restore();
 
@@ -1034,11 +1035,7 @@ function drawPlay(g, content, game, stage, fx, layout, rects, grow) {
   g.save();
   g.translate(0, fx.band ? Math.max(0, fx.band.y + fx.band.h - (B.y + B.h)) : 0);
   g.globalAlpha = 1 - out;
-  let barked = false;
-  if (fx.speaking) barked = drawBark(g, content, fx.speaking, fx, B, S.y - 4, now, top - 2);
-  // the objective line is for a player with no ball to watch: it steps aside while one is live
-  const live = Boolean(game.phys && game.phys.balls.some((b) => b.state === 'live'));
-  if (!barked && scene && !live && !comboOn) drawHint(g, B.x + B.w / 2, S.y - 9, scene.hint, B.w - 28);
+  if (fx.speaking) drawBark(g, content, fx.speaking, fx, B, S.y - 4, now, top - 2);
   g.restore();
 }
 

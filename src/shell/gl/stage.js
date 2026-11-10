@@ -460,7 +460,7 @@ const glowAt = (S, x, y, z, size, color) => (S.sprites ? S.sprites.add({ kind: '
  */
 export const UNITS = {
   'lantern-dark'(S, root, i) {
-    const x = 0.8 + i * 0.82, z = 0.28, top = 1.92, g = glowAt(S, x, top - 0.36, z + 0.05, 1.3, '#ffb450');
+    const x = 0.8 + i * 0.82, z = 0.28, top = 1.62, g = glowAt(S, x, top - 0.36, z + 0.05, 1.3, '#ffb450');
     piece(root, S.mats.prop, merge(cylinder(0.035, 0.03, top + 0.06, 6), place(box(0.36, 0.035, 0.035), -0.16, top, 0)), INK, x + 0.32, 0, z);
     const l = piece(root, S.mats.lantern, paperLantern({ r: 0.21 }), '#ffffff', x, top, z);
     return { pos: [x, top - 0.36, z], stand: [x - 0.5, z + 0.42], glows: [g], set(v, time) { const s = Math.sin(time * 1.3 + i) * 3; l.setRot(0, 0, s); setTint(l, lerp(0.36, 1.08, v), lerp(0.38, 0.72, v), lerp(0.56, 0.32, v)); if (g) g.alpha = v * 0.85; } };
@@ -757,7 +757,7 @@ function fightOn(S, opts = {}) {
       let a = null; for (const x of S.actors) if (x.id === ex[i] && x.role === 'old' && !a) a = x;
       // holding a line, the extras ARE the pressure: they stand where an opposition would. Otherwise they watch from the back.
       const s = mode === MODES.hold ? OPP_SLOT[i] : BACK_R[i];
-      const sx = mode === MODES.hold ? s[0] - 0.35 : mode === MODES.walk ? -0.9 + i * 1.5 : S.units.length ? 2.85 + i * 0.5 : s[0];   // beside a prop they keep to the edge, out of its way
+      const sx = mode === MODES.hold ? s[0] - 0.35 : mode === MODES.walk ? -0.9 + i * 1.5 : S.units.length ? 2.62 + i * 0.42 : s[0];   // beside a prop they keep to the edge, out of its way
       if (!a) a = S.enter(ex[i], 30 + i, lod, sx, s[1], 0, cut ? null : OFF_X + i * 0.6);
       if (a.held) { a.ch.release(); a.held = false; }
       const seat = ex[i] === 'corvane' && set.marks && set.marks.seat ? set.marks.seat : null;
