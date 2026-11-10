@@ -11,13 +11,13 @@
 /** @typedef {import('./types.js').Econ} Econ */
 /** @typedef {import('./types.js').Payout} Payout */
 
-export const SPIN_COST = 100;
+export const SPIN_COST = 150;
 
 /** Marks earned per point scored. A bumper is 0.1 marks, a ramp 2.5, a scene clear 25. */
 export const MARKS_PER_POINT = 0.001;
 
 /** The Mint advances 250, books 300, and takes three marks in every ten until it is repaid. */
-export const LOAN = Object.freeze({ marks: 250, owed: 300, garnish: 0.3 });
+export const LOAN = Object.freeze({ marks: 200, owed: 250, garnish: 0.3 });
 
 /** Trust needed per mutual-aid ball, per chapter. */
 export const TRUST_PER_AID = 25;

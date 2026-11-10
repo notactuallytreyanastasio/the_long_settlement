@@ -2279,5 +2279,68 @@
    "4f88f828-ab4a-4718-8ff0-a5f86fcc2f9e"
   ],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T05:47:29.518Z",
+  "files": 1474,
+  "lines": 26186,
+  "bytes": 42041776,
+  "linesByDir": {
+   ".": 140,
+   "assets/voice": 7180,
+   "src/content": 4176,
+   "src/core": 2182,
+   "src/shell": 8877,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 177,
+   "test/economy.test.js": 277,
+   "test/game.test.js": 741,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 243,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 156,
+   "test/story.test.js": 163,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M src/core/economy.js"
+  ],
+  "tests": {
+   "total": 140,
+   "pass": 90,
+   "fail": 50,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 16629,
+   "failures": [
+    "the rigged first spin is three orbs and pays what the reels would pay in writs",
+    "initEcon affords exactly three spins and nothing else",
+    "awardPoints adds score and converts to marks; mult touches marks only",
+    "a loan advances LOAN.marks, books LOAN.owed, and garnishes every mark until repaid",
+    "applyPayout grants writs and marks and rejects malformed payouts",
+    "mutual aid: one ball per 25 trust per chapter, free of debt",
+    "200k spins: a 60-marks-a-ball player stays about level",
+    "200k spins: a 40-marks-a-ball player drifts into debt slowly, not instantly",
+    "200k spins: an 80-marks-a-ball player gets ahead and rarely borrows",
+    "over one sitting",
+    "playthrough: title to end across two chapters",
+    "debt: broke at the reels, confirm takes a loan, and earnings are garnished"
+   ]
+  },
+  "nodes": {
+   "goal": 3,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 3,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]
