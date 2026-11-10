@@ -49,6 +49,7 @@
 //   fill              fragments shaded in one frame, counted by drawing every pass additively and reading the canvas back
 //                     (renderer.measureFill); depth-rejected fragments are not counted, the shadow pass is depth only and not in it.
 //                     `x` is fragments per canvas pixel. The present pass (antialiasing) adds one more canvas of cheap fragments.
+//                     WebGL calls a frame: every call on the context, counted by wrapping it for four frames.
 //   ms                js = time inside the app's draw(); gap = time between frames; done = draw() followed by gl.finish(), which on
 //                     THIS machine is roughly CPU + GPU for the frame. None of it is a phone's number.
 // The same numbers are left in window.__perf (JSON-able) and document.title becomes 'gl perf: done' for scripts.
@@ -94,6 +95,13 @@ function probe(renderer, classify, frameFn, win = window) {
     },
     /** ms for a frame that is waited for (draw, then gl.finish and a one-pixel read), median of n */
     finished(n = 12) { const ms = []; for (let i = 0; i < n; i++) { const t = performance.now(); frameFn(); gl.finish(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); ms.push(performance.now() - t); } return median(ms); },
+    /** WebGL calls one frame makes (every method of the context counted), mean of n frames */
+    glCalls(n = 4) {
+      let count = 0; const names = [];
+      for (const k in gl) { if (typeof gl[k] !== 'function') continue; const f = gl[k]; names.push(k); gl[k] = function (...a) { count++; return f.apply(gl, a); }; }
+      try { for (let i = 0; i < n; i++) frameFn(); } finally { for (const k of names) delete gl[k]; }
+      return Math.round(count / n);
+    },
     fill() {
       const cc = gl.clearColor; gl.clearColor = () => cc.call(gl, 0, 0, 0, 0);     // the app clears the canvas to ink before it draws: that must not be counted
       try { const all = renderer.measureFill(frameFn); const by = {}; for (const p of PASSES.slice(1)) by[p] = renderer.measureFill(frameFn, p).fragments; return { fragments: all.fragments, pixels: all.pixels, perPixel: all.perPixel, saturated: all.saturated, by }; } finally { gl.clearColor = cc; }
@@ -101,7 +109,7 @@ function probe(renderer, classify, frameFn, win = window) {
   };
 }
 
-function summarise(label, frames, fill, finishedMs, extra = {}) {
+function summarise(label, frames, fill, finishedMs, extra = {}, glCalls = null) {
   const whats = [...new Set(frames.flatMap((f) => f.calls.map((c) => c.what)))];
   const tot = (f, key) => f.calls.reduce((a, c) => a + c[key], 0);
   const draws = frames.map((f) => tot(f, 'draws')), tris = frames.map((f) => tot(f, 'tris'));
@@ -110,7 +118,7 @@ function summarise(label, frames, fill, finishedMs, extra = {}) {
     label, ...extra, frames: frames.length, draws: { median: median(draws), max: Math.max(...draws) }, tris: { median: median(tris), max: Math.max(...tris) },
     keptRedraws: frames.filter((f) => f.calls.some((c) => c.kept)).length, trimMiss: Math.max(...frames.map((f) => tot(f, 'trimMiss'))),
     jsMs: +median(frames.map((f) => f.js)).toFixed(2), jsMax: +Math.max(...frames.map((f) => f.js)).toFixed(1), gapMs: +median(frames.slice(1).map((f) => f.gap)).toFixed(1), gapMax: +Math.max(...frames.slice(1).map((f) => f.gap)).toFixed(0), finishedMs: finishedMs == null ? null : +finishedMs.toFixed(2),
-    parts: {}, fill,
+    parts: {}, fill, glCalls,
   };
   for (const w of whats) { const c = typical.calls.find((x) => x.what === w) || worst.calls.find((x) => x.what === w); if (c) row.parts[w] = c; }
   window.__perf.rows.push(row);
@@ -122,7 +130,7 @@ function summarise(label, frames, fill, finishedMs, extra = {}) {
   }
   if (row.keptRedraws || row.trimMiss) say(`  static shadow map redrawn in ${row.keptRedraws} of ${frames.length} frames; trimmed meshes drawn whole (camera outside their box): up to ${row.trimMiss} a frame`, 'dim');
   if (fill) say(`  fill   ${M2(fill.fragments)} fragments on ${fill.pixels} px = ${fill.perPixel} x` + (fill.saturated ? ' (SATURATED: more than 31 layers somewhere, undercounted)' : '') + '   ' + Object.entries(fill.by).filter(([, v]) => v > 0).map(([p, v]) => `${p} ${M2(v)}`).join('  '));
-  say(`  ms     js ${row.jsMs} (max ${row.jsMax})   gap ${row.gapMs} (max ${row.gapMax})` + (finishedMs == null ? '' : `   done ${row.finishedMs}`), 'dim');
+  say(`  ms     js ${row.jsMs} (max ${row.jsMax})   gap ${row.gapMs} (max ${row.gapMax})` + (finishedMs == null ? '' : `   done ${row.finishedMs}`) + (glCalls == null ? '' : `   WebGL calls a frame ${glCalls}`), 'dim');
   return row;
 }
 
@@ -161,7 +169,7 @@ async function gameMode() {
     if (!chapter.scenes[s]) { say(`no scene ${s + 1}`, 'bad'); continue; }
     load(s); await sleep(SETTLE * 1000);
     const enc = chapter.scenes[s].encounter, where = enc ? `${chapter.stage.sets[enc.set].set}${chapter.stage.sets[enc.set].light ? ' / ' + chapter.stage.sets[enc.set].light : ''}` : '';
-    if (view !== 'cine') summarise(`ch${chN} s${s + 1} play  (${where})  tier ${app.tier}`, await P.sample(FRAMES), FILL ? P.fill() : null, P.finished(), { chapter: chN, scene: s + 1, view: 'play', tier: app.tier });
+    if (view !== 'cine') summarise(`ch${chN} s${s + 1} play  (${where})  tier ${app.tier}`, await P.sample(FRAMES), FILL ? P.fill() : null, P.finished(), { chapter: chN, scene: s + 1, view: 'play', tier: app.tier }, P.glCalls());
     if (view === 'cine' || view === 'both') {
       // finish the objective the way a ball would: everything but the last target is marked hit, then the ball is put on the last one
       const sc = chapter.scenes[s], o = sc.objective, g = tls.game(); let hits = { ...g.hits }, seq = g.seq, last;
@@ -174,7 +182,7 @@ async function gameMode() {
       tls.set({ ...g, hits, seq, phys: { ...g.phys, balls: g.phys.balls.map((x) => (x === b ? nb : x)) } });
       try { await until(() => tls.game().mode === 'cine', 6000, 'the cutscene'); } catch (e) { say(`  the cutscene of s${s + 1} did not start (${e.message})`, 'bad'); continue; }
       await sleep(2600);
-      summarise(`ch${chN} s${s + 1} cine  tier ${app.tier}`, await P.sample(FRAMES), FILL ? P.fill() : null, P.finished(), { chapter: chN, scene: s + 1, view: 'cine', tier: app.tier });
+      summarise(`ch${chN} s${s + 1} cine  tier ${app.tier}`, await P.sample(FRAMES), FILL ? P.fill() : null, P.finished(), { chapter: chN, scene: s + 1, view: 'cine', tier: app.tier }, P.glCalls());
     }
   }
   P.restore();
@@ -188,7 +196,7 @@ const memLine = (m) => `${(m.total / 1048576).toFixed(1)} MB (geometry ${(m.geom
 async function setMode() {
   const GL = await import('../src/shell/gl/index.js');
   const names = (q.get('sets') || q.get('set')).split(',').map((s) => s.trim()).filter(Boolean);
-  const tierName = { mid: 'medium', auto: 'medium' }[q.get('q') || 'mid'] || q.get('q') || 'medium';
+  const tierName = { mid: 'medium', auto: 'medium' }[q.get('q') || 'mid'] || q.get('q') || 'medium';     // set mode also takes q=min
   const canvas = document.createElement('canvas'); host.appendChild(canvas);
   const renderer = GL.createRenderer(canvas, { quality: tierName });
   if (q.get('trim') === '0') renderer.setQuality({ trim: false, autoTrim: false });
@@ -224,10 +232,10 @@ async function setMode() {
     const t1 = performance.now(); frameFn(); renderer.gl.finish(); const firstMs = performance.now() - t1;
     for (let i = 0; i < Math.round(SETTLE * 20); i++) frameFn();      // let walk-ons arrive (SETTLE is seconds of the game's clock here)
     const P = probe(renderer, () => 'stage', frameFn);
-    const frames = await P.sample(FRAMES), fill = FILL ? P.fill() : null, fin = P.finished();
+    const frames = await P.sample(FRAMES), fill = FILL ? P.fill() : null, fin = P.finished(), calls = P.glCalls();
     P.restore();
     const heapB = performance.memory ? performance.memory.usedJSHeapSize : 0;
-    const row = summarise(`${def.id || name}  light ${set.light || light}  (${band ? 'band ' + bw + 'x' + bh : camName + ' full screen'})`, frames, fill, fin, { set: def.id || name, light: set.light || light, buildMs: +buildMs.toFixed(1), firstFrameMs: +firstMs.toFixed(1) });
+    const row = summarise(`${def.id || name}  light ${set.light || light}  (${band ? 'band ' + bw + 'x' + bh : camName + ' full screen'})`, frames, fill, fin, { set: def.id || name, light: set.light || light, buildMs: +buildMs.toFixed(1), firstFrameMs: +firstMs.toFixed(1) }, calls);
     say(`  build ${buildMs.toFixed(0)} ms, first frame (upload + shaders) ${firstMs.toFixed(0)} ms` + (trimmed ? `; trimSet: of ${k1(trimmed.triangles)} static triangles the colour pass draws ${k1(trimmed.view)}, the outline pass ${k1(trimmed.outline)}` : '') + (heapB ? `; JS heap +${((heapB - heapA) / 1048576).toFixed(1)} MB` : '') + (renderer.memory ? `; GPU ${memLine(renderer.memory())}` : ''), 'dim');
     row.trimmed = trimmed;
     if (enc && enc.dispose) enc.dispose();

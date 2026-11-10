@@ -5,7 +5,7 @@
 // The render loop allocates nothing; all scratch storage is created once below.
 //
 // QUALITY. Everything that costs the GPU is a field of one quality object, changed while running
-// with renderer.setQuality('high' | 'medium' | 'low' | { ...fields }):
+// with renderer.setQuality('high' | 'medium' | 'low' | 'min' | { ...fields }):
 //
 //   dprCap        2      the drawing buffer is the canvas's CSS size times min(devicePixelRatio, dprCap)
 //   aa            'msaa' | 'fxaa' | 'none'. msaa: 4x multisampled off-screen buffer. fxaa: plain buffer and a
@@ -49,6 +49,9 @@ export const QUALITY = {
   high: { name: 'high', dprCap: 2, aa: 'msaa', shadowSize: 2048, shadowTaps: 4, shadowRate: 1, staticShadows: true, maxLamps: 8, water: 'full', cull: true, outlineMinPx: 0, trim: true, autoTrim: true, batch: true },
   medium: { name: 'medium', dprCap: 1.42, aa: 'fxaa', shadowSize: 1024, shadowTaps: 4, shadowRate: 2, staticShadows: true, maxLamps: 4, water: 'cheap', cull: true, outlineMinPx: 4, trim: true, autoTrim: true, batch: true },
   low: { name: 'low', dprCap: 1, aa: 'fxaa', shadowSize: 512, shadowTaps: 1, shadowRate: 2, staticShadows: true, maxLamps: 2, water: 'flat', cull: true, outlineMinPx: 7, trim: true, autoTrim: true, batch: true },
+  // below `low`, for a device that cannot hold it: three quarters of a CSS pixel, no shadow pass at all (figures need the
+  // director's blob shades for ground contact), one lamp, outlines only on what is 12 px or more
+  min: { name: 'min', dprCap: 0.75, aa: 'fxaa', shadowSize: 256, shadowTaps: 0, shadowRate: 2, staticShadows: true, maxLamps: 1, water: 'flat', cull: true, outlineMinPx: 12, trim: true, autoTrim: true, batch: true },
 };
 const WATER_Q = { full: 0, cheap: 1, flat: 2 };
 
@@ -106,6 +109,7 @@ export function createRenderer(canvas, opts = {}) {
       // fill measurement: every fragment that would be shaded adds one step of red instead
       if (overdraw && family !== 'depth' && family !== 'present') fs = fs.replace('void main()', 'void shade_()') + '\nvoid main() { shade_(); frag = vec4(8.0 / 255.0, 0.0, 0.0, 0.0); }';
       p = createProgram(gl, key, src[0], fs, defs);
+      p.memo = new Float32Array(16).fill(NaN);   // what put4() last sent
       if (family === 'sprite') p.attribs = { aCorner: gl.getAttribLocation(p.program, 'aCorner'), iA: gl.getAttribLocation(p.program, 'iA'), iB: gl.getAttribLocation(p.program, 'iB'), iC: gl.getAttribLocation(p.program, 'iC'), iD: gl.getAttribLocation(p.program, 'iD') };
       programs.set(key, p);
     }
@@ -368,6 +372,11 @@ export function createRenderer(canvas, opts = {}) {
     setCull(!m.doubleSided);
   }
 
+  // Per-node uniforms that are nearly always the same (tint 1, the whole texture, no flash, glow 1) are remembered per
+  // program and only sent when they change: four GL calls saved on most draws. Every write of them goes through here.
+  function put4(p, k, loc, a, b, c, d) { const m = p.memo, o = k * 4; if (m[o] === a && m[o + 1] === b && m[o + 2] === c && m[o + 3] === d) return; m[o] = a; m[o + 1] = b; m[o + 2] = c; m[o + 3] = d; gl.uniform4f(loc, a, b, c, d); }
+  const M_TINT = 0, M_UV = 1, M_FLASH = 2, M_GLOW = 3;
+
   /** part: 0 the whole mesh, 1 what the colour pass needs, 2 what the outline pass needs (see mesh.js trimForView). */
   function drawNode(p, n, opacity, shadowPass = false, part = 0) {
     const u = p.u, inst = n.instances;
@@ -376,10 +385,10 @@ export function createRenderer(canvas, opts = {}) {
     if (n.bones) { const b = n.bones; for (let i = 0; i < b.length; i++) boneMats.set(b[i].world, i * 16); gl.uniformMatrix4fv(u.uBones, false, boneMats); }
     else gl.uniformMatrix4fv(u.uModel, false, n.world);
     if (u.uNormalMat) gl.uniformMatrix3fv(u.uNormalMat, false, m4.normalMat3(nm3, n.world));
-    if (u.uTint) { tint4[0] = n.tint[0]; tint4[1] = n.tint[1]; tint4[2] = n.tint[2]; tint4[3] = n.tint[3] * opacity; gl.uniform4fv(u.uTint, tint4); }
-    if (u.uUvRect) gl.uniform4fv(u.uUvRect, n.uvRect);
-    if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
-    if (u.uGlow) gl.uniform1f(u.uGlow, n.glow);
+    if (u.uTint) put4(p, M_TINT, u.uTint, n.tint[0], n.tint[1], n.tint[2], n.tint[3] * opacity);
+    if (u.uUvRect) { const r = n.uvRect; put4(p, M_UV, u.uUvRect, r[0], r[1], r[2], r[3]); }
+    if (u.uFlash) { const f = n.flash; put4(p, M_FLASH, u.uFlash, f[0], f[1], f[2], f[3]); }
+    if (u.uGlow && p.memo[M_GLOW * 4] !== n.glow) { p.memo[M_GLOW * 4] = n.glow; gl.uniform1f(u.uGlow, n.glow); }
     gl.bindVertexArray(geo.vao);
     let tris = inst ? geo.triangles * inst.count : geo.triangles;
     if (inst) gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, inst.count);
@@ -473,10 +482,10 @@ export function createRenderer(canvas, opts = {}) {
   function drawBatch(p, b) {
     const u = p.u, n = b.ref;
     gl.uniformMatrix4fv(u.uModel, false, IDENT4); if (u.uNormalMat) gl.uniformMatrix3fv(u.uNormalMat, false, IDENT3);
-    if (u.uTint) gl.uniform4f(u.uTint, n.tint[0], n.tint[1], n.tint[2], n.tint[3] * n.material.opacity);
-    if (u.uUvRect) gl.uniform4f(u.uUvRect, 0, 0, 1, 1);
-    if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
-    if (u.uGlow) gl.uniform1f(u.uGlow, 1);
+    if (u.uTint) put4(p, M_TINT, u.uTint, n.tint[0], n.tint[1], n.tint[2], n.tint[3] * n.material.opacity);
+    if (u.uUvRect) put4(p, M_UV, u.uUvRect, 0, 0, 1, 1);
+    if (u.uFlash) { const f = n.flash; put4(p, M_FLASH, u.uFlash, f[0], f[1], f[2], f[3]); }
+    if (u.uGlow && p.memo[M_GLOW * 4] !== 1) { p.memo[M_GLOW * 4] = 1; gl.uniform1f(u.uGlow, 1); }
     gl.bindVertexArray(decalGpu.vao);
     gl.drawElements(gl.TRIANGLES, b.idx, gl.UNSIGNED_SHORT, b.i0 * 2);
     stats.triangles += b.idx / 3; stats.drawCalls++; passNow.draws++; passNow.tris += b.idx / 3; stats.batched += b.nodes;
@@ -507,10 +516,10 @@ export function createRenderer(canvas, opts = {}) {
     for (let k = 0; k < len; k++) { const n = list[i + k], o = k * 20; runData.set(n.world, o); runData[o + 16] = n.tint[0]; runData[o + 17] = n.tint[1]; runData[o + 18] = n.tint[2]; runData[o + 19] = 1; }
     { const had = geo.instCap; uploadInstances(gl, geo, runData, len); mem.geometry += (geo.instCap - had) * 80; }
     gl.uniformMatrix4fv(u.uModel, false, IDENT4);
-    if (u.uTint) gl.uniform4f(u.uTint, 1, 1, 1, a.tint[3] * opacity);
-    if (u.uUvRect) gl.uniform4fv(u.uUvRect, a.uvRect);
-    if (u.uFlash) gl.uniform4fv(u.uFlash, a.flash);
-    if (u.uGlow) gl.uniform1f(u.uGlow, a.glow);
+    if (u.uTint) put4(p, M_TINT, u.uTint, 1, 1, 1, a.tint[3] * opacity);
+    if (u.uUvRect) { const r = a.uvRect; put4(p, M_UV, u.uUvRect, r[0], r[1], r[2], r[3]); }
+    if (u.uFlash) { const f = a.flash; put4(p, M_FLASH, u.uFlash, f[0], f[1], f[2], f[3]); }
+    if (u.uGlow && p.memo[M_GLOW * 4] !== a.glow) { p.memo[M_GLOW * 4] = a.glow; gl.uniform1f(u.uGlow, a.glow); }
     gl.bindVertexArray(geo.vao);
     gl.drawElementsInstanced(gl.TRIANGLES, geo.count, geo.indexType, 0, len);
     const tris = geo.triangles * len;
@@ -801,6 +810,7 @@ export function createRenderer(canvas, opts = {}) {
       gl.uniform1i(p.u.uTex, 0); gl.uniform2f(p.u.uTexel, 1 / colorTarget.w, 1 / colorTarget.h); gl.uniform1f(p.u.uFxaa, aa === 'fxaa' ? 1 : 0);
       gl.bindVertexArray(skyVao); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.bindVertexArray(null);
       gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+      colorTarget.discard();   // presented: nothing in it is read again (the next view clears its own rectangle)
     }
     gl.disable(gl.SCISSOR_TEST);
     stats.cpuMs = performance.now() - t0;

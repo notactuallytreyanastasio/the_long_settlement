@@ -12511,8 +12511,8 @@
  },
  {
   "path": "src/shell/gl/gl.js",
-  "bytes": 14022,
-  "lines": 218
+  "bytes": 14573,
+  "lines": 225
  },
  {
   "path": "src/shell/gl/hud.js",
@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 62096,
-  "lines": 887
+  "bytes": 63599,
+  "lines": 897
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -13011,8 +13011,8 @@
  },
  {
   "path": "tools/gl-perf.html",
-  "bytes": 22585,
-  "lines": 251
+  "bytes": 23337,
+  "lines": 259
  },
  {
   "path": "tools/gl-set.html",

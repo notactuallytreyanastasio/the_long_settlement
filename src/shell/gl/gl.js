@@ -178,6 +178,7 @@ export function createShadowTarget(gl, size) {
  * has is the browser's business.
  */
 export function createColorTarget(gl, w, h, samples = 0) {
+  const DISCARD = [gl.COLOR_ATTACHMENT0, gl.DEPTH_ATTACHMENT], DISCARD_COLOR = [gl.COLOR_ATTACHMENT0];
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, w, h);
@@ -204,6 +205,12 @@ export function createColorTarget(gl, w, h, samples = 0) {
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, msFbo); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, texFbo);
       gl.blitFramebuffer(x, y, x + rw, y + rh, x, y, x + rw, y + rh, gl.COLOR_BUFFER_BIT, gl.NEAREST);
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    },
+    /** Tell the driver the contents are finished with, so a tile-based GPU neither writes the buffers back to memory nor reloads them for the next pass. */
+    discard() {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.invalidateFramebuffer(gl.FRAMEBUFFER, DISCARD);
+      if (msFbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, texFbo); gl.invalidateFramebuffer(gl.FRAMEBUFFER, DISCARD_COLOR); }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     },
     dispose() { gl.deleteFramebuffer(texFbo); if (msFbo) gl.deleteFramebuffer(msFbo); for (const r of rbs) gl.deleteRenderbuffer(r); gl.deleteTexture(tex); },
   };
