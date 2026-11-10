@@ -28,11 +28,11 @@ export function createTroupe({ detail = 1, material = null } = {}) {
   return {
     figMat, faces, detail, keyLight,
     /** Point the character light for this camera. side: -1 light from screen left, +1 from screen right; lift: how far above. */
-    aim(camera, side = -1, lift = 0.62, across = 0.4) {
+    aim(camera, side = -1, lift = 0.5, across = 0.45) {
       let bx = camera.position[0] - camera.target[0], by = camera.position[1] - camera.target[1], bz = camera.position[2] - camera.target[2];
       const bl = Math.hypot(bx, bz) || 1; bx /= bl; bz /= bl; by = 0;     // toward the camera, level
       const rx = bz, rz = -bx;                                           // screen right
-      const x = bx * 0.66 + rx * across * side, y = lift, z = bz * 0.66 + rz * across * side, l = Math.hypot(x, y, z);
+      const x = bx * 0.72 + rx * across * side, y = lift, z = bz * 0.72 + rz * across * side, l = Math.hypot(x, y, z);
       keyLight[0] = x / l; keyLight[1] = y / l; keyLight[2] = z / l;
     },
     spawn(idOrDef, opts = {}) {
@@ -86,7 +86,7 @@ function followGlow(ch) { if (ch.glow) { ch.glow.pos[0] = ch.lampPos[0]; ch.glow
 
 // ------------------------------------------------------------------------------------ cutscenes
 
-const CINE_FILL = { dusk: 0, night: 0.5, day: 0 };
+const CINE_FILL = { dusk: 0, night: 1, day: 0 }; // night only: the lamps hang overhead, so without a low warm lamp in front every chin and mouth is in the blue
 
 /**
  * A cutscene on a set. `on` lists cast ids left to right; they stand on set.marks.a / b / c (two: marks.two).
@@ -107,7 +107,7 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
   // a warm key from the lantern side, in front of the cast: without it every face toward the camera is in shadow tone at dusk
   let fillNode = null;
   if (fill && CINE_FILL[set.light] > 0) {
-    fillNode = new Node('cineFill', { pos: [-1.9, 2.3, 3.3], light: makeLight({ color: '#ffc98a', radius: 7.5, intensity: CINE_FILL[set.light] }) });
+    fillNode = new Node('cineFill', { pos: [-0.5, 1.2, 2.9], light: makeLight({ color: '#ffb45e', radius: 4.6, intensity: CINE_FILL[set.light] }) });
     set.scene.root.add(fillNode);
   }
   const view = { shadowCenter: [0, 0, 0.5], shadowRadius: 3 }, heads = [], H2 = [0, 0, 0], H3 = [0, 0, 0];
@@ -139,7 +139,8 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
       if (!camera) return;
       const drift = s.still ? 0 : time;
       if (camName === 'close' && sp) {
-        const side = sp.mark.pos[0] < -0.2 ? 1 : sp.mark.pos[0] > 0.2 ? -1 : (other && other.mark.pos[0] < sp.mark.pos[0] ? -1 : 1);
+        // look past the speaker toward the middle of the set (the sea), not into the stall behind them
+        const side = sp.mark.pos[0] < -0.2 ? -1 : sp.mark.pos[0] > 0.2 ? 1 : -0.7;
         heads.length = 0; heads.push(sp.headPos);
         frameHeads(camera, heads, { aspect, fov: 24, yaw: side * 17 + Math.sin(drift * 0.23) * 1.2, pitch: 3, pad: sp.headRadius * 1.25, fillH: 0.34, fillW: 0.74, at: 0.37 });
         view.shadowCenter[0] = sp.mark.pos[0]; view.shadowCenter[2] = sp.mark.pos[2]; view.shadowRadius = 2.2;
@@ -147,7 +148,7 @@ export function createCine(set, troupe, { on = ['nan', 'ren', 'ilse'], fill = tr
         H2[0] = sp.headPos[0]; H2[1] = sp.headPos[1]; H2[2] = sp.headPos[2]; H3[0] = other.headPos[0]; H3[1] = Math.min(other.headPos[1], sp.headPos[1]) - 0.42; H3[2] = other.headPos[2];
         heads.length = 0; heads.push(H2, H3);
         const side = sp.mark.pos[0] < other.mark.pos[0] ? 1 : -1;
-        frameHeads(camera, heads, { aspect, fov: 28, yaw: side * 13 + Math.sin(drift * 0.2) * 1.2, pitch: 4, pad: 0.36, fillH: 0.5, fillW: 0.94, at: 0.47 });
+        frameHeads(camera, heads, { aspect, fov: 28, yaw: side * 13 + Math.sin(drift * 0.2) * 1.2, pitch: 4, pad: 0.36, fillH: 0.5, fillW: 0.94, at: 0.57 });
         view.shadowCenter[0] = (sp.mark.pos[0] + other.mark.pos[0]) / 2; view.shadowCenter[2] = 0.5; view.shadowRadius = 3.2;
       } else {
         const name = set.cameras[camName] ? camName : 'wide';
@@ -243,6 +244,23 @@ export function createEncounter(set, troupe, def) {
     later(time + c.impact, land, targets[0], big);
   }
   const front = (list) => list[0];
+  /** A new scene on the same stage: everyone back to their marks, the bar full again. The combo log is kept. */
+  enc.reset = () => {
+    won = false; advance = 0; resolve = 1; pending.length = 0;
+    for (const ch of all) { ch.release(); ch.held = false; ch.home(); ch.emoteT = 0; ch.state.emote = ch.side > 0 ? 'grim' : 'anger'; ch.state.speaking = false; ch.state.face = ch.mark.face; }
+  };
+  /** The encounter is over and the lines play here: turn everyone toward the lens, and frame the speaker with whoever they answer. */
+  const DH = [];
+  enc.dialogue = (camera, aspect, time, speaker, viewHeight = 400) => {
+    for (const ch of all) { ch.state.speaking = ch === speaker; ch.state.face = ch.side > 0 ? 24 : -24; ch.state.look = ch === speaker ? 'camera' : speaker.headPos; ch.state.camera = camera; }
+    let other = null; // whoever stands nearest: the shot is a two-shot, not the whole line
+    for (const ch of all) if (ch !== speaker && (!other || Math.abs(ch.mark.pos[0] - speaker.mark.pos[0]) < Math.abs(other.mark.pos[0] - speaker.mark.pos[0]))) other = ch;
+    DH.length = 0; DH.push(speaker.headPos, other.headPos);
+    frameHeads(camera, DH, { aspect, fov: 26, yaw: speaker.side * -8 + Math.sin(time * 0.2) * 1.2, pitch: 5, pad: 0.4, fillH: 0.46, fillW: 0.86, at: 0.44 });
+    view.shadowCenter = DLG_C; view.shadowRadius = 3.4; set.env.shadow.center = DLG_C; set.env.shadow.radius = 3.4;
+    set.env.outline.width = inkFor(camera, viewHeight, party[0].headRadius); troupe.aim(camera);
+    return camera;
+  };
 
   enc.update = (dt, time, events, progress) => {
     cues.length = 0;
@@ -299,17 +317,17 @@ export function createEncounter(set, troupe, def) {
     for (const ch of all) {
       const st = ch.state;
       if (ch.emoteT > 0) { ch.emoteT -= dt; if (ch.emoteT <= 0) st.emote = ch.side > 0 ? (enc.combo.level >= 2 ? 'smile' : 'grim') : (shown < 0.34 ? 'shock' : 'anger'); }
-      st.look = ch.side > 0 ? foe.headPos : lead.headPos;
+      if (!enc.talking) st.look = ch.side > 0 ? foe.headPos : lead.headPos;
       st.energy = 0.8 + 0.25 * enc.combo.level;
       ch.update(dt, st); followGlow(ch);
     }
   };
-  const T = [0, 0, 0];
+  const T = [0, 0, 0], DLG_C = [0, 0, 0.6], zoom = def.zoom ?? 0.76, stageView = set.view('stage');
   enc.frame = (camera, aspect, time, viewHeight = 220) => {
     const c = set.cameras.stage, k = punch * punch;
-    T[0] = c.target[0] + Math.sin(time * 47) * 0.03 * k; T[1] = c.target[1] + Math.cos(time * 53) * 0.025 * k; T[2] = c.target[2];
-    camera.fov = c.fov; camera.orbit(T, c.dist * (1 - 0.06 * k) * Math.max(1, c.aspect / aspect), c.yaw + Math.sin(time * 0.21) * 1.2, c.pitch);
-    set.env.shadow.center = c.shadowCenter; set.env.shadow.radius = c.shadowRadius;
+    T[0] = c.target[0] + Math.sin(time * 47) * 0.03 * k; T[1] = c.target[1] - (1 - zoom) * 0.62 + Math.cos(time * 53) * 0.025 * k; T[2] = c.target[2];
+    camera.fov = c.fov; camera.orbit(T, c.dist * zoom * (1 - 0.06 * k) * Math.max(1, c.aspect / aspect), (def.yaw ?? c.yaw) + Math.sin(time * 0.21) * 1.2, c.pitch);
+    view.shadowCenter = stageView.shadowCenter; view.shadowRadius = stageView.shadowRadius; set.env.shadow.center = c.shadowCenter; set.env.shadow.radius = c.shadowRadius;
     set.env.outline.width = inkFor(camera, viewHeight, party[0].headRadius);
     troupe.aim(camera);
     return camera;

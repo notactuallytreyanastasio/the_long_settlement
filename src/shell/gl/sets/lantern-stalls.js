@@ -52,7 +52,7 @@ const LIGHTS = {
   dusk: {
     preset: 'sunset', power: 1, unlit: 0.5, paper: 0, glow: 0.42,
     env: {
-      key: { dir: dirFrom(-15, 19), color: '#ffd296' },
+      key: { dir: dirFrom(-15, 19), color: '#ffdfb4' },
       shadow: { tint: '#7f78e0', lift: 0.1, saturate: 1.4 },
       ambient: { sky: '#ffa98e', ground: '#7d6ad0', amount: 0.16 },
       rim: { color: '#ffd98a', amount: 1.0, edge: 0.72 },

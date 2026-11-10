@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/faces.js",
-  "bytes": 24273,
-  "lines": 343
+  "bytes": 24161,
+  "lines": 342
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -12556,8 +12556,8 @@
  },
  {
   "path": "src/shell/gl/stage.js",
-  "bytes": 20684,
-  "lines": 319
+  "bytes": 22603,
+  "lines": 337
  },
  {
   "path": "src/shell/gl/table3d.js",
@@ -12661,8 +12661,8 @@
  },
  {
   "path": "tools/gl-demo.html",
-  "bytes": 37087,
-  "lines": 437
+  "bytes": 37558,
+  "lines": 439
  },
  {
   "path": "tools/gl-set.html",

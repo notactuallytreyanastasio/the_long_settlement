@@ -210,7 +210,7 @@ try {
     function fit() {
       const cw = canvas.clientWidth, ch = canvas.clientHeight, L = core.computeLayout(cw, ch), k = Math.min(cw / L.W, ch / L.H), ox = (cw - L.W * k) / 2, oy = (ch - L.H * k) / 2;
       view.fit({ W: cw, H: oy + L.H * k, table: { x: ox + L.table.x * k, y: oy + L.table.y * k, scale: L.table.scale * k } });
-      hint.style.top = Math.round(view.rect.y - 26) + 'px';
+      hint.style.top = '48px'; hint.style.padding = '0 40px'; hint.style.boxSizing = 'border-box';
     }
     fit(); window.addEventListener('resize', fit);
     const ev = []; let t = 0, accT = 0;
@@ -237,7 +237,7 @@ try {
     const set = lanternStalls.build(GL, { light });
     const troupe = GL.createTroupe({ detail: num('detail', dialogue ? 1 : 0.6) });
     set.foreground.visible = false;
-    const enc = GL.createEncounter(set, troupe, { party: ['ren', 'ilse', 'nan'], opposition: ['bailiff', 'bailiff', 'bailiff'], title: 'MINT BAILIFFS' });
+    const enc = GL.createEncounter(set, troupe, { party: ['ren', 'ilse', 'nan'], opposition: ['bailiff', 'bailiff', 'bailiff'], title: 'MINT BAILIFFS', yaw: num('yaw', 9) });
     const stageCam = GL.createCamera({ fov: 24, near: 0.3, far: 1500 });
     const band = { x: 0, y: 0, w: 0, h: 0 };
     // HUD over the band
@@ -249,11 +249,11 @@ try {
     function fit() {
       const cw = canvas.clientWidth, ch = canvas.clientHeight, L = core.computeLayout(cw, ch), k = Math.min(cw / L.W, ch / L.H), ox = (cw - L.W * k) / 2, oy = (ch - L.H * k) / 2;
       tview.fit({ W: cw, H: oy + L.H * k, table: { x: ox + L.table.x * k, y: oy + L.table.y * k, scale: L.table.scale * k } });
-      band.w = cw; band.h = Math.round(dialogue ? ch * 0.5 : tview.rect.y + 44 * k);
+      band.w = cw; band.h = Math.round(dialogue ? ch * 0.5 : tview.rect.y + 12 * k);
       seam.style.top = band.h - 3 + 'px';
       title.style.right = '10px'; title.style.top = '10px'; bar.style.right = '10px'; bar.style.top = '36px'; bar.style.width = '120px';
       score.style.left = '10px'; score.style.top = '10px'; combo.style.left = '12px'; combo.style.top = '34px';
-      hint.style.top = band.h - 24 + 'px';
+      hint.style.top = band.h - 22 + 'px'; hint.style.fontSize = '10px';
       if (sub) { sub.box.style.top = band.h - 34 + 'px'; }
       fxDpr = Math.min(2, devicePixelRatio || 1); fxCanvas.width = Math.round(cw * fxDpr); fxCanvas.height = Math.round(ch * fxDpr);
     }
@@ -275,49 +275,49 @@ try {
       fx.setTransform(fxDpr, 0, 0, fxDpr, 0, 0); fx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i]; s.t += dt / 0.34; if (s.t > 1.25) { sparks.splice(i, 1); continue; }
-        fx.lineCap = 'round';
-        for (let k = 0; k < 7; k++) { // a short comet along a bowed path
-          const u = Math.min(1, Math.max(0, s.t - k * 0.035)), e = u * u * (3 - 2 * u), bow = Math.sin(e * Math.PI) * (s.x1 - s.x0 > 0 ? -40 : 40);
-          const x = s.x0 + (s.x1 - s.x0) * e + bow, y = s.y0 + (s.y1 - s.y0) * e, r = (s.big ? 6.5 : 4.5) * (1 - k / 8);
-          fx.fillStyle = k === 0 ? '#ffffff' : s.gold ? '#ffd24a' : k < 3 ? '#fff0a0' : '#ffb347'; fx.globalAlpha = s.t > 1 ? Math.max(0, 1 - (s.t - 1) * 4) : 1;
-          fx.beginPath(); fx.arc(x, y, r, 0, 6.3); fx.fill();
-          if (k === 0) { fx.strokeStyle = '#1d2a5c'; fx.lineWidth = 1.5; fx.stroke(); }
+        fx.lineCap = 'round'; fx.globalAlpha = s.t > 1 ? Math.max(0, 1 - (s.t - 1) * 4) : 1;
+        const at = (u, o) => { const c = Math.min(1, Math.max(0, u)), e = c * c * (3 - 2 * c), bow = Math.sin(e * Math.PI) * (s.x1 - s.x0 > 0 ? -36 : 36); o[0] = s.x0 + (s.x1 - s.x0) * e + bow; o[1] = s.y0 + (s.y1 - s.y0) * e; };
+        for (let k = 9; k >= 1; k--) { // a tapering comet tail along a bowed path
+          at(s.t - k * 0.03, A); at(s.t - (k - 1) * 0.03, B);
+          fx.strokeStyle = s.gold ? '#ffc93a' : k > 5 ? '#ffb347' : '#ffe98a'; fx.lineWidth = (s.big ? 9 : 6) * (1 - k / 10);
+          fx.beginPath(); fx.moveTo(A[0], A[1]); fx.lineTo(B[0], B[1]); fx.stroke();
         }
+        at(s.t, A); const r = s.big ? 9 : 6; // the head: a four-point star
+        fx.fillStyle = '#ffffff'; fx.beginPath();
+        for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4 + s.t * 3, rr = i % 2 ? r * 0.38 : r; fx.lineTo(A[0] + Math.cos(an) * rr, A[1] + Math.sin(an) * rr); }
+        fx.closePath(); fx.fill();
       }
       fx.globalAlpha = 1;
     }
     const DLG = [{ who: 'bailiff', emote: 'tears', text: 'All right! All right. The route can go round the stalls.' }, { who: 'nan', emote: 'smile', text: 'There. That is three names lit, and not a thumb on the paper.' }];
     const ev = []; let t = 0, accT = 0;
-    const forceCombo = num('combo', 0);
+    const forceCombo = num('combo', 0); let sceneN = core.game.scene, later = 0;
     const feed = (dt) => {
       for (const e of ev) if (e.id && (e.type === 'bumper' || e.type === 'target' || e.type === 'shot' || e.type === 'sling' || e.type === 'rollover' || e.type === 'saucer')) lastHit = e;
       if (forceCombo && enc.log.length === 0) for (let i = 0; i < forceCombo * 7; i++) enc.log.push({ t: t - 0.01, type: 'shot' });
       if (forceCombo) enc.log.push({ t, type: 'bumper' });
+      if (core.game.scene !== sceneN) { sceneN = core.game.scene; later = t + 2.2; }       // the next scene: let the surrender play, then reset the stage
+      if (later && t > later) { later = 0; enc.reset(); }
       tview.update(core.game, ev, dt); set.update(t, dt); enc.update(dt, t, ev, core.progress()); cueSparks();
     };
     const step = (f) => { ev.length = 0; core.tick(ev); core.tick(ev); t += 1 / 60; if (f) feed(1 / 60); return ev; };
-    const frozen = runTo(step, core);
-    if (dialogue) { enc.update(0, t, [{ type: 'sceneClear' }], core.progress()); for (let i = 0; i < 90; i++) { t += 1 / 60; set.update(t, 1 / 60); enc.update(1 / 60, t, null, null); } }
-    const heads = [];
+    let frozen = false;
+    const speakerOf = () => { const line = DLG[Math.floor(t / 4) % DLG.length]; return [line, line.who === 'bailiff' ? enc.opposition[0] : enc.party.find((c) => c.id.startsWith(line.who))]; };
     function render(dt) {
       clearAll(...GL.rgb('#1d2a5c'));
       set.foreground.visible = false;
+      acc(tview.render(renderer, t)); // the table first: the band overlaps the strip of empty sea above the cabinet's head
       if (dialogue) { // the same stage, the camera in on the two who are talking
-        const line = DLG[Math.floor(t / 4) % DLG.length], sp = line.who === 'bailiff' ? enc.opposition[0] : enc.party.find((c) => c.id.startsWith(line.who));
-        heads.length = 0; heads.push(enc.party[0].headPos, enc.opposition[0].headPos, sp.headPos);
-        GL.frameHeads(stageCam, heads, { aspect: band.w / band.h, fov: 26, yaw: -12, pitch: 5, pad: 0.42, fillH: 0.5, fillW: 0.9, at: 0.42 });
-        set.env.shadow.center = [0, 0, 0.6]; set.env.shadow.radius = 3.4; set.env.outline.width = GL.inkFor(stageCam, band.h, 0.2); troupe.aim(stageCam);
-        for (const ch of enc.all) ch.state.speaking = ch === sp;
+        const [line, sp] = speakerOf();
+        enc.talking = true; enc.dialogue(stageCam, band.w / band.h, t, sp, band.h);
         sub.set(line.who, line.text);
-        acc(renderer.render(set.scene, stageCam, t, { ...band, shadowCenter: set.env.shadow.center, shadowRadius: 3.4 }));
+        acc(renderer.render(set.scene, stageCam, t, { ...band, ...enc.view }));
       } else { enc.frame(stageCam, band.w / band.h, t, band.h); acc(renderer.render(set.scene, stageCam, t, { ...band, ...enc.view })); }
-      // the table, under the band; the band overlaps the empty sea above the cabinet's head
-      const r = tview.rect; acc(tview.render(renderer, t));
       // HUD
       fill.style.width = Math.round(enc.resolve * 100) + '%';
       const cb = enc.combo; combo.hidden = cb.level < 1 || cb.count < 2;
       if (!combo.hidden) { combo.innerHTML = `<b>${cb.count}</b><span>${GL.COMBO_NAMES[cb.level] || 'HITS'}</span>`; combo.style.transform = 'rotate(-4deg)'; combo.style.opacity = String(0.45 + 0.55 * Math.min(1, cb.left * 3)); }
-      const sc = core.scene(), p = core.progress(); score.textContent = `LANTERNS ${p.done}/${p.total}`; hint.textContent = dialogue ? '' : sc ? sc.hint.toUpperCase() : '';
+      const sc = core.scene(), p = core.progress(); score.textContent = `OBJECTIVE ${p.done}/${p.total}`; hint.textContent = dialogue ? '' : sc ? sc.hint.toUpperCase() : '';
       drawSparks(dt);
       S.extra = `combo ${cb.count} L${cb.level}  power ${enc.power.toFixed(2)}  resolve ${enc.resolve.toFixed(2)}`;
     }
@@ -327,7 +327,9 @@ try {
       else { tview.update(core.game, null, 0); }
       render(frozen ? 0 : dt);
     };
-    if (frozen) { for (const s of sparks) s.t = Math.max(s.t, 0.55); }
+    tview.update(core.game, null, 0); render(0); sparks.length = 0;   // prime both cameras: sparks are projected through them during the run-up
+    frozen = runTo(step, core);
+    if (dialogue) { enc.update(0, t, [{ type: 'sceneClear' }], core.progress()); for (let i = 0; i < 120; i++) { t += 1 / 60; set.update(t, 1 / 60); enc.talking = true; enc.dialogue(stageCam, band.w / band.h, t, speakerOf()[1], band.h); enc.update(1 / 60, t, null, null); } sparks.length = 0; }
     benchStep = () => { const a = performance.now(); step(true); const b = performance.now(); render(1 / 60); return b - a; };
     window.glDemo.enc = enc; window.glDemo.table = tview; window.glDemo.set = set; window.glDemo.core = core;
   }

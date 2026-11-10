@@ -254,15 +254,14 @@ function drawMarks(spec) {
       for (const s of [-1, 1]) for (const [a, b, r] of dots) { if (s < 0 && Math.abs(a) < 8) continue; g.beginPath(); g.arc(wx(a * s), wy(b + (s < 0 ? 0.6 : 0)), r * 1.15 * DEGX, 0, 7); g.fill(); }
     }
     if (spec.laugh) {
-      g.strokeStyle = rgba(mix(skin, '#4a1c20', 0.6), 0.75); g.lineWidth = 0.95 * DEGX;
+      g.strokeStyle = rgba(mix(skin, '#5a2420', 0.5), 0.6); g.lineWidth = 0.95 * DEGX; // soft: at 70 px anything darker reads as dirt
       for (const s of [-1, 1]) {
         // crow's feet at the outer corner of each eye
-        for (const [dy, len] of [[4.5, 5], [0, 6], [-4.5, 5]]) { g.beginPath(); g.moveTo(wx(s * 42.5), wy(-6 + dy * 0.6)); g.lineTo(wx(s * (42.5 + len)), wy(-6 + dy * 1.5)); g.stroke(); }
+        for (const [dy, len] of [[3.2, 4.5], [-3.2, 4.5]]) { g.beginPath(); g.moveTo(wx(s * 42.5), wy(-6 + dy * 0.6)); g.lineTo(wx(s * (42.5 + len)), wy(-6 + dy * 1.5)); g.stroke(); }
         // the line from the nose round the mouth
         g.beginPath(); g.moveTo(wx(s * 11), wy(-22)); g.quadraticCurveTo(wx(s * 19), wy(-28), wx(s * 17.5), wy(-37)); g.stroke();
       }
       // two soft lines on the brow
-      g.globalAlpha = 0.6; g.beginPath(); g.moveTo(wx(-13), wy(17.5)); g.quadraticCurveTo(wx(0), wy(19), wx(13), wy(17.5)); g.stroke(); g.globalAlpha = 1;
     }
     if (spec.scar) { // a pale nick down through one brow
       const s = spec.scar === 'R' ? -1 : 1;
