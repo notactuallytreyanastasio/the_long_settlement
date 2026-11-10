@@ -36,8 +36,8 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 12415,
-  "lines": 298
+  "bytes": 12635,
+  "lines": 301
  },
  {
   "path": "src/core/economy.js",
@@ -51,8 +51,8 @@
  },
  {
   "path": "src/core/physics.js",
-  "bytes": 16955,
-  "lines": 410
+  "bytes": 17142,
+  "lines": 412
  },
  {
   "path": "src/core/rng.js",
@@ -80,9 +80,14 @@
   "lines": 829
  },
  {
+  "path": "src/shell/cinema.js",
+  "bytes": 48763,
+  "lines": 1034
+ },
+ {
   "path": "src/shell/render.js",
-  "bytes": 77789,
-  "lines": 2185
+  "bytes": 78955,
+  "lines": 2209
  },
  {
   "path": "src/shell/voice.js",
@@ -121,7 +126,7 @@
  },
  {
   "path": "tools/render-voices.mjs",
-  "bytes": 11256,
-  "lines": 257
+  "bytes": 11744,
+  "lines": 266
  }
 ]

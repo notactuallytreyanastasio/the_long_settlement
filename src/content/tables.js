@@ -54,7 +54,10 @@ function bank(ids, a, b, group, gap = 0.12) {
  * o.sling    [top, bottomLeft, bottomRight] of the left slingshot triangle
  */
 function lower(o) {
-  const guideL = [[o.divX, o.divTop], [o.divX, o.elbow], [o.pivot[0] - 6, o.pivot[1] - 5]];
+  // The guide ends tangent to the top of the flipper's pivot cap, and is shallower than
+  // the flipper at rest. Ending it short of the cap leaves a notch a slow ball sits in.
+  const guideL = [[o.divX, o.divTop], [o.divX, o.elbow],
+    [o.pivot[0] + 6 * Math.sin(o.rest), o.pivot[1] - 6 * Math.cos(o.rest)]];
   const [st, sbl, sbr] = o.sling;
   const f0 = lerp(st, sbr, 0.14), f1 = lerp(st, sbr, 0.88);
   const slingWallsL = [...poly([f0, st, sbl, sbr, f1])];
@@ -112,7 +115,7 @@ function sideLane(top, bend, mouthY, width, reach) {
 function vessery() {
   const sh = shell(100, 8);
   const lo = lower({
-    divX: 40, divTop: 592, elbow: 660, pivot: [120, 698],
+    divX: 31, divTop: 592, elbow: 660, pivot: [120, 698],
     sling: [[72, 574], [72, 648], [108, 664]], slingKick: 330,
     flipLen: 56, rest: 0.5, active: 0.45,
   });
@@ -203,9 +206,9 @@ function vessery() {
 function saltmere() {
   const sh = shell(92, 8);
   const lo = lower({
-    divX: 38, divTop: 600, elbow: 664, pivot: [122, 702],
+    divX: 30, divTop: 600, elbow: 664, pivot: [122, 702],
     sling: [[68, 566], [68, 652], [108, 670]], slingKick: 380,
-    flipLen: 54, rest: 0.52, active: 0.45,
+    flipLen: 57, rest: 0.52, active: 0.45,
   });
   const cause = sideLane(270, 360, 452, 32, 42);       // left: the causeway ramp
   const courtBase = sideLane(240, 350, 440, 30, 40);   // right: the court orbit, narrower

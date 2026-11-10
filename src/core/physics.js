@@ -288,7 +288,9 @@ export function stepPhysics(table, phys, input, dt) {
             if (impact > EVENT_SPEED.target) events.push({ type: 'target', id: g.id, ballId: b.id, speed: impact });
           } else if (g.kind === KIND_SLING) {
             if (impact > EVENT_SPEED.sling) {
-              b.vx += c.nx * g.kick; b.vy += c.ny * g.kick;
+              // Set, not add: an added kick feeds itself and two facing slings juggle forever.
+              const out = b.vx * c.nx + b.vy * c.ny;
+              if (out < g.kick) { b.vx += (g.kick - out) * c.nx; b.vy += (g.kick - out) * c.ny; }
               events.push({ type: 'sling', id: g.id, ballId: b.id, speed: impact });
             }
           } else if (impact > EVENT_SPEED.wall) {

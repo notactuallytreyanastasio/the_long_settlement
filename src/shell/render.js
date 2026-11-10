@@ -554,12 +554,12 @@ export function createRenderer(canvas) {
 
   function paintBezel(g) {
     // drawn over the table: inner shadow, then the two brass rails
-    for (const [x0, x1] of [[0, 26], [TW, TW - 26]]) {
+    for (const [x0, x1] of [[0, 14], [TW, TW - 14]]) {
       const sh = g.createLinearGradient(x0, 0, x1, 0);
-      sh.addColorStop(0, 'rgba(0,0,0,0.75)');
+      sh.addColorStop(0, 'rgba(0,0,0,0.6)');
       sh.addColorStop(1, 'rgba(0,0,0,0)');
       g.fillStyle = sh;
-      g.fillRect(Math.min(x0, x1), 0, 26, H);
+      g.fillRect(Math.min(x0, x1), 0, 14, H);
     }
     const top = g.createLinearGradient(0, 0, 0, 30);
     top.addColorStop(0, 'rgba(0,0,0,0.7)');
@@ -749,6 +749,8 @@ export function createRenderer(canvas) {
     g.font = `700 9px ${MONO}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
+    const half = g.measureText(text).width / 2 + 3;
+    x = clamp(x, 10 + half, TW - 10 - half); // keep insert lettering on the playfield
     g.fillStyle = 'rgba(0,0,0,0.6)';
     g.fillText(text, x + 0.5, y + 1);
     g.fillStyle = on > 0 ? A(color, 0.6 + 0.4 * on) : A(PAPER, 0.45);
@@ -813,23 +815,38 @@ export function createRenderer(canvas) {
       const d = [s.dir[0] / dl, s.dir[1] / dl];
       const on = litAmt(s.id);
       if (s.exit) {
-        // wireform: a pair of rails carried over the playfield to the exit
+        // wireform: a pair of rails with ties, leaving along the shot and dropping onto the exit
         const ex = s.exit.pos;
-        const side = m[0] < 200 ? -1 : 1;
-        const c = [(m[0] + ex[0]) / 2 + side * 26, (m[1] + ex[1]) / 2 - 30];
-        for (const off of [-5, 5]) {
+        const c1 = [m[0] + d[0] * 80, m[1] + d[1] * 80];
+        const c2 = [ex[0], ex[1] - 170];
+        const N = 30;
+        const left = [];
+        const right = [];
+        for (let k = 0; k <= N; k++) {
+          const t = k / N;
+          const u = 1 - t;
+          const bx = u * u * u * m[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * ex[0];
+          const by = u * u * u * m[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * ex[1];
+          const tx = 3 * u * u * (c1[0] - m[0]) + 6 * u * t * (c2[0] - c1[0]) + 3 * t * t * (ex[0] - c2[0]);
+          const ty = 3 * u * u * (c1[1] - m[1]) + 6 * u * t * (c2[1] - c1[1]) + 3 * t * t * (ex[1] - c2[1]);
+          const tl = Math.hypot(tx, ty) || 1;
+          left.push([bx - (ty / tl) * 6, by + (tx / tl) * 6]);
+          right.push([bx + (ty / tl) * 6, by - (tx / tl) * 6]);
+        }
+        g.lineWidth = 1.3;
+        g.strokeStyle = on > 0 ? A(threadCol, 0.25 + 0.3 * on) : A(STEEL, 0.2);
+        for (const rail of [left, right]) {
           g.beginPath();
-          g.moveTo(m[0] + off, m[1]);
-          g.quadraticCurveTo(c[0] + off, c[1], ex[0] + off, ex[1]);
-          g.strokeStyle = on > 0 ? A(threadCol, 0.22 + 0.3 * on) : A(STEEL, 0.2);
-          g.lineWidth = 1.4;
+          rail.forEach((p, k) => (k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
           g.stroke();
         }
+        g.lineWidth = 1;
+        g.strokeStyle = on > 0 ? A(threadCol, 0.14 + 0.16 * on) : A(STEEL, 0.1);
         g.beginPath();
-        g.moveTo(m[0], m[1]);
-        g.quadraticCurveTo(c[0], c[1], ex[0], ex[1]);
-        g.strokeStyle = on > 0 ? A(threadCol, 0.1 * on) : 'rgba(255,255,255,0.03)';
-        g.lineWidth = 9;
+        for (let k = 1; k < N; k += 2) {
+          g.moveTo(left[k][0], left[k][1]);
+          g.lineTo(right[k][0], right[k][1]);
+        }
         g.stroke();
       }
       g.beginPath();
@@ -995,7 +1012,14 @@ export function createRenderer(canvas) {
       g.strokeStyle = on > 0 ? A(threadCol, 0.5 + 0.5 * on) : 'rgba(0,0,0,0.6)';
       g.lineWidth = 1.5;
       g.stroke();
-      label(g, table.labels[b.id], x, y + r + 9, on, threadCol);
+      if (on > 0) {
+        g.strokeStyle = A(threadCol, 0.35 + 0.6 * on);
+        g.lineWidth = 2;
+        g.beginPath();
+        g.arc(x, y, r + 4 + 2 * pulse, 0, TAU);
+        g.stroke();
+      }
+      label(g, table.labels[b.id], x, y + r + (on > 0 ? 14 : 9), on, threadCol);
     }
 
     // ball save insert between the flippers
@@ -1349,7 +1373,7 @@ export function createRenderer(canvas) {
       g.fillStyle = '#0b0806';
       g.fill();
       g.clip();
-      drawPortrait(g, who, X, vy, ps, line.emote, level);
+      drawPortrait(g, who, X, vy, ps, line.emote, level, now / 1000);
       if (radio) {
         g.fillStyle = 'rgba(90,150,255,0.10)';
         g.fillRect(X, vy, ps, ps);
@@ -1837,19 +1861,19 @@ export function createRenderer(canvas) {
       g.fillStyle = 'rgba(0,0,0,0.55)';
       g.fillRect(qx - 0.5, by, 1, 12);
       const state = q > earned ? 'unlit' : q <= econ.aidUsed ? 'spent' : 'lit';
-      const ly = by + 26;
-      if (state === 'lit') glow(g, qx, ly, 12, LANTERN, 0.5 + 0.2 * Math.sin(now / 250 + q));
-      rr(g, qx - 4, ly - 6, 8, 12, 3);
-      g.fillStyle = state === 'lit' ? LANTERN : state === 'spent' ? 'rgba(120,80,40,0.5)' : 'rgba(0,0,0,0.5)';
+      const ly = by + 6;
+      if (state === 'lit') glow(g, qx, ly, 14, LANTERN, 0.55 + 0.2 * Math.sin(now / 250 + q));
+      rr(g, qx - 4.5, ly - 9, 9, 18, 3.5);
+      g.fillStyle = state === 'lit' ? '#ffd9a0' : state === 'spent' ? '#5a3c1e' : '#120c08';
       g.fill();
-      g.strokeStyle = state === 'unlit' ? A(PAPER, 0.25) : A(tc, 0.9);
+      g.strokeStyle = state === 'unlit' ? A(PAPER, 0.3) : A(tc, 1);
       g.lineWidth = 1;
       g.stroke();
     }
     g.font = `italic 11px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.45);
     const left = Math.max(0, earned - econ.aidUsed);
-    g.fillText(left > 0 ? `the town will cover ${left} lost ball${left === 1 ? '' : 's'}` : 'the Mint lends; the Commons gives', bx, by + 31);
+    g.fillText(left > 0 ? `the town will cover ${left} lost ball${left === 1 ? '' : 's'}` : 'the Mint lends; the Commons gives', bx, by + 32);
 
     // boons
     cap('BOONS', L, y0 + 224);
@@ -1910,14 +1934,14 @@ export function createRenderer(canvas) {
     g.translate(TX, 0);
     const pulse = 0.5 + 0.5 * Math.sin(now / 260);
     if (game.mode === 'slot') {
-      g.fillStyle = 'rgba(5,3,2,0.58)';
+      g.fillStyle = 'rgba(5,3,2,0.52)';
       g.fillRect(0, 0, TW, H);
       if (game.econ.writs > 0) tableBanner(g, 'P — send the Plumb through the Orrery', 400, BRASS_HI, 0.75 + 0.25 * pulse);
       else tableBanner(g, 'No writ, no Plumb. The Reels decide.', 400, PAPER, 0.7);
     } else {
       const balls = game.phys ? game.phys.balls : [];
-      if (balls.some((b) => b.state === 'plunger')) tableBanner(g, 'Hold Space, release to plunge', 640, BRASS_HI, 0.7 + 0.3 * pulse);
-      else if (balls.length === 0) tableBanner(g, 'P — back to the Reels', 640, PAPER, 0.7 + 0.3 * pulse);
+      if (balls.some((b) => b.state === 'plunger')) tableBanner(g, 'Hold Space, release to plunge', 506, BRASS_HI, 0.7 + 0.3 * pulse);
+      else if (balls.length === 0) tableBanner(g, 'P — back to the Reels', 506, PAPER, 0.7 + 0.3 * pulse);
     }
     g.drawImage(layer('bezel', TW + 16, H, scale, (c) => { c.translate(8, 0); paintBezel(c); }), -8, 0, TW + 16, H);
     g.restore();
@@ -2026,7 +2050,7 @@ export function createRenderer(canvas) {
     g.fillStyle = A(PAPER, 0.85);
     g.fillText('Every note reads: payable in stillness.', W / 2, 452);
 
-    const p = 0.55 + 0.45 * Math.sin(now / 420);
+    const p = 0.78 + 0.22 * Math.sin(now / 420);
     g.font = `600 17px ${SERIF}`;
     g.fillStyle = A(BRASS_HI, p);
     g.shadowColor = 'rgba(255,180,80,0.8)';

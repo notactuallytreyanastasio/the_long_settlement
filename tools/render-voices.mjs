@@ -128,10 +128,19 @@ export function collectLines(content) {
   return found.map((f) => f.line);
 }
 
+// `say -v Nobody` exits 0 and speaks in the system voice, so the list is the
+// only truth about what is installed. The list is also inconsistent about
+// names: the same voice shows as "Daniel" or as "Daniel (English (UK))"
+// depending on the macOS release, so a bare wanted name also matches an
+// installed "<name> (...)". The installed spelling is what gets passed to say.
 function pickVoice(member, installed) {
-  const voice = member.say.find((name) => installed.has(name));
-  if (!voice) throw new Error(`no installed voice for "${member.id}": wanted one of ${member.say.join(', ')}`);
-  return voice;
+  for (const want of member.say) {
+    if (installed.has(want)) return want;
+    if (!want.includes('(')) {
+      for (const name of installed) if (name.startsWith(`${want} (`)) return name;
+    }
+  }
+  throw new Error(`no installed voice for "${member.id}": wanted one of ${member.say.join(', ')}`);
 }
 
 const hashOf = (voice, rate, text) => createHash('sha1').update(`${voice}\n${rate}\n${text}`).digest('hex').slice(0, 16);
