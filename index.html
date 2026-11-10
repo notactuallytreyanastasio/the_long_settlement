@@ -47,19 +47,18 @@
   #gate {
     position: fixed; inset: 0; display: grid; place-items: center; box-sizing: border-box;
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-    background:
-      radial-gradient(circle at 50% 30%, rgba(255, 147, 38, 0.30) 0 5.5rem, rgba(255, 147, 38, 0.16) 5.5rem 10rem, rgba(255, 147, 38, 0.07) 10rem 16rem, transparent 16rem),
-      linear-gradient(#0e0b2a 0 22%, #1a1650 22% 46%, #241c6e 46% 62%, #12305a 62% 78%, #0a1c40 78%);
+    background: linear-gradient(#0e0b2a 0 22%, #1a1650 22% 46%, #241c6e 46% 62%, #12305a 62% 78%, #0a1c40 78%);
     text-align: center; touch-action: manipulation;
   }
   #gate[hidden], #fatal[hidden], #resume[hidden], #rotate[hidden] { display: none; }
   #gate .card { max-width: 34rem; padding: 1.5rem; }
-  #gate .lamp { display: block; width: 4.6rem; height: 4.6rem; margin: 0 auto 1.1rem; }
+  #gate .lamp { display: block; width: 4.6rem; height: 4.6rem; margin: 0 auto 1.6rem; border-radius: 50%; background: rgba(255, 147, 38, 0.5);
+    box-shadow: 0 0 0 1.5rem rgba(255, 147, 38, 0.26), 0 0 0 4rem rgba(255, 147, 38, 0.13), 0 0 0 7.5rem rgba(255, 147, 38, 0.06); }
+  #gate .card > :not(.lamp) { position: relative; }
   #gate .over { letter-spacing: clamp(0.18em, 1.6vw, 0.5em); font-size: 0.75rem; font-weight: 700; color: #ffd76a; text-transform: uppercase; margin: 0 0 1rem 0.5em; }
   #gate h1 {
     font-weight: 700; font-size: clamp(2.1rem, 8.6vw, 3.6rem); line-height: 1.05; margin: 0; color: #fff6e0;
-    -webkit-text-stroke: 0.14em #1a1640; paint-order: stroke fill;
-    text-shadow: 0.07em 0.1em 0 #d8263c;
+    text-shadow: -2px -2px 0 #1a1640, 2px -2px 0 #1a1640, -2px 2px 0 #1a1640, 2px 2px 0 #1a1640, 0 -3px 0 #1a1640, 0 3px 0 #1a1640, -3px 0 0 #1a1640, 3px 0 0 #1a1640, 3px 8px 0 #d8263c;
   }
   #gate p { font-style: italic; color: #f3e3bb; line-height: 1.5; margin: 1rem 0 1.8rem; }
   #gate button {
