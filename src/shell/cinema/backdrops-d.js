@@ -6,13 +6,19 @@
 // carrow-dusk. Same look as backdrops-a and -b: flat colour, indigo ink, ONE key light per place, declared as a
 // style.js Light and passed to def() so the cast is lit from the same side.
 //
-// Where things sit. All nine use the default portrait pan (640). On a phone the cast covers everything below
-// about y = 220, and the window is x 367..913: the lamp and the subject of each painting are inside that strip.
-// The rest is for the wide film and for lines with nobody on stage.
+// Where things sit. All nine use the default portrait pan (640). On a phone the window is about x 367..913 and
+// the cast stands below about y = 310 (220 with the largest heads); the wide film's title bar hides y < 56. So the
+// lamp and the subject of each painting are at y 60..220 within 270 of the pan. The rest is for the wide film
+// and for lines with nobody on stage.
 //
 // Two paintings read the current line's id (as shore-dusk does), in their moving sections only, so the still
-// layers are the same either way: cresset-harbour is day, and night on lines of ch8.s3 (the bible uses the key
-// for both); see NIGHT_HARBOUR.
+// layers are the same either way:
+//   cresset-harbour  day; night on lines of ch8.s3 and ch8.mepi (NIGHT_HARBOUR)
+//   founders-lamp    the cap hangs over a burning lamp; on ch8.m6.c20..c23 it is down on the cup and the room is dark (CAP_DOWN)
+//   quay-break       the Lamp on the mole is capped; relit on ch8.m6.c25 and after (LAMP_BACK)
+//   lane-by-hand     the blue points past the bar show from ch8.s6.c16 on (and on any line that is not ch8.s6)
+//   assembly         the oculus goes grey on ch8.s5.c21
+// A line id outside those patterns gets the first state named.
 import { TAU, lerp, mod, rnd, fillAll, rect, poly, S, A, X0, XW } from './kit.js';
 import {
   INK, PALETTE as C, light as keyLight, shade, tint, blend, alpha, ink, outline, taperPath, cel, bloom, shaft, glint, bands, rings, curl,
@@ -157,9 +163,9 @@ const idOf = (info) => (info && info.lines && info.lines[info.index] && info.lin
 // ───────────────────────── chapter 8: Cresset ─────────────────────────
 
 // ── cresset-harbour: the capital from the water, by day. Key: the Founders' Lamp, white, brighter than the sun on that side ──
-// Lines of ch8.s3 (and any line whose id matches NIGHT_HARBOUR) see the same harbour at night: the wash and the
+// Lines of ch8.s3 and of the mint epilogue (any line whose id matches NIGHT_HARBOUR) see the same harbour at night: the wash and the
 // lamp's night light are drawn moving, over the same still layers.
-const NIGHT_HARBOUR = /^ch8\.s3\./;
+const NIGHT_HARBOUR = /^ch8\.(s3|mepi)\./;
 const L_CRESSET = keyLight('#eef8ff', -Math.PI * 0.4, { depth: 0.72, tint: '#17366e' });
 const L_CRESSET_W = keyLight('#eef8ff', -Math.PI * 0.74, { depth: 0.72, tint: '#17366e' });   // for what stands to the right of the lamp
 def('cresset-harbour', L_CRESSET, (ctx, t, px, info) => {
@@ -192,6 +198,7 @@ def('cresset-harbour', L_CRESSET, (ctx, t, px, info) => {
   lampTower(ctx, lx + o, ly, hy + 2, 30, '#efe6d4', L, { shade: '#9a98b8', rim: 3, dome: C.brass });
   rings(ctx, lx + o, ly, 60, [alpha('#ffffff', 0.5), '#ffffff'], [1, 0.52]);
   // the roads: a flat sea, and the lamp lying in it
+  ctx = S(0.1);
   rect(ctx, X0, hy + 2, XW, 800, '#1f9aa4');
   flat(ctx, pp([[lx - 60 + o, hy + 2], [lx + 60 + o, hy + 2], [lx + 330, 980], [lx - 330, 980]]), '#58c4c0');
   flat(ctx, pp([[lx - 22 + o, hy + 2], [lx + 22 + o, hy + 2], [lx + 120, 980], [lx - 120, 980]]), '#b8ece0');
@@ -202,22 +209,23 @@ def('cresset-harbour', L_CRESSET, (ctx, t, px, info) => {
   hull(ctx, 250 + px * 0.2, 316, 1.1, '#23406e', L, 2, '#f1e6cc'); hull(ctx, 1040 + px * 0.2, 300, 0.8, '#23406e', LW, 2, C.crimson); hull(ctx, 470 + px * 0.16, 284, 0.5, '#3a5a8a', L, 1);
   ctx = A();
   shimmer(ctx, 15, lx - 150, lx + 150, hy + 8, 640, 22, '#ffffff', t);
-  if (night) {
-    // the same roads at night: everything the lamp does not reach goes to indigo
-    rect(ctx, X0, -200, XW, 1300, alpha('#0a0a34', 0.74));
-    rings(ctx, lx + o, ly, 330, [alpha('#dff2ff', 0.1), alpha('#dff2ff', 0.16), alpha('#ffffff', 0.3), '#ffffff'], [1, 0.62, 0.34, 0.1]);
-    flat(ctx, pp([[lx - 22 + o, hy + 2], [lx + 22 + o, hy + 2], [lx + 120, 980], [lx - 120, 980]]), alpha('#dff2ff', 0.3));
-    ctx.fillStyle = '#ffd27a';
-    for (let i = 0; i < 46; i++) { const x = (i < 34 ? 370 + rnd(i * 3.3) * 250 : 1010 + rnd(i * 3.3) * 400) + o, y = (i < 34 ? 150 : 190) + rnd(i * 7.1) * 90; ctx.fillRect(x, y, 4, 6); }
-  }
-  spark(ctx, lx + o, ly, night ? 46 : 38, t, 1, '#ffffff');
-  // gulls, by day
-  if (!night) { ink(ctx, II, '#ffffff'); ctx.beginPath(); for (let i = 0; i < 4; i++) { const x = mod(300 + i * 310 + t * (9 + i * 3), 1500) - 100, y = 150 + i * 14 + Math.sin(t * 0.7 + i) * 10, f = Math.sin(t * 5 + i * 2) * 5; ctx.moveTo(x - 10, y - f); ctx.quadraticCurveTo(x - 4, y - 4, x, y); ctx.quadraticCurveTo(x + 4, y - 4, x + 10, y - f); } ctx.stroke(); }
+  if (!night) { ink(ctx, II, '#ffffff'); ctx.beginPath(); for (let i = 0; i < 4; i++) { const x = mod(300 + i * 310 + t * (9 + i * 3), 1500) - 100, y = 150 + i * 14 + Math.sin(t * 0.7 + i) * 10, f = Math.sin(t * 5 + i * 2) * 5; ctx.moveTo(x - 10, y - f); ctx.quadraticCurveTo(x - 4, y - 4, x, y); ctx.quadraticCurveTo(x + 4, y - 4, x + 10, y - f); } ctx.stroke(); }   // gulls, by day
   // the ferry's rail: we are on the water
   ctx = S(1.1);
   const r = px * 1.1;
   rect(ctx, X0, 700, XW, 5, '#ffffff'); rect(ctx, X0, 705, XW, 16, '#1c2a5a');
   for (let i = 0; i < 16; i++) { rect(ctx, -244 + i * 120 + r, 721, 4, 300, '#ffffff'); rect(ctx, -240 + i * 120 + r, 721, 12, 300, '#1c2a5a'); }
+  ctx = A();
+  if (night) {
+    // the same roads at night: everything the lamp does not reach goes to indigo
+    rect(ctx, X0, -200, XW, 1300, alpha('#07072a', 0.8));
+    rings(ctx, lx + o, ly, 300, [alpha('#cfe8ff', 0.09), alpha('#cfe8ff', 0.14), alpha('#e8f6ff', 0.3), '#ffffff'], [1, 0.6, 0.3, 0.085]);
+    for (let i = 0; i < 6; i++) shaft(ctx, lx + o, ly, (i / 6) * TAU + 0.16, 250, 0.07, '#ffffff', 0.5);
+    flat(ctx, pp([[lx - 22 + o, hy + 2], [lx + 22 + o, hy + 2], [lx + 120, 980], [lx - 120, 980]]), alpha('#cfe8ff', 0.26));
+    ctx.fillStyle = '#ffd27a';
+    for (let i = 0; i < 46; i++) { const x = (i < 30 ? X0 + 200 + rnd(i * 3.3) * 700 : 1010 + rnd(i * 3.3) * 500) + o, y = (i < 30 ? 160 + rnd(i * 7.1) * 84 : 196 + rnd(i * 7.1) * 44); ctx.fillRect(x, y, 4, 6); }
+  }
+  spark(ctx, lx + o, ly, night ? 44 : 38, t, 1, '#ffffff');
 });
 
 // ── mole-dark: the harbour with the Lamp out and the sea standing up beyond the mole. Dusk. Key: the last daylight on the horizon ──
@@ -275,7 +283,7 @@ function chainAt(i, n) {
   const u = i / (n - 1), k = Math.pow(u, 1.5);
   return [450 + Math.sin(u * 2.5 + 0.2) * 250 + u * 150, 122 + k * 520, 0.24 + k * 1.0];
 }
-def('lane-by-hand', L_BYHAND, (ctx, t, px) => {
+def('lane-by-hand', L_BYHAND, (ctx, t, px, info) => {
   const L = L_BYHAND, hy = 96, N = 13, SEA = '#0d1140';
   ctx = S(0.05);
   sky(ctx, hy, ['#06061e', '#0a0c30', '#121646', '#1c2260'], [0.4, 0.7, 0.92, 1]);
@@ -314,7 +322,8 @@ def('lane-by-hand', L_BYHAND, (ctx, t, px) => {
   }
   shimmer(ctx, 77, 380, 1000, hy + 40, 700, 16, VIOLET, t);
   // out past the bar a blue point shows, and goes, and shows: the dark islands, answering
-  for (const [bx, sp, ph] of [[592, 0.9, 0], [716, 0.9, 2.1], [838, 0.9, 4.2]]) {
+  const mLane = /^ch8\.s6\.c(\d+)/.exec(idOf(info));
+  if (!mLane || +mLane[1] >= 16) for (const [bx, sp, ph] of [[612, 0.9, 0], [716, 1.3, 2.1], [838, 0.7, 4.2], [420, 2.2, 0]]) {   // Kedge, Vessery, Tessaly; and one far west that keeps time
     if (Math.sin(t * sp + ph) > 0.2) { bloom(ctx, bx + px * 0.05, hy - 14, 22, '#5fa8ff', 0.9); glint(ctx, bx + px * 0.05, hy - 14, 9, '#cfe6ff', 1, 0); }
   }
   // the edge of the mole, chalked with places so that nobody loses one by sitting
@@ -327,17 +336,24 @@ def('lane-by-hand', L_BYHAND, (ctx, t, px) => {
 
 // ── quay-break: the quay in flight, an overloaded ferry casting off. Night. Key: one ship's lantern, swinging ──
 const L_BREAK = keyLight('#ffb04a', -Math.PI * 0.56, { depth: 0.9, tint: '#0e0a38' });
-def('quay-break', L_BREAK, (ctx, t, px) => {
+const LAMP_BACK = /^ch8\.m6\.c(2[5-9]|[3-9]\d)/;
+def('quay-break', L_BREAK, (ctx, t, px, info) => {
   const L = L_BREAK, hy = 300, DARK = '#0c0a2c', HULL = '#3a1c40', hx = 606, hook = 58;
   ctx = S(0.05);
   sky(ctx, hy, ['#07061e', '#0c0d34', '#151a50', '#22266a'], [0.4, 0.7, 0.92, 1]);
   starsFlat(ctx, 91, 40, 200);
   // Cresset behind, lightless but for windows, and the Lamp capped
   cityTier(ctx, 13, X0, 1560, hy + 2, 30, 110, 30, 62, '#12113c', L, { shade: '#0e0c30', roof: '#0e0c30', win: '#ffc65a', winP: 0.12 });
-  lampTower(ctx, 318, 150, hy + 2, 22, '#17154a', L, { shade: '#0e0c30', dome: '#221c50', capped: true, ink: 0 });
+  lampTower(ctx, 440, 150, hy + 2, 22, '#17154a', L, { shade: '#0e0c30', dome: '#221c50', capped: true, ink: 0 });
   rect(ctx, X0, hy + 2, XW, 800, '#0d1040');
   waves(ctx, X0, hy + 30, XW, 90, { len: 60, amp: 6, col: '#0a0c36', foam: '#3a3a7a', every: 3 });
   waves(ctx, X0, hy + 110, XW, 600, { len: 110, amp: 10, col: '#07082a', foam: '#e87a3a', every: 3, phase: 0.5, L });
+  ctx = A();
+  if (LAMP_BACK.test(idOf(info))) {   // six people on a winch: the Lamp burns white again over an emptied quay
+    rings(ctx, 440, 150, 190, [alpha('#dff2ff', 0.1), alpha('#dff2ff', 0.16), alpha('#ffffff', 0.34), '#ffffff'], [1, 0.6, 0.3, 0.1]);
+    flat(ctx, pp([[430, hy + 2], [450, hy + 2], [520, 980], [360, 980]]), alpha('#cfe8ff', 0.22));
+    spark(ctx, 440, 150, 30, t, 6, '#ffffff');
+  }
   // the lantern's reach, at rest
   ctx = S(0.3);
   const o = px * 0.3;
@@ -478,7 +494,7 @@ const ASM_SEATS = (() => {
   }
   return out.sort((p, q) => p[1] - q[1]);
 })();
-def('assembly', L_ASM, (ctx, t, px) => {
+def('assembly', L_ASM, (ctx, t, px, info) => {
   const L = L_ASM, oy = 100;
   ctx = S(0.3);
   const ox = 640 + px * 0.3;
@@ -502,6 +518,8 @@ def('assembly', L_ASM, (ctx, t, px) => {
   // the floor, and the day standing on it
   rect(ctx, X0, 300, XW, 800, '#1c1a44');
   flat(ctx, ep(640 + px * 0.5, 470, 330, 80), '#4a4674'); flat(ctx, ep(640 + px * 0.5, 470, 230, 54), '#a39c98'); flat(ctx, ep(640 + px * 0.5, 470, 130, 30), '#f1e6cc');
+  ctx = A();
+  if (idOf(info) === 'ch8.s5.c21') { flat(ctx, ep(ox, oy + 3, 96, 30), '#6a6a96'); flat(ctx, ep(ox + 4, oy + 8, 78, 21), '#8f8fb4'); outline(ctx, ep(ox, oy + 3, 96, 30), II); }   // "Look up. The light is going."
   // the far half of the horseshoe; then the shaft; then the near arms
   ctx = S(0.5);
   const q = px * 0.5;
@@ -535,7 +553,8 @@ const L_FOUND = keyLight('#dff4ff', -Math.PI * 0.6, { depth: 0.9, tint: '#0a0e3c
 const L_FOUND_E = keyLight('#dff4ff', -Math.PI * 0.1, { depth: 0.9, tint: '#0a0e3c' }), L_FOUND_W = keyLight('#dff4ff', -Math.PI * 0.9, { depth: 0.9, tint: '#0a0e3c' });
 const L_FOUND_UP = keyLight('#dff4ff', Math.PI * 0.5, { depth: 0.9, tint: '#0a0e3c' });   // for the cap: it is lit from underneath
 const F_RINGS = [[250, 0.34, -0.2, 13], [356, 0.52, 0.3, 15], [470, 0.24, 0.08, 18]];   // rx, tilt, turn, width
-def('founders-lamp', L_FOUND, (ctx, t, px) => {
+const CAP_DOWN = /^ch8\.m6\.c2[0-3]$/;
+def('founders-lamp', L_FOUND, (ctx, t, px, info) => {
   const L = L_FOUND, cx = 640 + px * 0.25, fy = 182, hy = 348, wy = 520, STONE = '#2c3676', DARK = '#090b2a', ry0 = fy - 34;
   // night, the roads, and Cresset's roofs a long way down
   ctx = S(0);
@@ -583,16 +602,22 @@ def('founders-lamp', L_FOUND, (ctx, t, px) => {
   ctx.beginPath(); ctx.moveTo(cx - 50, fy + 4); ctx.quadraticCurveTo(cx - 42, fy + 42, cx - 10, fy + 46); ctx.lineTo(cx + 10, fy + 46); ctx.quadraticCurveTo(cx + 42, fy + 42, cx + 50, fy + 4); ctx.closePath();
   ctx.fillStyle = C.brass; ctx.fill(); ctx.stroke();
   flat(ctx, ep(cx, fy + 4, 50, 9), '#ffffff'); outline(ctx, ep(cx, fy + 4, 50, 9), 3);
-  // the cap, on its chain: a brass bell wide enough to shut the cup, lit from underneath
+  // the chain the cap hangs on
   ink(ctx, 2.6, INK); for (let y = -176; y < 44; y += 15) { ctx.beginPath(); ctx.ellipse(cx, y + 7, 4.5, 8.5, 0, 0, TAU); ctx.stroke(); }
   ink(ctx, 1.6, C.brass); for (let y = -176; y < 44; y += 30) { ctx.beginPath(); ctx.ellipse(cx, y + 7, 4.5, 8.5, 0, 0, TAU); ctx.stroke(); }
-  outline(ctx, cp(cx, 50, 9), 5); outline(ctx, cp(cx, 50, 9), 2, C.brass);
-  cel(ctx, (c) => { c.moveTo(cx - 70, 112); c.quadraticCurveTo(cx - 62, 66, cx - 22, 58); c.lineTo(cx + 22, 58); c.quadraticCurveTo(cx + 62, 66, cx + 70, 112); c.closePath(); }, C.brass, L_FOUND_UP, { off: 16, ink: IW, rim: 5, rimCol: '#ffffff', shadow: '#7a4a3a' });
-  rect(ctx, cx - 74, 108, 148, 9, '#ffffff'); outline(ctx, rp(cx - 74, 108, 148, 9), II);
   ctx = A();
-  fire(ctx, cx, fy + 2, 37, t * 0.36, 3, COLD);
-  spark(ctx, cx, fy - 30, 34, t, 4, '#ffffff');
-  glint(ctx, cx - 40, 113, 9 + 3 * Math.sin(t * 1.7), '#ffffff', 1, 0);
+  const down = CAP_DOWN.test(idOf(info)), cy = down ? 64 : Math.sin(t * 0.6) * 1.5;
+  if (down) rect(ctx, X0, -200, XW, 1300, alpha('#050620', 0.66));   // capped: the room is as dark as the roads
+  else { fire(ctx, cx, fy + 2, 37, t * 0.36, 3, COLD); spark(ctx, cx, fy - 30, 34, t, 4, '#ffffff'); }
+  // the cap: a brass bell wide enough to shut the cup, lit from underneath while there is anything to light it
+  if (down) { ink(ctx, 2.6, INK); for (let y = 44; y < 44 + cy; y += 15) { ctx.beginPath(); ctx.ellipse(cx, y + 7, 4.5, 8.5, 0, 0, TAU); ctx.stroke(); } }
+  { const bell = (c) => { c.moveTo(cx - 70, 112 + cy); c.quadraticCurveTo(cx - 62, 66 + cy, cx - 22, 58 + cy); c.lineTo(cx + 22, 58 + cy); c.quadraticCurveTo(cx + 62, 66 + cy, cx + 70, 112 + cy); c.closePath(); };
+    outline(ctx, cp(cx, 50 + cy, 9), 5); outline(ctx, cp(cx, 50 + cy, 9), 2, C.brass);
+    flat(ctx, bell, down ? '#6a4a44' : C.brass);
+    if (!down) flat(ctx, (c) => { c.moveTo(cx - 64, 84 + cy); c.quadraticCurveTo(cx - 54, 66 + cy, cx - 22, 58 + cy); c.lineTo(cx + 22, 58 + cy); c.quadraticCurveTo(cx + 54, 66 + cy, cx + 64, 84 + cy); c.quadraticCurveTo(cx, 70 + cy, cx - 64, 84 + cy); c.closePath(); }, '#8a5a3a');
+    outline(ctx, bell, IW);
+    rect(ctx, cx - 74, 108 + cy, 148, 9, down ? '#8a6a54' : '#ffffff'); outline(ctx, rp(cx - 74, 108 + cy, 148, 9), II);
+    if (!down) glint(ctx, cx - 40, 113 + cy, 9 + 3 * Math.sin(t * 1.7), '#ffffff', 1, 0); }
   // each ring carries a shutter-lens, going round
   for (let i = 0; i < 3; i++) {
     const [rx, tilt, turn] = F_RINGS[i], a = t * (0.16 + i * 0.05) * (i % 2 ? 1 : -1) + i * 2.1, ex = Math.cos(a) * rx, ey = Math.sin(a) * rx * tilt;
@@ -673,8 +698,10 @@ function carrow(ctx, t, px, dusk) {
     busts(ctx, [[bx - 24, by - 20, 5.5], [bx + 34, by - 22, 5.5], [bx + 20, by - 21, 5]], '#1c1a50', L, 1.4, 0, '#fff3d6');
   }
   ctx = A();
-  waves(ctx, X0 - 160 + px * 0.05, hy + 62, XW + 320, 70, { len: 100, amp: 7, phase: t * 0.2, col: K.sea1, foam: K.foam, L });
-  waves(ctx, X0 - 160 + px * 0.05, hy + 120, XW + 320, 240, { len: 160, amp: 11, phase: -t * 0.16 + 0.4, col: K.sea2, foam: K.foam, L, ink: II });
+  // in the morning there is a lane and the water lies down; at dusk there is none, and the sea stands all round like a wall round a garden
+  if (dusk) waves(ctx, X0 - 160 + px * 0.05, hy - 12 + Math.sin(t * 0.8) * 3, XW + 320, 60, { len: 150, amp: 15, phase: t * 0.12 + 0.5, col: '#22225e', foam: K.foam, L });
+  waves(ctx, X0 - 160 + px * 0.05, hy + (dusk ? 30 : 62), XW + 320, 100, { len: dusk ? 130 : 100, amp: dusk ? 16 : 7, phase: t * 0.2, col: K.sea1, foam: K.foam, L });
+  waves(ctx, X0 - 160 + px * 0.05, hy + (dusk ? 96 : 120), XW + 320, 260, { len: dusk ? 200 : 160, amp: dusk ? 22 : 11, phase: -t * 0.16 + 0.4, col: K.sea2, foam: K.foam, L, ink: II });
   // the rise, the lamp-house, two roofs, the goats
   ctx = S(0.25);
   const o = px * 0.25;
@@ -694,6 +721,8 @@ function carrow(ctx, t, px, dusk) {
   }
   const fl = carrowLamp(ctx, lhx + o, slopeY(lhx) + 4, 47, K.stone, K.stoneSh, L, { rim: dusk ? 0 : 3, hat: dusk ? '#1c1c4c' : '#3a4480', door: dusk ? '#ffe2a0' : undefined, room: dusk ? undefined : '#3a3470' });
   if (dusk) { flat(ctx, ep(lhx + o, slopeY(lhx) - 6, 4, 8), '#ffffff'); bloom(ctx, lhx + o, slopeY(lhx) - 8, 40, '#ffe2a0', 0.9); }
+  { const gx = lhx + 50 + o, gy = slopeY(lhx + 50) + 3;   // up by the lamp-house: a small stone, kept clear of weed
+    sil(ctx, (c) => { c.moveTo(gx - 6, gy); c.lineTo(gx - 6, gy - 13); c.arc(gx, gy - 13, 6, Math.PI, 0); c.lineTo(gx + 6, gy); c.closePath(); }, K.stone, L, 1.6, II, dusk ? '#ffb45a' : '#ffd9a0'); }
   goat(ctx, 716 + o, slopeY(716) + 3, 20, K.goat, L, -1); goat(ctx, 930 + o, slopeY(930) + 3, 17, K.goat, L, 1); goat(ctx, 958 + o, slopeY(958) + 3, 12, K.goat, L, -1); goat(ctx, 640 + o, slopeY(640) + 4, 16, K.goat, L, 1); goat(ctx, 1220 + o, slopeY(1220) + 3, 19, K.goat, L, -1);
   ctx = A();
   if (dusk) spark(ctx, lhx + o, slopeY(lhx) - 10, 13, t, 5, '#fff3d6');

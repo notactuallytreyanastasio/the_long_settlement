@@ -478,7 +478,7 @@ def('cutter-deck', L_CUTTER, (ctx, t, px) => {
   for (const y of [40, 260, 430]) { box(ctx, mx - 26, y, 52, 14, STEEL, L, { off: 0, shadow: false, ink: II }); }
   // boom, with the mainsail furled along it
   box(ctx, mx + 10, 396, 720, 16, '#5a3a4a', L, { off: 0, shadow: false, ink: II });
-  cel(ctx, (c) => { c.moveTo(mx + 26, 398); c.quadraticCurveTo(mx + 22, 366, mx + 60, 364); for (let i = 0; i < 8; i++) c.quadraticCurveTo(mx + 102 + i * 84, 352 + (i % 2) * 5, mx + 144 + i * 84, 364); c.lineTo(mx + 740, 398); c.closePath(); }, '#b8b4d0', L, { off: 0, ink: IW, shadow: rp(mx, 382, 800, 30) });
+  cel(ctx, (c) => { c.moveTo(mx + 26, 398); c.quadraticCurveTo(mx + 22, 366, mx + 60, 364); for (let i = 0; i < 8; i++) c.quadraticCurveTo(mx + 102 + i * 84, 352 + (i % 2) * 5, mx + 144 + i * 84, 364); c.lineTo(mx + 740, 398); c.closePath(); }, '#8f8cb8', L, { off: 0, ink: IW, shadow: rp(mx, 382, 800, 30) });
   for (let i = 0; i < 9; i++) stroke(ctx, mx + 60 + i * 84, 362, mx + 60 + i * 84, 412, 4, DK);
   // the search lamp, on its bracket at the hounds
   stroke(ctx, mx + 22, ly + 30, lx + 10, ly + 30, 12); stroke(ctx, mx + 22, ly + 30, lx + 10, ly + 30, 6, STEEL);
@@ -633,4 +633,432 @@ def('quarter-flame', L_QUARTER, (ctx, t, px) => {
   // close to the lens: a rail of the gallery, at the edges of the wide film
   const o = px * 1.4;
   for (const x of [-40, 1250]) { ink(ctx, 26, '#060512'); ctx.beginPath(); ctx.moveTo(x + o, -100); ctx.lineTo(x + 40 + o, 900); ctx.stroke(); ink(ctx, 4, '#4a4070'); ctx.beginPath(); ctx.moveTo(x + (x < 0 ? 12 : -12) + o, -100); ctx.lineTo(x + 40 + (x < 0 ? 12 : -12) + o, 900); ctx.stroke(); }
+});
+
+// ═════════════════════════ chapter 7: Vessery, by day ═════════════════════════
+
+// ── fish-dock: the Dock Quarter, trestles and gulls, the Mint hall above it on the Hill, morning. Key light: a high clear sun ──
+const L_FISH = keyLight('#fff2c8', -Math.PI * 0.64, { depth: 0.7, tint: '#22407a', amb: '#4a6a8a' });
+/** a trestle on (x, y): a plank on two A-frames, the catch laid out on it, a short noon shadow under it */
+function trestle(ctx, x, y, s, L, seed) {
+  flat(ctx, ep(x + 10 * s, y + 4 * s, 84 * s, 9 * s), alpha('#22407a', 0.4));
+  for (const sd of [-1, 1]) { stroke(ctx, x + sd * 56 * s, y - 40 * s, x + sd * 70 * s, y, 6 * s); stroke(ctx, x + sd * 56 * s, y - 40 * s, x + sd * 42 * s, y, 6 * s); stroke(ctx, x + sd * 56 * s, y - 40 * s, x + sd * 70 * s, y, 3 * s, '#8a5a44'); stroke(ctx, x + sd * 56 * s, y - 40 * s, x + sd * 42 * s, y, 3 * s, '#8a5a44'); }
+  box(ctx, x - 78 * s, y - 50 * s, 156 * s, 11 * s, '#d8a878', L, { off: 0, ink: Math.max(1.6, II * s), shadow: rp(x - 78 * s, y - 43 * s, 156 * s, 4 * s) });
+  const kind = Math.floor(rnd(seed) * 3);
+  if (kind < 2) for (let i = 0; i < 5; i++) {   // fish, head to tail
+    const fx = x - 56 * s + i * 28 * s, fy = y - 55 * s - (i % 2) * 2 * s, d = (i + (seed | 0)) % 2 ? 1 : -1;
+    ctx.beginPath(); ctx.moveTo(fx - d * 13 * s, fy); ctx.quadraticCurveTo(fx, fy - 9 * s, fx + d * 10 * s, fy); ctx.lineTo(fx + d * 16 * s, fy - 5 * s); ctx.lineTo(fx + d * 16 * s, fy + 5 * s); ctx.lineTo(fx + d * 10 * s, fy); ctx.quadraticCurveTo(fx, fy + 7 * s, fx - d * 13 * s, fy); ctx.closePath();
+    ctx.fillStyle = i % 3 ? '#dcecf2' : '#9cc4d8'; ctx.fill(); ink(ctx, Math.max(1.2, 1.6 * s)); ctx.stroke();
+  } else for (const bx of [-44, 4, 48]) {       // baskets
+    cel(ctx, pp([[x + (bx - 18) * s, y - 76 * s], [x + (bx + 18) * s, y - 76 * s], [x + (bx + 14) * s, y - 50 * s], [x + (bx - 14) * s, y - 50 * s]]), ROPE, L, { off: 4 * s, ink: Math.max(1.4, II * s) });
+    flat(ctx, ep(x + bx * s, y - 76 * s, 18 * s, 5 * s), '#bcd8e4'); outline(ctx, ep(x + bx * s, y - 76 * s, 18 * s, 5 * s), Math.max(1.2, 1.6 * s));
+  }
+}
+/** a net hung to dry between two poles: a sagging sheet of mesh, corks along the head-rope */
+function dryingNet(ctx, x0, x1, top, bottom, L) {
+  for (const x of [x0, x1]) { stroke(ctx, x, top - 16, x, bottom + 130, 9); stroke(ctx, x, top - 16, x, bottom + 130, 4.4, '#8a5a44'); }
+  const P = (c) => { c.moveTo(x0, top); c.quadraticCurveTo((x0 + x1) / 2, top + 26, x1, top); c.lineTo(x1 - 6, bottom); c.quadraticCurveTo((x0 + x1) / 2, bottom + 34, x0 + 6, bottom - 20); c.closePath(); };
+  flat(ctx, P, alpha('#1f6a7c', 0.42));
+  ctx.save(); ctx.beginPath(); P(ctx); ctx.clip();
+  ink(ctx, 1.3, alpha(INK, 0.55)); ctx.beginPath();
+  for (let k = -40; k < 40; k++) { ctx.moveTo(x0 + k * 13, top - 20); ctx.lineTo(x0 + k * 13 + 300, top + 280); ctx.moveTo(x0 + k * 13, top - 20); ctx.lineTo(x0 + k * 13 - 300, top + 280); }
+  ctx.stroke(); ctx.restore();
+  outline(ctx, P, II);
+  for (let i = 0; i <= 6; i++) { const p = quadAt([x0, top], [(x0 + x1) / 2, top + 26], [x1, top], i / 6); circ(ctx, p[0], p[1], 5, i % 2 ? C.crimson : C.cream); ink(ctx, 1.5); ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, TAU); ctx.stroke(); }
+}
+def('fish-dock', L_FISH, (ctx, t, px) => {
+  const L = L_FISH, sx = 566, sy = 122, hx = 806, hb = 232;
+  ctx = S(0.05);
+  sky(ctx, 420, ['#2a78cc', '#4f9ee0', '#86c4ec', '#bfe2f2', '#e4f2ee'], [0.3, 0.5, 0.68, 0.84, 1]);
+  rings(ctx, sx, sy, 210, [alpha('#ffffff', 0.16), alpha('#ffffff', 0.24), alpha('#ffffff', 0.4)], [1, 0.64, 0.36]);
+  circ(ctx, sx, sy, 38, '#fffbe8');
+  for (const [cx, cy, w, h, sd] of [[130, 150, 260, 50, 2], [1060, 110, 320, 60, 4], [330, 60, 170, 28, 6], [1290, 230, 220, 36, 8]]) cloud(ctx, cx, cy, w, h, '#f6faff', L, sd, 0);
+  // the Hill, and the Mint hall on it: seen from below, for once
+  ctx = S(0.18);
+  flat(ctx, (c) => { c.moveTo(X0, 440); c.lineTo(X0, 330); c.quadraticCurveTo(300, 300, 600, hb + 6); c.lineTo(1010, hb + 6); c.quadraticCurveTo(1260, 290, 1540, 300); c.lineTo(1540, 440); c.closePath(); }, '#8fa8d4');
+  cel(ctx, rp(hx - 96, hb - 82, 192, 88), '#f4ead0', L, { off: 0, ink: II, shadow: rp(hx + 40, hb - 82, 56, 88) });
+  for (let i = 0; i < 7; i++) rect(ctx, hx - 80 + i * 24.6, hb - 66, 11, 60, i > 4 ? '#5a5a94' : '#3a4a8c');
+  box(ctx, hx - 104, hb - 92, 208, 12, '#f4ead0', L, { off: 0, ink: II, shadow: rp(hx + 40, hb - 92, 64, 12) });
+  cel(ctx, (c) => { c.moveTo(hx - 68, hb - 92); c.arc(hx, hb - 92, 68, Math.PI, 0); c.closePath(); }, '#2fa08e', L, { off: 18, ink: II, shadow: '#1c6a78', hi: ep(hx - 30, hb - 132, 12, 20), hiCol: '#8fe0cc' });
+  box(ctx, hx - 11, hb - 186, 22, 28, C.brass, L, { off: 5, ink: II });
+  stroke(ctx, hx, hb - 186, hx, hb - 206, 3);
+  town(ctx, 81, 250, 1540, 296, 24, 70, 26, 56, '#b4c4e2', L, { rim: 3, rimCol: '#ffffff', win: '#6a7cb0', winP: 0.3 });
+  town(ctx, 83, X0, 1560, 356, 34, 96, 30, 70, '#8ea2d0', L, { rim: 3, rimCol: '#f4f8ff', win: '#4a5a94', winP: 0.3 });
+  // ships at the fish quay, at the left of the wide film
+  for (const [mx, mh] of [[40, 250], [130, 300], [236, 230]]) { stroke(ctx, mx, 400, mx, 400 - mh, 6, '#3a3a6c'); stroke(ctx, mx - 34, 400 - mh * 0.72, mx + 34, 400 - mh * 0.72, 4, '#3a3a6c'); cel(ctx, pp([[mx - 30, 400 - mh * 0.72], [mx + 30, 400 - mh * 0.72], [mx + 26, 400 - mh * 0.72 + 16], [mx - 26, 400 - mh * 0.72 + 16]]), '#f0e8d8', L, { off: 5, ink: 1.8 }); }
+  // the dock: sheds, the floor of the quay, the trestles and the nets
+  ctx = S(0.45);
+  for (let i = 0; i < 9; i++) {
+    const x = -250 + i * 212, w = 200, h = 96 + rnd(i * 3.7) * 40;
+    cel(ctx, pp([[x, 440], [x, 440 - h], [x + w / 2, 440 - h - 40], [x + w, 440 - h], [x + w, 440]]), i % 2 ? '#5a6aa4' : '#6a5a94', L, { off: 10, ink: IW, rim: 4, rimCol: '#f4f8ff' });
+    box(ctx, x + 60, 440 - 70, 80, 70, i % 3 ? '#1f7a84' : '#8a3a4c', L, { off: 0, shadow: false, ink: II }); stroke(ctx, x + 100, 370, x + 100, 440, II);
+  }
+  rect(ctx, X0, 436, XW, 600, '#ece0c4'); stroke(ctx, X0, 436, X0 + XW, 436, IW);
+  ink(ctx, 1.8, alpha('#8a6a7c', 0.6)); ctx.beginPath();
+  for (let i = -14; i <= 14; i++) { ctx.moveTo(640 + i * 70, 438); ctx.lineTo(640 + i * 190, 1000); }
+  for (let j = 1; j < 8; j++) { ctx.moveTo(X0, 436 + j * j * 9); ctx.lineTo(X0 + XW, 436 + j * j * 9); }
+  ctx.stroke();
+  crowd(ctx, 87, X0, 1560, 398, 34, 13, '#3c4c88', L, { hat: 0.5, rimCol: '#f4f8ff' });
+  dryingNet(ctx, 366, 500, 112, 330, L); dryingNet(ctx, 966, 1120, 124, 340, L);
+  for (let i = 0; i < 6; i++) trestle(ctx, -150 + i * 300 + (i % 2) * 40, 500, 0.72, L, i * 1.3 + 2);
+  crowd(ctx, 89, X0, 1560, 500, 12, 20, '#2c3a74', L, { hat: 0.5, rimCol: '#f4f8ff' });
+  for (let i = 0; i < 5; i++) trestle(ctx, -90 + i * 370, 640, 1.2, L, i * 2.1 + 11);
+  ctx = A();
+  spark(ctx, sx + px * 0.05, sy, 66, t, 9);
+  glint(ctx, hx + px * 0.18, hb - 206, 12 + 3 * Math.sin(t * 2.3), C.white, 1, 0);
+  gulls(ctx, [[640, 170, 15, 1], [930, 96, 12, 2], [700, 60, 10, 3], [300, 170, 13, 4], [1120, 190, 12, 5], [820, 160, 9, 6]], t, INK);
+});
+
+// ── stall-day: Nan's stall with its lanterns unlit, afternoon. Key light: the sun, coming through the paper ──
+const L_STALLDAY = keyLight('#ffe2a0', -Math.PI * 0.3, { depth: 0.72, tint: '#44246a' });
+/** an unlit paper lantern hung from (x, y). glow 0..1: how much of the sun behind it comes through the paper */
+function dayLantern(ctx, x, y, s, col, L, glow = 0) {
+  const cy = y + s * 1.3, rx = s * 0.74, ry = s * 0.92;
+  if (glow > 0.45) bloom(ctx, x, cy, s * 2.8, '#ffe2a0', glow);
+  stroke(ctx, x, y, x, cy - ry, Math.max(1.4, s * 0.08));
+  cel(ctx, ep(x, cy, rx, ry), glow > 0 ? blend(col, '#ffe9b0', glow * 0.35) : col, L, {
+    off: s * 0.3, shadow: glow > 0.45 ? false : shade(col, 0.26), ink: Math.max(1.6, s * 0.11),
+    hi: glow > 0.2 ? ep(x + s * 0.06, cy - s * 0.04, rx * (0.4 + glow * 0.3), ry * (0.5 + glow * 0.3)) : ep(x + rx * 0.36, cy - ry * 0.36, rx * 0.2, ry * 0.3), hiCol: tint(col, glow > 0.2 ? 0.5 + glow * 0.3 : 0.45),
+  });
+  if (glow > 0.7) flat(ctx, ep(x + s * 0.08, cy - s * 0.06, rx * 0.34, ry * 0.42), '#fffbe8');
+  ink(ctx, Math.max(1, s * 0.05), alpha(INK, 0.45));
+  for (const k of [-0.42, 0.42]) { ctx.beginPath(); ctx.ellipse(x, cy + k * ry, rx * Math.sqrt(1 - k * k), ry * 0.12, 0, 0, Math.PI); ctx.stroke(); }
+  rect(ctx, x - s * 0.34, cy - ry - s * 0.1, s * 0.68, s * 0.2, INK);
+  rect(ctx, x - s * 0.28, cy + ry - s * 0.08, s * 0.56, s * 0.16, INK);
+  taperPath(ctx, [[x, cy + ry], [x + s * 0.06, cy + ry + s * 0.3], [x - s * 0.04, cy + ry + s * 0.62]], Math.max(1.6, s * 0.12), 0, shade(col, 0.3));
+}
+/** the lanterns of the stall: [x, wire y, size, colour index]. The two marked are drawn swaying */
+const STALL_WIRES = [[100, 22, 250, 1030, 9], [172, 30, 280, 1000, 7], [262, 21, 262, 1018, 9]];
+def('stall-day', L_STALLDAY, (ctx, t, px) => {
+  const L = L_STALLDAY, sx = 772, sy = 176, POST = '#5a2c3a';
+  const glowAt = (x, y) => Math.max(0, 1 - Math.hypot(x - sx, y - sy) / 250);
+  ctx = S(0.08);
+  sky(ctx, 430, ['#4a8ecc', '#86bce0', '#c9dcd8', '#f6dcae', '#ffc98a'], [0.3, 0.52, 0.7, 0.88, 1]);
+  rings(ctx, sx, sy, 300, [alpha('#fff2c8', 0.22), alpha('#fff2c8', 0.34), alpha('#fffbe8', 0.55)], [1, 0.62, 0.34]);
+  circ(ctx, sx, sy, 48, '#fffbe8');
+  for (const [cx, cy, w, h, sd] of [[330, 110, 240, 40, 3], [1150, 200, 260, 40, 5]]) cloud(ctx, cx, cy, w, h, '#fff6e0', L, sd, 0);
+  // the Dock Quarter behind the stall, in the haze of the afternoon
+  town(ctx, 91, X0, 1560, 400, 50, 150, 40, 90, '#b99cc0', L, { rim: 3, rimCol: '#ffe9c0', win: '#8a6aa0', winP: 0.22 });
+  town(ctx, 93, X0, 1560, 440, 30, 90, 50, 110, '#8f6ea6', L, { rim: 3, rimCol: '#ffd9a0', win: '#5a3a7c', winP: 0.2 });
+  rect(ctx, X0, 436, XW, 600, '#d8b48a');
+  // the stall: posts, the awning's hem, three wires of lanterns with the day behind them
+  ctx = S(0.4);
+  for (const x of [226, 1040]) { box(ctx, x, -200, 18, 900, POST, L, { off: 5, ink: IW, rim: 3 }); }
+  for (const [wy] of STALL_WIRES) stroke(ctx, 236, wy - 4, 1050, wy - 4, 2.4);
+  for (let w = 0; w < 3; w++) {
+    const [wy, s, x0, x1, n] = STALL_WIRES[w];
+    for (let i = 0; i < n; i++) {
+      if ((w === 0 && i === 2) || (w === 2 && i === 6)) continue;   // these two move
+      const x = lerp(x0, x1, (i + 0.5) / n) + (rnd(w * 9 + i) - 0.5) * 16, ss = s * (0.86 + rnd(w * 5 + i * 3) * 0.3);
+      dayLantern(ctx, x, wy - 4, ss, LCOLS[(i * 3 + w * 2) % LCOLS.length], L, glowAt(x, wy + ss * 1.3));
+    }
+  }
+  // awning: flat stripes and a scalloped hem
+  for (let i = 0; i < 12; i++) {
+    const x = 170 + i * 80, red = i % 2;
+    rect(ctx, x, -200, 81, 248, red ? C.crimson : C.cream);
+    ctx.fillStyle = red ? C.crimson : C.cream; ctx.beginPath(); ctx.arc(x + 40, 48, 40, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = red ? shade(C.crimson, 0.3) : '#d8c08e'; ctx.beginPath(); ctx.arc(x + 40, 48, 40, 0.5 * Math.PI, Math.PI); ctx.lineTo(x + 40, 48); ctx.fill();   // the hem's one shadow tone, away from the sun
+    ink(ctx, II); ctx.beginPath(); ctx.arc(x + 40, 48, 40, 0, Math.PI); ctx.stroke();
+  }
+  rect(ctx, 170, 36, 960, 12, alpha(C.night, 0.3)); stroke(ctx, 170, 48, 1130, 48, II);
+  // the back of the stall below the wires, and the counter where she paints
+  box(ctx, 244, 330, 796, 150, '#6a3440', L, { off: 0, shadow: false, ink: II });
+  for (let i = 0; i < 9; i++) { const x = 270 + i * 86; for (let k = 0; k < 3; k++) { const c = LCOLS[(i + k * 2) % LCOLS.length]; cel(ctx, ep(x + 30, 440 - k * 20, 30, 9), c, L, { off: 3, ink: 1.6, shadow: shade(c, 0.3) }); } }   // lanterns not yet opened, stacked flat
+  rect(ctx, 244, 330, 796, 14, alpha(C.night, 0.35));
+  box(ctx, 196, 474, 888, 14, '#e09a5a', L, { off: 0, shadow: false, ink: II });
+  box(ctx, 206, 488, 868, 300, '#8a4434', L, { off: 0, ink: II, shadow: rp(206, 506, 868, 300) });
+  for (let i = 1; i < 8; i++) stroke(ctx, 206 + i * 108.5, 490, 206 + i * 108.5, 780, 1.8);
+  // the one on the counter: a cream lantern, a name half painted on it, the brush laid across the pot
+  const nx = 566, ny = 404;
+  flat(ctx, ep(nx + 16, 476, 70, 8), alpha('#44246a', 0.4));
+  cel(ctx, ep(nx, ny, 62, 70), '#fff0cc', L, { off: 16, ink: IW, shadow: '#d8b890' });
+  ink(ctx, 1.6, alpha(INK, 0.4)); for (const k of [-0.5, 0.5]) { ctx.beginPath(); ctx.ellipse(nx, ny + k * 70, 62 * Math.sqrt(1 - k * k), 8, 0, 0, Math.PI); ctx.stroke(); }
+  rect(ctx, nx - 26, ny - 78, 52, 12, INK); rect(ctx, nx - 22, ny + 66, 44, 10, INK);
+  ctx.fillStyle = C.indigo; ctx.font = `700 21px ${FONT_SERIF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('LITTLE', nx, ny - 4); ctx.textAlign = 'left'; ctx.fillText('BR', nx - 40, ny + 22);
+  ctx.textAlign = 'left';
+  for (const [x, c] of [[690, C.indigo], [742, C.crimson], [794, C.sea]]) { cel(ctx, rp(x - 18, 440, 36, 34), '#c8ccd8', L, { off: 6, ink: II }); flat(ctx, ep(x, 440, 18, 5), c); outline(ctx, ep(x, 440, 18, 5), 1.8); }
+  stroke(ctx, 668, 428, 716, 446, 7); stroke(ctx, 668, 428, 716, 446, 3.4, '#c98a4a'); stroke(ctx, 660, 425, 670, 429, 6, C.indigo);
+  // the wire she works by, strung from post to post at the height of a hand
+  stroke(ctx, 236, 372, 1050, 366, 2.2, alpha(INK, 0.8));
+  ctx = A();
+  const o = px * 0.4;
+  for (const [w, i, sd] of [[0, 2, 1], [2, 6, 2]]) {
+    const [wy, s, x0, x1, n] = STALL_WIRES[w], x = lerp(x0, x1, (i + 0.5) / n) + o, a = Math.sin(t * 1.1 + sd * 7) * 0.09 + Math.sin(t * 0.37 + sd * 3) * 0.05;
+    ctx.save(); ctx.translate(x, wy - 4); ctx.rotate(a); dayLantern(ctx, 0, 0, s, LCOLS[(i * 3 + w * 2) % LCOLS.length], L, glowAt(x - o, wy + s * 1.3)); ctx.restore();
+  }
+  spark(ctx, sx + px * 0.08, sy, 60, t, 10);
+  gulls(ctx, [[400, 300, 10, 2], [1130, 120, 12, 5]], t, '#44246a');
+});
+
+// ── hall-steps: the Mint hall steps and the fourth step, late afternoon. Key light: low sun from the harbour, long shadows up the stair ──
+const L_HSTEPS = keyLight('#ffb866', -Math.PI * 0.9, { depth: 0.8, tint: '#2c1c60' });
+def('hall-steps', L_HSTEPS, (ctx, t, px) => {
+  const L = L_HSTEPS, sx = 426, sy = 188, top = 262, SH = '#4a2c78', STONE = '#ffd9a0', RISE = '#e8a070';
+  ctx = S(0.05);
+  sky(ctx, 340, ['#2c3a88', '#5f55a6', '#b0689e', '#ee8a70', '#ffb866', '#ffe0a0'], [0.26, 0.46, 0.62, 0.78, 0.92, 1]);
+  rings(ctx, sx, sy, 270, [alpha('#ffe2a0', 0.2), alpha('#ffe9b0', 0.3), alpha('#fff2c8', 0.5)], [1, 0.64, 0.36]);
+  circ(ctx, sx, sy, 46, '#fff6e0');
+  for (const [cx, cy, w, h, sd] of [[180, 110, 280, 40, 3], [520, 60, 200, 30, 5], [80, 250, 220, 30, 7]]) cloud(ctx, cx, cy, w, h, '#7a4a94', L, sd, 0);
+  // the harbour the light comes from: the mole, masts, the sun's road on the water
+  rect(ctx, X0, 300, XW, 300, '#b0689e'); rect(ctx, X0, 300, XW, 14, '#ffb866');
+  lozenges(ctx, 31, 200, 620, 304, 380, 34, '#ffe0a0');
+  town(ctx, 95, X0, 330, 304, 14, 50, 22, 50, '#3a2466', L, { rim: 2.5, rimCol: '#ffb866' });
+  for (const [mx, mh] of [[96, 150], [170, 190], [258, 130], [330, 170]]) { stroke(ctx, mx, 330, mx, 330 - mh, 5, '#3a2466'); stroke(ctx, mx - 24, 330 - mh * 0.7, mx + 24, 330 - mh * 0.7, 3, '#3a2466'); }
+  rimmed(ctx, rp(X0, 326, XW, 300), '#3a2466', UP, 3, '#ffb866');
+  // the hall: its wall, the row of columns, the doors
+  ctx = S(0.3);
+  rect(ctx, 452, -200, 1300, top + 200, '#e0926e');
+  const colX = (i) => 476 + i * 150;
+  for (let i = 0; i < 8; i++) flat(ctx, pp([[colX(i) + 46, -200], [colX(i) + 122, -200], [colX(i) + 150, top], [colX(i) + 60, top]]), '#b0647a');   // each column's shadow, thrown along the wall
+  // the doors, between the second column and the third: shut, and under the Audit's seal
+  box(ctx, 674, 34, 96, top - 34, '#3a2248', L, { off: 0, shadow: false, ink: IW });
+  stroke(ctx, 722, 34, 722, top, II);
+  for (const yy of [70, 130, 190]) for (const xx of [690, 706, 738, 754]) circ(ctx, xx, yy, 3.4, C.brass);
+  flat(ctx, pp([[708, 150], [736, 150], [742, 196], [730, 188], [722, 200], [714, 188], [702, 196]]), C.crimson); outline(ctx, pp([[708, 150], [736, 150], [742, 196], [730, 188], [722, 200], [714, 188], [702, 196]]), 1.8);
+  cel(ctx, cp(722, 148, 13), C.crimson, L, { off: 4, ink: II, hi: cp(718, 144, 4), hiCol: '#ff9aa0' });
+  // the Mint's scale, in brass, on the wall
+  cel(ctx, cp(873, 124, 38), '#3a2248', L, { off: 0, shadow: false, ink: IW }); ink(ctx, 3, C.brass); ctx.beginPath(); ctx.arc(873, 124, 31, 0, TAU); ctx.stroke(); sigilScale(ctx, 873, 124, 17, C.brass, 3);
+  for (const bx of [1023, 1323]) cel(ctx, pp([[bx - 34, -200], [bx + 34, -200], [bx + 34, 190], [bx, 162], [bx - 34, 190]]), '#1c7a5c', L, { off: 9, ink: IW });
+  for (let i = 0; i < 8; i++) {
+    const x = colX(i);
+    cel(ctx, rp(x, -200, 46, top + 200), STONE, L, { off: 0, ink: IW, shadow: rp(x + 26, -200, 20, top + 200), rim: 0 });
+    rect(ctx, x + 4, -200, 5, top + 180, '#fff6e0');
+    box(ctx, x - 8, top - 22, 62, 22, STONE, L, { off: 0, ink: II, shadow: rp(x + 28, top - 22, 26, 22) });
+  }
+  // the stair: eleven steps. Tread and riser both take the sun; what crosses them is everybody's shadow, a street long
+  const N = 11, sh = 30, left = (y) => 470 - (y - top) * 0.92;
+  for (let i = 0; i < N; i++) {
+    const y = top + i * sh, fourth = i === N - 4;
+    rect(ctx, left(y) - 30, y, 2200, sh * 0.5, fourth ? '#fff0c8' : STONE); rect(ctx, left(y) - 30, y + sh * 0.5, 2200, sh * 0.5 + 1, RISE);
+    if (fourth) { rect(ctx, left(y) - 30, y + sh * 0.5 - 6, 2200, 6, C.brass); for (let k = 0; k < 30; k++) circ(ctx, left(y) + 20 + k * 44, y + sh * 0.5 - 3, 2.2, INK); }                                // the fourth step: the brass strip where a line was once held
+  }
+  for (const [x0, w0, w1] of [[250, 34, 60], [-140, 240, 330], [660, 30, 54], [900, 120, 170], [1160, 40, 60]]) flat(ctx, pp([[x0, top + N * sh], [x0 + w0, top + N * sh], [x0 + 860 + w1, top], [x0 + 860, top]]), alpha(SH, 0.5));
+  ink(ctx, II, alpha(INK, 0.85)); ctx.beginPath(); for (let i = 0; i <= N; i++) { const y = top + i * sh; ctx.moveTo(left(y) - 30, y); ctx.lineTo(X0 + XW, y); } ctx.stroke();
+  // the cheek of the stair, its plinth and lamp standard, and the board where the odds were once chalked
+  cel(ctx, pp([[436, top - 34], [476, top - 34], [476 - N * sh * 0.92, top + N * sh + 4], [436 - N * sh * 0.92 - 30, top + N * sh + 4]]), '#f0b888', L, { off: 0, ink: IW, shadow: false, rim: 5, rimCol: '#fff6e0' });
+  rect(ctx, X0, top + N * sh, XW, 500, '#d89068'); stroke(ctx, X0, top + N * sh, X0 + XW, top + N * sh, IW);
+  flat(ctx, pp([[100, 600], [210, 600], [800, 1000], [520, 1000]]), alpha(SH, 0.5));
+  box(ctx, 92, 520, 104, 76, STONE, L, { off: 0, ink: IW, shadow: rp(150, 520, 46, 76) });
+  stroke(ctx, 144, 520, 144, 330, 12); stroke(ctx, 144, 520, 144, 330, 6, '#3a2466'); cel(ctx, pp([[124, 330], [164, 330], [156, 290], [132, 290]]), '#c8d4e8', L, { off: 6, ink: II }); flat(ctx, pp([[120, 290], [168, 290], [144, 268]]), '#3a2466');
+  { const bx = -34, by = 430; stroke(ctx, bx + 10, by + 150, bx - 6, by + 190, 7); stroke(ctx, bx + 110, by + 150, bx + 126, by + 190, 7);
+    box(ctx, bx - 8, by - 8, 136, 166, '#6a3a44', L, { off: 5, ink: IW }); rect(ctx, bx, by, 120, 150, '#143c3a');
+    for (let r = 0; r < 6; r++) { ink(ctx, 2.2, alpha('#e8f4e0', 0.9)); chalkLine(ctx, bx + 8, by + 20 + r * 22, 50 + rnd(r * 3) * 50, r + 21); } }
+  crowd(ctx, 97, 990, 1560, top + 54, 9, 17, '#44286e', L, { hat: 0.5, rimCol: '#ffb866' });
+  crowd(ctx, 99, X0, 1560, 650, 22, 30, '#2a1850', L, { hat: 0.45, rimCol: '#ffb866' });
+  ctx = A();
+  spark(ctx, sx + px * 0.05, sy, 70, t, 11);
+  shimmer(ctx, 33, 220, 600, 304, 326, 9, '#fff6e0', t);
+  gulls(ctx, [[300, 120, 12, 3], [560, 90, 10, 5], [200, 210, 9, 7]], t, '#2c1c60');
+});
+
+// ── drum-open: the drum hall by day, the drum unsealed and the back-plate off the Reels. Key light: one shaft from the opened doors ──
+const L_DOPEN = keyLight('#fff0c8', -Math.PI * 0.86, { depth: 0.86, tint: '#2a1450' });
+def('drum-open', L_DOPEN, (ctx, t, px) => {
+  const L = L_DOPEN, DARK = '#22143a', STONE = '#6a3a5c', gx = 412, cx = 780;
+  ctx = S(0.2);
+  fillAll(ctx, DARK);
+  rings(ctx, gx, 220, 760, ['#2c1a44', '#48284e', '#744458'], [1, 0.62, 0.32]);
+  for (let i = -1; i < 7; i++) {
+    const x = -110 + i * 250;
+    if (i === 2) continue;
+    cel(ctx, archP(x, 600, 170, 520), '#1c0f30', L, { off: 12, ink: II, shadow: C.night });
+    outline(ctx, archP(x + 14, 600, 142, 496), 1.6, alpha(C.brass, 0.55));
+  }
+  // the doors, standing open on the morning: the dock is on the other side of them, looking in
+  const door = archP(gx - 80, 606, 160, 600);
+  ctx.save(); ctx.beginPath(); door(ctx); ctx.clip();
+  bands(ctx, gx - 80, 0, 160, 610, ['#bfe2f2', '#e4f2ee', '#fffbe8', '#ffecc0'], [0.3, 0.46, 0.8, 1]);
+  town(ctx, 71, gx - 90, gx + 90, 420, 30, 90, 22, 44, '#c9cfe6', L, {});
+  rect(ctx, gx - 80, 418, 160, 200, '#f4e4c4');
+  crowd(ctx, 73, gx - 96, gx + 96, 470, 7, 15, '#8a6a8a', L, { hat: 0.5, rimCol: '#fffbe8' });
+  ctx.restore();
+  outline(ctx, door, IW * 1.5);
+  cel(ctx, pp([[gx - 80, 30], [gx - 126, 62], [gx - 126, 642], [gx - 80, 606]]), '#5a3040', L, { off: 0, shadow: false, ink: IW });
+  cel(ctx, pp([[gx + 80, 30], [gx + 130, 66], [gx + 130, 648], [gx + 80, 606]]), '#d89a5a', L, { off: 0, shadow: false, ink: IW });
+  for (const yy of [160, 330, 500]) { stroke(ctx, gx + 84, yy, gx + 126, yy + 20, 5, C.brass); stroke(ctx, gx - 84, yy, gx - 122, yy + 18, 5, '#8a5a3a'); }
+  taperPath(ctx, [[gx + 82, 300], [gx + 96, 350], [gx + 88, 420], [gx + 100, 470]], 9, 3, C.crimson); circ(ctx, gx + 84, 298, 9, C.crimson);   // what is left of the seal
+  shaft(ctx, gx, 160, 0.4, 1300, 0.56, L.col, 0.2);
+  // the Reels, with the back-plate off: three wheels on one arbor, a pawl over each, and behind the third stop a thing that should not be there
+  ctx = S(0.35);
+  const cab = (c) => { c.moveTo(cx - 156, 620); c.lineTo(cx - 156, 92); c.quadraticCurveTo(cx, -34, cx + 156, 92); c.lineTo(cx + 156, 620); c.closePath(); };
+  cel(ctx, cab, C.brass, L, { ink: IW, rim: 7, shadow: pp([[cx + 30, -60], [cx + 200, -60], [cx + 200, 640], [cx - 60, 640]]) });
+  sigilScale(ctx, cx, 46, 13, INK, 3.2);
+  box(ctx, cx - 134, 74, 268, 262, '#170c26', L, { off: 0, shadow: false, ink: IW });
+  flat(ctx, pp([[cx - 130, 78], [cx - 20, 78], [cx - 70, 332], [cx - 130, 332]]), '#33203c');                    // daylight gets a little way inside
+  for (const [sxx, syy] of [[-146, 62], [146, 62], [-146, 348], [146, 348]]) { circ(ctx, cx + sxx, syy, 5, INK); circ(ctx, cx + sxx, syy, 2.4, '#fff0c8'); }   // the four screw holes
+  stroke(ctx, cx - 130, 190, cx + 130, 190, 9); stroke(ctx, cx - 130, 190, cx + 130, 190, 4.6, '#c8ccd8');
+  for (let r = 0; r < 3; r++) {
+    const x = cx - 86 + r * 86, y = 190, R = 37;
+    cel(ctx, cp(x, y, R), C.cream, L, { off: 9, ink: II, shadow: '#b89c84' });
+    ink(ctx, 6, C.brass); ctx.beginPath(); ctx.arc(x, y, R - 6, 0, TAU); ctx.stroke(); ink(ctx, 1.6); ctx.beginPath(); ctx.arc(x, y, R - 10, 0, TAU); ctx.stroke();
+    for (let k = 0; k < 6; k++) { const a = k * TAU / 6 + r * 0.4; stroke(ctx, x, y, x + Math.cos(a) * (R - 10), y + Math.sin(a) * (R - 10), 4.4); stroke(ctx, x, y, x + Math.cos(a) * (R - 10), y + Math.sin(a) * (R - 10), 2, C.brass); }
+    for (let k = 0; k < 12; k++) { const a = k * TAU / 12; stroke(ctx, x + Math.cos(a) * R, y + Math.sin(a) * R, x + Math.cos(a) * (R + 5), y + Math.sin(a) * (R + 5), 4); }   // the stops
+    cel(ctx, cp(x, y, 8), C.brass, L, { off: 3, ink: II });
+    cel(ctx, pp([[x - 6, 100], [x + 20, 108], [x + 12, 146], [x + 2, 150], [x + 6, 122], [x - 8, 116]]), '#9aa4c0', L, { off: 3, ink: II });   // the pawl
+    circ(ctx, x - 1, 108, 3.2, INK);
+  }
+  // the weight: lead, Halcyon pattern, wired behind the orb stop of the third reel
+  { const wx = cx + 86 + 30, wy = 286;
+    ink(ctx, 2, '#c8ccd8'); ctx.beginPath(); ctx.moveTo(cx + 86 + 22, 214); ctx.quadraticCurveTo(wx + 12, 230, wx, wy - 36); ctx.stroke();
+    plumbWeight(ctx, wx, wy, 21, INK); plumbWeight(ctx, wx, wy, 17, '#7a86a8'); poly(ctx, [[wx - 4, wy - 4], [wx + 1, wy - 4], [wx - 1, wy + 9]], '#c8d4ec'); circ(ctx, wx, wy - 36, 3.6, '#c8ccd8'); }
+  // the back-plate itself, stood against the cabinet's foot, and the tools on a cloth
+  cel(ctx, pp([[cx - 300, 616], [cx - 182, 608], [cx - 164, 372], [cx - 276, 384]]), '#e8b850', L, { off: 0, shadow: false, ink: IW, hi: pp([[cx - 290, 600], [cx - 250, 598], [cx - 232, 388], [cx - 270, 390]]), hiCol: '#fff0c0' });
+  for (const [u, v] of [[-284, 596], [-198, 590], [-262, 398], [-180, 390]]) circ(ctx, cx + u, v, 4.4, INK);
+  // the drum of names, unsealed: its hatch hanging open, and what was in it
+  const dx = cx + 346, dy = 404;
+  stroke(ctx, dx - 74, 610, dx - 30, dy, 14); stroke(ctx, dx + 74, 610, dx + 30, dy, 14);
+  stroke(ctx, dx - 74, 610, dx - 30, dy, 8, '#8a4a34'); stroke(ctx, dx + 74, 610, dx + 30, dy, 8, '#8a4a34');
+  cel(ctx, cp(dx, dy, 84), '#4a2a58', L, { off: 20, ink: IW, shadow: '#22143a' });
+  ink(ctx, 5, C.brass); for (const k of [0.38, 0.8]) { ctx.beginPath(); ctx.ellipse(dx, dy, 84 * k, 84, 0, 0, TAU); ctx.stroke(); }
+  cel(ctx, ep(dx - 22, dy - 8, 38, 46), '#0e0818', L, { off: 0, shadow: false, ink: IW });
+  for (let i = 0; i < 9; i++) { const a = rnd(i * 3) * 3, x = dx - 42 + rnd(i * 5) * 38, y = dy - 28 + rnd(i * 7) * 50; ctx.save(); ctx.translate(x, y); ctx.rotate(a); rect(ctx, -9, -3, 18, 6, i % 3 ? C.cream : '#d8c08e'); ctx.restore(); }
+  cel(ctx, pp([[dx - 58, dy + 6], [dx - 112, dy + 44], [dx - 92, dy + 80], [dx - 52, dy + 36]]), C.brass, L, { off: 5, ink: II });                 // the hatch
+  taperPath(ctx, [[dx + 10, dy - 82], [dx + 28, dy - 44], [dx + 16, dy - 8], [dx + 32, dy + 26]], 9, 3, C.crimson);
+  // columns, the floor, and the daylight laid across it as far as the Reels
+  ctx = S(0.5);
+  rect(ctx, X0, 608, XW, 400, '#2a1840');
+  flat(ctx, pp([[gx - 80, 608], [gx + 80, 608], [1560, 900], [1560, 1000], [520, 1000]]), '#8a5a66');
+  flat(ctx, pp([[gx - 40, 608], [gx + 60, 608], [1560, 960], [1560, 1000], [760, 1000]]), '#d8a888');
+  ink(ctx, 2, alpha(INK, 0.8));
+  ctx.beginPath(); for (let i = -8; i < 24; i++) { ctx.moveTo(640 + (i - 8) * 60, 608); ctx.lineTo(640 + (i - 8) * 190, 980); } ctx.stroke();
+  for (let i = -1; i < 7; i++) {
+    const x = -160 + i * 250;
+    if (Math.abs(x + 27 - cx) < 290 || Math.abs(x + 27 - gx) < 150) continue;
+    box(ctx, x, -180, 54, 790, STONE, L, { off: 20, ink: II, rim: 6 });
+    box(ctx, x - 10, 596, 74, 24, STONE, L, { off: 8, ink: II, rim: 3 });
+  }
+  for (let i = 0; i < 12; i++) { const x = dx - 190 + rnd(i * 3.1) * 240, y = 620 + rnd(i * 5.3) * 60; ctx.save(); ctx.translate(x, y); ctx.rotate(rnd(i) * 3); rect(ctx, -10, -3.5, 20, 7, C.cream); ink(ctx, 1.2); ctx.strokeRect(-10, -3.5, 20, 7); ctx.restore(); }   // slips, counted and let fall
+  ctx = A();
+  dust(ctx, 5, 12, t, 500 + px * 0.3, 150, 560, 400, '#fff6e0', 7, 5, 9);
+  glint(ctx, cx + 86 + 28 + px * 0.35, 282, 13 + 4 * Math.sin(t * 2.9), C.white, 0.95, 0);
+  gulls(ctx, [[gx + px * 0.2, 120, 7, 3]], t * 0.5, '#5a6a9c');
+});
+
+// ── mole-lanterns: ten thousand lanterns hung along the mole, not floated, night. Key light: that one line of light ──
+const L_MOLE = keyLight('#ffb04a', -Math.PI * 0.3, { depth: 0.88, tint: '#0c1040' });
+const MOLE = { ex: 366, ey: 280 };                                   // where the mole ends, far out
+const moleD = (i) => 1 / (1 + 0.42 * i);
+const moleBase = (d) => [MOLE.ex + 900 * d, MOLE.ey + 400 * d];      // the foot of a post, d = 1 nearest
+const moleTop = (d) => [MOLE.ex + 900 * d, MOLE.ey + 400 * d - 700 * d];
+def('mole-lanterns', L_MOLE, (ctx, t, px) => {
+  const L = L_MOLE, { ex, ey } = MOLE, hy = 284;
+  ctx = S(0.05);
+  sky(ctx, hy, ['#05071c', '#0a0f32', '#111a4c', '#182664'], [0.42, 0.68, 0.88, 1]);
+  starsFlat(ctx, 29, 60, hy - 20);
+  rect(ctx, X0, hy, XW, 800, '#0c1444'); rect(ctx, X0, hy, XW, 3, '#2c3c8c');
+  waves(ctx, X0, hy + 60, XW, 90, { len: 70, amp: 5, col: '#0a1038', foam: false });
+  waves(ctx, X0, hy + 140, XW, 600, { len: 120, amp: 9, col: '#070b2a', foam: false });
+  // the mole, running out from under our feet to its end: its seaward wall, its top, the light lying beside it on the water
+  ctx = S(0.22);
+  for (let i = 0; i < 90; i++) {
+    const d = 0.04 + rnd(i * 1.9) * rnd(i * 1.9) * 1.3, y = ey + 400 * d + 12 * d, x = ex + 520 * d - 16 * d - rnd(i * 3.3) * rnd(i * 3.3) * 420 * d;
+    ctx.fillStyle = i % 3 ? '#e87a3a' : '#ffd27a'; ctx.beginPath(); ctx.ellipse(x, y + rnd(i * 7) * 60 * d, (16 + rnd(i * 5) * 40) * d, (2 + 4 * d), 0, 0, TAU); ctx.fill();
+  }
+  flat(ctx, pp([[ex - 2, ey - 1], [ex + 2, ey - 1], [ex + 1300 * 2, ey + 800], [ex + 520 * 2, ey + 800], [ex + 520 * 2, ey + 800 + 120]]), '#3a1c3a');
+  flat(ctx, pp([[ex, ey], [ex + 520 * 2, ey + 800], [ex + 520 * 2, ey + 800 + 110], [ex, ey + 2]]), '#160c2c');                                // the wall
+  flat(ctx, pp([[ex, ey], [ex + 1, ey], [ex + 1040 * 2, ey + 800], [ex + 760 * 2, ey + 800]]), '#6a2e3a');                                     // under the wires the stone is lit
+  ink(ctx, II); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + 520 * 2, ey + 800); ctx.stroke();
+  ink(ctx, 2, '#ff9a4a'); ctx.beginPath(); ctx.moveTo(ex + 4, ey + 1); ctx.lineTo(ex + 520 * 2 + 4, ey + 801); ctx.stroke();
+  // far out it is one line of light
+  ink(ctx, 3, '#ffc65a'); ctx.beginPath(); ctx.moveTo(ex, ey - 2); ctx.lineTo(moleTop(moleD(22))[0], moleTop(moleD(22))[1] + 8); ctx.stroke();
+  bloom(ctx, ex + 30, ey - 6, 60, C.lantern, 0.7);
+  // posts, wires and lanterns, far to near: two wires to a span
+  for (let i = 22; i >= 0; i--) {
+    const d0 = moleD(i), d1 = moleD(i + 1), b0 = moleBase(d0), t0 = moleTop(d0), t1 = moleTop(d1), dm = (d0 + d1) / 2;
+    if (i > 0 && i < 9) crowd(ctx, 60 + i, moleBase(d1)[0] - 110 * dm, b0[0] - 150 * dm, b0[1] - 150 * dm, 3, 24 * dm, '#140c2c', L, { hat: 0.5, rimCol: '#ff9a4a' });
+    for (const [k, n] of [[0.36, 4], [0, 5]]) {
+      const a = [t0[0], t0[1] + k * 700 * d0], b = [t1[0], t1[1] + k * 700 * d1], c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 60 * dm];
+      ink(ctx, Math.max(1, 2.4 * dm)); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(c[0], c[1], b[0], b[1]); ctx.stroke();
+      if (i > 12) { if (k === 0) bloom(ctx, c[0], c[1] + 6, 70 * dm + 8, C.lantern, 0.6); for (let j = 0; j < 3; j++) { const p = quadAt(a, c, b, (j + 0.5) / 3); rect(ctx, p[0] - 1.6, p[1], 3.2 + 8 * dm, 4 + 10 * dm, LCOLS[(i + j) % 4]); } continue; }
+      for (let j = 0; j < n; j++) {
+        if (MOLE_SWAY.some((m) => m[0] === i && m[1] === k && m[2] === j)) continue;
+        const u = (j + 0.5) / n, p = quadAt(a, c, b, u), s = 34 * lerp(d0, d1, u);
+        paperLantern(ctx, p[0], p[1], s, LCOLS[(i * 3 + j * 2 + (k ? 1 : 0)) % LCOLS.length], L, true, i < 3 ? 0.6 : 0.8);
+      }
+    }
+    const pw = Math.max(1.6, 13 * d0);
+    stroke(ctx, b0[0], b0[1], t0[0], t0[1] - 10 * d0, pw + 3); stroke(ctx, b0[0], b0[1], t0[0], t0[1] - 10 * d0, pw, '#1c0f30'); stroke(ctx, b0[0] - pw * 0.3, b0[1], t0[0] - pw * 0.3, t0[1] - 10 * d0, pw * 0.26, '#ff9a4a');
+  }
+  ctx = A();
+  const o = px * 0.22;
+  for (const [i, k, j, sd] of MOLE_SWAY) {
+    const d0 = moleD(i), d1 = moleD(i + 1), t0 = moleTop(d0), t1 = moleTop(d1), dm = (d0 + d1) / 2, n = k ? 4 : 5, u = (j + 0.5) / n;
+    const a = [t0[0], t0[1] + k * 700 * d0], b = [t1[0], t1[1] + k * 700 * d1], c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 60 * dm], p = quadAt(a, c, b, u);
+    swayLantern(ctx, p[0] + o, p[1], 34 * lerp(d0, d1, u), LCOLS[(i * 3 + j * 2 + (k ? 1 : 0)) % LCOLS.length], L, t, sd, 0);
+  }
+  shimmer(ctx, 35, 400 + o, 860 + o, hy + 30, hy + 300, 16, '#ffd27a', t);
+  // far out, low, something keeps time
+  { const on = Math.sin(t * 1.9) > 0.2, x = 150 + px * 0.05; if (on) { bloom(ctx, x, hy - 3, 24, '#9fd8ff', 1, C.white); glint(ctx, x, hy - 3, 12, C.white, 1, 0); } else circ(ctx, x, hy - 3, 2, '#7fd8ff'); }
+}, (ctx, t, px) => {
+  swayLantern(ctx, 84 + px * 1.6, -120, 70, C.crimson, L_MOLE, t, 71, 0);
+});
+const MOLE_SWAY = [[1, 0, 2, 1], [2, 0, 1, 2], [3, 0.36, 2, 3]];   // [span, wire, place, seed]: the lanterns that are drawn moving
+
+// ── cutter-brig: two barred berths below decks, night. Key light: a lamp swinging in the passage between them ──
+const L_BRIG = keyLight('#ffb060', -Math.PI * 0.5, { depth: 0.92, tint: '#10184c' });
+def('cutter-brig', L_BRIG, (ctx, t, px) => {
+  const L = L_BRIG, lx = 640, hk = 44, IRON = '#34365c', WOOD = '#3a2030';
+  ctx = S(0.25);
+  fillAll(ctx, '#0a0820');
+  // the two berths: the ship's side behind each, a port, a plank to lie on. The lamp reaches in through the bars
+  for (const sd of [-1, 1]) {
+    const X = (u) => lx + sd * u;
+    rect(ctx, Math.min(X(60), X(700)), 40, 640, 560, '#1a1436');
+    flat(ctx, pp([[X(60), 40], [X(330), 40], [X(520), 600], [X(60), 600]]), '#3c2440');
+    flat(ctx, pp([[X(60), 60], [X(170), 60], [X(280), 600], [X(60), 600]]), '#6a3a44');
+    ink(ctx, 2, alpha(INK, 0.85)); ctx.beginPath(); for (let y = 90; y < 600; y += 62) { ctx.moveTo(X(60), y); ctx.lineTo(X(700), y + 8); } ctx.stroke();
+    for (const u of [250, 520]) { cel(ctx, (c) => { c.moveTo(X(u - 16), 30); c.quadraticCurveTo(X(u - 4), 300, X(u - 26), 610); c.lineTo(X(u + 14), 610); c.quadraticCurveTo(X(u + 30), 300, X(u + 16), 30); c.closePath(); }, '#2a1a3a', L, { off: 0, shadow: false, ink: II }); }   // the frames of the hull
+    for (let j = 0; j < 10; j++) { const u = 100 + j * 50, k = u * 0.34; flat(ctx, pp([[X(u + k), 40], [X(u + k + 13), 40], [X(u + k * 1.5 + 17), 600], [X(u + k * 1.5), 600]]), alpha('#0a0820', 0.62)); }   // the bars' shadows, leaning away from the lamp
+    // the port
+    const px0 = X(292), py0 = 168;
+    cel(ctx, cp(px0, py0, 44), C.brass, L, { off: 8, ink: IW });
+    ctx.save(); ctx.beginPath(); ctx.arc(px0, py0, 32, 0, TAU); ctx.clip();
+    bands(ctx, px0 - 32, py0 - 32, 64, 64, ['#0a0f32', '#182664', '#0c1444'], [0.44, 0.6, 1]);
+    glint(ctx, px0 - 10 * sd, py0 - 16, 7, C.white, 1); rect(ctx, px0 + 8 * sd, py0 - 8, 3, 3, C.white); rect(ctx, px0 - 20, py0 + 8, 40, 2.4, '#5a7ac8');
+    ctx.restore();
+    ink(ctx, II); ctx.beginPath(); ctx.arc(px0, py0, 32, 0, TAU); ctx.stroke();
+    for (let k = 0; k < 6; k++) circ(ctx, px0 + Math.cos(k * TAU / 6) * 38, py0 + Math.sin(k * TAU / 6) * 38, 2.6, INK);
+    // the plank, on its chains, a blanket folded at the foot
+    for (const u of [120, 560]) { ink(ctx, 3, IRON); ctx.setLineDash([7, 5]); ctx.beginPath(); ctx.moveTo(X(u), 420); ctx.lineTo(X(u + 40), 250); ctx.stroke(); ctx.setLineDash([]); }
+    box(ctx, Math.min(X(90), X(600)), 420, 510, 18, '#7a4a3c', L, { off: 0, ink: IW, shadow: rp(Math.min(X(90), X(600)), 430, 510, 8) });
+    cel(ctx, pp([[X(430), 420], [X(560), 420], [X(556), 392], [X(436), 396]]), sd < 0 ? '#3a5a8c' : '#6a6a8a', L, { off: 5, ink: II });
+    rect(ctx, Math.min(X(60), X(700)), 438, 640, 162, alpha('#0a0820', 0.5));
+  }
+  // the bulkhead: deck beam, sill, the post between the berths, the bars
+  ctx = S(0.45);
+  rect(ctx, X0, -200, XW, 232, '#0e0a1e');
+  box(ctx, X0, 22, XW, 36, WOOD, L, { off: 0, shadow: false, ink: IW }); rect(ctx, lx - 520, 52, 1040, 5, '#c97a4a');
+  rect(ctx, X0, 600, XW, 400, '#161028'); flat(ctx, ep(lx, 640, 420, 40), '#4a2a3c'); flat(ctx, ep(lx, 636, 200, 18), '#8a4a44');
+  box(ctx, X0, 586, XW, 26, WOOD, L, { off: 0, shadow: false, ink: IW }); rect(ctx, lx - 420, 586, 840, 4, '#c97a4a');
+  ink(ctx, 2, alpha(INK, 0.85)); ctx.beginPath(); for (let i = -10; i <= 10; i++) { ctx.moveTo(lx + i * 80, 612); ctx.lineTo(lx + i * 210, 1000); } ctx.stroke();
+  for (const sd of [-1, 1]) {
+    const X = (u) => lx + sd * u;
+    for (let j = 0; j < 12; j++) {
+      const x = X(150 + j * 50);
+      stroke(ctx, x, 58, x, 586, 9.6); stroke(ctx, x, 58, x, 586, 5, IRON); stroke(ctx, x - sd * 2, 62, x - sd * 2, 582, 1.8, j < 4 ? '#ffb060' : '#8a5a5c');
+    }
+    box(ctx, Math.min(X(60), X(700)), 300, 640, 16, IRON, L, { off: 0, ink: II, shadow: rp(Math.min(X(60), X(700)), 308, 640, 8) });
+    // the lock, and the Audit's seal on it
+    cel(ctx, rp(Math.min(X(64), X(124)), 270, 60, 76, 6), C.brass, L, { off: 6, ink: IW }); circ(ctx, X(94), 300, 6, INK); rect(ctx, X(94) - 2.4, 300, 4.8, 16, INK);
+    cel(ctx, cp(X(94), 356, 12), C.crimson, L, { off: 3, ink: II }); taperPath(ctx, [[X(94), 366], [X(98), 384], [X(90), 400]], 8, 2, C.crimson);
+    box(ctx, Math.min(X(700), X(740)), -200, 40, 1000, WOOD, L, { off: 0, shadow: false, ink: IW });
+  }
+  box(ctx, lx - 42, 58, 84, 528, '#5a3040', L, { off: 0, ink: IW, shadow: false });
+  rect(ctx, lx - 38, 58, 76, 528, '#4a2838'); rect(ctx, lx - 38, 58, 76, 300, '#8a4a44'); rect(ctx, lx - 38, 58, 76, 170, '#c97a4a'); stroke(ctx, lx - 14, 58, lx - 14, 586, 1.6, alpha(INK, 0.6)); stroke(ctx, lx + 16, 58, lx + 16, 586, 1.6, alpha(INK, 0.6));
+  cel(ctx, pp([[lx - 8, 34], [lx + 8, 34], [lx + 5, 50], [lx - 5, 50]]), IRON, L, { off: 0, shadow: false, ink: II });
+  // the lamp, swinging as she rolls
+  ctx = A();
+  const o = px * 0.45, a = Math.sin(t * 1.25) * 0.2 + Math.sin(t * 0.43) * 0.05, len = 84, cx = lx + o + Math.sin(a) * len, cy = hk + Math.cos(a) * len;
+  bloom(ctx, cx, cy, 190, L.col, 0.9);
+  stroke(ctx, lx + o, hk, cx - Math.sin(a) * 24, cy - Math.cos(a) * 24, 3);
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(-a);
+  ink(ctx, 2.6); ctx.beginPath(); ctx.moveTo(-14, -12); ctx.quadraticCurveTo(0, -36, 14, -12); ctx.stroke();
+  poly(ctx, [[-11, -14], [11, -14], [15, -6], [-15, -6]], C.brass); ink(ctx, 2.2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-13, -6); ctx.quadraticCurveTo(-20, 8, -13, 20); ctx.lineTo(13, 20); ctx.quadraticCurveTo(20, 8, 13, -6); ctx.closePath(); ctx.fillStyle = '#fff0c0'; ctx.fill(); ink(ctx, 2.4); ctx.stroke();
+  ink(ctx, 1.6); ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(-7, 20); ctx.moveTo(6, -6); ctx.lineTo(7, 20); ctx.stroke();
+  poly(ctx, [[-16, 20], [16, 20], [13, 32], [-13, 32]], C.brass); ink(ctx, 2.2); ctx.stroke();
+  ctx.restore();
+  spark(ctx, cx, cy + 6, 24, t, 12);
 });
