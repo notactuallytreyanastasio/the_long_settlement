@@ -12480,6 +12480,11 @@
   "lines": 43
  },
  {
+  "path": "src/shell/gl/demo.js",
+  "bytes": 28264,
+  "lines": 400
+ },
+ {
   "path": "src/shell/gl/fx.js",
   "bytes": 3709,
   "lines": 61
@@ -12618,6 +12623,11 @@
   "path": "test/tables.test.js",
   "bytes": 29019,
   "lines": 522
+ },
+ {
+  "path": "tools/gl-demo.html",
+  "bytes": 4975,
+  "lines": 74
  },
  {
   "path": "tools/render-voices.mjs",

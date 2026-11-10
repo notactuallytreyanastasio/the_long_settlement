@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cel engine demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10183a; overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: fixed; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); font: 11px/1.35 ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.55); padding: 5px 7px; border-radius: 6px; white-space: pre; pointer-events: none; }
+  #bar { position: fixed; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
+  #bar button { font: 12px ui-monospace, Menlo, monospace; color: #fff; background: rgba(16, 24, 58, 0.6); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 6px; padding: 6px 9px; }
+  #fatal { position: fixed; inset: 0; margin: 0; padding: 16px; font: 12px/1.4 ui-monospace, Menlo, monospace; color: #ffd9d0; background: #2a1020; white-space: pre-wrap; overflow: auto; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="bar"><button id="bLight">light</button><button id="bShot">shot</button></div>
+<pre id="fatal" hidden></pre>
+<script type="module">
+// Query string:  ?light=day|sunset|night   ?shot=0..5   ?still=1 (no camera drift)
+//                ?t=12.5 (freeze at that time, for screenshots)   ?hud=0   ?dpr=1 (cap the pixel ratio)
+const fatal = (e) => { const f = document.getElementById('fatal'); f.hidden = false; f.textContent = String((e && e.stack) || e); window.glDemo = { error: f.textContent }; };
+window.addEventListener('error', (e) => fatal(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => fatal(e.reason));
+try {
+  const { createRenderer } = await import('../src/shell/gl/index.js');
+  const { buildDemo, LIGHTS } = await import('../src/shell/gl/demo.js');
+  const q = new URLSearchParams(location.search);
+  const light = q.get('light') || 'sunset';
+  const fixedT = q.has('t') ? Number(q.get('t')) : null;
+  const canvas = document.getElementById('c');
+  const renderer = createRenderer(canvas, { dprCap: Number(q.get('dpr') || 2) });
+  const demo = buildDemo(light);
+  let shotN = Number(q.get('shot') || 0);
+  demo.setShot(shotN, q.get('still') === '1' || fixedT !== null);
+  const hud = document.getElementById('hud');
+  if (q.get('hud') === '0') { hud.hidden = true; document.getElementById('bar').hidden = true; }
+  document.getElementById('bLight').onclick = () => { q.set('light', LIGHTS[(LIGHTS.indexOf(light) + 1) % LIGHTS.length]); location.search = q.toString(); };
+  document.getElementById('bShot').onclick = () => { shotN = (shotN + 1) % demo.shots.length; demo.setShot(shotN, q.get('still') === '1'); };
+
+  if (fixedT !== null) { // run up to the frozen moment in fixed steps so springs and particles have settled
+    for (let t = Math.max(0, fixedT - 4); t < fixedT; t += 1 / 60) { demo.update(t, 1 / 60); demo.scene.root.updateWorld(null); }
+  }
+  let last = performance.now(), t = fixedT ?? 0, avg = 0, frames = 0, upd = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const u0 = performance.now();
+    if (fixedT === null) { t += dt; demo.update(t, dt); } else demo.update(fixedT, 0);
+    upd += (performance.now() - u0 - upd) * 0.05;
+    const s = renderer.render(demo.scene, demo.camera, t);
+    avg += (s.cpuMs - avg) * 0.05; frames++;
+    if (!hud.hidden && frames % 15 === 0) hud.textContent = `${light} / ${demo.shots[shotN].name}\n${s.drawCalls} draws  ${(s.triangles / 1000).toFixed(1)}k tris  ${s.lights} lamps\nrender ${avg.toFixed(2)} ms  update ${upd.toFixed(2)} ms\n${s.width}x${s.height}`;
+    window.glDemo.frames = frames;
+    requestAnimationFrame(frame);
+  }
+  window.glDemo = {
+    renderer, demo, frames: 0,
+    info() { const gl = renderer.gl, ext = gl.getExtension('WEBGL_debug_renderer_info'); return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), version: gl.getParameter(gl.VERSION), stats: { ...renderer.stats } }; },
+    /** Time n frames of update + render back to back. `finish` waits for the GPU each frame. */
+    bench(n = 200, finish = false) {
+      const gl = renderer.gl; let tu = 0, tr = 0, tt = t;
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) { tt += 1 / 60; const a = performance.now(); demo.update(tt, 1 / 60); const b = performance.now(); renderer.render(demo.scene, demo.camera, tt); if (finish) gl.finish(); tu += b - a; tr += performance.now() - b; }
+      return { frames: n, updateMs: tu / n, renderMs: tr / n, totalMs: (performance.now() - t0) / n, finish, drawCalls: renderer.stats.drawCalls, triangles: renderer.stats.triangles };
+    },
+  };
+  requestAnimationFrame(frame);
+} catch (e) { fatal(e); }
+</script>
+</body>
+</html>
