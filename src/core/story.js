@@ -107,21 +107,64 @@ export function lineSeconds(line) {
   return 0.6 + words * 0.38;
 }
 
+// Speakers met, by content -> 'chapter.scene' -> Set. A cache of a pure function of its key.
+const metCache = new WeakMap();
+
 /**
- * The lines under a bark key that may be spoken in scene `sceneIndex`. A line with
- * minScene waits until game.scene >= minScene: its speaker has not been met before then.
+ * Everyone the player has seen or heard in a cinematic by the time scene `sceneIndex` of
+ * chapter `chapterIndex` is being played: the speakers and the cast on stage in every
+ * cinematic of the earlier chapters, in this chapter's prologue, and in the cutscenes of
+ * this chapter's earlier scenes. Briefings and barks introduce nobody.
+ * @returns {Set<string>}
+ */
+export function metSpeakers(content, chapterIndex, sceneIndex) {
+  if (!content.chapters[chapterIndex]) throw new Error(`story: no chapter at index ${chapterIndex}`);
+  if (!Number.isInteger(sceneIndex) || sceneIndex < 0) throw new Error(`story: metSpeakers scene index ${JSON.stringify(sceneIndex)} is not a scene index`);
+  let byKey = metCache.get(content);
+  if (!byKey) { byKey = new Map(); metCache.set(content, byKey); }
+  const key = `${chapterIndex}.${sceneIndex}`;
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const met = new Set();
+  const see = (lines) => {
+    for (const line of lines) {
+      met.add(line.who);
+      for (const id of line.on || []) met.add(id);
+    }
+  };
+  content.chapters.slice(0, chapterIndex).forEach((ch) => {
+    see(ch.prologue);
+    ch.scenes.forEach((sc) => see(sc.cutscene));
+    see(ch.epilogue);
+  });
+  const chapter = content.chapters[chapterIndex];
+  see(chapter.prologue);
+  chapter.scenes.slice(0, sceneIndex).forEach((sc) => see(sc.cutscene));
+  byKey.set(key, met);
+  return met;
+}
+
+/**
+ * The lines under a bark key that may be spoken where the game is now. Two rules, both
+ * about not hearing a stranger:
+ *   the speaker has appeared in a cinematic already (metSpeakers, derived from content);
+ *   a line with minScene also waits until game.scene >= minScene.
  * A key the chapter does not have is no lines.
  */
-export function eligibleBarks(chapter, key, sceneIndex) {
+export function eligibleBarks(content, game, key) {
+  const chapter = currentChapter(content, game);
   const lines = chapter.barks[key];
   if (lines === undefined) return [];
   if (!Array.isArray(lines)) throw new Error(`story: chapter ${chapter.id} barks.${key} is not a list: ${JSON.stringify(lines)}`);
+  const met = metSpeakers(content, game.chapter, game.scene);
   return lines.filter((line) => {
-    if (line.minScene === undefined) return true;
-    if (!Number.isInteger(line.minScene) || line.minScene < 0) {
-      throw new Error(`story: bark ${line.id} has minScene ${JSON.stringify(line.minScene)}, which is not a scene index`);
+    if (line.minScene !== undefined) {
+      if (!Number.isInteger(line.minScene) || line.minScene < 0) {
+        throw new Error(`story: bark ${line.id} has minScene ${JSON.stringify(line.minScene)}, which is not a scene index`);
+      }
+      if (game.scene < line.minScene) return false;
     }
-    return sceneIndex >= line.minScene;
+    return met.has(line.who);
   });
 }
 
@@ -131,7 +174,7 @@ export function eligibleBarks(chapter, key, sceneIndex) {
  *   title, card   the opening lines of the chapter's prologue
  *   cine          the next `ahead` lines; when a scene's cutscene is that close to its end,
  *                 also what follows it without a pause (the next briefing, or the epilogue)
- *   slot, play    the scene's briefing, the opening of its cutscene, every bark eligible now
+ *   play          the scene's briefing, the opening of its cutscene, every bark eligible now
  *   end           nothing
  */
 export function preloadIds(content, game, ahead = 3) {
@@ -147,21 +190,34 @@ export function preloadIds(content, game, ahead = 3) {
     if (!cine) throw new Error('story: preloadIds in mode cine needs game.cine');
     const upcoming = cine.lines.slice(cine.index + 1, cine.index + 1 + ahead);
     out = ids(upcoming);
-    if (cine.kind === 'scene' && upcoming.length < ahead) {
+    if (upcoming.length < ahead) {
       const chapter = currentChapter(content, game);
-      const following = chapter.scenes[game.scene + 1];
-      out = out.concat(ids(following ? following.briefing : chapter.epilogue.slice(0, ahead)));
+      if (cine.kind === 'scene') {
+        const following = chapter.scenes[game.scene + 1];
+        out = out.concat(ids(following ? following.briefing : chapter.epilogue.slice(0, ahead)));
+      } else if (cine.kind === 'prologue' && chapter.scenes[0]) {
+        // The table follows a prologue directly now; there is no screen between them.
+        out = out.concat(ids(chapter.scenes[0].briefing));
+      }
     }
-  } else if (game.mode === 'slot' || game.mode === 'play') {
+  } else if (game.mode === 'play') {
     const chapter = currentChapter(content, game);
     const scene = currentScene(content, game);
     out = scene === null ? [] : [
       ...ids(scene.briefing),
       ...ids(scene.cutscene.slice(0, ahead)),
-      ...Object.keys(chapter.barks).flatMap((key) => ids(eligibleBarks(chapter, key, game.scene))),
+      ...Object.keys(chapter.barks).flatMap((key) => ids(eligibleBarks(content, game, key))),
     ];
   } else {
     throw new Error(`story: preloadIds does not know mode ${JSON.stringify(game.mode)}`);
   }
   return [...new Set(out)];
+}
+
+/** Table element ids that will spin the reels if hit now (what the renderer lights): none unless armed. */
+export function spinIds(content, game) {
+  const chapter = currentChapter(content, game);
+  const table = content.tables[chapter.tableId];
+  if (!table) throw new Error(`story: chapter ${chapter.id} names unknown table ${JSON.stringify(chapter.tableId)}`);
+  return game.reels && game.reels.armed ? [...table.reels.spin] : [];
 }

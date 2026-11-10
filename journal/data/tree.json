@@ -7186,8 +7186,8 @@
  },
  {
   "path": "index.html",
-  "bytes": 4345,
-  "lines": 88
+  "bytes": 6074,
+  "lines": 115
  },
  {
   "path": "package.json",
@@ -7236,13 +7236,13 @@
  },
  {
   "path": "src/content/tables.js",
-  "bytes": 28124,
-  "lines": 624
+  "bytes": 28722,
+  "lines": 630
  },
  {
   "path": "src/core/economy.js",
-  "bytes": 7519,
-  "lines": 186
+  "bytes": 7949,
+  "lines": 194
  },
  {
   "path": "src/core/game.js",
@@ -7261,13 +7261,13 @@
  },
  {
   "path": "src/core/slot.js",
-  "bytes": 5904,
-  "lines": 156
+  "bytes": 11236,
+  "lines": 280
  },
  {
   "path": "src/core/story.js",
-  "bytes": 7004,
-  "lines": 168
+  "bytes": 9444,
+  "lines": 224
  },
  {
   "path": "src/core/types.js",
@@ -7288,6 +7288,11 @@
   "path": "src/shell/input.js",
   "bytes": 7172,
   "lines": 159
+ },
+ {
+  "path": "src/shell/layout.js",
+  "bytes": 4067,
+  "lines": 100
  },
  {
   "path": "src/shell/main.js",
@@ -7361,7 +7366,7 @@
  },
  {
   "path": "tools/serve.mjs",
-  "bytes": 3232,
-  "lines": 76
+  "bytes": 4568,
+  "lines": 99
  }
 ]

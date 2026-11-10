@@ -2145,5 +2145,74 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-10T05:41:52.609Z",
+  "files": 1474,
+  "lines": 26006,
+  "bytes": 42031443,
+  "linesByDir": {
+   ".": 140,
+   "assets/voice": 7180,
+   "src/content": 4176,
+   "src/core": 2002,
+   "src/shell": 8877,
+   "story/BIBLE.md": 658,
+   "test/content.test.js": 177,
+   "test/economy.test.js": 277,
+   "test/game.test.js": 741,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 243,
+   "test/rng.test.js": 102,
+   "test/slot.test.js": 156,
+   "test/story.test.js": 163,
+   "test/tables.test.js": 381,
+   "tools/render-voices.mjs": 310,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M index.html",
+   "M src/content/tables.js",
+   "M src/core/economy.js",
+   "M src/core/slot.js",
+   "M src/core/story.js",
+   "M tools/serve.mjs",
+   "?? src/shell/layout.js"
+  ],
+  "tests": {
+   "total": 140,
+   "pass": 105,
+   "fail": 35,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 7391,
+   "failures": [
+    "the rigged first spin is three orbs and pays what the reels would pay in writs",
+    "a loan advances LOAN.marks, books LOAN.owed, and garnishes every mark until repaid",
+    "applyPayout grants writs and marks and rejects malformed payouts",
+    "200k spins: a 60-marks-a-ball player stays about level",
+    "200k spins: a 40-marks-a-ball player drifts into debt slowly, not instantly",
+    "200k spins: an 80-marks-a-ball player gets ahead and rarely borrows",
+    "over one sitting",
+    "playthrough: title to end across two chapters",
+    "debt: broke at the reels, confirm takes a loan, and earnings are garnished",
+    "aid: out of balls and writs, a trusting town covers one; without trust it is the reels",
+    "load: a save from before the lifetime totals starts them at zero",
+    "ball save: a drained ball comes back free; without it the next ball costs a writ"
+   ]
+  },
+  "nodes": {
+   "goal": 2,
+   "option": 6,
+   "decision": 2,
+   "observation": 2,
+   "action": 3,
+   "revisit": 1,
+   "outcome": 1
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]

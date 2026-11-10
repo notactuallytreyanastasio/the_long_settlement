@@ -1,10 +1,19 @@
-// The Reels of Assay: the three-reel drawing machine in every Mint hall.
-// Pure: a spin is three stops drawn from an explicit Rng.
+// The Reels of Assay: the three-reel drawing machine in every Mint hall, and now set
+// into the head of every table. Pure: a draw is a stop taken from an explicit Rng.
 //
-// Reading the paytable (order of the reels never matters):
+// The same line pays from one of two tables, by how the reels came to show it:
+//   'lever'           the player paid SPIN_COST marks for the draw. The hall's table: writs.
+//   'lanes', 'shot'   the line was earned in play (filled reel by reel through the top lanes,
+//                     or spun by a lit shot). The lean table: marks, points and boons, with
+//                     writs only for three of a kind and for a pair of crowns or orbs.
+// The obvious version is one table for both. It is wrong because a line comes up in play
+// about once a minute for nothing: at the hall's 1.44 writs a line nobody would ever pull
+// the lever, owe the Mint or need the Commons.
+//
+// Reading either table (order of the reels never matters):
 //   three of a kind   the named lots below
 //   a pair            pays by the paired symbol, whatever the third reel shows
-//   no pair           one common writ, unless the Churn (a tide) is on the reels, which voids the draw
+//   no pair           the mixed lot, unless the Churn (a tide) is on the reels, which voids the draw
 //   tides             a pair of tides pays nothing; three is the bust
 
 import { nextInt } from './rng.js';
@@ -31,6 +40,9 @@ export const REEL_STRIPS = [
 // the gavel their injunction, the crown the Mint. The tide is the Churn: two are a lane
 // closing, three are a light going out.
 // Three orbs must be named exactly 'The Lot Falls': chapter 1's rigged spin shows that name.
+
+/** How a line can come to be on the reels. */
+export const SOURCES = ['lever', 'lanes', 'shot'];
 
 /** @type {Record<Sym, Payout>} */
 const THREE = {
@@ -114,16 +126,116 @@ const VOID = {
   blurb: 'Weather has got in among the lots, and the clerk tears up your slip without a word.',
 };
 
-/** Every payout the machine can make, for the renderer's paytable card. */
-export const PAYTABLE = [
-  ...SYMBOLS.map((sym) => ({ kind: 'three', sym, payout: THREE[sym] })),
-  ...SYMBOLS.map((sym) => ({ kind: 'pair', sym, payout: PAIR[sym] })),
-  { kind: 'mixed', sym: null, payout: MIXED },
-  { kind: 'void', sym: null, payout: VOID },
+// ───────────────────────── the lean table: lines earned in play ─────────────────────────
+// Different names from the hall's, because the name is what the toast says and the same
+// words must not pay two different things. Pays are tuned in test/playthrough.test.js.
+
+/** @type {Record<Sym, Payout>} */
+const PLAY_THREE = {
+  coin: {
+    writs: 1, marks: 60, points: 5000, boon: 'doubleMarks',
+    name: 'Three Coins: Honest Weight',
+    blurb: 'Three true coins in a row, and for a while every mark you earn is counted twice.',
+  },
+  scale: {
+    writs: 1, marks: 30, points: 5000, boon: 'kickback',
+    name: 'Three Scales: The Bench Rises',
+    blurb: 'The whole Bench stands for you, and the next thing the tide takes it will have to give back.',
+  },
+  gavel: {
+    writs: 1, marks: 0, points: 5000, boon: 'ballSave',
+    name: 'Three Gavels: Order in the Street',
+    blurb: 'Three knocks carry down the street, and for a little while nothing of yours can be lost.',
+  },
+  crown: {
+    writs: 2, marks: 150, points: 10000, boon: null,
+    name: 'Three Crowns: The Mint Pays Out',
+    blurb: 'The Mint pays on a line it never sold you, and the steward counts it out twice to be sure.',
+  },
+  orb: {
+    writs: 2, marks: 50, points: 10000, boon: 'multiball',
+    name: 'Three Orbs: Every Name at Once',
+    blurb: 'The drum spills, and for one turn of the glass every name in it is yours to play.',
+  },
+  tide: {
+    writs: 0, marks: 0, points: 0, boon: null,
+    name: 'Three Tides: Dark Water',
+    blurb: 'All three reels show the Churn, and the street goes quiet until it has passed.',
+  },
+};
+
+/** @type {Record<Sym, Payout>} */
+const PLAY_PAIR = {
+  coin: {
+    writs: 0, marks: 12, points: 2000, boon: null,
+    name: 'Two Coins: Small Change',
+    blurb: 'A few marks found in the street, which nobody has garnished yet.',
+  },
+  scale: {
+    writs: 0, marks: 5, points: 1000, boon: 'kickback',
+    name: 'Two Scales: A Fair Hearing',
+    blurb: 'Two magistrates agree that the next ball the outlane takes was taken unlawfully.',
+  },
+  gavel: {
+    writs: 0, marks: 0, points: 1000, boon: 'ballSave',
+    name: 'Two Gavels: Held Over',
+    blurb: 'The matter is held over, and until the glass runs out nothing you lose stays lost.',
+  },
+  crown: {
+    writs: 1, marks: 60, points: 3000, boon: null,
+    name: 'Two Crowns: A Clerical Error',
+    blurb: 'A Mint clerk finds a writ and sixty marks in your column and cannot account for either.',
+  },
+  orb: {
+    writs: 1, marks: 0, points: 3000, boon: null,
+    name: 'Two Orbs: A Second Name',
+    blurb: 'A second slip with your name on it turns up in the drum, good for one more act.',
+  },
+  tide: {
+    writs: 0, marks: 0, points: 0, boon: null,
+    name: 'Two Tides: Slack Water',
+    blurb: 'Two reels show the Churn, and the third makes no difference to anybody.',
+  },
+};
+
+/** @type {Payout} */
+const PLAY_MIXED = {
+  writs: 0, marks: 4, points: 1000, boon: null,
+  name: 'Mixed Lot: Pocket Money',
+  blurb: 'The reels agree on nothing, and the street pays you four marks for the show.',
+};
+
+/** @type {Payout} */
+const PLAY_VOID = {
+  writs: 0, marks: 0, points: 0, boon: null,
+  name: 'The Churn in the Street: No Draw',
+  blurb: 'Weather on the line, and nothing is paid to anybody on either side of the water.',
+};
+
+const TABLES = {
+  lever: { three: THREE, pair: PAIR, mixed: MIXED, void: VOID },
+  lanes: { three: PLAY_THREE, pair: PLAY_PAIR, mixed: PLAY_MIXED, void: PLAY_VOID },
+  shot: { three: PLAY_THREE, pair: PLAY_PAIR, mixed: PLAY_MIXED, void: PLAY_VOID },
+};
+
+const listing = (t) => [
+  ...SYMBOLS.map((sym) => ({ kind: 'three', sym, payout: t.three[sym] })),
+  ...SYMBOLS.map((sym) => ({ kind: 'pair', sym, payout: t.pair[sym] })),
+  { kind: 'mixed', sym: null, payout: t.mixed },
+  { kind: 'void', sym: null, payout: t.void },
 ];
 
-/** @param {[Sym, Sym, Sym]} reels @returns {Payout} */
-export function payoutFor(reels) {
+/** Every payout the lever can make, for the renderer's paytable card. */
+export const PAYTABLE = listing(TABLES.lever);
+/** Every payout a line earned in play can make. */
+export const PLAY_PAYTABLE = listing(TABLES.lanes);
+
+/**
+ * @param {[Sym, Sym, Sym]} reels
+ * @param {'lever'|'lanes'|'shot'} source  how the line came up; there is no default
+ * @returns {Payout}  always with a numeric `points`
+ */
+export function payoutFor(reels, source) {
   if (!Array.isArray(reels) || reels.length !== 3) {
     throw new Error(`slot.payoutFor: expected three reels, got ${JSON.stringify(reels)}`);
   }
@@ -132,24 +244,36 @@ export function payoutFor(reels) {
       throw new Error(`slot.payoutFor: unknown symbol ${JSON.stringify(sym)} in ${JSON.stringify(reels)}`);
     }
   }
+  if (!SOURCES.includes(source)) {
+    throw new Error(`slot.payoutFor: unknown source ${JSON.stringify(source)} (want one of ${SOURCES.join(', ')})`);
+  }
+  const t = TABLES[source];
   const [a, b, c] = reels;
   let p;
-  if (a === b && b === c) p = THREE[a];
-  else if (a === b || a === c) p = PAIR[a];
-  else if (b === c) p = PAIR[b];
-  else if (reels.includes('tide')) p = VOID;
-  else p = MIXED;
-  return { ...p };
+  if (a === b && b === c) p = t.three[a];
+  else if (a === b || a === c) p = t.pair[a];
+  else if (b === c) p = t.pair[b];
+  else if (reels.includes('tide')) p = t.void;
+  else p = t.mixed;
+  return { points: 0, ...p };
 }
 
-/** @param {import('./types.js').Rng} rng */
-export function spin(rng) {
+/** One stop of reel `i` (0, 1 or 2), drawn from its own strip. */
+export function drawSym(rng, i) {
+  const strip = REEL_STRIPS[i];
+  if (!strip) throw new Error(`slot.drawSym: no reel ${JSON.stringify(i)}`);
+  const [k, r] = nextInt(rng, strip.length);
+  return { rng: r, sym: strip[k] };
+}
+
+/** All three reels at once. @param {import('./types.js').Rng} rng @param {'lever'|'lanes'|'shot'} source */
+export function spin(rng, source) {
   let r = rng;
   const reels = /** @type {[Sym, Sym, Sym]} */ ([]);
-  for (const strip of REEL_STRIPS) {
-    const [i, r2] = nextInt(r, strip.length);
-    r = r2;
-    reels.push(strip[i]);
+  for (let i = 0; i < REEL_STRIPS.length; i++) {
+    const d = drawSym(r, i);
+    r = d.rng;
+    reels.push(d.sym);
   }
-  return { rng: r, result: { reels, payout: payoutFor(reels) } };
+  return { rng: r, result: { reels, payout: payoutFor(reels, source) } };
 }

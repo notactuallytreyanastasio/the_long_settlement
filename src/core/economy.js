@@ -102,8 +102,13 @@ export function paySpin(econ) {
   return { ...econ, marks: econ.marks - SPIN_COST, spins: econ.spins + 1 };
 }
 
-/** Grants the payout's writs and marks (marks are garnished like any others). Boons are game.js's business. */
-export function applyPayout(econ, payout) {
+/**
+ * Grants the payout's writs, marks and points. Marks are garnished like any others; points
+ * go through awardPoints, so they add to the score and earn their marks at `mult`.
+ * A payout with no `points` (the scripted first draw) pays none. Boons are game.js's business.
+ * @param {Econ} econ @param {Payout} payout @param {number} [mult]
+ */
+export function applyPayout(econ, payout, mult = 1) {
   check(econ, 'applyPayout');
   if (!payout || typeof payout !== 'object') {
     throw new Error(`economy.applyPayout: not a Payout: ${JSON.stringify(payout)}`);
@@ -112,7 +117,10 @@ export function applyPayout(econ, payout) {
   if (!Number.isInteger(payout.writs) || payout.writs < 0) {
     throw new Error(`economy.applyPayout: payout.writs must be an integer >= 0, got ${String(payout.writs)}`);
   }
-  return earn({ ...econ, writs: econ.writs + payout.writs }, payout.marks);
+  const points = payout.points === undefined ? 0 : payout.points;
+  amount(points, 'applyPayout', 'payout.points');
+  const paid = earn({ ...econ, writs: econ.writs + payout.writs }, payout.marks);
+  return points > 0 ? awardPoints(paid, points, mult) : paid;
 }
 
 /** No writs and cannot afford a spin. */

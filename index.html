@@ -2,33 +2,62 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#050403">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Long Settlement">
+<meta name="format-detection" content="telephone=no">
 <title>The Long Settlement</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23120d08'/%3E%3Ccircle cx='8' cy='8' r='4.5' fill='%23c9a25a'/%3E%3Ccircle cx='6.6' cy='6.6' r='1.4' fill='%23fff3d6'/%3E%3C/svg%3E">
 <style>
   :root { color-scheme: dark; }
-  html, body { height: 100%; margin: 0; background: #050403; overflow: hidden; }
-  body {
-    display: grid; place-items: center;
-    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    color: #eadcc0;
-    -webkit-user-select: none; user-select: none;
+  /* A phone held upright. The page is pinned to the viewport so there is nothing to scroll and
+     nothing to rubber-band; no gesture belongs to the browser (touch-action), nothing can be
+     selected, long-pressed into a callout, or flashed grey on tap. */
+  html {
+    position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden;
+    overscroll-behavior: none; touch-action: none;
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    background: #050403;
   }
-  canvas#stage { display: block; background: #000; outline: none; touch-action: none; box-shadow: 0 0 80px rgba(0, 0, 0, 0.9); }
+  body {
+    position: fixed; inset: 0; margin: 0; overflow: hidden;
+    width: 100%; height: 100vh; height: 100dvh;
+    display: grid; place-items: center;
+    overscroll-behavior: none; touch-action: none;
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    color: #eadcc0; background: #050403;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  canvas#stage {
+    display: block; background: #000; outline: none; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  /* main.js reads the safe-area insets off this, since env() cannot be read from script */
+  #safe {
+    position: fixed; top: 0; left: 0; width: 0; height: 0; visibility: hidden; pointer-events: none;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  }
 
   #gate {
-    position: fixed; inset: 0; display: grid; place-items: center;
+    position: fixed; inset: 0; display: grid; place-items: center; box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
     background: radial-gradient(ellipse at 50% 40%, #17110a, #050403);
-    text-align: center;
+    text-align: center; touch-action: manipulation;
   }
   #gate[hidden], #fatal[hidden], #muted[hidden], #resume[hidden] { display: none; }
-  #gate .card { max-width: 34rem; padding: 2rem; }
-  #gate .over { letter-spacing: 0.5em; font-size: 0.75rem; color: #c9a25a; text-transform: uppercase; margin: 0 0 1rem 0.5em; }
+  #gate .card { max-width: 34rem; padding: 1.5rem; }
+  #gate .over { letter-spacing: clamp(0.18em, 1.6vw, 0.5em); font-size: 0.75rem; color: #c9a25a; text-transform: uppercase; margin: 0 0 1rem 0.5em; }
   #gate h1 { font-weight: 600; font-size: clamp(2rem, 6vw, 3.4rem); margin: 0; color: #fff3d6; text-shadow: 0 0 28px rgba(255, 170, 70, 0.45); }
   #gate p { font-style: italic; color: rgba(234, 220, 192, 0.72); line-height: 1.5; margin: 1rem 0 1.8rem; }
   #gate button {
     display: block; width: 100%; margin: 0.6rem auto; padding: 0.85rem 1.4rem;
-    font: inherit; font-size: 1.1rem; color: #1a1208; cursor: pointer;
+    font: inherit; font-size: 1.1rem; color: #1a1208; cursor: pointer; touch-action: manipulation;
+    -webkit-appearance: none; appearance: none;
     background: linear-gradient(#f4dc9c, #c9a25a); border: 1px solid #6b4f22; border-radius: 6px;
   }
   #gate button#resume { background: transparent; color: #f4dc9c; border-color: rgba(201, 162, 90, 0.6); }
@@ -44,7 +73,7 @@
     #gate dl.touch { display: grid; }
   }
 
-  #muted { position: fixed; top: 0.8rem; right: 1rem; font-size: 0.8rem; letter-spacing: 0.2em; color: #c9a25a; text-transform: uppercase; }
+  #muted { position: fixed; top: calc(0.3rem + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); pointer-events: none; font-size: 0.8rem; letter-spacing: 0.2em; color: #c9a25a; text-transform: uppercase; }
   #fatal {
     position: fixed; inset: 0; margin: 0; padding: 2rem; overflow: auto; white-space: pre-wrap;
     background: rgba(20, 4, 2, 0.96); color: #ffb9a8; font: 13px/1.5 "SF Mono", Menlo, Consolas, monospace;
@@ -64,21 +93,19 @@
     <button id="resume" hidden></button>
     <dl class="keys">
       <dt>&larr; &rarr; &nbsp;or&nbsp; Z /</dt><dd>flippers (the Shift keys too)</dd>
-      <dt>Space</dt><dd>hold and release to plunge</dd>
-      <dt>Enter</dt><dd>spin, borrow, next line</dd>
-      <dt>P &nbsp; R</dt><dd>to the table, back to the Reels</dd>
+      <dt>Space</dt><dd>hold and release to launch; with no ball, the lever</dd>
+      <dt>Enter</dt><dd>next line</dd>
       <dt>S &nbsp; M</dt><dd>skip a scene, mute</dd>
     </dl>
     <dl class="touch">
       <dt>left half, right half</dt><dd>flippers</dd>
-      <dt>bottom right corner</dt><dd>hold and release to plunge</dd>
-      <dt>tap</dt><dd>spin, borrow, next line</dd>
-      <dt>tap the table</dt><dd>to the table</dd>
-      <dt>top right corner</dt><dd>back to the Reels</dd>
+      <dt>the round button</dt><dd>hold and release to launch; with no ball, the lever</dd>
+      <dt>tap</dt><dd>next line</dd>
     </dl>
   </div>
 </div>
 
+<div id="safe"></div>
 <div id="muted" hidden>muted</div>
 <pre id="fatal" hidden></pre>
 

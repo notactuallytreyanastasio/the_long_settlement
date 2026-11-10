@@ -211,6 +211,8 @@ function vessery() {
     saucers: [
       { id: 'bench', pos: [76, 196], r: 14, eject: [250, 170], holdMs: 900 },
     ],
+    // The Reels of Assay: lane i fills reel i; the saucer, the ramp and the orbit spin all three when lit.
+    reels: { fill: ['lotL', 'lotC', 'lotR'], spin: ['bench', 'pierRamp', 'dockOrbit'] },
     plunger: { pos: [379, 770], maxSpeed: 1900 },
     drainY: 792,
     theme: {
@@ -318,6 +320,7 @@ function saltmere() {
     saucers: [
       { id: 'orrery', pos: [189, 160], r: 12, eject: [-40, 317], holdMs: 1400 },
     ],
+    reels: { fill: ['saltL', 'saltC', 'saltR'], spin: ['orrery', 'causewayRamp', 'courtOrbit'] },
     plunger: { pos: [379, 770], maxSpeed: 2100 },
     drainY: 792,
     theme: {
@@ -416,6 +419,7 @@ function halcyon() {
       // dead centre of the formation; it hands the ball to the left flipper
       { id: 'vault', pos: [187, 252], r: 12, eject: [-52, 180], holdMs: 1100 },
     ],
+    reels: { fill: ['oathL', 'oathC', 'oathR'], spin: ['vault', 'galleryRamp', 'paradeOrbit'] },
     plunger: { pos: [379, 770], maxSpeed: 2200 },
     drainY: 792,
     theme: {
@@ -504,6 +508,7 @@ function brand() {
     saucers: [
       { id: 'hearth', pos: [349, 240], r: 13, eject: [-260, 60], holdMs: 1600 },
     ],
+    reels: { fill: ['tideL', 'tideC', 'tideR'], spin: ['hearth', 'breakwaterRamp', 'underlaneOrbit'] },
     plunger: { pos: [379, 770], maxSpeed: 1850 },
     drainY: 792,
     theme: {
@@ -592,6 +597,7 @@ function tallis() {
     saucers: [
       { id: 'strongroom', pos: [92, 196], r: 13, eject: [220, 90], holdMs: 1200 },
     ],
+    reels: { fill: ['bellL', 'bellC', 'bellR'], spin: ['strongroom', 'stepsRamp', 'clearingOrbit'] },
     plunger: { pos: [379, 770], maxSpeed: 2050 },
     drainY: 792,
     theme: {
