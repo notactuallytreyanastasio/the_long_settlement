@@ -382,6 +382,106 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "ce5a968c-669c-4037-8859-e0cd6d4637b6",
+   "type": "goal",
+   "status": "pending",
+   "title": "Redo the graphics: the cel restyle looks bad; make it genuinely charming",
+   "description": null,
+   "created": "2026-11-10T15:36:48.183210Z",
+   "updated": "2026-11-10T15:36:48.183210Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "lets redo the graphics it looks bad. get something more charming like the wind waker man its just not there",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "3f252c16-c69b-43d9-9700-c56e56b0b1e2",
+   "type": "goal",
+   "status": "active",
+   "title": "Build a true cel-shading engine",
+   "description": null,
+   "created": "2026-11-10T15:37:15.606558Z",
+   "updated": "2026-11-10T15:37:15.606558Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "build a true cel shading engine and stuff",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "d4e2ce99-7b4c-4e91-adcf-73718e3c7014",
+   "type": "option",
+   "status": "completed",
+   "title": "Real-time 3D toon renderer in WebGL2 (ramp lighting, inverted-hull outlines, rim light, hard shadows), no dependencies, 2D renderer kept as fallback",
+   "description": null,
+   "created": "2026-11-10T15:37:15.610089Z",
+   "updated": "2026-11-10T15:37:15.610089Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "8c399400-df80-4a27-b4dc-5bb0f7d17ffa",
+   "type": "option",
+   "status": "rejected",
+   "title": "Another pass of flat 2D canvas illustration with rounder, brighter designs",
+   "description": "Same technique that just failed to charm; lighting stays painted by hand.",
+   "created": "2026-11-10T15:37:15.611132Z",
+   "updated": "2026-11-10T15:37:15.611132Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "5592859c-0ba6-4073-b8d0-4efae088d53e",
+   "type": "option",
+   "status": "rejected",
+   "title": "Adopt three.js",
+   "description": "Faster to start but breaks the zero-dependency, zero-build setup.",
+   "created": "2026-11-10T15:37:15.612166Z",
+   "updated": "2026-11-10T15:37:15.612166Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "type": "decision",
+   "status": "completed",
+   "title": "Hand-written WebGL2 toon engine over more 2D illustration or three.js",
+   "description": "User asked for a true cel-shading engine; real lit 3D forms give the lighting and charm the flat vector look lacked. Prove it on one scene, three characters and one table before rolling out.",
+   "created": "2026-11-10T15:37:15.613041Z",
+   "updated": "2026-11-10T15:37:15.613041Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "33b29edf-0bda-45e0-96ed-94493e3c6858",
+   "type": "action",
+   "status": "completed",
+   "title": "Workflow 6: toon engine in src/shell/gl plus a vertical slice (3 characters, lantern market set, Vessery table) on a demo page, not wired into the live game",
+   "description": null,
+   "created": "2026-11-10T15:37:15.620330Z",
+   "updated": "2026-11-10T15:37:15.620330Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/shell/gl/"
+   ],
+   "commit": null
   }
  ],
  "edges": [
@@ -559,6 +659,55 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-10T10:00:15.508199Z"
+  },
+  {
+   "from": "c11c9e1a-3513-4932-9997-e3530406dd62",
+   "to": "ce5a968c-669c-4037-8859-e0cd6d4637b6",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-10T15:36:48.185800Z"
+  },
+  {
+   "from": "ce5a968c-669c-4037-8859-e0cd6d4637b6",
+   "to": "3f252c16-c69b-43d9-9700-c56e56b0b1e2",
+   "type": "leads_to",
+   "rationale": "Continuation from previous context",
+   "created": "2026-11-10T15:37:15.609124Z"
+  },
+  {
+   "from": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "to": "d4e2ce99-7b4c-4e91-adcf-73718e3c7014",
+   "type": "chosen",
+   "rationale": "User asked for a true cel-shading engine; real lit 3D forms give the lighting and charm the flat vector look lacked. Prove it on one scene, three characters and one table before rolling out.",
+   "created": "2026-11-10T15:37:15.615084Z"
+  },
+  {
+   "from": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "to": "8c399400-df80-4a27-b4dc-5bb0f7d17ffa",
+   "type": "rejected",
+   "rationale": "User asked for a true cel-shading engine; real lit 3D forms give the lighting and charm the flat vector look lacked. Prove it on one scene, three characters and one table before rolling out.",
+   "created": "2026-11-10T15:37:15.616883Z"
+  },
+  {
+   "from": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "to": "5592859c-0ba6-4073-b8d0-4efae088d53e",
+   "type": "rejected",
+   "rationale": "User asked for a true cel-shading engine; real lit 3D forms give the lighting and charm the flat vector look lacked. Prove it on one scene, three characters and one table before rolling out.",
+   "created": "2026-11-10T15:37:15.618472Z"
+  },
+  {
+   "from": "3f252c16-c69b-43d9-9700-c56e56b0b1e2",
+   "to": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "type": "leads_to",
+   "rationale": "Decided",
+   "created": "2026-11-10T15:37:15.619786Z"
+  },
+  {
+   "from": "42cc3ce5-5a5d-4fa7-ae0d-6b15fa76a4a5",
+   "to": "33b29edf-0bda-45e0-96ed-94493e3c6858",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-10T15:37:15.622250Z"
   }
  ]
 }
