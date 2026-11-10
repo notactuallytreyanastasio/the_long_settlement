@@ -3650,8 +3650,9 @@ def('cell', { amb: '#14161e', rim: '#ffd9a8', key: -1 }, (ctx, t, px) => {
   // persons of standing are allowed a shelf, a peg and a basin
   const sx = 470 + px * 0.25;
   rect(ctx, sx - 10, 250, 230, 8, '#2a1e14'); seg(ctx, sx + 4, 258, sx + 4, 282, '#2a1e14', 4); seg(ctx, sx + 206, 258, sx + 206, 282, '#2a1e14', 4);
-  for (let i = 0; i < 7; i++) { const h = 40 + rnd(i * 3) * 22, w = 15 + rnd(i * 7) * 9; rect(ctx, sx + 4 + i * 24, 250 - h, w, h, ['#3a1c1c', '#1c2a3a', '#2e2a20', '#1c3a2c'][i % 4]); rect(ctx, sx + 4 + i * 24, 250 - h * 0.8, w, 2, 'rgba(201,168,90,.5)'); }
-  { const x = sx + 190; ctx.fillStyle = '#d8d2c0'; ctx.beginPath(); ctx.ellipse(x, 244, 20, 6, 0, 0, TAU); ctx.fill(); rect(ctx, x - 9, 218, 18, 26, '#c8c2b0'); }
+  for (let i = 0; i < 7; i++) { const h = 40 + rnd(i * 3) * 22, w = 15 + rnd(i * 7) * 9; rect(ctx, sx + 48 + i * 24, 250 - h, w, h, ['#3a1c1c', '#1c2a3a', '#2e2a20', '#1c3a2c'][i % 4]); rect(ctx, sx + 48 + i * 24, 250 - h * 0.8, w, 2, 'rgba(201,168,90,.5)'); }
+  // the basin stands at the wall end of the shelf: at the other end it sat on the head of whoever stood centre stage
+  { const x = sx + 16; ctx.fillStyle = '#d8d2c0'; ctx.beginPath(); ctx.ellipse(x, 244, 20, 6, 0, 0, TAU); ctx.fill(); rect(ctx, x - 9, 218, 18, 26, '#c8c2b0'); }
   { const x = 1150 + bx; circ(ctx, x, 150, 5, '#3a3e48'); // the greatcoat he was brought here in, on the one peg
     ctx.fillStyle = '#12131a'; ctx.beginPath(); ctx.moveTo(x - 8, 152); ctx.quadraticCurveTo(x - 70, 190, x - 62, 480); ctx.lineTo(x + 60, 480); ctx.quadraticCurveTo(x + 66, 190, x + 8, 152); ctx.fill();
     poly(ctx, [[x - 8, 154], [x - 34, 196], [x - 6, 250], [x, 170]], '#1c1e28'); poly(ctx, [[x + 8, 154], [x + 34, 196], [x + 6, 250], [x, 170]], '#191b24');

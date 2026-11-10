@@ -75,7 +75,7 @@ export const cast = {
   thorne: {
     id: 'thorne',
     name: 'Proctor Thorne',
-    role: 'Halcyon Academy, on the Line',
+    role: 'Instructor, Halcyon Academy',
     color: '#9fb4a8',
     say: ['Serena (Premium)', 'Kate (Enhanced)', 'Karen (Premium)', 'Karen', 'Shelley (English (UK))'],
     rate: 172,

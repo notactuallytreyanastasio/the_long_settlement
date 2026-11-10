@@ -7201,7 +7201,7 @@
  },
  {
   "path": "src/content/cast.js",
-  "bytes": 8265,
+  "bytes": 8264,
   "lines": 225
  },
  {
@@ -7281,8 +7281,8 @@
  },
  {
   "path": "src/shell/cinema.js",
-  "bytes": 269883,
-  "lines": 4078
+  "bytes": 270002,
+  "lines": 4079
  },
  {
   "path": "src/shell/input.js",
@@ -7296,8 +7296,8 @@
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 93791,
-  "lines": 2559
+  "bytes": 94023,
+  "lines": 2565
  },
  {
   "path": "src/shell/voice.js",

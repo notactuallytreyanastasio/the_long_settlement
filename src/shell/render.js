@@ -2461,7 +2461,7 @@ export function createRenderer(canvas) {
     g.fillRect(0, H - 40, W, 40);
   }
 
-  function drawEnd(g, content, game, fx) {
+  function drawEnd(g, content, game, fx, dt) {
     const now = fx.timeMs;
     const e = game.econ;
     nightSky(g, now, 0.45);
@@ -2514,10 +2514,16 @@ export function createRenderer(canvas) {
     g.textAlign = 'center';
     g.font = `italic 17px ${SERIF}`;
     g.fillStyle = A(PAPER, 0.55 + 0.25 * Math.sin(now / 600));
-    g.fillText(`End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W / 2, 650);
+    g.fillText(`End of the chapters written so far: ${content.chapters.length}. The Circuit goes on.`, W / 2, 706);
     g.textAlign = 'left';
-    if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], W / 2 - 96, 730);
-    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 730);
+    // How the book stands as it is carried forward: the same wordless scales as the ledger's, larger.
+    g.save();
+    g.translate(W / 2, 640);
+    g.scale(1.9, 1.9);
+    drawBalance(g, e, 0, 0, now, dt);
+    g.restore();
+    if (view.touch) hintRow(g, [['key', 'Tap'], ['txt', 'return to the title']], W / 2 - 96, 752);
+    else hintRow(g, [['key', 'Enter'], ['txt', 'return to the title'], ['key', 'M'], ['txt', 'mute']], W / 2 - 150, 752);
   }
 
   // ─────────── entry point ───────────
@@ -2543,7 +2549,7 @@ export function createRenderer(canvas) {
     ctx.save();
     if (game.mode === 'title') drawTitle(ctx, game, fx);
     else if (game.mode === 'card') drawCard(ctx, content, game, fx);
-    else if (game.mode === 'end') drawEnd(ctx, content, game, fx);
+    else if (game.mode === 'end') drawEnd(ctx, content, game, fx, dt);
     else if (game.mode === 'slot' || game.mode === 'play') drawCabinet(ctx, content, game, fx, dt);
     else throw new Error(`render: unknown game mode '${game.mode}'`);
     ctx.restore();
