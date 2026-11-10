@@ -165,7 +165,16 @@ export function buildCarrow(id, lights, { light: lightName, low = false } = {}) 
 
   let boatGoal = 0.72, boatNow = 0.72, sea = 1, seaNow = 1;
   const setBoat = (v) => { boatGoal = Math.max(0, Math.min(1, v)); }, setSea = (v) => { sea = Math.max(0, Math.min(1, v)); };
-  const cue = (lineId) => { const m = /^ch8\.epi\.(\d+)/.exec(lineId); if (!m || dusk) return false; setBoat(Number(m[1]) <= 12 ? 0.3 : 1); return true; };
+  // The woman on the beach is set dressing for the lines before she speaks (ch8.epi.12, ch8.mepi.19: seen from the boat).
+  // From her first line the cast's Tamsin is on the stage, so the dressing figure goes: one mother, not two.
+  const cue = (lineId) => {
+    const m = /^ch8\.(m?)epi\.(\d+)/.exec(String(lineId)); if (!m) return false;
+    const n = Number(m[2]), mint = m[1] === 'm';
+    if (mint !== dusk) return false;
+    mother.visible = n < (mint ? 20 : 13);
+    if (!dusk) setBoat(n <= 12 ? 0.3 : 1);
+    return true;
+  };
   const P = [0, 0, 0], V = [0, 0, 0], Q = quat.create(), S3 = [1, 1, 1], Mx = m4.create(), rnd = rng(61);
   let nextPuff = 0, nextRing = 0.4, nextGlint = 0, nextGust = 1.4;
   function tick(time, dt, pw, live) {

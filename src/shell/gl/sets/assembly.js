@@ -53,7 +53,7 @@ const GREY = { key: rgb('#9a9ec8'), tint: rgb('#5a5cb4'), zenith: rgb('#8a90b8')
 
 const CAMERAS = cams({
   wide: { target: [0.05, 1.95, -0.6], dist: 9.0, yaw: 2, pitch: 2, fov: 47 },
-  low: { target: [0.1, 2.6, -0.2], dist: 6.4, yaw: -5, pitch: -22, fov: 60 },
+  low: { target: [0.1, 2.05, -0.2], dist: 6.6, yaw: -5, pitch: -15, fov: 58 },
   stage: { target: [0, 1.2, 0.3], dist: 9.6, yaw: -12, pitch: 6, fov: 26, aspect: 1.95, shadowCenter: [0, 0, -1], shadowRadius: 8, outline: 0.7 },
   landscape: { target: [0, 2.2, -1.6], dist: 11, yaw: 3, pitch: 3, fov: 44 },
 });

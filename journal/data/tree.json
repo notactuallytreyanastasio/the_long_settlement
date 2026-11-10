@@ -12536,8 +12536,8 @@
  },
  {
   "path": "src/shell/gl/renderer.js",
-  "bytes": 60889,
-  "lines": 865
+  "bytes": 61485,
+  "lines": 871
  },
  {
   "path": "src/shell/gl/rig.js",
@@ -12561,7 +12561,7 @@
  },
  {
   "path": "src/shell/gl/sets/assembly.js",
-  "bytes": 20663,
+  "bytes": 20664,
   "lines": 224
  },
  {
@@ -12576,8 +12576,8 @@
  },
  {
   "path": "src/shell/gl/sets/carrow-morning.js",
-  "bytes": 18821,
-  "lines": 215
+  "bytes": 19201,
+  "lines": 224
  },
  {
   "path": "src/shell/gl/sets/causeway.js",

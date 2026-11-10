@@ -398,13 +398,19 @@ export function createRenderer(canvas, opts = {}) {
   // A face is three little meshes (eyes, lids, mouth) on a head: three draws a figure, twenty in a busy band. Each frame
   // the ones that share a material (and opacity and flash) are written into one buffer in world space and drawn at once,
   // at the place in the order where the first of them stood. Their order within a material is kept.
-  const DECAL_VERTS = 200, MAX_BATCH = 12, IDENT4 = m4.create(), IDENT3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+  const DECAL_VERTS = 200, MAX_BATCH = 24, IDENT4 = m4.create(), IDENT3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
   const batches = []; let nBatch = 0, decalCap = 0, decalIdxCap = 0, decalBuf = null, decalF = null, decalB = null, decalIdx = null, decalGpu = null;
-  const sameDecal = (a, b) => a.material === b.material && a.tint[3] === b.tint[3] && a.flash[0] === b.flash[0] && a.flash[1] === b.flash[1] && a.flash[2] === b.flash[2] && a.flash[3] === b.flash[3];
+  // (the tint is part of the key and stays a uniform: a textured material tints its picture, which a vertex colour cannot)
+  const sameDecal = (a, b) => a._rank === b._rank && a.material === b.material && a.tint[0] === b.tint[0] && a.tint[1] === b.tint[1] && a.tint[2] === b.tint[2] && a.tint[3] === b.tint[3] && a.flash[0] === b.flash[0] && a.flash[1] === b.flash[1] && a.flash[2] === b.flash[2] && a.flash[3] === b.flash[3];
   function batchDecals(list) {
     nBatch = 0;
+    // Decals on one head are painted over each other in their order (lids, then eyes, then the mouth), so only decals in
+    // the same place in their own head's order are drawn together: the first of each, then the second of each, and so on.
+    let parent = null, rank = 0;
     for (let i = 0; i < list.length; i++) {
       const n = list[i], m = n.mesh; n._b = -1;
+      if (n.parent === parent) rank++; else { parent = n.parent; rank = 0; }
+      n._rank = rank;
       if (n.instances || n.bones || n.material.kind !== 'toon' || m.positions.length > DECAL_VERTS * 3) continue;
       let k = 0; while (k < nBatch && !sameDecal(batches[k].ref, n)) k++;
       if (k === nBatch) { if (nBatch === MAX_BATCH) continue; if (!batches[k]) batches[k] = { ref: null, nodes: 0, verts: 0, idx: 0, v0: 0, i0: 0, drawn: false }; const b = batches[k]; b.ref = n; b.nodes = 0; b.verts = 0; b.idx = 0; b.drawn = false; nBatch++; }
@@ -419,7 +425,7 @@ export function createRenderer(canvas, opts = {}) {
     for (let i = 0; i < list.length; i++) {
       const n = list[i]; if (n._b < 0) continue;
       const b = batches[n._b]; if (b.nodes < 2) { n._b = -1; continue; }
-      const m = n.mesh, P = m.positions, N = m.normals, U = m.uvs, C = m.colors, G = m.glow, I = m.indices, w = n.world, r = n.uvRect, t = n.tint, nv = P.length / 3, base = b.v0 + b.verts;
+      const m = n.mesh, P = m.positions, N = m.normals, U = m.uvs, C = m.colors, G = m.glow, I = m.indices, w = n.world, r = n.uvRect, nv = P.length / 3, base = b.v0 + b.verts;
       m4.normalMat3(nm3, w);
       for (let v = 0; v < nv; v++) {
         const o = (base + v) * 12, x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2], a = N[v * 3], bb = N[v * 3 + 1], c = N[v * 3 + 2];
@@ -428,7 +434,7 @@ export function createRenderer(canvas, opts = {}) {
         decalF[o + 3] = nx / l; decalF[o + 4] = ny / l; decalF[o + 5] = nz / l; decalF[o + 6] = 0; decalF[o + 7] = 0; decalF[o + 8] = 0;
         decalF[o + 9] = U[v * 2] * r[2] + r[0]; decalF[o + 10] = U[v * 2 + 1] * r[3] + r[1];
         const cb = (base + v) * 48 + 44;
-        decalB[cb] = q(C[v * 3] * t[0]); decalB[cb + 1] = q(C[v * 3 + 1] * t[1]); decalB[cb + 2] = q(C[v * 3 + 2] * t[2]); decalB[cb + 3] = q((G ? G[v] : 0) * n.glow);
+        decalB[cb] = q(C[v * 3]); decalB[cb + 1] = q(C[v * 3 + 1]); decalB[cb + 2] = q(C[v * 3 + 2]); decalB[cb + 3] = q((G ? G[v] : 0) * n.glow);
       }
       const io = b.i0 + b.idx; for (let k = 0; k < I.length; k++) decalIdx[io + k] = I[k] + base;
       b.verts += nv; b.idx += I.length;
@@ -451,7 +457,7 @@ export function createRenderer(canvas, opts = {}) {
   function drawBatch(p, b) {
     const u = p.u, n = b.ref;
     gl.uniformMatrix4fv(u.uModel, false, IDENT4); if (u.uNormalMat) gl.uniformMatrix3fv(u.uNormalMat, false, IDENT3);
-    if (u.uTint) gl.uniform4f(u.uTint, 1, 1, 1, n.tint[3] * n.material.opacity);
+    if (u.uTint) gl.uniform4f(u.uTint, n.tint[0], n.tint[1], n.tint[2], n.tint[3] * n.material.opacity);
     if (u.uUvRect) gl.uniform4f(u.uUvRect, 0, 0, 1, 1);
     if (u.uFlash) gl.uniform4fv(u.uFlash, n.flash);
     if (u.uGlow) gl.uniform1f(u.uGlow, 1);
