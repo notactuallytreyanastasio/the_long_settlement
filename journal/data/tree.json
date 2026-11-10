@@ -12480,6 +12480,11 @@
   "lines": 239
  },
  {
+  "path": "src/shell/gl/mesh.js",
+  "bytes": 31056,
+  "lines": 581
+ },
+ {
   "path": "src/shell/input.js",
   "bytes": 7462,
   "lines": 161
