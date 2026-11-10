@@ -720,7 +720,7 @@ test('save: the reels are kept: what they show, whether the shots are lit, and t
     cells: [{ sym: 'coin', spin: 0 }, { sym: null, spin: 0 }, { sym: 'orb', spin: 0.25 }],
     source: 'lanes', armed: false, charge: 17,
   };
-  const save = deepFreeze({ v: 3, chapter: 2, scene: 3, econ, seed: 8, reels });
+  const save = deepFreeze({ v: 3, chapter: 0, scene: 1, econ, seed: 8, reels });
   let r = send(init(1), { type: 'load', save });
   assert.equal(r.game.mode, 'play');
   assert.deepEqual(r.game.reels, { ...init(1).reels, ...reels, need: REELS_NEED }, 'the reels as saved, in an open phase');

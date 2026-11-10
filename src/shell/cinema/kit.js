@@ -218,6 +218,7 @@ export function sealLayer(p) {
   if (!cur) return;
   p.cur = null;
   const c = cur.canvas, w = c.width, h = c.height, k = cur.k;
+  const _t0 = performance.now();
   const d = new Uint32Array(c.getContext('2d').getImageData(0, 0, w, h).data.buffer);
   const rowHas = (y) => { for (let i = y * w, e = i + w; i < e; i++) if (d[i] >>> 24) return true; return false; };
   let y0 = 0, y1 = h - 1;
@@ -236,6 +237,7 @@ export function sealLayer(p) {
   out.getContext('2d', opaque ? { alpha: false } : undefined).drawImage(c, x0, y0, bw, bh, 0, 0, bw, bh);
   freeCanvas(c);
   p.part.layers.push({ canvas: out, depth: cur.depth, opaque, x: p.cfg.x + x0 / k, y: p.cfg.y + y0 / k, w: bw / k, h: bh / k, rest: null, seen: null });
+  cinemaCache.sealMs = (cinemaCache.sealMs || 0) + performance.now() - _t0;
 }
 export const sameAt = (r, a, d, e, f) => Math.abs(r.a - a) < 1e-6 && Math.abs(r.d - d) < 1e-6 && Math.abs(r.e - e) < 0.02 && Math.abs(r.f - f) < 0.02;
 /** resample a layer into device pixels for the place it now lies: (a, d) scale and (e, f) origin of stage space on the canvas */
