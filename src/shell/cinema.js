@@ -42,12 +42,14 @@ import {
 import { lookOf, breathOf, blinking, drawFigure, drawCrowdFigures, spriteBounds, ledgerRevealed } from './cinema/figures.js';
 import { BACKDROPS_A } from './cinema/backdrops-a.js';
 import { BACKDROPS_B } from './cinema/backdrops-b.js';
+import { BACKDROPS_C } from './cinema/backdrops-c.js';
+import { BACKDROPS_D } from './cinema/backdrops-d.js';
 import { INK, PALETTE, rgbOf, blend, shade, tint, alpha, ink, outline, taper, bloom, glint, bands } from './style.js';
 export { cinemaCache } from './cinema/kit.js';
 export { drawPortrait } from './cinema/figures.js';
 
 // the painter table: every backdrop, in the order the two files define them
-Object.assign(P, BACKDROPS_A, BACKDROPS_B);
+Object.assign(P, BACKDROPS_A, BACKDROPS_B, BACKDROPS_C, BACKDROPS_D);
 /** every bg key implemented */
 export const BACKDROPS = Object.keys(P);
 
