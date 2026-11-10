@@ -63,7 +63,7 @@ export const chapter1 = {
       marks: 0,
       boon: null,
       name: 'The Lot Falls',
-      blurb: 'Three orbs. The lot falls to the bearer: three writs, stamped and entered.',
+      blurb: 'Three orbs. The lot falls where it falls: three writs, stamped and entered.',
     },
   },
 
