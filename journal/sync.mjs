@@ -149,6 +149,7 @@ async function tick() {
     || JSON.stringify(graph.nodes.map((n) => n.updated + n.status)) !== JSON.stringify(prevGraph.nodes.map((n) => n.updated + n.status)));
 
   const snapshots = readJSON(join(DATA, 'snapshots.json'), []);
+  const before = snapshots.length;
   if (gameChanges.length || graphChanged || snapshots.length === 0) {
     const tests = gameChanges.some((c) => /\.(m?js|json)$/.test(c.path)) || snapshots.length === 0
       ? runTests() : snapshots.at(-1)?.tests ?? null;
@@ -185,7 +186,9 @@ async function tick() {
   if (!all.length) { log('no changes'); return; }
   const paths = all.map((c) => c.path);
   execFileSync('git', ['add', '-A', '--', ...paths], { cwd: REPO }); // -A here only records deletions of the named paths
-  const snap = snapshots.at(-1);
+  // Only this tick's snapshot may describe this commit; an older one would repeat its news.
+  const fresh = snapshots.length > before ? snapshots.at(-1) : null;
+  const snap = { tests: snapshots.at(-1)?.tests, newNodes: fresh?.newNodes ?? [] };
   const newest = graph?.nodes.filter((n) => snap?.newNodes?.includes(n.id)).slice(-3).map((n) => `  ${n.type}: ${n.title}`) ?? [];
   const t = snap?.tests;
   const subject = `sync: ${gameChanges.length} game file${gameChanges.length === 1 ? '' : 's'} changed`
