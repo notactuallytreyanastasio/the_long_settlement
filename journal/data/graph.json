@@ -1017,6 +1017,109 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "4c494409-5857-4cf8-9563-5f0058c921e0",
+   "type": "observation",
+   "status": "active",
+   "title": "A player who goes home after every wave would climb the waves with no upgrades: the unclaimed draft pick is kept (meta.owed) and the next visit opens on it",
+   "description": null,
+   "created": "2026-11-11T00:19:30.429361Z",
+   "updated": "2026-11-11T00:19:30.429361Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "396d42e4-ab3a-41cb-8e63-fbbfa6609038",
+   "type": "observation",
+   "status": "active",
+   "title": "At full speed a captain could only be traded with (3 hearts a cut); making it slow gives a turn to cut and a turn to step clear",
+   "description": null,
+   "created": "2026-11-11T00:19:30.432896Z",
+   "updated": "2026-11-11T00:19:30.432896Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "67adc40a-cd49-4e51-9669-e0f79422024b",
+   "type": "observation",
+   "status": "active",
+   "title": "A maxed loadout made late waves unlosable until figures gained hearts and damage with the wave: the test player now tops out at waves 35-40",
+   "description": null,
+   "created": "2026-11-11T00:19:30.435111Z",
+   "updated": "2026-11-11T00:19:30.435111Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "fd17c3d2-18b2-4f1f-86e7-b3b52f185538",
+   "type": "observation",
+   "status": "active",
+   "title": "The crowd is instanced, one mesh per figure kind: 64 figures on the board cost 18 draws and about 32k triangles at 16.7 ms a frame on the Mac",
+   "description": null,
+   "created": "2026-11-11T00:19:30.437216Z",
+   "updated": "2026-11-11T00:19:30.437216Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "18d980ba-e311-4048-8bb8-d83845f8e8f6",
+   "type": "action",
+   "status": "completed",
+   "title": "Add Lanewar: core/fray.js rules, mode 'fray' in the reducer, gl/fray3d.js board, fray-view.js HUD and touch, save v5",
+   "description": "9x13 board, six weapons with five levels, five perks plus dressing, five figure kinds, captain every fifth wave. Table sets the board after 30 bumper/sling/target hits; the saucer opens it; ball waits held. Pays score only and a 12 s ball save for going home. ?lanewar starts with the board set. Four new sounds.",
+   "created": "2026-11-11T00:19:30.439334Z",
+   "updated": "2026-11-11T00:19:30.439334Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/core/fray.js",
+    "src/core/game.js",
+    "src/core/stage.js",
+    "src/core/story.js",
+    "src/core/types.js",
+    "src/shell/fray-view.js",
+    "src/shell/gl/fray3d.js",
+    "src/shell/gl/app.js",
+    "src/shell/gl/hud.js",
+    "src/shell/render.js",
+    "src/shell/input.js",
+    "src/shell/main.js",
+    "src/shell/audio.js",
+    "test/fray.test.js",
+    "test/game.test.js",
+    "test/ending.test.js",
+    "test/playthrough.test.js",
+    "test/stage.test.js"
+   ],
+   "commit": null
+  },
+  {
+   "id": "41e8b471-f43c-43a0-8e94-766122165ae6",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Lanewar plays end to end in the real game: saucer in, waves, draft, fall or go home, ball released; 318/318 tests",
+   "description": "Headless Chrome, emulated iPhone portrait, 1280x800 desktop and ?gl=0: entry from the saucer, real swipes, taps and keys, drafts, a fall and the return to play all pass with no console problems. 60 simulated careers: no stalls, nobody falls in wave 1, 33% of visits end in a fall. Not done: no real-phone test, no voice lines or music of its own, no on-table meter showing how close the board is to being set.",
+   "created": "2026-11-11T00:19:30.442264Z",
+   "updated": "2026-11-11T00:19:30.442264Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1495,6 +1598,48 @@
    "type": "leads_to",
    "rationale": "Decided",
    "created": "2026-11-10T23:52:45.307538Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "4c494409-5857-4cf8-9563-5f0058c921e0",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T00:19:30.432135Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "396d42e4-ab3a-41cb-8e63-fbbfa6609038",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T00:19:30.434550Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "67adc40a-cd49-4e51-9669-e0f79422024b",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T00:19:30.436605Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "fd17c3d2-18b2-4f1f-86e7-b3b52f185538",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T00:19:30.438799Z"
+  },
+  {
+   "from": "148bfd78-8397-40ef-a2cb-f6350ced1ec5",
+   "to": "18d980ba-e311-4048-8bb8-d83845f8e8f6",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-11T00:19:30.441584Z"
+  },
+  {
+   "from": "18d980ba-e311-4048-8bb8-d83845f8e8f6",
+   "to": "41e8b471-f43c-43a0-8e94-766122165ae6",
+   "type": "leads_to",
+   "rationale": "Result",
+   "created": "2026-11-11T00:19:30.444047Z"
   }
  ]
 }
