@@ -40,7 +40,7 @@ export const H = 13;
 export const DIRS = Object.freeze({ n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] });
 export const ACTS = Object.freeze(['n', 's', 'e', 'w', 'wait']);
 
-export const HERO_HP = 10;
+export const HERO_HP = 12;
 /** Figures on the board at once. The feed waits when it is full: 117 squares, and the hero needs room to step. */
 export const BOARD_MAX = 64;
 
@@ -158,7 +158,7 @@ export const harder = (wave) => Math.floor(wave / HARDER);
 export const CAPTAIN_EVERY = 5;
 
 /** Figures in wave n. */
-export const waveSize = (wave) => 10 + 6 * wave;
+export const waveSize = (wave) => 14 + 8 * wave;
 /** Figures fed onto the board each turn of wave n. */
 const feedRate = (wave) => Math.min(9, 2 + Math.floor(wave / 2));
 const WAVE_BONUS = 100;
@@ -245,8 +245,8 @@ function drawQueue(wave, rng0) {
 function beginWave(run, events) {
   const drawn = drawQueue(run.wave, run.rng);
   const out = { ...run, phase: 'turn', queue: drawn.queue, rng: drawn.rng, offers: [], foes: run.foes.slice(), events: [...events, { type: 'wave', wave: run.wave }] };
-  // The board opens with figures already on it: two turns' feed at once.
-  feed(out, feedRate(out.wave) * 2);
+  // The board opens with a crowd already on it: three turns' feed at once.
+  feed(out, feedRate(out.wave) * 3);
   return out;
 }
 

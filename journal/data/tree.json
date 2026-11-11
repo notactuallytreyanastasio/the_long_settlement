@@ -12406,7 +12406,7 @@
  },
  {
   "path": "src/core/fray.js",
-  "bytes": 30097,
+  "bytes": 30099,
   "lines": 621
  },
  {
@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/fray3d.js",
-  "bytes": 22053,
-  "lines": 351
+  "bytes": 22628,
+  "lines": 357
  },
  {
   "path": "src/shell/gl/fx.js",

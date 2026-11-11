@@ -128,7 +128,11 @@ export function createFrayView(GL) {
   pike.setPos(0, 0.55, 0.3); pike.visible = false; pike.castShadow = false;
   heroNode.add(heroBody, blade, crescent, pike);
   scene.root.add(heroNode);
-  const heroGlow = sprites.add({ kind: 'ring', pos: [0, 0.03, 0], size: 1.9, color: '#ffffff', alpha: 0.6 });
+  // The hero must be the first thing the eye finds in sixty figures: a ring on the felt, a pool of light, and a
+  // gold marker riding above the hats.
+  const heroGlow = sprites.add({ kind: 'ring', pos: [0, 0.03, 0], size: 2.1, color: '#fff2a8', alpha: 0.7 });
+  const heroPool = sprites.add({ kind: 'glow', pos: [0, 0.3, 0], size: 3.2, color: '#9ff5e6', alpha: 0.4 });
+  const heroMark = sprites.add({ kind: 'dot', pos: [0, 2.2, 0], size: 0.3, color: '#ffd24a', alpha: 1 });
 
   const fireSprites = [], aimSprites = [];
   for (let i = 0; i < FIRES; i++) { const s = sprites.add({ kind: 'glow', pos: [0, 0.2, 0], size: 1.1, color: COL.oil, alpha: 0 }); s.visible = false; fireSprites.push(s); }
@@ -262,7 +266,9 @@ export function createFrayView(GL) {
     heroNode.setRot(fallen ? -84 : 0, hero.yaw, 0);
     heroBody.flash[0] = 1; heroBody.flash[1] = 0.25; heroBody.flash[2] = 0.2; heroBody.flash[3] = hero.hurt * 0.75;
     heroPos[0] = hx; heroPos[1] = 0.55; heroPos[2] = hz;
-    heroGlow.pos[0] = hx; heroGlow.pos[2] = hz; heroGlow.alpha = 0.45 + 0.15 * Math.sin(time * 4); heroGlow.visible = !fallen;
+    heroGlow.pos[0] = hx; heroGlow.pos[2] = hz; heroGlow.alpha = 0.6 + 0.2 * Math.sin(time * 4); heroGlow.visible = !fallen;
+    heroPool.pos[0] = hx; heroPool.pos[2] = hz; heroPool.visible = !fallen;
+    heroMark.pos[0] = hx; heroMark.pos[2] = hz; heroMark.pos[1] = 2.2 + hop + 0.12 * Math.sin(time * 5); heroMark.visible = !fallen;
     // sabre: the arm follows the cut, and the cut is a crescent that opens and is gone
     const sw = hero.swing;
     blade.setRot(0, sw > 0 ? 70 - (1 - sw) * 150 : 20, 0);
