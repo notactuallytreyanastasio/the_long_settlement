@@ -53,6 +53,10 @@ const GL_DEFAULT = true;
 const QUERY = new URLSearchParams(window.location.search);
 const GL_ASKED = QUERY.get('gl') === '1';                                  // asked for by name: its errors are fatal
 const GL_WANTED = QUERY.get('gl') === '0' ? false : GL_ASKED || GL_DEFAULT;
+// ?lanewar: a new game starts with the Lanewar board already set, so the first ball into the saucer opens it
+// (otherwise the table sets it after FRAY_NEED bumper, sling and target hits). For trying the board without the wait.
+const LANEWAR_SET = QUERY.has('lanewar');
+const firstGame = (seedN) => { const g = init(seedN); return LANEWAR_SET ? { ...g, fray: { ...g.fray, lit: true } } : g; };
 const GL_QUALITY = QUERY.get('q');
 
 const $ = (id) => {
@@ -261,7 +265,7 @@ async function boot() {
   const newSeed = () => (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
 
   // ── the state ──
-  let game = init(newSeed());
+  let game = firstGame(newSeed());
 
   const chatter = [];           // non-blocking lines waiting for the voice to be free
 
@@ -365,7 +369,7 @@ async function boot() {
         // 'end' has no way out in the core: the shell deals a fresh game.
         if (game.mode === 'end' && m.type === 'confirm') {
           EFFECTS.hush();
-          game = init(newSeed());
+          game = firstGame(newSeed());
           continue;
         }
         const before = game;

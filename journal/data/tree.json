@@ -12441,8 +12441,8 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 31098,
-  "lines": 448
+  "bytes": 32287,
+  "lines": 459
  },
  {
   "path": "src/shell/audio.js",
@@ -12921,8 +12921,8 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 25284,
-  "lines": 524
+  "bytes": 25689,
+  "lines": 528
  },
  {
   "path": "src/shell/render.js",
@@ -12958,6 +12958,11 @@
   "path": "test/ending.test.js",
   "bytes": 24340,
   "lines": 384
+ },
+ {
+  "path": "test/fray.test.js",
+  "bytes": 20942,
+  "lines": 349
  },
  {
   "path": "test/game.test.js",
