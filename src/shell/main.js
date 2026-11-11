@@ -498,6 +498,7 @@ async function boot() {
     controls = createInput(canvas, {
       mode: () => game.mode,
       layout: () => layout,
+      fray: () => (game.run ? { run: game.run, safeTop: fx.safe ? fx.safe.top : 0 } : null),
       onMsg: dispatch,
       onMute() { fx.muted = !fx.muted; audio.setMuted(fx.muted); },      // the renderer draws the button's state
     });

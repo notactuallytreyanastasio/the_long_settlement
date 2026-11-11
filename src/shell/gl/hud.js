@@ -46,6 +46,7 @@
 import { currentScene, lineSeconds, endingOf } from '../../core/story.js';
 import { SPIN_COST, LOAN, ledger } from '../../core/economy.js';
 import { launchState } from '../render.js';
+import { drawFray } from '../fray-view.js';
 
 const TAU = Math.PI * 2;
 const FACE = '"Avenir Next", "Trebuchet MS", ui-rounded, system-ui, sans-serif';
@@ -1720,6 +1721,7 @@ export function drawHud(g, content, game, stage, fx, layout) {
   else if (game.mode === 'end') drawEnd(g, content, game, fx, layout);
   else if (game.mode === 'cine') drawCine(g, content, game, stage, fx, layout, rects, grow);
   else if (game.mode === 'play') drawPlay(g, content, game, stage, fx, layout, rects, grow);
+  else if (game.mode === 'fray') drawFray(g, game, fx, layout);     // Lanewar: the board is gl/fray3d.js's, the lettering is here
   else throw new Error(`hud: unknown game mode '${game.mode}'`);
   // A flash is two hard steps, not a fade.
   if (fx.flash && fx.flash.a > 0.12) {

@@ -29,6 +29,7 @@
 // the text.
 
 import { REEL_STRIPS } from '../core/slot.js';
+import { drawFray } from './fray-view.js';
 import { currentScene, objectiveProgress, litIds, lineSeconds, endingOf } from '../core/story.js';
 import { SPIN_COST, LOAN, TRUST_PER_LOAN, ledger } from '../core/economy.js';
 import { leverStatus, AID_WAIT } from '../core/game.js';
@@ -4319,7 +4320,8 @@ export function createRenderer(canvas) {
     else if (game.mode === 'play') {
       if (L.kind === 'portrait') drawPlayP(ctx, L, content, game, fx, dt);
       else drawPlayW(ctx, L, content, game, fx, dt);
-    } else throw new Error(`render: unknown game mode '${game.mode}'`);
+    } else if (game.mode === 'fray') drawFray(ctx, game, fx, L, { board: true, clear: true });     // Lanewar, flat: counters for tin
+    else throw new Error(`render: unknown game mode '${game.mode}'`);
     ctx.restore();
 
     // A flash is two hard steps, not a fade: a soft wash of gold over flat colour turned the whole frame to mud.

@@ -12,6 +12,7 @@
 //   title, card, end   a set of the chapter turning slowly under the HUD module's screen
 //   play               the live stage band (stage.js director, fed by the core's stageState) over the 3D table
 //   cine               the band grown to the whole canvas, the table slid away below; the director plays the lines
+//   fray               Lanewar: the tin-soldier board (fray3d.js) in the middle of the glass, its HUD over it
 // play <-> cine is one number, `cineW` 0..1, eased over GROW seconds: the band's rectangle and the table's offset are
 // both read from it, so there is no cut. The director eases its own camera from the rectangle it is given.
 //
@@ -38,6 +39,8 @@ import { currentChapter } from '../../core/story.js';
 import { SETS } from './sets/index.js';
 import { drawHud, HUD_BAND_HEAD, HUD_BAND_FOOT } from './hud.js';
 import { createDirector } from './stage.js';
+import { createFrayView } from './fray3d.js';
+import { frayLayout, frayScreen } from '../fray-view.js';
 
 const INK = '#1d2146';
 const INK_RGB = GL.rgb(INK);     // the same ink as the renderer's frame clear
@@ -488,6 +491,30 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     count(renderer.render(insetScene, insetCam, time, { x, y, w, h: w, shadow: 'off' }), 'inset');
   }
 
+  // ───────────────────────── Lanewar ─────────────────────────
+  // The board has its own scene and camera, built the first time the saucer opens it (about 20 ms). It is drawn
+  // into the rectangle fray-view.js leaves between the HUD's head and foot, and where the hero comes out on the
+  // glass is written back for the touch target.
+  let frayView = null;
+  const frayRect = { x: 0, y: 0, w: 0, h: 0, shadowCenter: null, shadowRadius: 0 }, frayAt = [0, 0], frayBeside = [0, 0, 0], frayAt2 = [0, 0];
+  function drawFrayBoard(game, fx, layout, time, dt, k) {
+    if (!game.run) throw new Error('gl/app: mode fray with no run');
+    if (!frayView) { frayView = createFrayView(GL); frayRect.shadowCenter = frayView.view.shadowCenter; frayRect.shadowRadius = frayView.view.shadowRadius; app.stats.built++; }
+    const a = frayLayout(layout, fx.safe ? fx.safe.top : 0).area;
+    frayRect.x = a.x * k; frayRect.y = a.y * k; frayRect.w = a.w * k; frayRect.h = a.h * k;
+    frayView.update(game.run, dt, time);
+    const cam = frayView.frame(frayRect.w / frayRect.h, time);
+    renderer.begin(INK_RGB);
+    renderer.prepare(frayView.scene, cam, time, frayRect);
+    count(renderer.render(frayView.scene, cam, time, frayRect), 'fray');
+    renderer.end();
+    const h = frayView.hero;
+    frayBeside[0] = h[0] + 1; frayBeside[1] = h[1]; frayBeside[2] = h[2];
+    if (GL.projectTo(cam, h, frayRect, frayAt) && GL.projectTo(cam, frayBeside, frayRect, frayAt2)) {
+      frayScreen.x = frayAt[0] / k; frayScreen.y = frayAt[1] / k; frayScreen.cell = Math.abs(frayAt2[0] - frayAt[0]) / k; frayScreen.n = game.run.n;
+    }
+  }
+
   function drawHudPass(content, game, fx, layout, cssW, cssH, k, stage, isStage) {
     const dev = hudCanvas.width / cssW;         // device px per CSS px of the HUD canvas
     hud.setTransform(1, 0, 0, 1, 0, 0);
@@ -549,7 +576,7 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     const k = cssW / layout.W;
     app.stats.draws = 0; app.stats.tris = 0;
 
-    const mode = game.mode, isStage = mode === 'play' || mode === 'cine', kind = isStage ? 'stage' : 'screen';
+    const mode = game.mode, isStage = mode === 'play' || mode === 'cine', isFray = mode === 'fray', kind = isStage ? 'stage' : isFray ? 'fray' : 'screen';
     plan(content, game.chapter);
     const want = mode === 'play' ? 0 : 1;
     if (kind !== lastKind) {
@@ -569,6 +596,8 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     if (isStage) {
       stage = stageState(content, game);
       drawStage(content, game, fx, layout, time, dt, cssW, cssH, k, stage);
+    } else if (isFray) {
+      drawFrayBoard(game, fx, layout, time, dt, k);
     } else {
       drawScreen(content, game, layout, time, dt, cssW, cssH);
     }

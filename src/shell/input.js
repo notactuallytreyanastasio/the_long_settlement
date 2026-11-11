@@ -24,11 +24,14 @@
 //                       thumb resting off the edge of the table still flips. Any number of fingers.
 // Touch, in a cinematic: the mute button mutes, the skip button skips; a tap anywhere else is the next line.
 // Touch, title/card/end: a tap confirms.
+// Lanewar (mode 'fray'): fray-view.js says what a key or a finger means there; the flippers and the launch
+//                       button do not exist. `fray()` gives the run being played and the notch, for the layout.
 //
 // A zone belongs to the finger that started in it until that finger lifts: sliding across the
 // middle does not swap flippers, and sliding off the launch button does not fire it early.
 
 import { toLogical } from './layout.js';
+import { frayLayout, frayPress, frayKey } from './fray-view.js';
 
 const HOLD = {
   ArrowLeft: 'left', KeyZ: 'left', ShiftLeft: 'left',
@@ -44,7 +47,7 @@ const BUTTON_SLOP = 1.3;        // a thumb is wider than the drawn button: hit r
 const MIN_BUTTON_R = 26;        // logical px; never ask for a smaller target than this
 const TAP_GUARD_MS = 350;       // a flipper press that lands just as a cinematic opens is not "next line"
 
-export function createInput(canvas, { mode, layout, onMsg, onMute }) {
+export function createInput(canvas, { mode, layout, onMsg, onMute, fray = () => null }) {
   if (typeof mode !== 'function' || typeof layout !== 'function' || typeof onMsg !== 'function' || typeof onMute !== 'function') {
     throw new Error('createInput: mode, layout, onMsg and onMute must be functions');
   }
@@ -55,6 +58,15 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
   let sawTouch = false;
   let lastMode = mode();
   let leftPlayAt = -Infinity;      // performance.now() when play last gave way to another mode
+  const frayDown = new Map();      // pointer id -> [x, y] where a finger went down on the Lanewar board
+  let frayPhase = null, frayPhaseAt = 0;   // the run's phase and when it was first seen: a draft ignores the swipes that ended the wave
+
+  function watchFray() {
+    const f = fray();
+    const phase = f && f.run ? f.run.phase : null;
+    if (phase !== frayPhase) { frayPhase = phase; frayPhaseAt = win.performance.now(); }
+    return f;
+  }
 
   const held = (what) => {
     for (const code of keys) if (HOLD[code] === what) return true;
@@ -73,6 +85,13 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
 
   function onKeyDown(e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (watchMode() === 'fray') {
+      if (e.code === 'KeyM') { e.preventDefault(); if (!e.repeat) onMute(); return; }
+      const f = watchFray();
+      const msg = f ? frayKey(f.run, e.code) : null;
+      if (msg) { e.preventDefault(); if (!e.repeat || msg.act) onMsg(msg); }
+      return;
+    }
     if (HOLD[e.code]) { keys.add(e.code); e.preventDefault(); return; }
     if (e.repeat) { if (PRESS[e.code]) e.preventDefault(); return; }
     if (PRESS[e.code]) { e.preventDefault(); onMsg(PRESS[e.code]); return; }
@@ -99,6 +118,7 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
     const [x, y] = toLogical(L, canvas.getBoundingClientRect(), e.clientX, e.clientY);
     const m = watchMode();
 
+    if (m === 'fray') { watchFray(); frayDown.set(e.pointerId, [x, y]); return; }
     if (m !== 'cine' && inCircle(L.mute, x, y)) { onMute(); return; }
 
     if (m === 'play') {
@@ -119,10 +139,21 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
   }
   function onPointerUp(e) {
     touches.delete(e.pointerId);
+    const down = frayDown.get(e.pointerId);
+    if (!down) return;
+    frayDown.delete(e.pointerId);
+    if (e.type !== 'pointerup' || watchMode() !== 'fray') return;
+    const f = watchFray();
+    if (!f || !f.run) return;
+    const L = layout();
+    const up = toLogical(L, canvas.getBoundingClientRect(), e.clientX, e.clientY);
+    const msg = frayPress(frayLayout(L, f.safeTop), f.run, down, up, (win.performance.now() - frayPhaseAt) / 1000);
+    if (msg) onMsg(msg);
   }
   function release() {
     keys.clear();
     touches.clear();
+    frayDown.clear();
   }
   const stop = (e) => e.preventDefault();
   // iOS: a second finger must not become a pinch, a drag must not scroll or rubber-band the page.
@@ -143,6 +174,7 @@ export function createInput(canvas, { mode, layout, onMsg, onMute }) {
     /** @returns {import('../core/types.js').Input} */
     state() {
       watchMode();
+      watchFray();
       return { left: held('left'), right: held('right'), plunge: held('plunge'), nudge: null };
     },
     release,

@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 35878,
-  "lines": 619
+  "bytes": 37932,
+  "lines": 648
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12515,6 +12515,11 @@
   "lines": 423
  },
  {
+  "path": "src/shell/gl/fray3d.js",
+  "bytes": 20887,
+  "lines": 334
+ },
+ {
   "path": "src/shell/gl/fx.js",
   "bytes": 10678,
   "lines": 149
@@ -12526,8 +12531,8 @@
  },
  {
   "path": "src/shell/gl/hud.js",
-  "bytes": 68852,
-  "lines": 1732
+  "bytes": 69027,
+  "lines": 1734
  },
  {
   "path": "src/shell/gl/index.js",
@@ -12906,8 +12911,8 @@
  },
  {
   "path": "src/shell/input.js",
-  "bytes": 7799,
-  "lines": 165
+  "bytes": 9446,
+  "lines": 197
  },
  {
   "path": "src/shell/layout.js",
@@ -12916,13 +12921,13 @@
  },
  {
   "path": "src/shell/main.js",
-  "bytes": 25191,
-  "lines": 523
+  "bytes": 25284,
+  "lines": 524
  },
  {
   "path": "src/shell/render.js",
-  "bytes": 181812,
-  "lines": 4334
+  "bytes": 181987,
+  "lines": 4336
  },
  {
   "path": "src/shell/style.js",
