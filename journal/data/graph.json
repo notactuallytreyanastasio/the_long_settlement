@@ -1288,6 +1288,78 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "11501c8f-36b5-4c9f-95d6-2bab3f83aa2c",
+   "type": "goal",
+   "status": "active",
+   "title": "Fix the right flipper going dead on iPhone",
+   "description": null,
+   "created": "2026-11-11T02:52:07.423429Z",
+   "updated": "2026-11-11T02:52:07.423429Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "I have been messing with this all evening.  (Addictive:  check). Only quirk is the right flipper goes dead occasionally.  Turning the screen sideways a sec on the iPhone gets it back.",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "c07fdbb8-9524-496a-8c66-e2fd9f7a63fb",
+   "type": "observation",
+   "status": "active",
+   "title": "Turning the phone calls input.release() and refits the layout, so the dead flipper is state those two clear: a touch zone left held by a finger whose pointerup never came (a flipper held up cannot flip), or a left/right split taken from a wrong window.innerWidth",
+   "description": null,
+   "created": "2026-11-11T02:52:07.425498Z",
+   "updated": "2026-11-11T02:52:07.425498Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "5c21cba1-76c7-41cc-863e-33dcecdef577",
+   "type": "observation",
+   "status": "active",
+   "title": "Not reproduced on a phone: both causes were reproduced in headless Chrome by dispatching the events",
+   "description": null,
+   "created": "2026-11-11T02:52:07.430291Z",
+   "updated": "2026-11-11T02:52:07.430291Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "f8f3bbfb-806a-458b-80f6-d13a440b5ba7",
+   "type": "action",
+   "status": "completed",
+   "title": "Clear held touch zones when a touchend or touchcancel reports no fingers down; split left/right by the canvas's middle instead of innerWidth",
+   "description": null,
+   "created": "2026-11-11T02:52:07.433368Z",
+   "updated": "2026-11-11T02:52:07.433368Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/shell/input.js"
+   ],
+   "commit": null
+  },
+  {
+   "id": "5aa4139a-00c7-4d02-b906-a1c06ee85c43",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Both failure paths recover in the browser test; unconfirmed on the user's iPhone",
+   "description": "A right touch with no pointerup stays held until a touchend with zero touches, then releases and works again. With innerWidth forced to twice the glass a touch at 80% of the glass still reads as right.",
+   "created": "2026-11-11T02:52:07.436557Z",
+   "updated": "2026-11-11T02:52:07.436557Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1885,6 +1957,34 @@
    "type": "leads_to",
    "rationale": "Result",
    "created": "2026-11-11T02:28:18.726586Z"
+  },
+  {
+   "from": "11501c8f-36b5-4c9f-95d6-2bab3f83aa2c",
+   "to": "c07fdbb8-9524-496a-8c66-e2fd9f7a63fb",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T02:52:07.428899Z"
+  },
+  {
+   "from": "11501c8f-36b5-4c9f-95d6-2bab3f83aa2c",
+   "to": "5c21cba1-76c7-41cc-863e-33dcecdef577",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T02:52:07.432392Z"
+  },
+  {
+   "from": "11501c8f-36b5-4c9f-95d6-2bab3f83aa2c",
+   "to": "f8f3bbfb-806a-458b-80f6-d13a440b5ba7",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-11T02:52:07.435562Z"
+  },
+  {
+   "from": "f8f3bbfb-806a-458b-80f6-d13a440b5ba7",
+   "to": "5aa4139a-00c7-4d02-b906-a1c06ee85c43",
+   "type": "leads_to",
+   "rationale": "Result",
+   "created": "2026-11-11T02:52:07.438816Z"
   }
  ]
 }
