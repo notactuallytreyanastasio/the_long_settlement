@@ -1190,6 +1190,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "f4316f07-c8a0-4dd7-90e1-aa96be88e98b",
+   "type": "decision",
+   "status": "pending",
+   "title": "The loadout comes from a three-reel slot machine between waves, not a shop list",
+   "description": "Between waves the reels deal weapons and stat items. Each pull stops on three symbols; you take one, and a pair or triple of it makes it stronger (a weapon gains that many tiers, an item pays double or fourfold). Reels can be held before pulling again. Every wave cleared and every level gained gives a free pull; more cost tin, the coins felled figures drop. This replaces both the shop and the level-up cards of the genre, and echoes the table's own Reels of Assay.",
+   "created": "2026-11-11T02:02:42.030978Z",
+   "updated": "2026-11-11T02:02:42.030978Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "but with slot machine loadouts",
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1745,6 +1759,13 @@
    "type": "leads_to",
    "rationale": "Decided",
    "created": "2026-11-11T02:01:59.851658Z"
+  },
+  {
+   "from": "ff56b576-c981-4870-8f57-f23c678fc835",
+   "to": "f4316f07-c8a0-4dd7-90e1-aa96be88e98b",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-11T02:02:42.033588Z"
   }
  ]
 }
