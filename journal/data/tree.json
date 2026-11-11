@@ -12411,8 +12411,8 @@
  },
  {
   "path": "src/core/game.js",
-  "bytes": 48248,
-  "lines": 972
+  "bytes": 49920,
+  "lines": 1002
  },
  {
   "path": "src/core/physics.js",
@@ -12446,8 +12446,8 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 63980,
-  "lines": 1302
+  "bytes": 64622,
+  "lines": 1313
  },
  {
   "path": "src/shell/cinema.js",
@@ -12486,8 +12486,8 @@
  },
  {
   "path": "src/shell/fray-view.js",
-  "bytes": 17303,
-  "lines": 326
+  "bytes": 20476,
+  "lines": 357
  },
  {
   "path": "src/shell/gl/app.js",
@@ -12513,11 +12513,6 @@
   "path": "src/shell/gl/faces.js",
   "bytes": 29942,
   "lines": 423
- },
- {
-  "path": "src/shell/gl/fray3d.js",
-  "bytes": 22628,
-  "lines": 357
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -12958,11 +12953,6 @@
   "path": "test/ending.test.js",
   "bytes": 24340,
   "lines": 384
- },
- {
-  "path": "test/fray.test.js",
-  "bytes": 20942,
-  "lines": 349
  },
  {
   "path": "test/game.test.js",

@@ -21,7 +21,10 @@ import {
 } from './economy.js';
 import { pushRecent, comboBonus } from './stage.js';
 import { seed, next, pick } from './rng.js';
-import { newMeta, checkMeta, startRun, act as frayAct, choose as frayChoose, settle as fraySettle, canLeave as frayCanLeave, ACTS as FRAY_ACTS } from './fray.js';
+import {
+  newMeta, checkMeta, startRun, step as frayStep, pull as frayPull, hold as frayHold, take as frayTake, nextWave as frayNext,
+  settle as fraySettle, canLeave as frayCanLeave, DT as FRAY_DT,
+} from './fray.js';
 import {
   currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
   heardLines, readsLeaning, LEANINGS,
@@ -152,6 +155,7 @@ const freshReels = () => ({
  *   logged      how many entries game.recent has ever been given (the next entry's n)
  *   fray        the Lanewar board's Meta (fray.js): whether the saucer opens it, the loadout, the wave. Saved
  *   run         the game of Lanewar being played, in mode 'fray'; null otherwise. Not saved
+ *   frayAcc     seconds of table time the board has not yet stepped (it steps at fray.DT)
  *   frayDue     a ball went into the saucer with the board set, on this tick: playTick opens the board
  * `recent` is in the typedef: the event log the stage is drawn from. Neither is saved; a load starts both empty.
  * And one that is in it: `ending`, null until the ledger is read in the final chapter
@@ -189,18 +193,21 @@ export function init(seedN) {
     fray: newMeta(),
     run: null,
     frayDue: false,
+    frayAcc: 0,
   };
 }
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 /** The first version that kept the reels. */
 const REELS_SINCE = 3;
 /**
  * Save versions load() accepts. 1 was written at the old slot screen, 2 before the reels were
  * kept, 3 before the ledger could be read (no `ending`, and no econ.hatsRefused), 4 before Lanewar
- * (no `fray`: the board loads as a new game has it).
+ * (no `fray`) and 5 with the turn-based Lanewar: for both the board loads as a new game has it.
  */
-const LOADABLE = [1, 2, 3, 4, SAVE_VERSION];
+const LOADABLE = [1, 2, 3, 4, 5, SAVE_VERSION];
+/** The first version whose `fray` this build reads. 5 was the turn-based board, for a day: its loadout means nothing now. */
+const FRAY_SINCE = 6;
 /** The same list, for the shell: which stored saves are worth handing to load. */
 export const LOADABLE_SAVES = Object.freeze([...LOADABLE]);
 
@@ -220,7 +227,7 @@ export function toSave(game) {
     reels: reelsToSave(game.reels), ending: game.ending,
     // A save written with the board open (none is, today: saves are written at scene ends) would lose
     // the run, so it gives the light back.
-    fray: { ...game.fray, lit: game.fray.lit || game.run !== null, weapons: { ...game.fray.weapons }, perks: { ...game.fray.perks } },
+    fray: { ...game.fray, lit: game.fray.lit || game.run !== null, weapons: game.fray.weapons.map((w) => ({ ...w })), stats: { ...game.fray.stats } },
   };
 }
 
@@ -283,7 +290,7 @@ function load(content, save) {
   if (ending !== null && !LEANINGS.includes(ending)) {
     throw new Error(`game: save has ending ${JSON.stringify(save.ending)}; it must be null or one of ${LEANINGS.join(', ')}`);
   }
-  const fray = save.fray === undefined ? newMeta() : checkMeta(save.fray);
+  const fray = save.v < FRAY_SINCE ? newMeta() : checkMeta(save.fray);
   const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ, reels: reelsFromSave(save), ending, fray };
   const game = {
     ...base,
@@ -761,34 +768,51 @@ const fraySeed = (game) => (game.rng.s ^ Math.imul(game.logged + 1, 0x9e3779b1) 
 
 function enterFray(content, game) {
   const run = startRun(game.fray, fraySeed(game));
-  const opened = toast({ ...enterMode(game, 'fray'), run, frayDue: false, fray: { ...game.fray, lit: false, charge: 0 } },
-    'scene', run.phase === 'draft' ? 'Lanewar: your pick' : `Lanewar: wave ${run.wave}`);
+  const opened = toast({ ...enterMode(game, 'fray'), run, frayAcc: 0, frayDue: false, fray: { ...game.fray, lit: false, charge: 0 } },
+    'scene', `Lanewar: wave ${run.wave}`);
   return ok(opened, [sfx('card'), { type: 'flash', color: '#ffffff' }]);
 }
 
-/** What a turn sounded like. One sound of each kind a turn, however many figures it was. */
-function fraySounds(events) {
+/** What a step of the board sounded like: everything in the run's log that `before` had not yet seen. One sound of a kind a step. */
+function fraySounds(before, run) {
   const out = [];
-  let kills = 0, hurt = 0, moved = false, cleared = false, fallen = false, shell = false, hits = 0;
-  for (const e of events) {
+  let kills = 0, hurt = 0, tin = 0, shot = false, blast = false, swing = false, cleared = false, fallen = false, level = false;
+  for (const e of run.fx) {
+    if (e.n < before.fxN) continue;
     if (e.type === 'kill') kills++;
-    else if (e.type === 'hit') hits++;
     else if (e.type === 'hurt') hurt += e.dmg;
-    else if (e.type === 'move') moved = true;
+    else if (e.type === 'tin') tin += e.v;
+    else if (e.type === 'shot') shot = true;
+    else if (e.type === 'blast' || e.type === 'flame') blast = true;
+    else if (e.type === 'swing') swing = true;
+    else if (e.type === 'level') level = true;
     else if (e.type === 'cleared') cleared = true;
     else if (e.type === 'fallen') fallen = true;
-    else if (e.type === 'swing' && (e.weapon === 'mortar' || e.weapon === 'grape')) shell = true;
   }
-  if (moved) out.push(sfx('frayStep', 0.5));
-  if (shell) out.push(sfx('frayBoom', 0.9));
-  if (kills > 0) out.push(sfx('fraySlash', Math.min(1, 0.45 + kills * 0.08)));
-  else if (hits > 0) out.push(sfx('fraySlash', 0.3));
-  if (hurt > 0) out.push(sfx('frayHurt', Math.min(1, 0.5 + hurt * 0.15)), { type: 'shake', power: Math.min(1, 0.25 + hurt * 0.15) });
-  if (kills >= 6) out.push({ type: 'shake', power: Math.min(0.6, kills * 0.05) });
+  if (shot) out.push(sfx('frayShot', 0.45));
+  if (swing) out.push(sfx('fraySlash', 0.3));
+  if (blast) out.push(sfx('frayBoom', 0.8), { type: 'shake', power: 0.25 });
+  if (kills > 0) out.push(sfx('frayFell', Math.min(1, 0.4 + kills * 0.12)));
+  if (tin > 0) out.push(sfx('frayCoin', Math.min(1, 0.4 + tin * 0.08)));
+  if (hurt > 0) out.push(sfx('frayHurt', 0.9), { type: 'shake', power: 0.5 }, { type: 'flash', color: '#ff5a4a' });
+  if (level) out.push(sfx('confirm'));
   if (cleared) out.push(sfx('sceneClear'));
   if (fallen) out.push(sfx('drain'), { type: 'flash', color: '#ff5a4a' });
   return out;
 }
+
+/**
+ * The board's time. It steps at fray.DT (every second tick of the table's clock), with the stick as it is now:
+ * msg.input.move, [x, y] each -1..1, and standing still when the shell sends none.
+ */
+function frayTick(content, game, msg) {
+  const acc = game.frayAcc + msg.dt;
+  if (acc < FRAY_DT - 1e-9) return ok({ ...game, frayAcc: acc });
+  const before = game.run;
+  const run = frayStep(before, (msg.input && msg.input.move) || STILL);
+  return ok({ ...game, run, frayAcc: acc - FRAY_DT }, run === before ? [] : fraySounds(before, run));
+}
+const STILL = Object.freeze([0, 0]);
 
 /** Back to the table with what the run earned. The ball is still in the saucer and comes out on its own clock. */
 function leaveFray(content, game) {
@@ -802,24 +826,30 @@ function leaveFray(content, game) {
   return then(ok(told, [sfx(banked ? 'payout' : 'bust')]), (g) => enterPlay(content, g));
 }
 
-/** {type:'fray', act} takes a turn; {type:'fray', pick} takes a card; {type:'fray', leave:true} goes home from the draft. */
+/**
+ * The reels, between waves: {type:'fray'} with one of pull:true, hold:i, take:i, next:true, leave:true.
+ * One that cannot be done now (no tin, reels still turning, a wave in progress) changes nothing.
+ */
 function frayMsg(content, game, msg) {
   const { run } = game;
+  const known = msg.pull === true || msg.next === true || msg.leave === true || Number.isInteger(msg.hold) || Number.isInteger(msg.take);
+  if (!known) throw new Error(`game: a fray message needs pull, hold, take, next or leave: ${JSON.stringify(msg)}`);
   if (msg.leave === true) return frayCanLeave(run) ? leaveFray(content, game) : ok(game);
-  if (msg.pick !== undefined) {
-    if (run.phase !== 'draft' || !run.offers[msg.pick]) return ok(game);
-    const next_ = frayChoose(run, msg.pick);
-    return ok(toast({ ...game, run: next_ }, 'scene', `Lanewar: wave ${next_.wave}`), [sfx('confirm')]);
-  }
-  if (!FRAY_ACTS.includes(msg.act)) throw new Error(`game: a fray message needs act, pick or leave: ${JSON.stringify(msg)}`);
-  if (run.phase !== 'turn') return ok(game);
-  const next_ = frayAct(run, msg.act);
-  return ok({ ...game, run: next_ }, fraySounds(next_.events));
+  if (run.phase !== 'shop') return ok(game);
+  let next_, sound;
+  if (msg.pull === true) { next_ = frayPull(run); sound = [sfx('reelStart')]; }
+  else if (Number.isInteger(msg.hold)) { next_ = frayHold(run, msg.hold); sound = [sfx('reelStop')]; }
+  else if (Number.isInteger(msg.take)) { next_ = frayTake(run, msg.take); const last = next_.fx[next_.fx.length - 1]; sound = [sfx(last && last.type === 'took' && last.mult >= 3 ? 'jackpot' : 'payout')]; }
+  else { next_ = frayNext(run); sound = [sfx('card')]; }
+  if (next_ === run) return ok(game);
+  const told = msg.next === true ? toast({ ...game, run: next_ }, 'scene', `Lanewar: wave ${next_.wave}`) : { ...game, run: next_ };
+  return ok(told, sound);
 }
 
 const frayHandlers = {
+  tick: frayTick,
   fray: frayMsg,
-  // The fallen board is dismissed like a card. In a turn or a draft Enter does nothing: neither has a default.
+  // The fallen board is dismissed like a card. In a wave or at the reels Enter does nothing: neither has a default.
   confirm: (content, game) => (game.run.phase === 'over' ? leaveFray(content, game) : ok(game)),
 };
 

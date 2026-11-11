@@ -32,7 +32,7 @@ export const SFX_NAMES = [
   'flip', 'bumper', 'sling', 'target', 'rollover', 'shot', 'saucer', 'eject', 'drain',
   'launch', 'wall', 'reelStart', 'reelStop', 'payout', 'jackpot', 'bust', 'loan', 'aid',
   'objective', 'sceneClear', 'card', 'confirm',
-  'frayStep', 'fraySlash', 'frayHurt', 'frayBoom',
+  'fraySlash', 'frayHurt', 'frayBoom', 'frayShot', 'frayFell', 'frayCoin',
 ];
 
 export const MOODS = [
@@ -387,10 +387,21 @@ export function createAudio() {
       tone(d, { f: 660, t, dur: 0.06, vol: 0.18 * v });
       tone(d, { f: 990, t: t + 0.035, dur: 0.08, vol: 0.14 * v });
     },
-    // Lanewar. A tin base set down on a wooden board
-    frayStep(t, v, d) {
-      noise(d, { t, dur: 0.02, vol: 0.35 * v, type: 'lowpass', f: 900 });
-      tone(d, { f: 210, f1: 150, t, dur: 0.05, vol: 0.22 * v, a: 0.002 });
+    // Lanewar. A small flintlock: a dry crack
+    frayShot(t, v, d) {
+      noise(d, { t, dur: 0.035, vol: 0.5 * v, type: 'highpass', f: 2200 });
+      tone(d, { f: 320, f1: 120, t, dur: 0.05, vol: 0.2 * v, a: 0.002 });
+    },
+    // tin figures going over on a wooden board
+    frayFell(t, v, d) {
+      noise(d, { t, dur: 0.03, vol: 0.4 * v, type: 'lowpass', f: 1200 });
+      tone(d, { type: 'triangle', f: 520, f1: 300, t, dur: 0.06, vol: 0.18 * v, a: 0.002 });
+      noise(d, { t: t + 0.04, dur: 0.04, vol: 0.2 * v, type: 'lowpass', f: 800 });
+    },
+    // tin picked up: two small bright notes
+    frayCoin(t, v, d) {
+      tone(d, { f: 1320, t, dur: 0.05, vol: 0.12 * v });
+      tone(d, { f: 1760, t: t + 0.04, dur: 0.07, vol: 0.1 * v });
     },
     // a blade through tin: a short bright sweep, then the figures going over
     fraySlash(t, v, d) {
@@ -413,7 +424,7 @@ export function createAudio() {
   };
 
   // Simultaneous physics events would stack the same sample into a click.
-  const MIN_GAP = { wall: 0.045, bumper: 0.03, flip: 0.02 };
+  const MIN_GAP = { wall: 0.045, bumper: 0.03, flip: 0.02, frayShot: 0.07, fraySlash: 0.09, frayFell: 0.06, frayCoin: 0.07, frayBoom: 0.12, frayHurt: 0.2 };
   const lastSfx = {};
 
   function sfx(name, vol = 1) {

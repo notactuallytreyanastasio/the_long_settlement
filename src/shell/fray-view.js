@@ -1,17 +1,20 @@
 // Lanewar on the glass: where things are, what a touch means, and everything that is drawn in 2D.
 // Imperative shell. Both renderers use it: the 3D one draws the board itself (gl/fray3d.js) and asks this
-// file only for the lettering and the cards; the 2D one asks for the board as well (opts.board).
+// file only for the lettering and the reels; the 2D one asks for the board as well (opts.board).
 //
-//   frayLayout(L, safeTop)            -> { top, board, chips, cards[3], leave, hint }   logical px, same space as layout.js
-//   frayScreen                        where the hero stands on the glass, written by whoever drew the board
-//   frayPress(FL, run, down, up)      -> Msg | null     what a finger that went down at `down` and lifted at `up` asks for
-//   frayKey(run, code)                -> Msg | null
-//   drawFray(g, game, fx, L, opts)    the HUD; with opts.board the board too
+//   frayLayout(L, safeTop)        -> { top, area, board, reels[3], take[3], hold[3], pull, next, home, ... }   logical px
+//   frayStick                     the thumb stick: written by input.js, drawn here, read by nobody else
+//   frayPress(FL, run, down, up)  -> Msg | null     a tap at the reels (finger down and up on the same button)
+//   frayKey(run, code)            -> Msg | null     a key at the reels or on a fallen board
+//   drawFray(g, game, fx, L, opts)
 //
-// ONE FINGER. A turn is a swipe, or a tap on the side of the hero you want to go; a tap on the hero stands.
-// Both, because a swipe is what a thumb does without looking and a tap is what a mouse does.
+// IN A WAVE the only control is the stick: put a thumb down anywhere and drag (input.js), or WASD / arrows.
+// AT THE REELS everything is a button: PULL, a TAKE under each reel, a HOLD under that, NEXT WAVE, and the way home.
 
-import { W, H, WEAPONS, WEAPON_IDS, PERKS, FOES, describe, waveSize, canLeave } from '../core/fray.js';
+import {
+  AW, AH, SLOTS, TIERS, WEAPONS, ITEMS, FOES, MULT_PAYS,
+  describe, canTake, canPull, canLeave, pullCost, matches, levelCost,
+} from '../core/fray.js';
 
 const FACE = '"Avenir Next", "Trebuchet MS", ui-rounded, system-ui, sans-serif';
 const font = (size, weight = 800) => `${weight} ${size}px ${FACE}`;
@@ -23,95 +26,102 @@ const GOLD = '#ffd24a';
 const CORAL = '#f2553a';
 const TEAL = '#2bb7a3';
 const WHITE = '#ffffff';
+const DIM = '#39406e';
 
-/** What each figure and weapon is painted, here and on the 3D board. */
+/** What each figure, weapon and piece of kit is painted, here and on the 3D board. */
 export const FRAY_COLOURS = Object.freeze({
   hero: '#2bb7a3', foot: '#d8433a', lancer: '#3f6fd8', grenadier: '#3c7a4a', musket: '#e9e2d0', captain: '#8a4fc0',
-  sabre: '#ffffff', flail: '#ffd24a', pike: '#bfe6ff', grape: '#ffb347', mortar: '#ff7a4a', oil: '#ff9a2a',
-  feltA: '#2f8f6a', feltB: '#277d5c',
+  sabre: '#e8f0ff', pike: '#bfe6ff', flail: '#ffd24a', pistol: '#c9a26a', scatter: '#ffb347', mortar: '#ff7a4a', flask: '#ff9a2a',
+  heart: '#f2553a', whetstone: '#aab4c8', drill: '#f2c84a', spyglass: '#6fd0f0', plate: '#8fa0c0', boots: '#b0703a',
+  feint: '#c58af0', tonic: '#5fd08a', magnet: '#e04a6a', clover: '#4fc060',
+  tin: '#ffd24a', feltA: '#2f8f6a', feltB: '#2b8762',
 });
+const TIER_COLOUR = ['#9aa3c0', '#5fd08a', '#6fb0ff', '#ffb347'];
+const TIER_NAME = ['I', 'II', 'III', 'IV'];
+const STAT_LABEL = { maxHp: 'Hearts', dmg: 'Damage %', haste: 'Attack speed %', range: 'Range %', armor: 'Armour', speed: 'Speed %', dodge: 'Dodge %', regen: 'Mending', magnet: 'Tin reach %', luck: 'Luck' };
 
 const rect = (x, y, w, h) => ({ x, y, w, h });
-const inRect = (r, x, y, pad = 0) => x >= r.x - pad && x <= r.x + r.w + pad && y >= r.y - pad && y <= r.y + r.h + pad;
+const inRect = (r, x, y, pad = 4) => x >= r.x - pad && x <= r.x + r.w + pad && y >= r.y - pad && y <= r.y + r.h + pad;
 
 const layouts = new Map();
 export function frayLayout(L, safeTop = 0) {
   const st = Math.round(safeTop || 0);
-  const k = `${L.kind}|${L.W}|${L.H}|${st}`;
-  let FL = layouts.get(k);
+  const key = `${L.kind}|${L.W}|${L.H}|${st}`;
+  let FL = layouts.get(key);
   if (FL) return FL;
   const wide = L.kind === 'wide';
-  const pad = wide ? 28 : 12;
-  const top = rect(pad, st + (wide ? 16 : 10), L.W - pad * 2, 58);
-  const chipsH = 46, hintH = 22;
-  const chips = rect(pad, L.H - chipsH - hintH - 14, L.W - pad * 2, chipsH);
-  const area = rect(pad, top.y + top.h + 8, L.W - pad * 2, chips.y - 8 - (top.y + top.h + 8));
-  const cell = Math.floor(Math.min(area.w / W, area.h / H));
-  const board = { x: Math.round(area.x + (area.w - cell * W) / 2), y: Math.round(area.y + (area.h - cell * H) / 2), w: cell * W, h: cell * H, cell, area };
-  const cw = Math.min(L.W - pad * 2, 380), ch = wide ? 100 : 92, gap = 10;
-  const cardsH = ch * 3 + gap * 2 + 14 + 52;
-  const cy = Math.max(top.y + top.h + 56, Math.round((L.H - cardsH) / 2) + 20);
-  const cx = Math.round((L.W - cw) / 2);
-  const cards = [0, 1, 2].map((i) => rect(cx, cy + i * (ch + gap), cw, ch));
-  const leave = rect(cx, cy + 3 * (ch + gap) + 4, cw, 52);
-  FL = Object.freeze({ top, board, chips, cards, leave, hint: { x: L.W / 2, y: L.H - 12 }, area });
-  layouts.set(k, FL);
+  const pad = wide ? 24 : 10;
+  const top = rect(pad, st + (wide ? 12 : 8), L.W - pad * 2, 62);
+  const area = rect(pad, top.y + top.h + 6, L.W - pad * 2, L.H - (top.y + top.h + 6) - 54);
+  const s = Math.min(area.w / AW, area.h / AH);
+  const board = { x: area.x + (area.w - AW * s) / 2, y: area.y + (area.h - AH * s) / 2, w: AW * s, h: AH * s, s };
+  const slots = rect(pad, L.H - 48, L.W - pad * 2, 40);
+  // the reels: a column of things, centred, that fits a short phone
+  const cw = Math.min(L.W - pad * 2, 410), cx = (L.W - cw) / 2;
+  const short = L.H < 800;
+  let y = top.y + (short ? 4 : 14);
+  const title = { x: L.W / 2, y: y + 30 }; y += short ? 58 : 70;
+  const rw = (cw - 16) / 3, rh = short ? 132 : 150;
+  const reels = [0, 1, 2].map((i) => rect(cx + i * (rw + 8), y, rw, rh)); y += rh + 6;
+  const take = reels.map((r) => rect(r.x, y, r.w, 38)); y += 38 + 5;
+  const hold = reels.map((r) => rect(r.x, y, r.w, 28)); y += 28 + (short ? 8 : 12);
+  const pull = rect(cx, y, cw, short ? 50 : 56); y += pull.h + (short ? 8 : 12);
+  const load = rect(cx, y, cw, 46); y += 46 + (short ? 6 : 10);
+  const bottomH = 50;
+  const stats = rect(cx, y, cw, Math.max(40, L.H - y - bottomH - 22));
+  const by = L.H - bottomH - 12;
+  const next = rect(cx, by, cw * 0.56, bottomH);
+  const home = rect(cx + cw * 0.56 + 8, by, cw * 0.44 - 8, bottomH);
+  FL = Object.freeze({ top, area, board, slots, title, reels, take, hold, pull, load, stats, next, home });
+  layouts.set(key, FL);
   return FL;
 }
 
-/**
- * Where the hero is on the glass (logical px) and how big a square is there. The 3D view writes it from its
- * camera each frame; the 2D board writes it from the layout. A touch is read against it.
- */
-export const frayScreen = { x: 0, y: 0, cell: 40, n: -1 };
+/** The thumb stick, logical px: where the thumb went down and where it is now. input.js writes it. */
+export const frayStick = { on: false, ox: 0, oy: 0, x: 0, y: 0 };
+/** Logical px of travel at which the stick is hard over. */
+export const STICK_R = 46;
 
-const SWIPE = 20;        // logical px a finger must travel to be a swipe
-const DRAFT_GUARD = 0.5; // seconds a draft ignores touches: the last swipes of a wave land on it otherwise
-
-function dirOf(dx, dy) { return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'e' : 'w') : (dy > 0 ? 's' : 'n'); }
-
-/** A finger went down at `down` [x, y] and came up at `up`. phaseT: seconds the run has been in its phase. */
-export function frayPress(FL, run, down, up, phaseT) {
+/** A tap at the reels or on the fallen board: `down` and `up` are [x, y] where the finger landed and lifted. */
+export function frayPress(FL, run, down, up) {
   if (!run) return null;
-  if (run.phase === 'over') return phaseT > 0.6 ? { type: 'confirm' } : null;
-  if (run.phase === 'draft') {
-    if (phaseT < DRAFT_GUARD) return null;
-    for (let i = 0; i < run.offers.length; i++) if (inRect(FL.cards[i], up[0], up[1]) && inRect(FL.cards[i], down[0], down[1])) return { type: 'fray', pick: i };
-    if (canLeave(run) && inRect(FL.leave, up[0], up[1]) && inRect(FL.leave, down[0], down[1])) return { type: 'fray', leave: true };
-    return null;
+  if (run.phase === 'over') return { type: 'confirm' };
+  if (run.phase !== 'shop') return null;
+  const on = (r) => inRect(r, up[0], up[1]) && inRect(r, down[0], down[1]);
+  for (let i = 0; i < 3; i++) {
+    if (on(FL.take[i]) || on(FL.reels[i])) return canTake(run, i) ? { type: 'fray', take: i } : null;
+    if (on(FL.hold[i])) return run.slot.reels[i] !== null ? { type: 'fray', hold: i } : null;
   }
-  const dx = up[0] - down[0], dy = up[1] - down[1];
-  if (dx * dx + dy * dy >= SWIPE * SWIPE) return { type: 'fray', act: dirOf(dx, dy) };
-  const hx = up[0] - frayScreen.x, hy = up[1] - frayScreen.y, r = frayScreen.cell * 0.62;
-  if (hx * hx + hy * hy <= r * r) return { type: 'fray', act: 'wait' };
-  return { type: 'fray', act: dirOf(hx, hy) };
+  if (on(FL.pull)) return canPull(run) ? { type: 'fray', pull: true } : null;
+  if (on(FL.next)) return { type: 'fray', next: true };
+  if (on(FL.home)) return canLeave(run) ? { type: 'fray', leave: true } : null;
+  return null;
 }
 
-const KEY_ACT = {
-  ArrowUp: 'n', KeyW: 'n', ArrowDown: 's', KeyS: 's', ArrowLeft: 'w', KeyA: 'w', ArrowRight: 'e', KeyD: 'e',
-  Space: 'wait', Period: 'wait',
-};
-const KEY_PICK = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 };
-
-/** Arrows or WASD move, Space stands; 1 2 3 take a card, H goes home from the draft, Enter leaves a fallen board. */
+const KEY_TAKE = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 };
+const KEY_HOLD = { KeyQ: 0, KeyW: 1, KeyE: 2 };
+/** At the reels: Space pulls, 1 2 3 take, Q W E hold, Enter is the next wave, H is home. On a fallen board Enter or Space leaves. */
 export function frayKey(run, code) {
   if (!run) return null;
-  if (run.phase === 'turn') return KEY_ACT[code] ? { type: 'fray', act: KEY_ACT[code] } : null;
-  if (run.phase === 'draft') {
-    if (code in KEY_PICK) return run.offers[KEY_PICK[code]] ? { type: 'fray', pick: KEY_PICK[code] } : null;
-    return code === 'KeyH' && canLeave(run) ? { type: 'fray', leave: true } : null;
-  }
-  return code === 'Enter' || code === 'NumpadEnter' || code === 'Space' ? { type: 'confirm' } : null;
+  if (run.phase === 'over') return code === 'Enter' || code === 'NumpadEnter' || code === 'Space' ? { type: 'confirm' } : null;
+  if (run.phase !== 'shop') return null;
+  if (code === 'Space') return { type: 'fray', pull: true };
+  if (code in KEY_TAKE) return { type: 'fray', take: KEY_TAKE[code] };
+  if (code in KEY_HOLD) return { type: 'fray', hold: KEY_HOLD[code] };
+  if (code === 'Enter' || code === 'NumpadEnter') return { type: 'fray', next: true };
+  if (code === 'KeyH') return { type: 'fray', leave: true };
+  return null;
 }
 
 // ───────────────────────── drawing ─────────────────────────
 
 function rr(g, x, y, w, h, r) {
+  const q = Math.min(r, w / 2, h / 2);
   g.beginPath();
-  g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
-  g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
-  g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y);
+  g.moveTo(x + q, y); g.lineTo(x + w - q, y); g.quadraticCurveTo(x + w, y, x + w, y + q);
+  g.lineTo(x + w, y + h - q); g.quadraticCurveTo(x + w, y + h, x + w - q, y + h);
+  g.lineTo(x + q, y + h); g.quadraticCurveTo(x, y + h, x, y + h - q);
+  g.lineTo(x, y + q); g.quadraticCurveTo(x, y, x + q, y);
   g.closePath();
 }
 function panel(g, r, fill, radius = 12, stroke = INK, lw = 3) {
@@ -125,10 +135,10 @@ function text(g, s, x, y, size, fill = WHITE, align = 'left', weight = 800) {
 function fitText(g, s, x, y, maxW, size, fill, align = 'left', weight = 800) {
   let z = size;
   g.font = font(z, weight);
-  while (z > 9 && g.measureText(s).width > maxW) { z -= 0.5; g.font = font(z, weight); }
+  while (z > 8 && g.measureText(s).width > maxW) { z -= 0.5; g.font = font(z, weight); }
   g.textAlign = align; g.fillStyle = fill; g.fillText(s, x, y);
 }
-/** Words wrapped to maxW, at most `lines` lines; returns the y after the last. */
+/** Words wrapped to maxW around centre x, at most `lines` lines. The font must be set. */
 function wrap(g, s, x, y, maxW, lh, lines = 3) {
   const words = s.split(' ');
   let line = '', n = 0;
@@ -139,155 +149,172 @@ function wrap(g, s, x, y, maxW, lh, lines = 3) {
       if (n >= lines - 1) { line = words.slice(i).join(' '); break; }
     } else line = t;
   }
-  if (line) { g.fillText(line, x, y + n * lh, maxW); n++; }
-  return y + n * lh;
+  if (line) g.fillText(line, x, y + n * lh, maxW);
 }
-
-function heart(g, x, y, s, full) {
-  g.beginPath();
-  g.moveTo(x, y + s * 0.3);
-  g.bezierCurveTo(x, y - s * 0.25, x - s * 0.55, y - s * 0.25, x - s * 0.55, y + s * 0.12);
-  g.bezierCurveTo(x - s * 0.55, y + s * 0.45, x - s * 0.2, y + s * 0.62, x, y + s * 0.85);
-  g.bezierCurveTo(x + s * 0.2, y + s * 0.62, x + s * 0.55, y + s * 0.45, x + s * 0.55, y + s * 0.12);
-  g.bezierCurveTo(x + s * 0.55, y - s * 0.25, x, y - s * 0.25, x, y + s * 0.3);
-  g.closePath();
-  g.fillStyle = full ? CORAL : '#39406e'; g.fill();
-  g.lineWidth = 1.5; g.strokeStyle = INK; g.stroke();
+function bar(g, x, y, w, h, f, fill, back = NAVY_DEEP) {
+  rr(g, x, y, w, h, h / 2); g.fillStyle = back; g.fill();
+  const k = Math.max(0, Math.min(1, f));
+  if (k > 0) { rr(g, x, y, Math.max(h, w * k), h, h / 2); g.fillStyle = fill; g.fill(); }
+  rr(g, x, y, w, h, h / 2); g.lineWidth = 2; g.strokeStyle = INK; g.stroke();
+}
+/** A weapon or a piece of kit, as a token: its colour, and its first letters. */
+function token(g, sym, cx, cy, r) {
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fillStyle = FRAY_COLOURS[sym] || GOLD; g.fill();
+  g.lineWidth = Math.max(2, r * 0.12); g.strokeStyle = INK; g.stroke();
+  const name = (WEAPONS[sym] || ITEMS[sym]).name;
+  g.textBaseline = 'middle';
+  text(g, name.slice(0, 2).toUpperCase(), cx, cy + 1, r * 0.82, INK, 'center');
+  g.textBaseline = 'alphabetic';
 }
 
 function drawTop(g, run, FL) {
   const r = FL.top;
   panel(g, r, NAVY, 14);
-  g.textBaseline = 'alphabetic';
-  text(g, 'LANEWAR', r.x + 14, r.y + 22, 13, GOLD);
-  text(g, `WAVE ${run.wave}`, r.x + 14, r.y + 46, 22, WHITE);
-  // hearts, two rows when there are many
-  const hp = run.hero.hp, max = run.hero.maxHp;
-  const per = max > 13 ? Math.ceil(max / 2) : max, s = max > 13 ? 9 : 12;
-  const hx0 = r.x + 118;
-  for (let i = 0; i < max; i++) {
-    const row = Math.floor(i / per), col = i % per;
-    heart(g, hx0 + col * (s + 3), r.y + (max > 13 ? 12 : 20) + row * (s + 6), s, i < hp);
-  }
-  text(g, String(run.take), r.x + r.w - 14, r.y + 24, 18, GOLD, 'right');
-  text(g, `${run.felled} felled`, r.x + r.w - 14, r.y + 42, 11, CREAM, 'right', 700);
-  // the wave, as a bar: what is still to come and what is on the board
-  const left = run.queue.length + run.foes.length, total = waveSize(run.wave) + (run.wave % 5 === 0 ? 1 : 0);
-  const bw = r.w - 28, bx = r.x + 14, by = r.y + r.h - 7;
-  rr(g, bx, by, bw, 4, 2); g.fillStyle = NAVY_DEEP; g.fill();
-  const f = Math.max(0, Math.min(1, 1 - left / total));
-  if (f > 0) { rr(g, bx, by, Math.max(4, bw * f), 4, 2); g.fillStyle = TEAL; g.fill(); }
+  const hp = Math.max(0, Math.ceil(run.hero.hp)), max = run.stats.maxHp;
+  bar(g, r.x + 12, r.y + 10, r.w * 0.4, 16, hp / max, hp * 3 <= max ? '#ff3b2a' : CORAL);
+  text(g, `${hp} / ${max}`, r.x + 12 + r.w * 0.2, r.y + 23, 11.5, WHITE, 'center');
+  bar(g, r.x + 12, r.y + 32, r.w * 0.4, 9, run.xp / levelCost(run.level), TEAL);
+  text(g, `LEVEL ${run.level}`, r.x + 12, r.y + 54, 10.5, CREAM, 'left', 700);
+  if (run.slot.free > 0 && run.phase === 'wave') text(g, `${run.slot.free} free pull${run.slot.free > 1 ? 's' : ''}`, r.x + 12 + r.w * 0.4, r.y + 54, 10.5, GOLD, 'right', 800);
+  // the clock, which is the wave
+  const cx = r.x + r.w * 0.6;
+  text(g, `WAVE ${run.wave}`, cx, r.y + 20, 11.5, GOLD, 'center');
+  const secs = Math.max(0, Math.ceil(run.t));
+  text(g, run.phase === 'wave' ? String(secs) : '0', cx, r.y + 52, 30, run.phase === 'wave' && secs <= 5 ? GOLD : WHITE, 'center');
+  // tin
+  g.beginPath(); g.arc(r.x + r.w - 20, r.y + 22, 8, 0, Math.PI * 2); g.fillStyle = GOLD; g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke();
+  text(g, String(run.tin), r.x + r.w - 34, r.y + 28, 19, GOLD, 'right');
+  text(g, `${run.felled} felled`, r.x + r.w - 12, r.y + 52, 10.5, CREAM, 'right', 700);
 }
 
-function drawChips(g, run, FL) {
-  const ids = WEAPON_IDS.filter((id) => run.weapons[id]);
-  const perks = Object.keys(run.perks);
-  const n = ids.length + (perks.length ? 1 : 0);
-  const gap = 6, w = Math.min(96, (FL.chips.w - gap * (n - 1)) / n), h = FL.chips.h;
-  let x = FL.chips.x + (FL.chips.w - (w * n + gap * (n - 1))) / 2;
-  g.textBaseline = 'alphabetic';
-  for (const id of ids) {
-    const level = run.weapons[id], lv = WEAPONS[id].levels[level - 1];
-    const wait = id === 'oil' ? 0 : Math.max(0, (run.cool[id] || 0) - 1);
-    panel(g, rect(x, FL.chips.y, w, h), wait > 0 ? '#2a3156' : NAVY, 10, INK, 2.5);
-    g.fillStyle = FRAY_COLOURS[id]; g.fillRect(x + 6, FL.chips.y + 6, 4, h - 12);
-    fitText(g, SHORT[id], x + 14, FL.chips.y + 18, w - 18, 11.5, wait > 0 ? '#aab0d0' : WHITE);
-    // level pips, and under them the turns until it fires again
-    const pip = Math.min(6, (w - 20) / WEAPONS[id].levels.length - 1.5);
-    for (let i = 0; i < WEAPONS[id].levels.length; i++) {
-      g.fillStyle = i < level ? GOLD : '#39406e';
-      g.fillRect(x + 14 + i * (pip + 1.5), FL.chips.y + 23, pip, 5);
+/** The six hands, as tokens with tier pips. */
+function drawHands(g, run, r, size) {
+  const gap = 6, w = (r.w - gap * (SLOTS - 1)) / SLOTS;
+  for (let i = 0; i < SLOTS; i++) {
+    const x = r.x + i * (w + gap), wpn = run.weapons[i];
+    panel(g, rect(x, r.y, w, r.h), wpn ? NAVY : 'rgba(29,42,92,0.45)', 9, INK, 2);
+    if (!wpn) continue;
+    token(g, wpn.id, x + r.h / 2, r.y + r.h / 2, size);
+    fitText(g, WEAPONS[wpn.id].name, x + r.h + 1, r.y + r.h / 2 - 2, w - r.h - 4, 10.5, WHITE);
+    for (let t = 0; t < TIERS; t++) { g.fillStyle = t < wpn.tier ? TIER_COLOUR[wpn.tier - 1] : DIM; g.fillRect(x + r.h + 1 + t * 7, r.y + r.h / 2 + 4, 5.5, 5); }
+  }
+}
+
+function drawStick(g) {
+  if (!frayStick.on) return;
+  const { ox, oy } = frayStick;
+  let dx = frayStick.x - ox, dy = frayStick.y - oy;
+  const d = Math.hypot(dx, dy);
+  if (d > STICK_R) { dx *= STICK_R / d; dy *= STICK_R / d; }
+  g.globalAlpha = 0.35; g.beginPath(); g.arc(ox, oy, STICK_R + 8, 0, Math.PI * 2); g.fillStyle = NAVY_DEEP; g.fill();
+  g.globalAlpha = 0.5; g.lineWidth = 2.5; g.strokeStyle = WHITE; g.stroke();
+  g.globalAlpha = 0.85; g.beginPath(); g.arc(ox + dx, oy + dy, 22, 0, Math.PI * 2); g.fillStyle = WHITE; g.fill();
+  g.globalAlpha = 1;
+}
+
+const SPIN_NAMES = [...Object.keys(WEAPONS), ...Object.keys(ITEMS)];
+
+function button(g, r, label, sub, on, fill = NAVY, ink = GOLD) {
+  g.globalAlpha = on ? 1 : 0.4;
+  panel(g, r, fill, 12, on ? ink : INK, 2.5);
+  if (sub) { text(g, label, r.x + r.w / 2, r.y + r.h / 2 - 1, Math.min(17, r.h * 0.36), ink, 'center'); text(g, sub, r.x + r.w / 2, r.y + r.h / 2 + 14, 10.5, CREAM, 'center', 700); }
+  else { g.textBaseline = 'middle'; fitText(g, label, r.x + r.w / 2, r.y + r.h / 2 + 1, r.w - 10, Math.min(16, r.h * 0.42), ink, 'center'); g.textBaseline = 'alphabetic'; }
+  g.globalAlpha = 1;
+}
+
+function drawReels(g, run, FL, L, time) {
+  g.fillStyle = 'rgba(13,16,42,0.86)'; g.fillRect(0, 0, L.W, L.H);
+  const { slot } = run;
+  text(g, 'THE REELS', FL.title.x, FL.title.y, 26, GOLD, 'center');
+  text(g, `Wave ${run.wave} survived. Pull, then take one. Pairs and triples pay more.`, FL.title.x, FL.title.y + 18, 11, CREAM, 'center', 700);
+  // tin, top right of the column
+  text(g, `${run.tin} tin`, FL.reels[2].x + FL.reels[2].w, FL.title.y - 4, 15, GOLD, 'right');
+  for (let i = 0; i < 3; i++) {
+    const r = FL.reels[i], sym = slot.reels[i];
+    // reel i stops a third of the way through the spin after reel i - 1
+    const turning = slot.spinT > 0.6 - i * 0.3 && !(slot.held[i] && sym !== null && slot.spinT > 0) && sym !== null && slot.spinT > 0;
+    const m = sym !== null && slot.spinT <= 0 ? matches(run, i) : 1;
+    panel(g, r, CREAM, 14, m >= 3 ? GOLD : m === 2 ? TEAL : INK, m >= 2 ? 4.5 : 3);
+    if (sym === null) { g.textBaseline = 'middle'; text(g, '?', r.x + r.w / 2, r.y + r.h / 2, 46, '#d9cba0', 'center'); g.textBaseline = 'alphabetic'; }
+    else if (turning) {
+      const shown = SPIN_NAMES[Math.floor(time * 18 + i * 5) % SPIN_NAMES.length];
+      token(g, shown, r.x + r.w / 2, r.y + r.h * 0.4 + ((time * 9) % 1) * 14 - 7, r.w * 0.26);
+    } else {
+      const d = describe(run, i);
+      token(g, sym, r.x + r.w / 2, r.y + 12 + r.w * 0.24, r.w * 0.24);
+      fitText(g, d.name, r.x + r.w / 2, r.y + r.w * 0.48 + 32, r.w - 10, 14.5, INK, 'center');
+      g.font = font(10.5, 600); g.textAlign = 'center'; g.fillStyle = '#3a3f66';
+      wrap(g, d.text, r.x + r.w / 2, r.y + r.w * 0.48 + 47, r.w - 12, 12.5, 3);
+      if (d.mult >= 2 && slot.spinT <= 0) {
+        const tag = d.mult === 3 ? 'THREE!' : 'PAIR';
+        rr(g, r.x + r.w / 2 - 30, r.y - 9, 60, 18, 9); g.fillStyle = d.mult === 3 ? GOLD : TEAL; g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke();
+        text(g, tag, r.x + r.w / 2, r.y + 4, 10.5, INK, 'center');
+      }
     }
-    if (lv.every > 1) text(g, wait > 0 ? `in ${wait}` : 'ready', x + 14, FL.chips.y + 40, 9, wait > 0 ? CREAM : TEAL, 'left', 700);
-    x += w + gap;
+    const settled = slot.spinT <= 0 && sym !== null;
+    button(g, FL.take[i], 'TAKE', null, settled && canTake(run, i), NAVY, GOLD);
+    button(g, FL.hold[i], slot.held[i] ? 'HELD' : 'HOLD', null, settled, slot.held[i] ? TEAL : NAVY_DEEP, slot.held[i] ? INK : CREAM);
   }
-  if (perks.length) {
-    panel(g, rect(x, FL.chips.y, w, h), NAVY, 10, INK, 2.5);
-    const label = perks.map((p) => `${PERKS[p].name}${run.perks[p] > 1 ? ` ${run.perks[p]}` : ''}`).join(', ');
-    g.font = font(9, 700); g.textAlign = 'left'; g.fillStyle = CREAM;
-    wrap(g, label, x + 7, FL.chips.y + 15, w - 10, 11, 3);
+  const free = slot.free, cost = pullCost(run);
+  button(g, FL.pull, 'PULL', free > 0 ? `free: ${free} owed` : `${cost} tin`, canPull(run), free > 0 ? '#2f6d4f' : NAVY, GOLD);
+  drawHands(g, run, FL.load, FL.load.h * 0.3);
+  // the stats, two columns
+  const ids = Object.keys(STAT_LABEL), colW = FL.stats.w / 2, lh = Math.min(15, FL.stats.h / 5);
+  if (lh >= 9) {
+    ids.forEach((id, k) => {
+      const x = FL.stats.x + (k % 2) * colW, y = FL.stats.y + 11 + Math.floor(k / 2) * lh, v = run.stats[id];
+      text(g, STAT_LABEL[id], x + 4, y, Math.min(11, lh - 2), '#aab0d0', 'left', 700);
+      text(g, String(Math.round(v)), x + colW - 12, y, Math.min(11, lh - 2), v > (id === 'maxHp' ? 10 : 0) ? TEAL : WHITE, 'right');
+    });
   }
+  button(g, FL.next, `WAVE ${run.wave + 1}`, 'fight on', slot.spinT <= 0, '#2f6d4f', WHITE);
+  button(g, FL.home, 'HOME', `bank ${run.take}`, canLeave(run), NAVY, GOLD);
 }
 
-function drawDraft(g, run, FL, L, time) {
-  g.fillStyle = 'rgba(13,16,42,0.72)'; g.fillRect(0, 0, L.W, L.H);
-  const c0 = FL.cards[0];
-  g.textBaseline = 'alphabetic';
-  const owed = !canLeave(run);      // the pick left on the board last time
-  text(g, owed ? 'YOUR PICK' : `WAVE ${run.wave} CLEARED`, L.W / 2, c0.y - 30, 24, GOLD, 'center');
-  text(g, owed ? `Take one. Wave ${run.wave + 1} is waiting.` : 'Take one and fight on, or take the winnings home.', L.W / 2, c0.y - 10, 12.5, CREAM, 'center', 700);
-  run.offers.forEach((offer, i) => {
-    const r = FL.cards[i], d = describe(offer);
-    const bob = Math.sin(time * 2.2 + i) * 1.5;
-    const rc = rect(r.x, r.y + bob, r.w, r.h);
-    panel(g, rc, CREAM, 14);
-    const col = FRAY_COLOURS[offer.id] || GOLD;
-    rr(g, rc.x + 10, rc.y + 10, 46, rc.h - 20, 9); g.fillStyle = offer.kind === 'weapon' ? NAVY : '#5a3d8a'; g.fill();
-    text(g, String(i + 1), rc.x + 33, rc.y + rc.h / 2 + 9, 26, offer.kind === 'weapon' ? col : GOLD, 'center');
-    fitText(g, d.name, rc.x + 68, rc.y + 30, rc.w - 150, 19, INK);
-    const tag = d.isNew ? 'NEW' : offer.id === 'dressing' ? 'NOW' : `LEVEL ${d.level}`;
-    g.font = font(10.5, 800);
-    const tw = g.measureText(tag).width + 14;
-    rr(g, rc.x + rc.w - tw - 12, rc.y + 14, tw, 20, 10); g.fillStyle = d.isNew ? CORAL : NAVY; g.fill();
-    text(g, tag, rc.x + rc.w - 12 - tw / 2, rc.y + 28, 10.5, WHITE, 'center');
-    g.font = font(12.5, 600); g.textAlign = 'left'; g.fillStyle = '#3a3f66';
-    wrap(g, d.text, rc.x + 68, rc.y + 50, rc.w - 82, 15, 3);
-  });
-  if (owed) return;
-  panel(g, FL.leave, NAVY, 14, GOLD, 2.5);
-  text(g, `Take ${run.take} home`, L.W / 2, FL.leave.y + 24, 16, GOLD, 'center');
-  text(g, 'back to the table with a ball save; the pick keeps', L.W / 2, FL.leave.y + 41, 11, CREAM, 'center', 700);
-}
-
-function drawOver(g, run, FL, L) {
-  g.fillStyle = 'rgba(13,16,42,0.78)'; g.fillRect(0, 0, L.W, L.H);
+function drawOver(g, run, L) {
+  g.fillStyle = 'rgba(13,16,42,0.8)'; g.fillRect(0, 0, L.W, L.H);
   const w = Math.min(L.W - 40, 360), r = rect((L.W - w) / 2, L.H / 2 - 100, w, 200);
   panel(g, r, CREAM, 16);
-  g.textBaseline = 'alphabetic';
   text(g, 'FALLEN', L.W / 2, r.y + 48, 30, CORAL, 'center');
-  text(g, `at wave ${run.wave}, with ${run.felled} felled`, L.W / 2, r.y + 78, 14, INK, 'center', 700);
+  text(g, `in wave ${run.wave}, with ${run.felled} felled`, L.W / 2, r.y + 78, 14, INK, 'center', 700);
   text(g, `${Math.floor(run.take / 2)} of ${run.take} kept`, L.W / 2, r.y + 112, 18, NAVY, 'center');
-  text(g, 'Your weapons stay with you. The board steps back two waves.', L.W / 2, r.y + 140, 10.5, '#3a3f66', 'center', 600);
+  text(g, 'Your weapons, kit and tin stay. The board steps back two waves.', L.W / 2, r.y + 140, 10.5, '#3a3f66', 'center', 600);
   text(g, 'Tap to go back to the table', L.W / 2, r.y + 174, 13, NAVY, 'center');
 }
 
-const SHORT = { sabre: 'Sabre', pike: 'Pike', grape: 'Grape', flail: 'Flail', mortar: 'Mortar', oil: 'Oil' };
-const LETTER = { foot: '', lancer: 'L', grenadier: 'G', musket: 'M', captain: 'C' };
-
 /** The board, flat, for the 2D renderer. What the 3D view shows with tin, this shows with counters. */
 function drawBoard2d(g, run, FL, time) {
-  const b = FL.board, c = b.cell;
+  const b = FL.board, s = b.s, X = (x) => b.x + x * s, Y = (y) => b.y + y * s;
   panel(g, rect(b.x - 6, b.y - 6, b.w + 12, b.h + 12), '#7a4a22', 8);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    g.fillStyle = (x + y) % 2 ? FRAY_COLOURS.feltA : FRAY_COLOURS.feltB;
-    g.fillRect(b.x + x * c, b.y + y * c, c, c);
-  }
-  for (const f of run.fires) {
-    g.fillStyle = `rgba(255,154,42,${0.35 + 0.15 * Math.sin(time * 9 + f.x * 3 + f.y)})`;
-    g.fillRect(b.x + f.x * c, b.y + f.y * c, c, c);
-  }
-  // where the last turn's weapons landed
-  for (const e of run.events) {
-    if (e.type !== 'swing') continue;
-    g.fillStyle = FRAY_COLOURS[e.weapon]; g.globalAlpha = 0.3;
-    for (const [x, y] of e.cells) g.fillRect(b.x + x * c + 2, b.y + y * c + 2, c - 4, c - 4);
-    g.globalAlpha = 1;
-  }
-  g.textBaseline = 'middle';
+  g.fillStyle = FRAY_COLOURS.feltA; g.fillRect(b.x, b.y, b.w, b.h);
+  g.save(); g.beginPath(); g.rect(b.x, b.y, b.w, b.h); g.clip();
+  for (const f of run.fires) { g.globalAlpha = 0.35 + 0.1 * Math.sin(time * 9 + f.x); g.beginPath(); g.arc(X(f.x), Y(f.y), f.r * s, 0, Math.PI * 2); g.fillStyle = FRAY_COLOURS.flask; g.fill(); }
+  g.globalAlpha = 1;
+  for (const sh of run.shells) { g.beginPath(); g.arc(X(sh.x), Y(sh.y), sh.r * s, 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = CORAL; g.setLineDash([5, 4]); g.stroke(); g.setLineDash([]); }
+  for (const m of run.marks) { const k = 5 + 4 * (m.t % 0.3); g.lineWidth = 3; g.strokeStyle = CORAL; g.beginPath(); g.moveTo(X(m.x) - k, Y(m.y) - k); g.lineTo(X(m.x) + k, Y(m.y) + k); g.moveTo(X(m.x) + k, Y(m.y) - k); g.lineTo(X(m.x) - k, Y(m.y) + k); g.stroke(); }
+  for (const d of run.drops) { g.beginPath(); g.arc(X(d.x), Y(d.y), 3.5, 0, Math.PI * 2); g.fillStyle = GOLD; g.fill(); g.lineWidth = 1; g.strokeStyle = INK; g.stroke(); }
   for (const f of run.foes) {
-    const cx = b.x + (f.x + 0.5) * c, cy = b.y + (f.y + 0.5) * c, big = f.kind === 'captain' ? 0.46 : f.kind === 'grenadier' ? 0.4 : 0.32;
-    if (f.aim) { g.strokeStyle = CORAL; g.lineWidth = 2; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(cx, cy); g.lineTo(b.x + (run.hero.x + 0.5) * c, b.y + (run.hero.y + 0.5) * c); g.stroke(); g.setLineDash([]); }
-    g.beginPath(); g.arc(cx, cy, c * big, 0, Math.PI * 2); g.fillStyle = FRAY_COLOURS[f.kind]; g.fill();
+    const def = FOES[f.kind];
+    if (f.state === 'wind' || f.state === 'aim') { g.strokeStyle = CORAL; g.lineWidth = 2; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(X(f.x), Y(f.y)); g.lineTo(X(f.x + f.cx * 4), Y(f.y + f.cy * 4)); g.stroke(); g.setLineDash([]); }
+    g.beginPath(); g.arc(X(f.x), Y(f.y), def.r * s, 0, Math.PI * 2); g.fillStyle = f.flash > 0 ? WHITE : FRAY_COLOURS[f.kind]; g.fill();
     g.lineWidth = 2; g.strokeStyle = INK; g.stroke();
-    if (LETTER[f.kind]) text(g, LETTER[f.kind], cx, cy + 1, c * 0.34, f.kind === 'musket' ? INK : WHITE, 'center');
   }
-  const hx = b.x + (run.hero.x + 0.5) * c, hy = b.y + (run.hero.y + 0.5) * c;
-  g.beginPath(); g.arc(hx, hy, c * 0.4, 0, Math.PI * 2); g.fillStyle = FRAY_COLOURS.hero; g.fill();
+  for (const sh of run.shots) { g.beginPath(); g.arc(X(sh.x), Y(sh.y), 3, 0, Math.PI * 2); g.fillStyle = WHITE; g.fill(); }
+  for (const sh of run.bolts) { g.beginPath(); g.arc(X(sh.x), Y(sh.y), 4, 0, Math.PI * 2); g.fillStyle = CORAL; g.fill(); g.lineWidth = 1.5; g.strokeStyle = INK; g.stroke(); }
+  // melee, from the run's log: the last few swings as fading arcs
+  for (const e of run.fx) {
+    if (e.type !== 'swing' || run.fxN - e.n > 14) continue;
+    g.globalAlpha = 0.5; g.lineWidth = 5; g.strokeStyle = FRAY_COLOURS[e.weapon]; g.beginPath();
+    if (e.weapon === 'flail') g.arc(X(run.hero.x), Y(run.hero.y), e.r * s, 0, Math.PI * 2);
+    else if (e.weapon === 'pike') { g.moveTo(X(run.hero.x), Y(run.hero.y)); g.lineTo(X(run.hero.x + Math.cos(e.a) * e.r), Y(run.hero.y + Math.sin(e.a) * e.r)); }
+    else g.arc(X(run.hero.x), Y(run.hero.y), e.r * s, e.a - 1, e.a + 1);
+    g.stroke(); g.globalAlpha = 1;
+  }
+  const blink = run.hero.inv > 0 && Math.floor(time * 16) % 2 === 0;
+  g.beginPath(); g.arc(X(run.hero.x), Y(run.hero.y), 0.4 * s, 0, Math.PI * 2); g.fillStyle = blink ? WHITE : FRAY_COLOURS.hero; g.fill();
   g.lineWidth = 3; g.strokeStyle = INK; g.stroke();
-  g.beginPath(); g.moveTo(hx + run.hero.face[0] * c * 0.2, hy + run.hero.face[1] * c * 0.2); g.lineTo(hx + run.hero.face[0] * c * 0.62, hy + run.hero.face[1] * c * 0.62);
-  g.lineWidth = 4; g.strokeStyle = WHITE; g.stroke();
-  g.textBaseline = 'alphabetic';
-  frayScreen.x = hx; frayScreen.y = hy; frayScreen.cell = c; frayScreen.n = run.n;
+  g.restore();
 }
 
 /**
@@ -303,23 +330,27 @@ export function drawFray(g, game, fx, L, opts = {}) {
   g.globalAlpha = 1; g.setLineDash([]); g.textBaseline = 'alphabetic';
   if (opts.clear) { g.fillStyle = INK; g.fillRect(0, 0, L.W, L.H); }
   if (opts.board) drawBoard2d(g, run, FL, time);
+  if (run.phase === 'shop') drawReels(g, run, FL, L, time);
   drawTop(g, run, FL);
-  drawChips(g, run, FL);
-  if (run.phase === 'turn') {
-    const hint = fx.touch ? 'Swipe to move and face. Tap yourself to stand.' : 'Arrows or WASD to move and face. Space to stand.';
-    text(g, hint, FL.hint.x, FL.hint.y, 11.5, CREAM, 'center', 700);
-  } else if (run.phase === 'draft') drawDraft(g, run, FL, L, time);
-  else if (run.phase === 'over') drawOver(g, run, FL, L);
-  // the table's own callouts (the wave, what was carried home) ride over everything
-  const toast = game.toasts[game.toasts.length - 1];
-  if (toast && toast.t < 1.6 && run.phase === 'turn') {
-    g.globalAlpha = Math.min(1, (1.6 - toast.t) * 3);
-    fitText(g, toast.text.toUpperCase(), L.W / 2, FL.board.y + 34, L.W - 60, 26, GOLD, 'center');
-    g.globalAlpha = 1;
-  }
+  if (run.phase === 'wave') {
+    drawHands(g, run, FL.slots, FL.slots.h * 0.3);
+    drawStick(g);
+    if (run.time < 4 && run.cleared === 0) {
+      const hint = fx.touch ? 'Drag anywhere to move. Your weapons fire by themselves.' : 'WASD or arrows to move. Your weapons fire by themselves.';
+      g.globalAlpha = Math.min(1, 4 - run.time);
+      text(g, hint, L.W / 2, FL.area.y + 28, 13, WHITE, 'center');
+      g.globalAlpha = 1;
+    }
+    // the table's callouts (the wave) ride over the board
+    const toast = game.toasts[game.toasts.length - 1];
+    if (toast && toast.t < 1.4) {
+      g.globalAlpha = Math.min(1, (1.4 - toast.t) * 3);
+      fitText(g, toast.text.toUpperCase(), L.W / 2, FL.area.y + 70, L.W - 60, 26, GOLD, 'center');
+      g.globalAlpha = 1;
+    }
+  } else if (run.phase === 'over') drawOver(g, run, L);
   g.restore();
   return FL;
 }
 
-/** For whoever needs the names without importing the core twice. */
-export const FRAY_FOES = FOES;
+export const FRAY_PAYS = MULT_PAYS;

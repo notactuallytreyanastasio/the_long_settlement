@@ -11061,5 +11061,82 @@
   },
   "newNodes": [],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-11T02:10:44.765Z",
+  "files": 2609,
+  "lines": 81653,
+  "bytes": 81715575,
+  "linesByDir": {
+   ".": 190,
+   "assets/voice": 12325,
+   "src/content": 7830,
+   "src/core": 3781,
+   "src/shell": 48684,
+   "story/BIBLE.md": 1710,
+   "test/content.test.js": 360,
+   "test/economy.test.js": 351,
+   "test/ending.test.js": 384,
+   "test/game.test.js": 1226,
+   "test/gl-layout.test.js": 119,
+   "test/gl-pure.test.js": 307,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 479,
+   "test/rng.test.js": 102,
+   "test/shell.test.js": 129,
+   "test/slot.test.js": 240,
+   "test/stage.test.js": 664,
+   "test/story.test.js": 228,
+   "test/tables.test.js": 522,
+   "tools/gl-characters.html": 270,
+   "tools/gl-demo.html": 438,
+   "tools/gl-perf.html": 259,
+   "tools/gl-set.html": 100,
+   "tools/gl-table.html": 179,
+   "tools/render-voices.mjs": 353,
+   "tools/serve.mjs": 99
+  },
+  "changed": [
+   "M src/core/game.js",
+   "M src/shell/audio.js",
+   "M src/shell/fray-view.js",
+   "D src/shell/gl/fray3d.js",
+   "D test/fray.test.js"
+  ],
+  "tests": {
+   "total": 301,
+   "pass": 269,
+   "fail": 32,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 1,
+   "ms": 11379,
+   "failures": [
+    "a commons book plays the commons ending and no line of the other",
+    "a mint book plays the mint ending and no line of the other",
+    "once read, the ending does not change sides, whatever the books do afterwards",
+    "the reading counts the trust of the scene that takes it, and is level-is-commons like the ledger",
+    "before the final chapter a lean line follows the live books and nothing is frozen",
+    "a cinematic whose every line belongs to the other ending is passed over, like an empty one",
+    "save and load: the reading is kept; a v:3 save has none; a bad one is refused",
+    "preloadIds asks only for the lines this ledger will hear",
+    "playthrough: title to end across two chapters, with no slot screen anywhere",
+    "load: restores the start of the saved scene, at the table, from any mode",
+    "load: a v:1 save, written at the slot screen that no longer exists, loads into play",
+    "load: a save written by the game round-trips"
+   ]
+  },
+  "nodes": {
+   "goal": 12,
+   "option": 24,
+   "decision": 8,
+   "observation": 14,
+   "action": 13,
+   "revisit": 1,
+   "outcome": 10
+  },
+  "newNodes": [],
+  "skippedLarge": []
  }
 ]
