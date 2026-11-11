@@ -139,7 +139,11 @@ export function createInput(canvas, { mode, layout, onMsg, onMute, fray = () => 
     if (m === 'play') {
       if (inCircle(L.launch, x, y)) { touches.set(e.pointerId, 'plunge'); return; }
       if (!touch) return;                         // in play a mouse has a keyboard beside it
-      touches.set(e.pointerId, e.clientX < win.innerWidth / 2 ? 'left' : 'right');
+      // Which half: by the middle of the canvas as it lies on the glass, not by innerWidth. The canvas is centred,
+      // so the two agree, except when iOS reports an innerWidth that is not the glass (after a zoom, or a turn of
+      // the phone it has not finished with): then every touch read as left and the right flipper went dead.
+      const box = canvas.getBoundingClientRect();
+      touches.set(e.pointerId, e.clientX < box.left + box.width / 2 ? 'left' : 'right');
       return;
     }
     if (m === 'cine') {
@@ -189,6 +193,17 @@ export function createInput(canvas, { mode, layout, onMsg, onMute, fray = () => 
     frayDown.clear();
     stickId = null; frayStick.on = false;
   }
+  // iOS does not always say when a finger has gone: one that slides off the edge of the glass or into the home
+  // bar's swipe can end with no pointerup and no pointercancel. Its zone then stays held for ever, and a flipper
+  // held up cannot flip: "the right flipper goes dead" (and turning the phone, which calls release(), brought it
+  // back). The touch events do say how many fingers are down, so when that is none, nothing is held.
+  function onTouchCount(e) {
+    if (e.touches && e.touches.length === 0 && (touches.size > 0 || frayDown.size > 0 || stickId !== null)) {
+      touches.clear();
+      // a tap at the reels is finished by its pointerup, which comes after touchend: leave those for it
+      if (stickId !== null) { stickId = null; frayStick.on = false; }
+    }
+  }
   const stop = (e) => e.preventDefault();
   // iOS: a second finger must not become a pinch, a drag must not scroll or rubber-band the page.
   const stopOnPage = (e) => { if (e.target === canvas || e.target === doc.body || e.target === doc.documentElement) e.preventDefault(); };
@@ -201,6 +216,8 @@ export function createInput(canvas, { mode, layout, onMsg, onMute, fray = () => 
   win.addEventListener('pointerup', onPointerUp);
   win.addEventListener('pointercancel', onPointerUp);
   doc.addEventListener('touchmove', stopOnPage, { passive: false });
+  doc.addEventListener('touchend', onTouchCount, { passive: true });
+  doc.addEventListener('touchcancel', onTouchCount, { passive: true });
   doc.addEventListener('gesturestart', stop);   // Safari's own pinch event
   doc.addEventListener('dblclick', stop);
   canvas.addEventListener('contextmenu', stop);
@@ -226,6 +243,8 @@ export function createInput(canvas, { mode, layout, onMsg, onMute, fray = () => 
       win.removeEventListener('pointerup', onPointerUp);
       win.removeEventListener('pointercancel', onPointerUp);
       doc.removeEventListener('touchmove', stopOnPage);
+      doc.removeEventListener('touchend', onTouchCount);
+      doc.removeEventListener('touchcancel', onTouchCount);
       doc.removeEventListener('gesturestart', stop);
       doc.removeEventListener('dblclick', stop);
       canvas.removeEventListener('contextmenu', stop);
