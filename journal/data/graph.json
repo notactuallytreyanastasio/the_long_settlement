@@ -1204,6 +1204,90 @@
    "prompt": "but with slot machine loadouts",
    "files": [],
    "commit": null
+  },
+  {
+   "id": "9abc6f1c-5c7f-420c-8610-e6ce3641b3b7",
+   "type": "observation",
+   "status": "active",
+   "title": "With the first numbers the simulated player was never touched: figures had to be faster (foot 2.3 against the hero's 4.0), come in groups of 3 + wave, and gain hearts quadratically, while kit and levels were made to cost more",
+   "description": null,
+   "created": "2026-11-11T02:28:18.713960Z",
+   "updated": "2026-11-11T02:28:18.713960Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "74f3e21f-b6a3-4154-a7a6-96e3e5bdb1b7",
+   "type": "observation",
+   "status": "active",
+   "title": "A table bot that plays the board well climbs to minute-long waves of ninety figures sixty times a game (suite 108 s); it now stands still and falls, and the board has its own tests (suite 42 s)",
+   "description": null,
+   "created": "2026-11-11T02:28:18.717737Z",
+   "updated": "2026-11-11T02:28:18.717737Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "a30ae8a9-b715-40ef-b602-85e0db2e2bf6",
+   "type": "observation",
+   "status": "active",
+   "title": "A visit is now a wave or more of real time, so the table needs 60 hits to set the board, not 30",
+   "description": null,
+   "created": "2026-11-11T02:28:18.719921Z",
+   "updated": "2026-11-11T02:28:18.719921Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "360a5ad6-8432-4149-815f-0a8752d33b27",
+   "type": "action",
+   "status": "completed",
+   "title": "Rewrite core/fray.js, fray-view.js, gl/fray3d.js and the fray handlers for real time and the reels; save v6",
+   "description": "Stick movement (drag anywhere, WASD), up to six self-aiming weapons in four tiers (sabre, pike, flail, pistol, scattergun, mortar, lamp oil), five figure kinds with marked spawns, timed waves 20-60 s, tin as coin and experience, levels give a heart and a free pull. Reels: pull, hold, take one; pair doubles, triple pays fourfold or three tiers. The turn-based files are kept in the scratchpad, not the tree.",
+   "created": "2026-11-11T02:28:18.722226Z",
+   "updated": "2026-11-11T02:28:18.722226Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [
+    "src/core/fray.js",
+    "src/core/game.js",
+    "src/core/types.js",
+    "src/shell/fray-view.js",
+    "src/shell/gl/fray3d.js",
+    "src/shell/gl/app.js",
+    "src/shell/input.js",
+    "src/shell/audio.js",
+    "test/fray.test.js",
+    "test/playthrough.test.js",
+    "test/stage.test.js",
+    "test/game.test.js",
+    "test/ending.test.js"
+   ],
+   "commit": null
+  },
+  {
+   "id": "0d35a434-3c83-4704-a29b-299a2fe2ac98",
+   "type": "outcome",
+   "status": "completed",
+   "title": "Real-time Lanewar with slot-machine loadouts plays end to end in the browser; 322/322 tests",
+   "description": "Headless Chrome, emulated iPhone, desktop 1280x800 and ?gl=0: saucer in, a simulated thumb steering by real pointer events, wave 1 survived, PULL/HOLD/TAKE by real taps, a wave-9 crowd of 73 at 16.7 ms a frame (40 draws), a fall and the return to play. Not done: not played by a person yet, tokens are two letters not pictures, no damage numbers, score from the board is large beside the table's.",
+   "created": "2026-11-11T02:28:18.724762Z",
+   "updated": "2026-11-11T02:28:18.724762Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1766,6 +1850,41 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-11T02:02:42.033588Z"
+  },
+  {
+   "from": "f4316f07-c8a0-4dd7-90e1-aa96be88e98b",
+   "to": "9abc6f1c-5c7f-420c-8610-e6ce3641b3b7",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T02:28:18.716871Z"
+  },
+  {
+   "from": "f4316f07-c8a0-4dd7-90e1-aa96be88e98b",
+   "to": "74f3e21f-b6a3-4154-a7a6-96e3e5bdb1b7",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T02:28:18.719270Z"
+  },
+  {
+   "from": "f4316f07-c8a0-4dd7-90e1-aa96be88e98b",
+   "to": "a30ae8a9-b715-40ef-b602-85e0db2e2bf6",
+   "type": "leads_to",
+   "rationale": "Observed during work",
+   "created": "2026-11-11T02:28:18.721542Z"
+  },
+  {
+   "from": "f4316f07-c8a0-4dd7-90e1-aa96be88e98b",
+   "to": "360a5ad6-8432-4149-815f-0a8752d33b27",
+   "type": "leads_to",
+   "rationale": "Implementation",
+   "created": "2026-11-11T02:28:18.724171Z"
+  },
+  {
+   "from": "360a5ad6-8432-4149-815f-0a8752d33b27",
+   "to": "0d35a434-3c83-4704-a29b-299a2fe2ac98",
+   "type": "leads_to",
+   "rationale": "Result",
+   "created": "2026-11-11T02:28:18.726586Z"
   }
  ]
 }
