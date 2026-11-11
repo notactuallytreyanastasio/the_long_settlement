@@ -1120,6 +1120,20 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "437e7635-26fb-4c95-87f1-bbdc22ac52ea",
+   "type": "observation",
+   "status": "pending",
+   "title": "User played Lanewar: \"the combt sucks and makes no sense\"",
+   "description": "The first combat design (one swipe moves and faces, weapons fire by themselves on hidden counts, figures trade blows) was rejected on play. No specifics given yet. My reading: nothing you do visibly causes the kills, and nothing shows what will hit you.",
+   "created": "2026-11-11T01:05:52.291927Z",
+   "updated": "2026-11-11T01:05:52.291927Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1640,6 +1654,13 @@
    "type": "leads_to",
    "rationale": "Result",
    "created": "2026-11-11T00:19:30.444047Z"
+  },
+  {
+   "from": "41e8b471-f43c-43a0-8e94-766122165ae6",
+   "to": "437e7635-26fb-4c95-87f1-bbdc22ac52ea",
+   "type": "leads_to",
+   "rationale": null,
+   "created": "2026-11-11T01:05:52.294423Z"
   }
  ]
 }
