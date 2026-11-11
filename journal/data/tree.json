@@ -12485,6 +12485,11 @@
   "lines": 730
  },
  {
+  "path": "src/shell/fray-view.js",
+  "bytes": 16841,
+  "lines": 322
+ },
+ {
   "path": "src/shell/gl/app.js",
   "bytes": 35878,
   "lines": 619
