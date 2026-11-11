@@ -1134,6 +1134,62 @@
    "prompt": null,
    "files": [],
    "commit": null
+  },
+  {
+   "id": "ff56b576-c981-4870-8f57-f23c678fc835",
+   "type": "goal",
+   "status": "active",
+   "title": "Remake Lanewar's combat as a real-time arena survivor",
+   "description": "Said in answer to 'What should a turn be instead?' after 'the combt sucks and makes no sense'. Taken as the genre and its loop, with Lanewar's own tin world, names and art: not a copy of that game's characters, items or look.",
+   "created": "2026-11-11T02:01:59.840011Z",
+   "updated": "2026-11-11T02:01:59.840011Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": "do it like brotato",
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "80fbb588-0a6c-456c-be27-25092ce8e0f4",
+   "type": "option",
+   "status": "completed",
+   "title": "Real time: move with a stick, up to six weapons aim and fire by themselves, timed waves, tin dropped by kills buys weapons and items in a shop between waves, level-ups give stat picks",
+   "description": null,
+   "created": "2026-11-11T02:01:59.843594Z",
+   "updated": "2026-11-11T02:01:59.843594Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "10f82cd0-48bb-47b4-b78b-3afb8d3c6536",
+   "type": "option",
+   "status": "rejected",
+   "title": "Keep it turn based and only borrow the shop and stats",
+   "description": "The request this replaces said turn based, but the game named is real time and its feel is the point of naming it",
+   "created": "2026-11-11T02:01:59.844815Z",
+   "updated": "2026-11-11T02:01:59.844815Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
+  },
+  {
+   "id": "241464a5-9ce8-4fa9-9a86-125e884199af",
+   "type": "decision",
+   "status": "completed",
+   "title": "Lanewar becomes real time with auto-aiming weapons, timed waves, level-ups and a shop; beats keeping turns",
+   "description": "The newer instruction names a real-time game after playing and rejecting the turn-based one. Entry from the saucer, score-only payout, the tin-soldier board and instanced crowd all stay.",
+   "created": "2026-11-11T02:01:59.846281Z",
+   "updated": "2026-11-11T02:01:59.846281Z",
+   "branch": "main",
+   "confidence": null,
+   "prompt": null,
+   "files": [],
+   "commit": null
   }
  ],
  "edges": [
@@ -1661,6 +1717,34 @@
    "type": "leads_to",
    "rationale": null,
    "created": "2026-11-11T01:05:52.294423Z"
+  },
+  {
+   "from": "323e4f39-3319-413b-bf3e-210a7ef1b273",
+   "to": "ff56b576-c981-4870-8f57-f23c678fc835",
+   "type": "leads_to",
+   "rationale": "Continuation from previous context",
+   "created": "2026-11-11T02:01:59.842768Z"
+  },
+  {
+   "from": "241464a5-9ce8-4fa9-9a86-125e884199af",
+   "to": "80fbb588-0a6c-456c-be27-25092ce8e0f4",
+   "type": "chosen",
+   "rationale": "The newer instruction names a real-time game after playing and rejecting the turn-based one. Entry from the saucer, score-only payout, the tin-soldier board and instanced crowd all stay.",
+   "created": "2026-11-11T02:01:59.848491Z"
+  },
+  {
+   "from": "241464a5-9ce8-4fa9-9a86-125e884199af",
+   "to": "10f82cd0-48bb-47b4-b78b-3afb8d3c6536",
+   "type": "rejected",
+   "rationale": "The newer instruction names a real-time game after playing and rejecting the turn-based one. Entry from the saucer, score-only payout, the tin-soldier board and instanced crowd all stay.",
+   "created": "2026-11-11T02:01:59.850111Z"
+  },
+  {
+   "from": "ff56b576-c981-4870-8f57-f23c678fc835",
+   "to": "241464a5-9ce8-4fa9-9a86-125e884199af",
+   "type": "leads_to",
+   "rationale": "Decided",
+   "created": "2026-11-11T02:01:59.851658Z"
   }
  ]
 }

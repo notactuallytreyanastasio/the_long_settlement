@@ -10859,5 +10859,69 @@
    "437e7635-26fb-4c95-87f1-bbdc22ac52ea"
   ],
   "skippedLarge": []
+ },
+ {
+  "at": "2026-11-11T02:02:34.354Z",
+  "files": 2611,
+  "lines": 82280,
+  "bytes": 81750149,
+  "linesByDir": {
+   ".": 190,
+   "assets/voice": 12325,
+   "src/content": 7830,
+   "src/core": 3744,
+   "src/shell": 48999,
+   "story/BIBLE.md": 1710,
+   "test/content.test.js": 360,
+   "test/economy.test.js": 351,
+   "test/ending.test.js": 384,
+   "test/fray.test.js": 349,
+   "test/game.test.js": 1226,
+   "test/gl-layout.test.js": 119,
+   "test/gl-pure.test.js": 307,
+   "test/physics.test.js": 324,
+   "test/playthrough.test.js": 479,
+   "test/rng.test.js": 102,
+   "test/shell.test.js": 129,
+   "test/slot.test.js": 240,
+   "test/stage.test.js": 664,
+   "test/story.test.js": 228,
+   "test/tables.test.js": 522,
+   "tools/gl-characters.html": 270,
+   "tools/gl-demo.html": 438,
+   "tools/gl-perf.html": 259,
+   "tools/gl-set.html": 100,
+   "tools/gl-table.html": 179,
+   "tools/render-voices.mjs": 353,
+   "tools/serve.mjs": 99
+  },
+  "changed": [],
+  "tests": {
+   "total": 318,
+   "pass": 318,
+   "fail": 0,
+   "skipped": 0,
+   "todo": 0,
+   "timedOut": false,
+   "exit": 0,
+   "ms": 49414,
+   "failures": []
+  },
+  "nodes": {
+   "goal": 12,
+   "option": 24,
+   "decision": 7,
+   "observation": 14,
+   "action": 13,
+   "revisit": 1,
+   "outcome": 10
+  },
+  "newNodes": [
+   "ff56b576-c981-4870-8f57-f23c678fc835",
+   "80fbb588-0a6c-456c-be27-25092ce8e0f4",
+   "10f82cd0-48bb-47b4-b78b-3afb8d3c6536",
+   "241464a5-9ce8-4fa9-9a86-125e884199af"
+  ],
+  "skippedLarge": []
  }
 ]
