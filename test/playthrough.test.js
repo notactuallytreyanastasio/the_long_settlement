@@ -193,11 +193,17 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
       send({ type: 'tick', dt: STEP, input: bot(table, game) });
       row.seconds += STEP; tableSeconds += STEP;
     } else if (game.mode === 'fray') {
-      // Lanewar: the bot plays two waves with fray.suggest and takes the winnings home, or falls trying
+      // Lanewar: the bot survives a wave with fray.suggest on the stick, takes what the reels give, and goes home; or falls trying
       const { run } = game;
       if (run.phase === 'over') send({ type: 'confirm' });
-      else if (run.phase === 'draft') send(run.cleared >= 2 ? { type: 'fray', leave: true } : { type: 'fray', pick: suggest(run) });
-      else send({ type: 'fray', act: suggest(run) });
+      else if (run.phase === 'wave') send({ type: 'tick', dt: STEP, input: { ...IDLE, move: suggest(run) } });
+      else {
+        const s = suggest(run);
+        if (s === null) send({ type: 'tick', dt: STEP, input: IDLE });
+        else if (s.pull) send({ type: 'fray', pull: true });
+        else if (s.take !== undefined) send({ type: 'fray', take: s.take });
+        else send({ type: 'fray', leave: true });
+      }
     } else {
       throw new Error(`playthrough: unknown mode ${game.mode}`);
     }

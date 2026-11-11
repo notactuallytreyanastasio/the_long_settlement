@@ -308,8 +308,8 @@ test('a cinematic whose every line belongs to the other ending is passed over, l
 });
 
 test('save and load: the reading is kept; a v:3 save has none; a bad one is refused', () => {
-  assert.equal(SAVE_VERSION, 5);
-  assert.deepEqual(LOADABLE_SAVES, [1, 2, 3, 4, 5]);
+  assert.equal(SAVE_VERSION, 6);
+  assert.deepEqual(LOADABLE_SAVES, [1, 2, 3, 4, 5, 6]);
   const r = run(at(1, 1, mintBook()), (g) => g.scene === 2 && g.mode === 'play');
   const [save] = saves(r.effects);
   assert.equal(save.ending, 'mint');
@@ -328,7 +328,7 @@ test('save and load: the reading is kept; a v:3 save has none; a bad one is refu
   let old = update(content, init(9), { type: 'load', save: v3 }).game;
   assert.equal(old.ending, null);
   assert.equal(old.econ.hatsRefused, 0);
-  assert.deepEqual([toSave(old).v, toSave(old).ending], [5, null]);
+  assert.deepEqual([toSave(old).v, toSave(old).ending], [6, null]);
   // it is past the scene that would have read the ledger: the last objective reads it instead
   old = run(old, (g) => g.mode === 'end');
   assert.equal(old.game.ending, 'commons');

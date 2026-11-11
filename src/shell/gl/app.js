@@ -40,7 +40,7 @@ import { SETS } from './sets/index.js';
 import { drawHud, HUD_BAND_HEAD, HUD_BAND_FOOT } from './hud.js';
 import { createDirector } from './stage.js';
 import { createFrayView } from './fray3d.js';
-import { frayLayout, frayScreen } from '../fray-view.js';
+import { frayLayout } from '../fray-view.js';
 
 const INK = '#1d2146';
 const INK_RGB = GL.rgb(INK);     // the same ink as the renderer's frame clear
@@ -493,10 +493,9 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
 
   // ───────────────────────── Lanewar ─────────────────────────
   // The board has its own scene and camera, built the first time the saucer opens it (about 20 ms). It is drawn
-  // into the rectangle fray-view.js leaves between the HUD's head and foot, and where the hero comes out on the
-  // glass is written back for the touch target.
+  // over the whole canvas, framed for the rectangle fray-view.js leaves between the HUD's head and foot.
   let frayView = null;
-  const frayRect = { x: 0, y: 0, w: 0, h: 0, shadowCenter: null, shadowRadius: 0 }, frayAt = [0, 0], frayBeside = [0, 0, 0], frayAt2 = [0, 0];
+  const frayRect = { x: 0, y: 0, w: 0, h: 0, shadowCenter: null, shadowRadius: 0 };
   function drawFrayBoard(game, fx, layout, time, dt, k) {
     if (!game.run) throw new Error('gl/app: mode fray with no run');
     if (!frayView) { frayView = createFrayView(GL); frayRect.shadowCenter = frayView.view.shadowCenter; frayRect.shadowRadius = frayView.view.shadowRadius; app.stats.built++; }
@@ -509,11 +508,6 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
     renderer.prepare(frayView.scene, cam, time, frayRect);
     count(renderer.render(frayView.scene, cam, time, frayRect), 'fray');
     renderer.end();
-    const h = frayView.hero;
-    frayBeside[0] = h[0] + 1; frayBeside[1] = h[1]; frayBeside[2] = h[2];
-    if (GL.projectTo(cam, h, frayRect, frayAt) && GL.projectTo(cam, frayBeside, frayRect, frayAt2)) {
-      frayScreen.x = frayAt[0] / k; frayScreen.y = frayAt[1] / k; frayScreen.cell = Math.abs(frayAt2[0] - frayAt[0]) / k; frayScreen.n = game.run.n;
-    }
   }
 
   function drawHudPass(content, game, fx, layout, cssW, cssH, k, stage, isStage) {

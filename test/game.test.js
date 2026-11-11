@@ -309,7 +309,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.equal(r.game.mode, 'play');
   assert.equal(r.game.cine, null);
   assert.deepEqual(moods(r.effects), ['tense']);
-  assert.deepEqual(saves(r.effects), [{ v: 5, chapter: 0, scene: 0, econ: initEcon(), seed: seed(7).s, reels: FRESH_SAVED, ending: null, fray: newMeta() }]);
+  assert.deepEqual(saves(r.effects), [{ v: 6, chapter: 0, scene: 0, econ: initEcon(), seed: seed(7).s, reels: FRESH_SAVED, ending: null, fray: newMeta() }]);
 
   // no writ, so no ball: the table is empty and the plunger button is the lever
   assert.equal(leverStatus(content, r.game), 'wait', 'not in the instant play begins');
@@ -410,7 +410,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   assert.deepEqual([r.game.hits, r.game.seq], [{}, 0]);
   assert.equal(r.effects[0].type, 'hush');
   assert.deepEqual(saves(r.effects), [toSave(r.game)]);
-  assert.deepEqual([saves(r.effects)[0].v, saves(r.effects)[0].chapter, saves(r.effects)[0].scene], [5, 0, 1]);
+  assert.deepEqual([saves(r.effects)[0].v, saves(r.effects)[0].chapter, saves(r.effects)[0].scene], [6, 0, 1]);
   assert.deepEqual(moods(r.effects), ['tense']);
   assert.equal(r.game.boons.ballSave, 5);
   assert.deepEqual(litIds(content, r.game), ['r3']);
@@ -451,7 +451,7 @@ test('playthrough: title to end across two chapters, with no slot screen anywher
   r = send(r.game, CONFIRM);
   assert.equal(r.game.mode, 'play');
   assert.deepEqual(moods(r.effects), ['mine']);
-  assert.deepEqual(saves(r.effects).map((s) => [s.v, s.chapter, s.scene]), [[5, 1, 0]]);
+  assert.deepEqual(saves(r.effects).map((s) => [s.v, s.chapter, s.scene]), [[6, 1, 0]]);
 
   // no rigged pull here, and with the writs gone the lever is a real, paid draw from the rng
   r = ticks({ ...r.game, econ: { ...r.game.econ, writs: 0 } }, seconds(LEVER_DELAY) + 2);
@@ -641,7 +641,7 @@ test('load: restores the start of the saved scene, at the table, from any mode',
   assert.deepEqual(r.game.reels, init(1).reels, 'fresh reels');
   assert.equal(r.game.spunThisChapter, true, 'past scene 0 the rigged pull is history');
   assert.deepEqual(r.effects, [{ type: 'hush' }, { type: 'music', mood: 'tense' }]);
-  assert.deepEqual(toSave(r.game), { ...save, v: 5, reels: FRESH_SAVED, ending: null, fray: newMeta() }, 'a loaded v:2 game saves back as v:5, with its reels and no reading of the ledger');
+  assert.deepEqual(toSave(r.game), { ...save, v: 6, reels: FRESH_SAVED, ending: null, fray: newMeta() }, 'a loaded v:2 game saves back as v:6, with its reels and no reading of the ledger');
 
   // the writs bring a ball, and the scene's briefing is spoken again when it is launched
   r = playUntil(r.game, (x, fx) => count(fx, 'launch') >= 1);
@@ -662,14 +662,14 @@ test('load: a v:1 save, written at the slot screen that no longer exists, loads 
   assert.equal(r.game.mode, 'play');
   assert.deepEqual([r.game.chapter, r.game.scene], [1, 0]);
   assert.deepEqual(r.game.econ, econ);
-  assert.deepEqual(toSave(r.game), { ...old, v: 5, reels: FRESH_SAVED, ending: null, fray: newMeta() }, 'and is written back as v:5');
+  assert.deepEqual(toSave(r.game), { ...old, v: 6, reels: FRESH_SAVED, ending: null, fray: newMeta() }, 'and is written back as v:6');
   assert.equal(send(r.game, tickMsg()).game.phys.balls.length, 1, 'its writ brings a ball');
 });
 
 test('load: a save written by the game round-trips', () => {
   const toTable = sendAll(init(5), [CONFIRM, CONFIRM, SKIP]);
   const [save] = saves(toTable.effects);
-  assert.equal(save.v, 5);
+  assert.equal(save.v, 6);
   assert.equal(save.ending, null);
   const r = send(init(123), { type: 'load', save: JSON.parse(JSON.stringify(save)) });
   assert.deepEqual(toSave(r.game), save);
@@ -716,7 +716,7 @@ test('totals: trust and aid reset with the chapter, trustEarned and loansTaken n
 test('load: refuses a save it cannot honour', () => {
   const save = { v: 2, chapter: 0, scene: 0, econ: initEcon(), seed: 1 };
   const load = (s) => () => update(content, init(1), { type: 'load', save: s });
-  assert.throws(load({ ...save, v: 6 }), /save version 6/);
+  assert.throws(load({ ...save, v: 7 }), /save version 7/);
   assert.throws(load({ ...save, v: 3 }), /bad reels \(not an object\)/, 'a v:3 save must carry its reels');
   assert.throws(load({ ...save, v: 4 }), /bad reels \(not an object\)/, 'and a v:4');
   assert.throws(load({ ...save, v: undefined }), /save version undefined/);
@@ -734,11 +734,11 @@ test('save: the reels are kept: what they show, whether the shots are lit, and t
   let r = send(init(1), { type: 'load', save });
   assert.equal(r.game.mode, 'play');
   assert.deepEqual(r.game.reels, { ...init(1).reels, ...reels, need: REELS_NEED }, 'the reels as saved, in an open phase');
-  // (a v:3 save, as players have them stored today: it comes back as v:5 with an unset Lanewar board and nothing else changed)
-  const again = { ...save, v: 5, ending: null, fray: newMeta() };
+  // (a v:3 save, as players have them stored today: it comes back as v:6 with an unset Lanewar board and nothing else changed)
+  const again = { ...save, v: 6, ending: null, fray: newMeta() };
   assert.deepEqual(toSave(r.game), again, 'and they save back unchanged');
   assert.deepEqual(JSON.parse(JSON.stringify(toSave(r.game))), again, 'through JSON too');
-  assert.deepEqual(toSave(send(init(1), { type: 'load', save: again }).game), again, 'and a v:5 save round-trips');
+  assert.deepEqual(toSave(send(init(1), { type: 'load', save: again }).game), again, 'and a v:6 save round-trips');
   // the turning reel runs down and locks on what it was already going to show; nothing pays on two reels
   r = ticks(r.game, seconds(0.25) + 2);
   assert.deepEqual(r.game.reels.cells, [{ sym: 'coin', spin: 0 }, { sym: null, spin: 0 }, { sym: 'orb', spin: 0 }]);

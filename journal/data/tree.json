@@ -12491,8 +12491,8 @@
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 38078,
-  "lines": 649
+  "bytes": 37591,
+  "lines": 643
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12513,6 +12513,11 @@
   "path": "src/shell/gl/faces.js",
   "bytes": 29942,
   "lines": 423
+ },
+ {
+  "path": "src/shell/gl/fray3d.js",
+  "bytes": 24722,
+  "lines": 374
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -12906,8 +12911,8 @@
  },
  {
   "path": "src/shell/input.js",
-  "bytes": 9446,
-  "lines": 197
+  "bytes": 11681,
+  "lines": 235
  },
  {
   "path": "src/shell/layout.js",
@@ -12951,7 +12956,7 @@
  },
  {
   "path": "test/ending.test.js",
-  "bytes": 24340,
+  "bytes": 24343,
   "lines": 384
  },
  {
@@ -12976,8 +12981,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 30433,
-  "lines": 479
+  "bytes": 30696,
+  "lines": 485
  },
  {
   "path": "test/rng.test.js",
@@ -12996,8 +13001,8 @@
  },
  {
   "path": "test/stage.test.js",
-  "bytes": 38596,
-  "lines": 664
+  "bytes": 38812,
+  "lines": 667
  },
  {
   "path": "test/story.test.js",
