@@ -281,7 +281,8 @@ export function stageState(content, game) {
     combo, power: powerOf(game, combo), buffs: buffsOf(game),
     phase: 'idle', kind: null, line: null, speaker: null, radio: false, cam: null, emote: null,
   };
-  if (game.mode === 'title' || game.mode === 'card' || game.mode === 'end') return base;
+  // Lanewar is its own board (fray.js), not a staging of the scene: the stage has nothing to show.
+  if (game.mode === 'title' || game.mode === 'card' || game.mode === 'end' || game.mode === 'fray') return base;
   const chapter = currentChapter(content, game);
   const scene = currentScene(content, game);
   const encounter = scene && scene.encounter ? scene.encounter : null;

@@ -32,6 +32,7 @@ export const SFX_NAMES = [
   'flip', 'bumper', 'sling', 'target', 'rollover', 'shot', 'saucer', 'eject', 'drain',
   'launch', 'wall', 'reelStart', 'reelStop', 'payout', 'jackpot', 'bust', 'loan', 'aid',
   'objective', 'sceneClear', 'card', 'confirm',
+  'frayStep', 'fraySlash', 'frayHurt', 'frayBoom',
 ];
 
 export const MOODS = [
@@ -385,6 +386,29 @@ export function createAudio() {
       noise(d, { t, dur: 0.012, vol: 0.3 * v, f: 2800, q: 1.5 });
       tone(d, { f: 660, t, dur: 0.06, vol: 0.18 * v });
       tone(d, { f: 990, t: t + 0.035, dur: 0.08, vol: 0.14 * v });
+    },
+    // Lanewar. A tin base set down on a wooden board
+    frayStep(t, v, d) {
+      noise(d, { t, dur: 0.02, vol: 0.35 * v, type: 'lowpass', f: 900 });
+      tone(d, { f: 210, f1: 150, t, dur: 0.05, vol: 0.22 * v, a: 0.002 });
+    },
+    // a blade through tin: a short bright sweep, then the figures going over
+    fraySlash(t, v, d) {
+      noise(d, { t, dur: 0.09, vol: 0.4 * v, f: 5200, f1: 1800, q: 1.2, a: 0.004 });
+      tone(d, { type: 'triangle', f: 1480, f1: 880, t: t + 0.02, dur: 0.07, vol: 0.14 * v });
+      noise(d, { t: t + 0.06, dur: 0.05, vol: 0.3 * v, type: 'lowpass', f: 1400 });
+    },
+    // the hero's own tin struck
+    frayHurt(t, v, d) {
+      tone(d, { f: 160, f1: 70, t, dur: 0.22, vol: 0.7 * v, a: 0.003 });
+      noise(d, { t, dur: 0.05, vol: 0.5 * v, type: 'lowpass', f: 700 });
+      tone(d, { type: 'square', f: 311, f1: 277, t, dur: 0.12, vol: 0.08 * v });
+    },
+    // a toy mortar: a thump with a rattle of shot after it
+    frayBoom(t, v, d) {
+      tone(d, { f: 96, f1: 38, t, dur: 0.4, vol: 0.9 * v, a: 0.003 });
+      noise(d, { t, dur: 0.07, vol: 0.6 * v, type: 'lowpass', f: 600 });
+      noise(d, { t: t + 0.05, dur: 0.3, vol: 0.14 * v, type: 'highpass', f: 3500, a: 0.01 });
     },
   };
 

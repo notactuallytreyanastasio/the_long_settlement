@@ -308,7 +308,7 @@ export function preloadIds(content, game, ahead = 3) {
   // only the lines this ledger will hear: the other ending's are never asked for
   const ids = (lines) => heardLines(lines, game).map((line) => line.id);
   let out;
-  if (game.mode === 'end') {
+  if (game.mode === 'end' || game.mode === 'fray') {
     out = [];
   } else if (game.mode === 'title' || game.mode === 'card') {
     out = ids(currentChapter(content, game).prologue).slice(0, ahead);

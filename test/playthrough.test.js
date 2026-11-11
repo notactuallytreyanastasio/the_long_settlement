@@ -18,6 +18,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { suggest } from '../src/core/fray.js';
 import { content } from '../src/content/index.js';
 import { init, update, leverStatus, REELS_NEED } from '../src/core/game.js';
 import { STEP } from '../src/core/physics.js';
@@ -191,6 +192,12 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
       const table = content.tables[content.chapters[game.chapter].tableId];
       send({ type: 'tick', dt: STEP, input: bot(table, game) });
       row.seconds += STEP; tableSeconds += STEP;
+    } else if (game.mode === 'fray') {
+      // Lanewar: the bot plays two waves with fray.suggest and takes the winnings home, or falls trying
+      const { run } = game;
+      if (run.phase === 'over') send({ type: 'confirm' });
+      else if (run.phase === 'draft') send(run.cleared >= 2 ? { type: 'fray', leave: true } : { type: 'fray', pick: suggest(run) });
+      else send({ type: 'fray', act: suggest(run) });
     } else {
       throw new Error(`playthrough: unknown mode ${game.mode}`);
     }
@@ -242,7 +249,7 @@ for (const seedN of SEEDS) {
     const early = content.chapters.slice(0, -1).some((ch) => [ch.prologue, ch.epilogue, ...ch.scenes.map((s) => s.cutscene)].flat().some((l) => l.lean !== undefined));
     if (!early) assert.equal(seen.lines, blocking, 'every cinematic line of this ending was spoken once');
     assert.equal(seen.saves, wanted.length, 'one save per scene start');
-    assert.deepEqual([...seen.modes].sort(), ['card', 'cine', 'end', 'play', 'title'], 'these modes and no slot screen');
+    assert.deepEqual([...seen.modes].filter((m) => m !== 'fray').sort(), ['card', 'cine', 'end', 'play', 'title'], 'these modes (and Lanewar, when the bot found the saucer with the board set) and no slot screen');
 
     assert.ok(tableSeconds < GAME_LIMIT, `the game took the bot ${fmt(tableSeconds)} at the table`);
 

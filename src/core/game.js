@@ -21,6 +21,7 @@ import {
 } from './economy.js';
 import { pushRecent, comboBonus } from './stage.js';
 import { seed, next, pick } from './rng.js';
+import { newMeta, checkMeta, startRun, act as frayAct, choose as frayChoose, settle as fraySettle, ACTS as FRAY_ACTS } from './fray.js';
 import {
   currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
   heardLines, readsLeaning, LEANINGS,
@@ -45,6 +46,14 @@ export const REELS_NEED = 45;
 export const AID_WAIT = 2;
 /** Seconds after the table empties before the button is the lever: a press meant for a ball that just drained is not a pull. */
 export const LEVER_DELAY = 0.35;
+
+/**
+ * Bumper, sling and target hits that set the Lanewar board, at the start of a game and again after each
+ * visit: about half a minute of a ball in play. The table says so when it is set.
+ */
+export const FRAY_NEED = 30;
+/** Seconds of ball save for coming back from the board with the winnings rather than on a shield. */
+export const FRAY_SAVE_SECONDS = 12;
 
 const POINTS = {
   bumper: 100, sling: 50, target: 250, rollover: 150, shot: 500, saucer: 750,
@@ -141,6 +150,9 @@ const freshReels = () => ({
  *   emptyT      seconds the table has stood empty with no writ to refill it
  *   plungeWas   input.plunge on the previous play tick (the lever acts on the press, not the hold)
  *   logged      how many entries game.recent has ever been given (the next entry's n)
+ *   fray        the Lanewar board's Meta (fray.js): whether the saucer opens it, the loadout, the wave. Saved
+ *   run         the game of Lanewar being played, in mode 'fray'; null otherwise. Not saved
+ *   frayDue     a ball went into the saucer with the board set, on this tick: playTick opens the board
  * `recent` is in the typedef: the event log the stage is drawn from. Neither is saved; a load starts both empty.
  * And one that is in it: `ending`, null until the ledger is read in the final chapter
  * (story.readsLeaning), then 'commons' or 'mint' for good.
@@ -174,17 +186,21 @@ export function init(seedN) {
     plungeWas: false,
     recent: [],
     logged: 0,
+    fray: newMeta(),
+    run: null,
+    frayDue: false,
   };
 }
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 /** The first version that kept the reels. */
 const REELS_SINCE = 3;
 /**
  * Save versions load() accepts. 1 was written at the old slot screen, 2 before the reels were
- * kept, 3 before the ledger could be read (no `ending`, and no econ.hatsRefused).
+ * kept, 3 before the ledger could be read (no `ending`, and no econ.hatsRefused), 4 before Lanewar
+ * (no `fray`: the board loads as a new game has it).
  */
-const LOADABLE = [1, 2, 3, SAVE_VERSION];
+const LOADABLE = [1, 2, 3, 4, SAVE_VERSION];
 /** The same list, for the shell: which stored saves are worth handing to load. */
 export const LOADABLE_SAVES = Object.freeze([...LOADABLE]);
 
@@ -202,6 +218,9 @@ export function toSave(game) {
   return {
     v: SAVE_VERSION, chapter: game.chapter, scene: game.scene, econ: { ...game.econ }, seed: game.rng.s,
     reels: reelsToSave(game.reels), ending: game.ending,
+    // A save written with the board open (none is, today: saves are written at scene ends) would lose
+    // the run, so it gives the light back.
+    fray: { ...game.fray, lit: game.fray.lit || game.run !== null, weapons: { ...game.fray.weapons }, perks: { ...game.fray.perks } },
   };
 }
 
@@ -264,7 +283,8 @@ function load(content, save) {
   if (ending !== null && !LEANINGS.includes(ending)) {
     throw new Error(`game: save has ending ${JSON.stringify(save.ending)}; it must be null or one of ${LEANINGS.join(', ')}`);
   }
-  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ, reels: reelsFromSave(save), ending };
+  const fray = save.fray === undefined ? newMeta() : checkMeta(save.fray);
+  const base = { ...init(save.seed), chapter: save.chapter, scene: save.scene, econ, reels: reelsFromSave(save), ending, fray };
   const game = {
     ...base,
     phys: initPhys(tableOf(content, base)),
@@ -719,6 +739,90 @@ function noteHit(table, game, ev) {
   return note(game, 'shot', { id: ev.id, via: shot.exit ? 'ramp' : 'orbit' });
 }
 
+// ───────────────────────── Lanewar (fray.js) ─────────────────────────
+// The tin-soldier board. The table sets it (FRAY_NEED hits), the saucer opens it, and the ball waits in
+// the saucer while it is played: mode 'fray' steps no physics, so the saucer's own clock holds still and
+// the ball comes out when play resumes. What comes back is score and, for leaving by choice, a ball save.
+// Never marks: marks are what the ending is read from, and a board that paid them would let the lever be
+// fed from somewhere the Mint and the Commons have no say in.
+
+/** What an element means to the board: a bumper, sling or target sets it; the saucer, once set, opens it. */
+function frayEvent(game, ev) {
+  const { fray } = game;
+  if (fray.lit) return ok(ev.type === 'saucer' ? { ...game, frayDue: true } : game);
+  if (!CHARGE_TYPES.has(ev.type)) return ok(game);
+  const charge = fray.charge + 1;
+  if (charge < FRAY_NEED) return ok({ ...game, fray: { ...fray, charge } });
+  return ok(toast({ ...game, fray: { ...fray, charge: FRAY_NEED, lit: true } }, 'hint', 'The Lanewar board is set. Shoot the saucer.'), [sfx('confirm')]);
+}
+
+/** The run's seed: from the table's rng and how much has happened, without drawing from the table's rng. */
+const fraySeed = (game) => (game.rng.s ^ Math.imul(game.logged + 1, 0x9e3779b1) ^ Math.imul(game.fray.felled + 1, 0x85ebca6b)) >>> 0;
+
+function enterFray(content, game) {
+  const run = startRun(game.fray, fraySeed(game));
+  const opened = toast({ ...enterMode(game, 'fray'), run, frayDue: false, fray: { ...game.fray, lit: false, charge: 0 } },
+    'scene', `Lanewar: wave ${run.wave}`);
+  return ok(opened, [sfx('card'), { type: 'flash', color: '#ffffff' }]);
+}
+
+/** What a turn sounded like. One sound of each kind a turn, however many figures it was. */
+function fraySounds(events) {
+  const out = [];
+  let kills = 0, hurt = 0, moved = false, cleared = false, fallen = false, shell = false, hits = 0;
+  for (const e of events) {
+    if (e.type === 'kill') kills++;
+    else if (e.type === 'hit') hits++;
+    else if (e.type === 'hurt') hurt += e.dmg;
+    else if (e.type === 'move') moved = true;
+    else if (e.type === 'cleared') cleared = true;
+    else if (e.type === 'fallen') fallen = true;
+    else if (e.type === 'swing' && (e.weapon === 'mortar' || e.weapon === 'grape')) shell = true;
+  }
+  if (moved) out.push(sfx('frayStep', 0.5));
+  if (shell) out.push(sfx('frayBoom', 0.9));
+  if (kills > 0) out.push(sfx('fraySlash', Math.min(1, 0.45 + kills * 0.08)));
+  else if (hits > 0) out.push(sfx('fraySlash', 0.3));
+  if (hurt > 0) out.push(sfx('frayHurt', Math.min(1, 0.5 + hurt * 0.15)), { type: 'shake', power: Math.min(1, 0.25 + hurt * 0.15) });
+  if (kills >= 6) out.push({ type: 'shake', power: Math.min(0.6, kills * 0.05) });
+  if (cleared) out.push(sfx('sceneClear'));
+  if (fallen) out.push(sfx('drain'), { type: 'flash', color: '#ff5a4a' });
+  return out;
+}
+
+/** Back to the table with what the run earned. The ball is still in the saucer and comes out on its own clock. */
+function leaveFray(content, game) {
+  const { banked, score, meta } = fraySettle(game.fray, game.run);
+  const paid = { ...game, run: null, fray: meta, econ: awardBonus(game.econ, score) };
+  const safe = banked
+    ? { ...paid, boons: { ...paid.boons, ballSave: Math.max(paid.boons.ballSave, FRAY_SAVE_SECONDS) } }
+    : paid;
+  const told = toast(safe, banked ? 'payout' : 'bust',
+    banked ? `Lanewar: ${score} carried home. Ball save lit.` : `Lanewar: fallen at wave ${game.run.wave}. ${score} kept.`);
+  return then(ok(told, [sfx(banked ? 'payout' : 'bust')]), (g) => enterPlay(content, g));
+}
+
+/** {type:'fray', act} takes a turn; {type:'fray', pick} takes a card; {type:'fray', leave:true} goes home from the draft. */
+function frayMsg(content, game, msg) {
+  const { run } = game;
+  if (msg.leave === true) return run.phase === 'draft' ? leaveFray(content, game) : ok(game);
+  if (msg.pick !== undefined) {
+    if (run.phase !== 'draft' || !run.offers[msg.pick]) return ok(game);
+    const next_ = frayChoose(run, msg.pick);
+    return ok(toast({ ...game, run: next_ }, 'scene', `Lanewar: wave ${next_.wave}`), [sfx('confirm')]);
+  }
+  if (!FRAY_ACTS.includes(msg.act)) throw new Error(`game: a fray message needs act, pick or leave: ${JSON.stringify(msg)}`);
+  if (run.phase !== 'turn') return ok(game);
+  const next_ = frayAct(run, msg.act);
+  return ok({ ...game, run: next_ }, fraySounds(next_.events));
+}
+
+const frayHandlers = {
+  fray: frayMsg,
+  // The fallen board is dismissed like a card. In a turn or a draft Enter does nothing: neither has a default.
+  confirm: (content, game) => (game.run.phase === 'over' ? leaveFray(content, game) : ok(game)),
+};
+
 /** One physics event: sound, points, objective progress, the reels, and whatever else its type means. */
 function onEvent(content, table, game, ev) {
   if (!(ev.type in POINTS)) throw new Error(`game: unknown physics event type ${JSON.stringify(ev.type)}`);
@@ -744,7 +848,7 @@ function onEvent(content, table, game, ev) {
       effects.push(sfx('objective'));
     }
   }
-  const step = then(ok(g, effects), (h) => reelsEvent(content, table, h, ev));
+  const step = then(then(ok(g, effects), (h) => reelsEvent(content, table, h, ev)), (h) => frayEvent(h, ev));
   const extra = EVENT_EXTRAS[ev.type];
   return extra ? then(step, (h) => extra(content, table, h, ev)) : step;
 }
@@ -811,15 +915,17 @@ function playTick(content, game, msg) {
   const table = tableOf(content, game);
   const pressed = !!msg.input.plunge && !game.plungeWas;
   const stepped = stepPhysics(table, game.phys, msg.input, msg.dt);
-  const moved = { ...tickBoons(game, msg.dt), phys: stepped.phys, plungeWas: !!msg.input.plunge };
+  const moved = { ...tickBoons(game, msg.dt), phys: stepped.phys, plungeWas: !!msg.input.plunge, frayDue: false };
   // The briefing goes first so that it, not a launch bark, is what is heard as the scene opens.
   // Reel time passes before this tick's events, so a reel an event starts has its full time to run.
   let step = then(brief(content, moved), (g) => tickReels(content, g, msg.dt));
   step = stepped.events.reduce((s, ev) => then(s, (g) => onEvent(content, table, g, ev)), step);
   const scene = currentScene(content, step.game);
   if (scene && objectiveProgress(scene, step.game.hits, step.game.seq).complete) {
-    return then(step, (g) => completeScene(content, g, scene));
+    // The scene's cutscene comes first. The board stays set for the next saucer.
+    return then(step, (g) => completeScene(content, { ...g, frayDue: false }, scene));
   }
+  if (step.game.frayDue) return then(step, (g) => enterFray(content, g));
   step = then(step, (g) => supplyBall(content, table, g, msg.dt));
   if (pressed) step = then(step, (g) => pullLever(content, g));
   step = then(step, (g) => feedMultiball(table, g, msg.dt));
@@ -835,10 +941,11 @@ const MODES = {
   card: cardHandlers,
   cine: cineHandlers,
   play: playHandlers,
+  fray: frayHandlers,
   end: endHandlers,
 };
 
-const MSG_TYPES = new Set(['tick', 'confirm', 'skip', 'lineDone', 'load']);
+const MSG_TYPES = new Set(['tick', 'confirm', 'skip', 'lineDone', 'load', 'fray']);
 
 /** Time that passes in every mode: clocks, toast ageing, the bark cooldown. */
 function commonTick(game, dt) {

@@ -158,7 +158,7 @@ const HEAL_ON_CLEAR = 2;
 
 /** What outlives a run. lit: the saucer will open the board. charge: table hits toward lighting it again. */
 export function newMeta() {
-  return { lit: true, charge: 0, wave: 1, weapons: { sabre: 1 }, perks: {}, best: 0, felled: 0 };
+  return { lit: false, charge: 0, wave: 1, weapons: { sabre: 1 }, perks: {}, best: 0, felled: 0 };
 }
 
 /** Refuse a Meta that could not have been written by this file: a save is the one place one comes in from outside. */

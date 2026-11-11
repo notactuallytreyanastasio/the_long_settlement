@@ -12406,13 +12406,13 @@
  },
  {
   "path": "src/core/fray.js",
-  "bytes": 28420,
+  "bytes": 28421,
   "lines": 599
  },
  {
   "path": "src/core/game.js",
-  "bytes": 41812,
-  "lines": 865
+  "bytes": 48179,
+  "lines": 972
  },
  {
   "path": "src/core/physics.js",
@@ -12431,12 +12431,12 @@
  },
  {
   "path": "src/core/stage.js",
-  "bytes": 19832,
-  "lines": 335
+  "bytes": 19956,
+  "lines": 336
  },
  {
   "path": "src/core/story.js",
-  "bytes": 16441,
+  "bytes": 16465,
   "lines": 351
  },
  {
@@ -12446,8 +12446,8 @@
  },
  {
   "path": "src/shell/audio.js",
-  "bytes": 62702,
-  "lines": 1278
+  "bytes": 63980,
+  "lines": 1302
  },
  {
   "path": "src/shell/cinema.js",
@@ -12946,13 +12946,13 @@
  },
  {
   "path": "test/ending.test.js",
-  "bytes": 24337,
+  "bytes": 24340,
   "lines": 384
  },
  {
   "path": "test/game.test.js",
-  "bytes": 67233,
-  "lines": 1225
+  "bytes": 67375,
+  "lines": 1226
  },
  {
   "path": "test/gl-layout.test.js",
@@ -12971,8 +12971,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 29876,
-  "lines": 472
+  "bytes": 30433,
+  "lines": 479
  },
  {
   "path": "test/rng.test.js",
@@ -12991,8 +12991,8 @@
  },
  {
   "path": "test/stage.test.js",
-  "bytes": 38122,
-  "lines": 658
+  "bytes": 38537,
+  "lines": 664
  },
  {
   "path": "test/story.test.js",

@@ -3,6 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { suggest } from '../src/core/fray.js';
 import { content } from '../src/content/index.js';
 import { init, update, toSave, LOADABLE_SAVES, AID_WAIT, LEVER_DELAY } from '../src/core/game.js';
 import { STEP, addLiveBall } from '../src/core/physics.js';
@@ -627,7 +628,12 @@ test('chapter 1 start to finish: the stage always has an answer, the log stays i
     if (++steps > 120 * 60 * 40) throw new Error(`stage.test: chapter 1 not finished after 40 minutes of ticks (scene ${g.scene}, mode ${g.mode})`);
     const before = g;
     if (g.mode === 'title' || g.mode === 'card') g = send(g, { type: 'confirm' }).game;
-    else if (g.mode === 'cine') {
+    else if (g.mode === 'fray') {
+      // Lanewar: nothing is staged while the board is open; play one wave and go back
+      assert.equal(stageState(content, g).phase, 'idle');
+      const { run } = g;
+      g = send(g, run.phase === 'over' ? { type: 'confirm' } : run.phase === 'draft' ? { type: 'fray', leave: true } : { type: 'fray', act: suggest(run) }).game;
+    } else if (g.mode === 'cine') {
       watch();
       g = g.cine.t < RESOLVE_SECONDS + 0.05 && g.cine.kind === 'scene' ? send(g, tick()).game : send(g, { type: 'confirm' }).game;
     } else {
