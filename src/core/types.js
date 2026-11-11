@@ -82,7 +82,8 @@
  * @property {number} charge                   0..1 plunger charge while plunge is held
  * @property {number} nextBallId
  *
- * @typedef {{left:boolean,right:boolean,plunge:boolean,nudge:Vec|null}} Input
+ * @typedef {{left:boolean,right:boolean,plunge:boolean,nudge:Vec|null,move?:Vec}} Input
+ *   move: Lanewar's stick, [x, y] each -1..1 (y down the board); absent or [0, 0] is standing still. Read only in mode 'fray'.
  *   plunge: one button. Held to charge, launches every ball in state 'plunger' on release.
  *   With no ball anywhere and no writs it is the lever of the Reels, acting on the press (game.js).
  *
@@ -303,8 +304,8 @@
  * @typedef {Object} Game
  * @property {'title'|'card'|'cine'|'play'|'fray'|'end'} mode
  *        card: chapter title card.  end: end of available chapters.  There is no slot screen.
- *        fray: Lanewar, the tin-soldier board game inside the game (fray.js): the table stands still, the ball waits
- *        in the saucer, and game.run is the game of it being played
+ *        fray: Lanewar, the tin-soldier board game inside the game (fray.js), in real time: the table stands still,
+ *        the ball waits in the saucer, and game.run is the game of it being played
  * @property {number} chapter               index into content.chapters
  * @property {number} scene                 index into chapter.scenes
  * @property {Object<string,number>} hits   objective progress: element id -> hit count this scene
@@ -328,7 +329,7 @@
  * @property {LogEntry[]} recent            what has just happened, oldest first, at most stage.RECENT_MAX entries: the
  *        log the stage is drawn from and the combo is computed over. Not saved. Shell only reads
  * @property {import('./fray.js').Meta} fray   Lanewar's board between visits: lit (the saucer opens it), charge (table hits
- *        toward lighting it, of game.FRAY_NEED), wave, weapons, perks, best, felled, owed. Saved
+ *        toward lighting it, of game.FRAY_NEED), wave, weapons [{id, tier}], stats, level, xp, tin, best, felled. Saved
  * @property {Object|null} run              the Lanewar run being played (fray.js Run), in mode 'fray'; null otherwise. Not saved
  * @property {number} logged                entries ever given to `recent`: the n the next one will get. A shell keeps a
  *        cursor on n to act on each entry once (and resets it when logged falls, which is a load)
@@ -371,18 +372,20 @@
  *   {type:'skip'}                             skip the whole running cinematic
  *   {type:'lineDone', id:string}              shell: the voice finished this blocking line
  *   {type:'load', save:Save}
- *   {type:'fray', act:'n'|'s'|'e'|'w'|'wait'}   Lanewar: one turn
- *   {type:'fray', pick:0|1|2}                 Lanewar: take a card of the draft; the next wave begins
- *   {type:'fray', leave:true}                 Lanewar: take the winnings home from a draft (fray.canLeave)
- *   In mode 'fray' a tick only passes time, and confirm leaves a fallen board.
+ *   {type:'fray', pull:true}                  Lanewar, at the reels between waves: pull (free if one is owed, else tin)
+ *   {type:'fray', hold:0|1|2}                 hold or let go a reel for the next pull
+ *   {type:'fray', take:0|1|2}                 take what that reel shows; the line is spent
+ *   {type:'fray', next:true}                  the next wave
+ *   {type:'fray', leave:true}                 take the winnings home (fray.canLeave)
+ *   In mode 'fray' a tick steps the board (fray.DT, every second tick) with input.move, and confirm leaves a fallen board.
  *
- * @typedef {{v:5, chapter:number, scene:number, econ:Econ, seed:number,
+ * @typedef {{v:6, chapter:number, scene:number, econ:Econ, seed:number,
  *            reels:{cells:[Cell,Cell,Cell], source:Source|null, armed:boolean, charge:number},
  *            ending:null|'commons'|'mint', fray:Meta}} Save
  *        Loads into 'play' at the start of its scene, with a fresh table and the reels as they
  *        stood when it was written (a line that had just paid is saved as cleared). v:1 and v:2
  *        saves have no `reels` and still load, with fresh reels. v:3 has no `ending` (loads as null) and
- *        no econ.hatsRefused (loads as 0). v:4 has no `fray` (loads as fray.newMeta()).
+ *        no econ.hatsRefused (loads as 0). v:4 has no `fray`, and v:5's is the turn-based board's: both load as fray.newMeta().
  *
  * THE LEVER. In play, with no ball anywhere and no writs, a press of Input.plunge is the lever
  * (leverStatus says what it will do): the chapter's rigged pull, free; or SPIN_COST marks and a
@@ -397,7 +400,7 @@
  *   {type:'sfx', name:string, vol?:number}      names: flip, bumper, sling, target, rollover, shot, saucer,
  *                                               eject, drain, launch, wall, reelStart, reelStop, payout,
  *                                               jackpot, bust, loan, aid, objective, sceneClear, card, confirm,
- *                                               frayStep, fraySlash, frayHurt, frayBoom (Lanewar)
+ *                                               fraySlash, frayHurt, frayBoom, frayShot, frayFell, frayCoin (Lanewar)
  *                                               reelStart: all three reels set going.  reelStop: one reel locked.
  *                                               confirm is also the spin elements lighting; eject also a kickback.
  *   {type:'music', mood:string}                 moods: title, festival, tense, covert, sorrow, hope, march,
@@ -413,8 +416,8 @@
  * export const FILL_SECONDS, PAY_SECONDS, REELS_NEED, AID_WAIT, LEVER_DELAY: number
  * export function init(seedN: number): Game
  * export function update(content: Content, game: Game, msg: Msg): { game: Game, effects: Effect[] }
- * export const SAVE_VERSION: 5
- * export const LOADABLE_SAVES: number[]             every save version load accepts (1, 2, 3, 4, 5)
+ * export const SAVE_VERSION: 6
+ * export const LOADABLE_SAVES: number[]             every save version load accepts (1, 2, 3, 4, 5, 6)
  * export const FRAY_NEED, FRAY_SAVE_SECONDS: number  hits that set the Lanewar board; the ball save for coming home from it
  * export function toSave(game: Game): Save
  * export function leverStatus(content, game): null|'wait'|'free'|'credit'|'pull'|'loan'

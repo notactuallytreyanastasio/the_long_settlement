@@ -59,9 +59,9 @@ export function frayLayout(L, safeTop = 0) {
   // the reels: a column of things, centred, that fits a short phone
   const cw = Math.min(L.W - pad * 2, 410), cx = (L.W - cw) / 2;
   const short = L.H < 800;
-  let y = top.y + (short ? 4 : 14);
-  const title = { x: L.W / 2, y: y + 30 }; y += short ? 58 : 70;
-  const rw = (cw - 16) / 3, rh = short ? 132 : 150;
+  let y = top.y + top.h + (short ? 2 : 12);
+  const title = { x: L.W / 2, y: y + 28 }; y += short ? 54 : 66;
+  const rw = (cw - 16) / 3, rh = short ? 128 : 158;
   const reels = [0, 1, 2].map((i) => rect(cx + i * (rw + 8), y, rw, rh)); y += rh + 6;
   const take = reels.map((r) => rect(r.x, y, r.w, 38)); y += 38 + 5;
   const hold = reels.map((r) => rect(r.x, y, r.w, 28)); y += 28 + (short ? 8 : 12);
@@ -195,9 +195,10 @@ function drawHands(g, run, r, size) {
     const x = r.x + i * (w + gap), wpn = run.weapons[i];
     panel(g, rect(x, r.y, w, r.h), wpn ? NAVY : 'rgba(29,42,92,0.45)', 9, INK, 2);
     if (!wpn) continue;
-    token(g, wpn.id, x + r.h / 2, r.y + r.h / 2, size);
-    fitText(g, WEAPONS[wpn.id].name, x + r.h + 1, r.y + r.h / 2 - 2, w - r.h - 4, 10.5, WHITE);
-    for (let t = 0; t < TIERS; t++) { g.fillStyle = t < wpn.tier ? TIER_COLOUR[wpn.tier - 1] : DIM; g.fillRect(x + r.h + 1 + t * 7, r.y + r.h / 2 + 4, 5.5, 5); }
+    // the token, its tier beside it in pips: six of these across a phone leave no room for a name
+    token(g, wpn.id, x + r.h * 0.46, r.y + r.h / 2, size);
+    const px = x + r.h * 0.46 + size + 5, pw = Math.min(6, (x + w - 4 - px) / 2 - 1.5);
+    for (let t = 0; t < TIERS; t++) { g.fillStyle = t < wpn.tier ? TIER_COLOUR[wpn.tier - 1] : DIM; g.fillRect(px + (t % 2) * (pw + 1.5), r.y + r.h / 2 - pw - 1 + Math.floor(t / 2) * (pw + 1.5), pw, pw); }
   }
 }
 
@@ -258,7 +259,7 @@ function drawReels(g, run, FL, L, time) {
   }
   const free = slot.free, cost = pullCost(run);
   button(g, FL.pull, 'PULL', free > 0 ? `free: ${free} owed` : `${cost} tin`, canPull(run), free > 0 ? '#2f6d4f' : NAVY, GOLD);
-  drawHands(g, run, FL.load, FL.load.h * 0.3);
+  drawHands(g, run, FL.load, FL.load.h * 0.34);
   // the stats, two columns
   const ids = Object.keys(STAT_LABEL), colW = FL.stats.w / 2, lh = Math.min(15, FL.stats.h / 5);
   if (lh >= 9) {
@@ -333,7 +334,7 @@ export function drawFray(g, game, fx, L, opts = {}) {
   if (run.phase === 'shop') drawReels(g, run, FL, L, time);
   drawTop(g, run, FL);
   if (run.phase === 'wave') {
-    drawHands(g, run, FL.slots, FL.slots.h * 0.3);
+    drawHands(g, run, FL.slots, FL.slots.h * 0.36);
     drawStick(g);
     if (run.time < 4 && run.cleared === 0) {
       const hint = fx.touch ? 'Drag anywhere to move. Your weapons fire by themselves.' : 'WASD or arrows to move. Your weapons fire by themselves.';

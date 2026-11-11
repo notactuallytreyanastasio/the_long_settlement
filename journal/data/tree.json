@@ -12441,8 +12441,8 @@
  },
  {
   "path": "src/core/types.js",
-  "bytes": 32287,
-  "lines": 459
+  "bytes": 32738,
+  "lines": 462
  },
  {
   "path": "src/shell/audio.js",
@@ -12486,8 +12486,8 @@
  },
  {
   "path": "src/shell/fray-view.js",
-  "bytes": 20476,
-  "lines": 357
+  "bytes": 20624,
+  "lines": 358
  },
  {
   "path": "src/shell/gl/app.js",
