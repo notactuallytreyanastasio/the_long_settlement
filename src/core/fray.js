@@ -357,6 +357,8 @@ export function step(run0, move) {
       a.x -= px; a.y -= py; b.x += px; b.y += py;
     }
   }
+  // (eased apart can mean eased over the edge: the walls hold for them too)
+  for (const f of live) { f.x = Math.min(AW - 0.2, Math.max(0.2, f.x)); f.y = Math.min(AH - 0.2, Math.max(0.2, f.y)); }
   run.foes = live;
   for (const b of run.bolts) {
     b.x += b.vx * DT; b.y += b.vy * DT; b.life -= DT;

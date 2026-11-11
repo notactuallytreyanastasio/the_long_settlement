@@ -12406,8 +12406,8 @@
  },
  {
   "path": "src/core/fray.js",
-  "bytes": 33608,
-  "lines": 628
+  "bytes": 33805,
+  "lines": 630
  },
  {
   "path": "src/core/game.js",
@@ -12960,6 +12960,11 @@
   "lines": 385
  },
  {
+  "path": "test/fray.test.js",
+  "bytes": 27741,
+  "lines": 440
+ },
+ {
   "path": "test/game.test.js",
   "bytes": 67375,
   "lines": 1226
@@ -12981,8 +12986,8 @@
  },
  {
   "path": "test/playthrough.test.js",
-  "bytes": 30940,
-  "lines": 490
+  "bytes": 30541,
+  "lines": 479
  },
  {
   "path": "test/rng.test.js",

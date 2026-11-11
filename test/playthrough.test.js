@@ -18,7 +18,6 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { suggest } from '../src/core/fray.js';
 import { content } from '../src/content/index.js';
 import { init, update, leverStatus, REELS_NEED } from '../src/core/game.js';
 import { STEP } from '../src/core/physics.js';
@@ -140,7 +139,6 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
     return cur;
   };
 
-  let stick = null;     // Lanewar: where the bot is holding the stick
   const send = (msg) => {
     const before = game;
     const r = update(content, rewrite ? rewrite(game) : game, msg);
@@ -194,21 +192,12 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
       send({ type: 'tick', dt: STEP, input: bot(table, game) });
       row.seconds += STEP; tableSeconds += STEP;
     } else if (game.mode === 'fray') {
-      // Lanewar: the bot survives a wave with fray.suggest on the stick, takes what the reels give, and goes home; or falls trying
-      const { run } = game;
-      if (run.phase === 'over') send({ type: 'confirm' });
-      else if (run.phase === 'wave') {
-        // it looks at the board five times a second, like a person, and holds the stick in between
-        if (run.n % 12 === 0 || !stick) stick = suggest(run);
-        send({ type: 'tick', dt: STEP, input: { ...IDLE, move: stick } });
-      }
-      else {
-        const s = suggest(run);
-        if (s === null) send({ type: 'tick', dt: STEP, input: IDLE });
-        else if (s.pull) send({ type: 'fray', pull: true });
-        else if (s.take !== undefined) send({ type: 'fray', take: s.take });
-        else send({ type: 'fray', leave: true });
-      }
+      // Lanewar: this bot is here for the table, so on the board it stands still, falls, and goes back. (A bot that
+      // plays the board well climbs to waves of ninety figures and a minute each, sixty times a game: the suite took
+      // 108 s instead of 25. The board has its own player and its own tests, test/fray.test.js.)
+      if (game.run.phase === 'over') send({ type: 'confirm' });
+      else if (game.run.phase === 'wave') send({ type: 'tick', dt: STEP, input: IDLE });
+      else send({ type: 'fray', leave: true });
     } else {
       throw new Error(`playthrough: unknown mode ${game.mode}`);
     }
