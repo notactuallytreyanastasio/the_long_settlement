@@ -52,9 +52,10 @@ export const LEVER_DELAY = 0.35;
 
 /**
  * Bumper, sling and target hits that set the Lanewar board, at the start of a game and again after each
- * visit: about half a minute of a ball in play. The table says so when it is set.
+ * visit: about a minute of a ball in play. A visit is a wave or more of real time, so it should be an occasion.
+ * The table says so when it is set.
  */
-export const FRAY_NEED = 30;
+export const FRAY_NEED = 60;
 /** Seconds of ball save for coming back from the board with the winnings rather than on a shield. */
 export const FRAY_SAVE_SECONDS = 12;
 

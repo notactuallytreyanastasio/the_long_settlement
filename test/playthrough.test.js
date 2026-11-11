@@ -140,6 +140,7 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
     return cur;
   };
 
+  let stick = null;     // Lanewar: where the bot is holding the stick
   const send = (msg) => {
     const before = game;
     const r = update(content, rewrite ? rewrite(game) : game, msg);
@@ -196,7 +197,11 @@ export function playthrough(seedN, { policy = 'commons', skill = 'steady', maxSe
       // Lanewar: the bot survives a wave with fray.suggest on the stick, takes what the reels give, and goes home; or falls trying
       const { run } = game;
       if (run.phase === 'over') send({ type: 'confirm' });
-      else if (run.phase === 'wave') send({ type: 'tick', dt: STEP, input: { ...IDLE, move: suggest(run) } });
+      else if (run.phase === 'wave') {
+        // it looks at the board five times a second, like a person, and holds the stick in between
+        if (run.n % 12 === 0 || !stick) stick = suggest(run);
+        send({ type: 'tick', dt: STEP, input: { ...IDLE, move: stick } });
+      }
       else {
         const s = suggest(run);
         if (s === null) send({ type: 'tick', dt: STEP, input: IDLE });

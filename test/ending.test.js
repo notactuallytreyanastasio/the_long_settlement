@@ -4,6 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { newMeta } from '../src/core/fray.js';
 import { init, update, toSave, SAVE_VERSION, LOADABLE_SAVES } from '../src/core/game.js';
 import {
   LEANINGS, spokenLines, heardLines, leaningNow, readsLeaning, endingOf, preloadIds, resolveStage,
@@ -120,7 +121,7 @@ const commonsBook = () => ({ ...initEcon(), writs: 30, trustEarned: 200 });
 const mintBook = () => ({ ...initEcon(), writs: 30, loansTaken: 4 });
 /** A game standing at the table at the start of a scene, with this book. */
 const at = (chapter, sceneIndex, econ, c = content) =>
-  update(c, init(1), { type: 'load', save: { v: SAVE_VERSION, chapter, scene: sceneIndex, econ, seed: 3, reels: FRESH_REELS, ending: null } }).game;
+  update(c, init(1), { type: 'load', save: { v: SAVE_VERSION, chapter, scene: sceneIndex, econ, seed: 3, reels: FRESH_REELS, ending: null, fray: newMeta() } }).game;
 
 /** Run until pred(game). Plays the table with the plunger and confirms cinematics line by line. Returns the game and every effect. */
 function run(game, pred, c = content) {
