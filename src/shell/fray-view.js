@@ -11,7 +11,7 @@
 // ONE FINGER. A turn is a swipe, or a tap on the side of the hero you want to go; a tap on the hero stands.
 // Both, because a swipe is what a thumb does without looking and a tap is what a mouse does.
 
-import { W, H, WEAPONS, WEAPON_IDS, PERKS, FOES, describe, waveSize } from '../core/fray.js';
+import { W, H, WEAPONS, WEAPON_IDS, PERKS, FOES, describe, waveSize, canLeave } from '../core/fray.js';
 
 const FACE = '"Avenir Next", "Trebuchet MS", ui-rounded, system-ui, sans-serif';
 const font = (size, weight = 800) => `${weight} ${size}px ${FACE}`;
@@ -77,7 +77,7 @@ export function frayPress(FL, run, down, up, phaseT) {
   if (run.phase === 'draft') {
     if (phaseT < DRAFT_GUARD) return null;
     for (let i = 0; i < run.offers.length; i++) if (inRect(FL.cards[i], up[0], up[1]) && inRect(FL.cards[i], down[0], down[1])) return { type: 'fray', pick: i };
-    if (inRect(FL.leave, up[0], up[1]) && inRect(FL.leave, down[0], down[1])) return { type: 'fray', leave: true };
+    if (canLeave(run) && inRect(FL.leave, up[0], up[1]) && inRect(FL.leave, down[0], down[1])) return { type: 'fray', leave: true };
     return null;
   }
   const dx = up[0] - down[0], dy = up[1] - down[1];
@@ -99,7 +99,7 @@ export function frayKey(run, code) {
   if (run.phase === 'turn') return KEY_ACT[code] ? { type: 'fray', act: KEY_ACT[code] } : null;
   if (run.phase === 'draft') {
     if (code in KEY_PICK) return run.offers[KEY_PICK[code]] ? { type: 'fray', pick: KEY_PICK[code] } : null;
-    return code === 'KeyH' ? { type: 'fray', leave: true } : null;
+    return code === 'KeyH' && canLeave(run) ? { type: 'fray', leave: true } : null;
   }
   return code === 'Enter' || code === 'NumpadEnter' || code === 'Space' ? { type: 'confirm' } : null;
 }
@@ -191,20 +191,21 @@ function drawChips(g, run, FL) {
     const wait = id === 'oil' ? 0 : Math.max(0, (run.cool[id] || 0) - 1);
     panel(g, rect(x, FL.chips.y, w, h), wait > 0 ? '#2a3156' : NAVY, 10, INK, 2.5);
     g.fillStyle = FRAY_COLOURS[id]; g.fillRect(x + 6, FL.chips.y + 6, 4, h - 12);
-    fitText(g, WEAPONS[id].name, x + 15, FL.chips.y + 19, w - 20, 12, WHITE);
-    // level pips, and the turns until it fires again
+    fitText(g, SHORT[id], x + 14, FL.chips.y + 18, w - 18, 11.5, wait > 0 ? '#aab0d0' : WHITE);
+    // level pips, and under them the turns until it fires again
+    const pip = Math.min(6, (w - 20) / WEAPONS[id].levels.length - 1.5);
     for (let i = 0; i < WEAPONS[id].levels.length; i++) {
       g.fillStyle = i < level ? GOLD : '#39406e';
-      g.fillRect(x + 15 + i * 8, FL.chips.y + 27, 6, 6);
+      g.fillRect(x + 14 + i * (pip + 1.5), FL.chips.y + 23, pip, 5);
     }
-    if (lv.every > 1) text(g, wait > 0 ? `in ${wait}` : 'ready', x + w - 6, FL.chips.y + 34, 9.5, wait > 0 ? CREAM : TEAL, 'right', 700);
+    if (lv.every > 1) text(g, wait > 0 ? `in ${wait}` : 'ready', x + 14, FL.chips.y + 40, 9, wait > 0 ? CREAM : TEAL, 'left', 700);
     x += w + gap;
   }
   if (perks.length) {
     panel(g, rect(x, FL.chips.y, w, h), NAVY, 10, INK, 2.5);
     const label = perks.map((p) => `${PERKS[p].name}${run.perks[p] > 1 ? ` ${run.perks[p]}` : ''}`).join(', ');
-    g.font = font(10, 700); g.textAlign = 'left'; g.fillStyle = CREAM;
-    wrap(g, label, x + 8, FL.chips.y + 17, w - 14, 12, 3);
+    g.font = font(9, 700); g.textAlign = 'left'; g.fillStyle = CREAM;
+    wrap(g, label, x + 7, FL.chips.y + 15, w - 10, 11, 3);
   }
 }
 
@@ -212,8 +213,9 @@ function drawDraft(g, run, FL, L, time) {
   g.fillStyle = 'rgba(13,16,42,0.72)'; g.fillRect(0, 0, L.W, L.H);
   const c0 = FL.cards[0];
   g.textBaseline = 'alphabetic';
-  text(g, `WAVE ${run.wave} CLEARED`, L.W / 2, c0.y - 30, 24, GOLD, 'center');
-  text(g, 'Take one. The next wave is bigger.', L.W / 2, c0.y - 10, 12.5, CREAM, 'center', 700);
+  const owed = !canLeave(run);      // the pick left on the board last time
+  text(g, owed ? 'YOUR PICK' : `WAVE ${run.wave} CLEARED`, L.W / 2, c0.y - 30, 24, GOLD, 'center');
+  text(g, owed ? `Take one. Wave ${run.wave + 1} is waiting.` : 'Take one and fight on, or take the winnings home.', L.W / 2, c0.y - 10, 12.5, CREAM, 'center', 700);
   run.offers.forEach((offer, i) => {
     const r = FL.cards[i], d = describe(offer);
     const bob = Math.sin(time * 2.2 + i) * 1.5;
@@ -231,9 +233,10 @@ function drawDraft(g, run, FL, L, time) {
     g.font = font(12.5, 600); g.textAlign = 'left'; g.fillStyle = '#3a3f66';
     wrap(g, d.text, rc.x + 68, rc.y + 50, rc.w - 82, 15, 3);
   });
+  if (owed) return;
   panel(g, FL.leave, NAVY, 14, GOLD, 2.5);
   text(g, `Take ${run.take} home`, L.W / 2, FL.leave.y + 24, 16, GOLD, 'center');
-  text(g, 'back to the table, with a ball save', L.W / 2, FL.leave.y + 41, 11, CREAM, 'center', 700);
+  text(g, 'back to the table with a ball save; the pick keeps', L.W / 2, FL.leave.y + 41, 11, CREAM, 'center', 700);
 }
 
 function drawOver(g, run, FL, L) {
@@ -248,6 +251,7 @@ function drawOver(g, run, FL, L) {
   text(g, 'Tap to go back to the table', L.W / 2, r.y + 174, 13, NAVY, 'center');
 }
 
+const SHORT = { sabre: 'Sabre', pike: 'Pike', grape: 'Grape', flail: 'Flail', mortar: 'Mortar', oil: 'Oil' };
 const LETTER = { foot: '', lancer: 'L', grenadier: 'G', musket: 'M', captain: 'C' };
 
 /** The board, flat, for the 2D renderer. What the 3D view shows with tin, this shows with counters. */

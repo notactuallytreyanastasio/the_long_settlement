@@ -21,7 +21,7 @@ import {
 } from './economy.js';
 import { pushRecent, comboBonus } from './stage.js';
 import { seed, next, pick } from './rng.js';
-import { newMeta, checkMeta, startRun, act as frayAct, choose as frayChoose, settle as fraySettle, ACTS as FRAY_ACTS } from './fray.js';
+import { newMeta, checkMeta, startRun, act as frayAct, choose as frayChoose, settle as fraySettle, canLeave as frayCanLeave, ACTS as FRAY_ACTS } from './fray.js';
 import {
   currentChapter, currentScene, objectiveProgress, registerHit, spotFor, resolveStage, lineSeconds, eligibleBarks,
   heardLines, readsLeaning, LEANINGS,
@@ -762,7 +762,7 @@ const fraySeed = (game) => (game.rng.s ^ Math.imul(game.logged + 1, 0x9e3779b1) 
 function enterFray(content, game) {
   const run = startRun(game.fray, fraySeed(game));
   const opened = toast({ ...enterMode(game, 'fray'), run, frayDue: false, fray: { ...game.fray, lit: false, charge: 0 } },
-    'scene', `Lanewar: wave ${run.wave}`);
+    'scene', run.phase === 'draft' ? 'Lanewar: your pick' : `Lanewar: wave ${run.wave}`);
   return ok(opened, [sfx('card'), { type: 'flash', color: '#ffffff' }]);
 }
 
@@ -805,7 +805,7 @@ function leaveFray(content, game) {
 /** {type:'fray', act} takes a turn; {type:'fray', pick} takes a card; {type:'fray', leave:true} goes home from the draft. */
 function frayMsg(content, game, msg) {
   const { run } = game;
-  if (msg.leave === true) return run.phase === 'draft' ? leaveFray(content, game) : ok(game);
+  if (msg.leave === true) return frayCanLeave(run) ? leaveFray(content, game) : ok(game);
   if (msg.pick !== undefined) {
     if (run.phase !== 'draft' || !run.offers[msg.pick]) return ok(game);
     const next_ = frayChoose(run, msg.pick);

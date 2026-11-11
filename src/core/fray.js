@@ -36,12 +36,12 @@
 import { seed, next, nextInt } from './rng.js';
 
 export const W = 9;
-export const H = 11;
+export const H = 13;
 export const DIRS = Object.freeze({ n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] });
 export const ACTS = Object.freeze(['n', 's', 'e', 'w', 'wait']);
 
 export const HERO_HP = 10;
-/** Figures on the board at once. The feed waits when it is full: 99 squares, and the hero needs one. */
+/** Figures on the board at once. The feed waits when it is full: 117 squares, and the hero needs room to step. */
 export const BOARD_MAX = 64;
 
 /**
@@ -144,6 +144,16 @@ export const FOES = Object.freeze({
   captain: { name: 'Captain', hp: 24, dmg: 3, points: 300, from: 5, slow: true },
 });
 const HP_WAVES = 4;
+/**
+ * Hearts added to every figure in wave n: one for every HP_WAVES waves, and from wave LATE one more every
+ * second wave on top. The loadout stops growing (five levels a weapon); the waves must not, or a full
+ * loadout is a game that cannot be lost. With both, the tests' player (suggest) begins to fall around wave 9 and over 24 visits gets no further than the high thirties (60 careers: best wave 35 to 40).
+ */
+const LATE = 14;
+export const toughness = (wave) => Math.floor(wave / HP_WAVES) + Math.max(0, Math.floor((wave - LATE) / 2));
+/** And they hit harder: one more heart a blow for every HARDER waves. */
+const HARDER = 10;
+export const harder = (wave) => Math.floor(wave / HARDER);
 /** Every CAPTAIN_EVERY-th wave has a captain in it. */
 export const CAPTAIN_EVERY = 5;
 
@@ -156,9 +166,12 @@ const HEAL_ON_CLEAR = 2;
 
 // ───────────────────────── meta ─────────────────────────
 
-/** What outlives a run. lit: the saucer will open the board. charge: table hits toward lighting it again. */
+/**
+ * What outlives a run. lit: the saucer will open the board. charge: table hits toward lighting it again.
+ * owed: the last run was taken home from a draft, so its pick is still to be made: the next run opens on one.
+ */
 export function newMeta() {
-  return { lit: false, charge: 0, wave: 1, weapons: { sabre: 1 }, perks: {}, best: 0, felled: 0 };
+  return { lit: false, charge: 0, wave: 1, weapons: { sabre: 1 }, perks: {}, best: 0, felled: 0, owed: false };
 }
 
 /** Refuse a Meta that could not have been written by this file: a save is the one place one comes in from outside. */
@@ -166,6 +179,8 @@ export function checkMeta(m) {
   const bad = (why) => new Error(`fray: bad meta (${why}): ${JSON.stringify(m)}`);
   if (!m || typeof m !== 'object') throw bad('not an object');
   if (typeof m.lit !== 'boolean') throw bad('lit must be true or false');
+  if (typeof m.owed !== 'boolean') throw bad('owed must be true or false');
+  if (m.owed && m.wave < 2) throw bad('a draft cannot be owed before any wave was cleared');
   for (const k of ['charge', 'best', 'felled']) if (!Number.isInteger(m[k]) || m[k] < 0) throw bad(`${k} must be a whole number, zero or more`);
   if (!Number.isInteger(m.wave) || m.wave < 1) throw bad('wave must be a whole number, one or more');
   if (!m.weapons || typeof m.weapons !== 'object' || !m.perks || typeof m.perks !== 'object') throw bad('weapons and perks must be objects');
@@ -198,7 +213,11 @@ export function startRun(meta, seedN) {
     weapons: { ...meta.weapons }, perks: { ...meta.perks }, cool: {},
     felled: 0, take: 0, sinceRally: 0, cleared: 0, offers: [], events: [],
   };
-  return beginWave(run, []);
+  if (!meta.owed) return beginWave(run, []);
+  // The pick left on the board last time. Why it is kept: a player who went home after every wave would
+  // otherwise climb the waves with the loadout of somebody who had cleared none, and meet a wall.
+  const drawn = drawOffers({ ...run, wave: meta.wave - 1 });
+  return { ...run, wave: meta.wave - 1, phase: 'draft', offers: drawn.offers, rng: drawn.rng };
 }
 
 /** Wave n's figures, in the order they will be fed in. The captain comes when half of them are on. */
@@ -248,7 +267,7 @@ function feed(run, count) {
     const [x, y] = edge[k];
     edge[k] = edge[edge.length - 1]; edge.pop();
     const kind = queue.shift(), def = FOES[kind];
-    const hp = def.hp + Math.floor(run.wave / HP_WAVES) * (kind === 'captain' ? 6 : 1) + (kind === 'captain' ? run.wave : 0);
+    const hp = def.hp + toughness(run.wave) * (kind === 'captain' ? 6 : 1) + (kind === 'captain' ? run.wave : 0);
     const foe = { id: run.nextId++, kind, x, y, hp, aim: false };
     run.foes.push(foe);
     run.events.push({ type: 'spawn', id: foe.id, kind, x, y });
@@ -395,7 +414,7 @@ export function act(run0, a) {
   else {
     const order = run.foes.filter((f) => f.hp > 0)
       .sort((p, q) => (Math.abs(p.x - hero.x) + Math.abs(p.y - hero.y)) - (Math.abs(q.x - hero.x) + Math.abs(q.y - hero.y)) || p.id - q.id);
-    const barbs = run.perks.barbs || 0;
+    const barbs = run.perks.barbs || 0, extra = harder(run.wave);
     const hurt = (f, dmg) => {
       hero.hp -= dmg;
       events.push({ type: 'hurt', by: f.id, dmg, hp: Math.max(0, hero.hp) });
@@ -424,13 +443,13 @@ export function act(run0, a) {
       const dist = Math.abs(f.x - hero.x) + Math.abs(f.y - hero.y);
       if (def.range) {
         const inLine = (f.x === hero.x || f.y === hero.y) && dist <= def.range;
-        if (inLine && f.aim) { f.aim = false; events.push({ type: 'shot', id: f.id }); hurt(f, def.dmg); continue; }
+        if (inLine && f.aim) { f.aim = false; events.push({ type: 'shot', id: f.id }); hurt(f, def.dmg + extra); continue; }
         if (inLine) { f.aim = true; events.push({ type: 'aim', id: f.id }); continue; }
         f.aim = false;
         step(f);
         continue;
       }
-      if (dist === 1) { hurt(f, def.dmg); continue; }
+      if (dist === 1) { hurt(f, def.dmg + extra); continue; }
       step(f);
       if (def.speed === 2 && Math.abs(f.x - hero.x) + Math.abs(f.y - hero.y) > 1) step(f);
     }
@@ -536,19 +555,22 @@ export const FALL_BACK = 2;
 /**
  * The run is over, by a fall or by choice. What goes back to the table: the score (all of it when taken
  * home from a draft, half when the hero fell), and the Meta the next run starts from. The loadout is kept
- * either way. A fall sets the board back FALL_BACK waves; a draft left unpicked is the cleared wave's
- * reward forgone, and the next run starts at the wave after it.
+ * either way. A fall sets the board back FALL_BACK waves. Going home leaves the draft's pick owed: the next
+ * run opens on a draft and then the wave after this one. Only a run that has cleared a wave can be taken home
+ * (canLeave): otherwise the saucer, a draft and the way home would be a ball save for nothing.
  */
+export const canLeave = (run) => run.phase === 'draft' && run.cleared > 0;
+
 export function settle(meta, run) {
   const fell = run.phase === 'over';
-  if (!fell && run.phase !== 'draft') throw new Error(`fray.settle: a run cannot be left in phase ${JSON.stringify(run.phase)}`);
+  if (!fell && !canLeave(run)) throw new Error(`fray.settle: a run cannot be left in phase ${JSON.stringify(run.phase)} with ${run.cleared} waves cleared`);
   const reached = fell ? run.wave - 1 : run.wave;
   return {
     banked: !fell,
     score: fell ? Math.floor(run.take / 2) : run.take,
     meta: {
       ...meta, lit: false, charge: 0,
-      wave: fell ? Math.max(1, run.wave - FALL_BACK) : run.wave + 1,
+      wave: fell ? Math.max(1, run.wave - FALL_BACK) : run.wave + 1, owed: !fell,
       weapons: { ...run.weapons }, perks: { ...run.perks },
       best: Math.max(meta.best, reached), felled: meta.felled + run.felled,
     },

@@ -12406,12 +12406,12 @@
  },
  {
   "path": "src/core/fray.js",
-  "bytes": 28421,
-  "lines": 599
+  "bytes": 30097,
+  "lines": 621
  },
  {
   "path": "src/core/game.js",
-  "bytes": 48179,
+  "bytes": 48248,
   "lines": 972
  },
  {
@@ -12486,13 +12486,13 @@
  },
  {
   "path": "src/shell/fray-view.js",
-  "bytes": 16841,
-  "lines": 322
+  "bytes": 17303,
+  "lines": 326
  },
  {
   "path": "src/shell/gl/app.js",
-  "bytes": 37932,
-  "lines": 648
+  "bytes": 38078,
+  "lines": 649
  },
  {
   "path": "src/shell/gl/atlas.js",
@@ -12516,8 +12516,8 @@
  },
  {
   "path": "src/shell/gl/fray3d.js",
-  "bytes": 20887,
-  "lines": 334
+  "bytes": 22053,
+  "lines": 351
  },
  {
   "path": "src/shell/gl/fx.js",
@@ -13001,7 +13001,7 @@
  },
  {
   "path": "test/stage.test.js",
-  "bytes": 38537,
+  "bytes": 38596,
   "lines": 664
  },
  {

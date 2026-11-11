@@ -22,7 +22,7 @@ import { FRAY_COLOURS as COL } from '../fray-view.js';
 const MOVE = 0.15;        // seconds a step takes on the board
 const DIE = 0.5;          // seconds a felled figure takes to leave it
 const KINDS = ['foot', 'lancer', 'grenadier', 'musket', 'captain'];
-const SIZE = { foot: 1, lancer: 1, grenadier: 1.28, musket: 1, captain: 1.6 };
+const SIZE = { foot: 1.22, lancer: 1.22, grenadier: 1.5, musket: 1.22, captain: 1.85 };
 const CAP = BOARD_MAX + 48;   // instances per kind: everyone standing, and those still falling
 const FIRES = 48, AIMS = 24;
 
@@ -91,7 +91,8 @@ export function createFrayView(GL) {
       GL.place(GL.tint(GL.roundedBox(t, 0.3, H, 0.06), '#9a6030'), hw + t / 2, 0, 0),
       // brass corners, because somebody's grandfather made this board
       ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => GL.place(GL.tint(GL.cylinder(0.24, 0.24, 0.34, 10), '#f2c84a'), sx * (hw + t / 2), -0.15, sz * (hh + t / 2))),
-      GL.place(GL.tint(GL.box(W + 14, 0.4, H + 14), '#4a2f1c'), 0, -0.36, 0),
+      // the table it stands on, in planks, far past anything the camera sees
+      ...Array.from({ length: 16 }, (_, i) => GL.place(GL.tint(GL.box(3.96, 0.4, 70), i % 2 ? '#5a3a22' : '#523420'), (i - 7.5) * 4, -0.36, 0)),
     ]);
     scene.root.add(GL.node('frame', frame, wood));
   }
@@ -108,10 +109,10 @@ export function createFrayView(GL) {
   // ───────────────────────── the hero ─────────────────────────
   const heroNode = GL.group('hero');
   const heroBody = GL.node('hero-body', tin({ coat: COL.hero, hat: '#1d2a5c', hatH: 0.22, trim: '#f2d24a', plume: '#ffffff' }), GL.material({ bands: 2, spec: 0.6, specSize: 0.04, rim: 1, outline: { width: 2.8, color: '#1d2146', self: 0.3 } }));
-  heroBody.setScale(1.3);
+  heroBody.setScale(1.55);
   const bright = GL.material({ emissive: 1, rim: 0, outline: false, castShadow: false, receiveShadow: false, doubleSided: true });
   const blade = GL.node('blade', GL.place(GL.tint(GL.box(0.07, 0.03, 0.85), '#ffffff'), 0, 0, 0.42), GL.material({ spec: 0.9, specSize: 0.05, outline: { width: 1.6, color: '#1d2146' } }));
-  blade.setPos(0.42, 0.52, 0.05);
+  blade.setPos(0.5, 0.62, 0.05);
   // the cut itself: a crescent in the plane of the board, widest dead ahead
   const crescent = (() => {
     const P = [], I = [], N = 14, R = 1.62;
@@ -127,7 +128,7 @@ export function createFrayView(GL) {
   pike.setPos(0, 0.55, 0.3); pike.visible = false; pike.castShadow = false;
   heroNode.add(heroBody, blade, crescent, pike);
   scene.root.add(heroNode);
-  const heroGlow = sprites.add({ kind: 'ring', pos: [0, 0.03, 0], size: 1.5, color: '#ffffff', alpha: 0.5 });
+  const heroGlow = sprites.add({ kind: 'ring', pos: [0, 0.03, 0], size: 1.9, color: '#ffffff', alpha: 0.6 });
 
   const fireSprites = [], aimSprites = [];
   for (let i = 0; i < FIRES; i++) { const s = sprites.add({ kind: 'glow', pos: [0, 0.2, 0], size: 1.1, color: COL.oil, alpha: 0 }); s.visible = false; fireSprites.push(s); }
@@ -142,8 +143,9 @@ export function createFrayView(GL) {
   let quake = 0;
 
   const camera = GL.createCamera({ fov: 30, near: 0.5, far: 120 });
-  const BOX = { min: [-W / 2 - 0.5, 0, -H / 2 - 0.5], max: [W / 2 + 0.5, 0.9, H / 2 + 0.5] };
-  const FRAME = { yaw: 0, pitch: 57, aspect: 1, margin: 1.02, shiftY: 0 };
+  const BOX = { min: [-W / 2 - 0.36, 0, -H / 2 - 0.36], max: [W / 2 + 0.36, 0.6, H / 2 + 0.36] };
+  const FRAME = { yaw: 0, pitch: 64, aspect: 1, margin: 1, shiftY: 0 };
+  const FOV = 30;
   const view = { shadowCenter: [0, 0, 0], shadowRadius: 9.5 };
 
   const P3 = [0, 0, 0], V3 = [0, 0, 0];
@@ -173,12 +175,12 @@ export function createFrayView(GL) {
     if (e.weapon === 'sabre') { hero.swing = 1; hero.swingScale = lv.shape === 'deep' ? 1.55 : lv.shape === 'wide' ? 1.2 : 1; }
     else if (e.weapon === 'pike') { hero.thrust = 1; hero.reach = lv.reach; }
     else if (e.weapon === 'flail') sprites.spawn({ kind: 'ring', pos: at(run.hero.x, run.hero.y, 0.3), size: 0.6, endSize: lv.reach * 2 + 1.6, life: 0.28, color: col });
-    else if (e.weapon === 'grape') { at(run.hero.x + run.hero.face[0] * 0.6, run.hero.y + run.hero.face[1] * 0.6, 0.6); sprites.puff(P3, { count: 4, size: 0.5, rise: 0.5, spread: 0.5, life: 0.7 }); quake = Math.max(quake, 0.5); }
+    else if (e.weapon === 'grape') { at(run.hero.x + run.hero.face[0] * 0.6, run.hero.y + run.hero.face[1] * 0.6, 0.6); sprites.puff(P3, { count: 3, size: 0.35, rise: 0.5, spread: 0.4, life: 0.45 }); quake = Math.max(quake, 0.5); }
     else if (e.weapon === 'mortar' && e.cells.length) {
       let cx = 0, cy = 0; for (const c of e.cells) { cx += c[0]; cy += c[1]; } cx /= e.cells.length; cy /= e.cells.length;
       sprites.spawn({ kind: 'ring', pos: at(cx, cy, 0.1), size: 0.5, endSize: lv.blast * 2 + 2.2, life: 0.35, color: col });
       sprites.spawn({ kind: 'glow', pos: at(cx, cy, 0.5), size: lv.blast * 2 + 2.5, endSize: 0.5, life: 0.3, color: '#fff2c0', alpha: 0.9 });
-      sprites.puff(at(cx, cy, 0.4), { count: 6, size: 0.8, rise: 1.1, spread: 1.2, life: 1 });
+      sprites.puff(at(cx, cy, 0.4), { count: 4, size: 0.5, rise: 1.1, spread: 1.2, life: 0.5 });
       sprites.sparkle(at(cx, cy, 0.6), { count: 12, color: col, size: 0.4, spread: 2, life: 0.6 });
       quake = 1;
     }
@@ -260,7 +262,7 @@ export function createFrayView(GL) {
     heroNode.setRot(fallen ? -84 : 0, hero.yaw, 0);
     heroBody.flash[0] = 1; heroBody.flash[1] = 0.25; heroBody.flash[2] = 0.2; heroBody.flash[3] = hero.hurt * 0.75;
     heroPos[0] = hx; heroPos[1] = 0.55; heroPos[2] = hz;
-    heroGlow.pos[0] = hx; heroGlow.pos[2] = hz; heroGlow.alpha = 0.3 + 0.12 * Math.sin(time * 4); heroGlow.visible = !fallen;
+    heroGlow.pos[0] = hx; heroGlow.pos[2] = hz; heroGlow.alpha = 0.45 + 0.15 * Math.sin(time * 4); heroGlow.visible = !fallen;
     // sabre: the arm follows the cut, and the cut is a crescent that opens and is gone
     const sw = hero.swing;
     blade.setRot(0, sw > 0 ? 70 - (1 - sw) * 150 : 20, 0);
@@ -318,9 +320,24 @@ export function createFrayView(GL) {
     sprites.update(dt);
   }
 
-  function frame(aspect, time) {
+  /**
+   * Place the camera so the board just fits a part of the viewport: `aspect` is the shape of that part (the space
+   * the HUD leaves), `grow` how many times taller the whole viewport is, and `shift` how far below the viewport's
+   * middle the part's middle lies, as a fraction of the viewport's height. The board is framed for the part, then
+   * the field of view is opened to the whole viewport at the same scale, so the table runs on under the HUD.
+   */
+  function frame(aspect, time, grow = 1, shift = 0) {
     FRAME.aspect = aspect;
+    camera.fov = FOV;
     GL.frameBox(camera, BOX, FRAME);
+    if (grow > 1) {
+      const tv = Math.tan(FOV * DEG / 2) * grow;
+      camera.fov = 2 * Math.atan(tv) / DEG;
+      // the part's middle is not the viewport's: slide along the board until it is
+      const dist = Math.hypot(camera.position[0] - camera.target[0], camera.position[1] - camera.target[1], camera.position[2] - camera.target[2]);
+      const dz = -shift * 2 * tv * dist / Math.sin(FRAME.pitch * DEG);
+      camera.target[2] += dz; camera.position[2] += dz;
+    }
     if (quake > 0.01) {
       const q = quake * quake * 0.12;
       camera.target[0] += Math.sin(time * 71) * q; camera.target[1] += Math.sin(time * 93) * q;

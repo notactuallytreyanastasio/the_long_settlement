@@ -632,7 +632,7 @@ test('chapter 1 start to finish: the stage always has an answer, the log stays i
       // Lanewar: nothing is staged while the board is open; play one wave and go back
       assert.equal(stageState(content, g).phase, 'idle');
       const { run } = g;
-      g = send(g, run.phase === 'over' ? { type: 'confirm' } : run.phase === 'draft' ? { type: 'fray', leave: true } : { type: 'fray', act: suggest(run) }).game;
+      g = send(g, run.phase === 'over' ? { type: 'confirm' } : run.phase === 'draft' ? (run.cleared > 0 ? { type: 'fray', leave: true } : { type: 'fray', pick: suggest(run) }) : { type: 'fray', act: suggest(run) }).game;
     } else if (g.mode === 'cine') {
       watch();
       g = g.cine.t < RESOLVE_SECONDS + 0.05 && g.cine.kind === 'scene' ? send(g, tick()).game : send(g, { type: 'confirm' }).game;

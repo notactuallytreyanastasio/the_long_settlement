@@ -500,10 +500,11 @@ export function createGlApp(glCanvas, hudCanvas, opts = {}) {
   function drawFrayBoard(game, fx, layout, time, dt, k) {
     if (!game.run) throw new Error('gl/app: mode fray with no run');
     if (!frayView) { frayView = createFrayView(GL); frayRect.shadowCenter = frayView.view.shadowCenter; frayRect.shadowRadius = frayView.view.shadowRadius; app.stats.built++; }
+    // the whole canvas is table; the board is framed for the space the HUD leaves in the middle of it
     const a = frayLayout(layout, fx.safe ? fx.safe.top : 0).area;
-    frayRect.x = a.x * k; frayRect.y = a.y * k; frayRect.w = a.w * k; frayRect.h = a.h * k;
+    frayRect.x = 0; frayRect.y = 0; frayRect.w = layout.W * k; frayRect.h = layout.H * k;
     frayView.update(game.run, dt, time);
-    const cam = frayView.frame(frayRect.w / frayRect.h, time);
+    const cam = frayView.frame(a.w / a.h, time, layout.H / a.h, (a.y + a.h / 2 - layout.H / 2) / layout.H);
     renderer.begin(INK_RGB);
     renderer.prepare(frayView.scene, cam, time, frayRect);
     count(renderer.render(frayView.scene, cam, time, frayRect), 'fray');
